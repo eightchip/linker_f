@@ -1,0 +1,1559 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import '../viewmodels/link_viewmodel.dart';
+import '../viewmodels/font_size_provider.dart';
+import '../models/group.dart';
+import '../models/link_item.dart';
+import 'group_card.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:intl/intl.dart';
+import 'tutorial_dialog.dart';
+import 'package:hive/hive.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:screen_retriever/screen_retriever.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:pdf_render/pdf_render.dart';
+import 'package:pdf_render/pdf_render_widgets.dart';
+// import 'package:pdfx/pdfx.dart';
+
+class HomeScreen extends ConsumerStatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _isDragOver = false;
+  String? draggingGroupId;
+  Offset? draggingPosition;
+  List<Group> _orderedGroups = [];
+  String? _centerMessage;
+  final ScrollController _scrollController = ScrollController();
+  bool _showOnlyFavorites = false;
+  bool _showSearchBar = false;
+  String _searchQuery = '';
+  bool _showRecent = false;
+  bool _tutorialShown = false;
+  bool _showFavoriteLinks = false;
+  
+  // 追加: ジャンプボタン表示制御用
+  OverlayEntry? _jumpButtonOverlay;
+  Offset? _lastMousePosition;
+  DateTime? _lastMoveTime;
+  BuildContext? _scaffoldBodyContext;
+
+  @override
+  void initState() {
+    super.initState();
+    final groups = ref.read(linkViewModelProvider).groups;
+    _orderedGroups = List<Group>.from(groups);
+    
+    // ScrollControllerの初期化を遅延させる
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+    _checkAndShowTutorial();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = ref.watch(linkViewModelProvider).groups;
+    final isLoading = ref.watch(linkViewModelProvider).isLoading;
+    final error = ref.watch(linkViewModelProvider).error;
+    final isDarkMode = ref.watch(darkModeProvider);
+    
+    // お気に入りグループと通常グループを分離
+    final favoriteGroups = groups.where((g) => g.isFavorite).toList();
+    final normalGroups = groups.where((g) => !g.isFavorite).toList();
+    
+    // 検索・最近使ったフィルタ適用
+    List<Group> displayGroups = _showOnlyFavorites ? favoriteGroups : [...favoriteGroups, ...normalGroups];
+    if (_searchQuery.isNotEmpty) {
+      displayGroups = displayGroups
+        .where((g) => g.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          g.items.any((l) => l.label.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            l.path.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            l.type.name.toLowerCase().contains(_searchQuery.toLowerCase())))
+        .toList();
+    }
+    // 最近使ったグループ・リンク
+    final recentLinks = groups.expand((g) => g.items)
+      .where((l) => l.lastUsed != null)
+      .toList()
+      ..sort((a, b) => b.lastUsed!.compareTo(a.lastUsed!));
+    final recentGroups = groups
+      .where((g) => g.items.any((l) => l.lastUsed != null))
+      .toList()
+      ..sort((a, b) {
+        final aLast = a.items.map((l) => l.lastUsed ?? DateTime.fromMillisecondsSinceEpoch(0)).reduce((a, b) => a.isAfter(b) ? a : b);
+        final bLast = b.items.map((l) => l.lastUsed ?? DateTime.fromMillisecondsSinceEpoch(0)).reduce((a, b) => a.isAfter(b) ? a : b);
+        return bLast.compareTo(aLast);
+      });
+    
+    // お気に入りリンク一覧抽出
+    final favoriteLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
+      .where((entry) => entry.value.isFavorite)
+      .toList();
+    
+    // デバッグ情報
+    print('=== デバッグ情報 ===');
+    print('総リンク数: ${groups.expand((g) => g.items).length}');
+    print('lastUsedが設定されているリンク数: ${recentLinks.length}');
+    print('最近使ったリンク: ${recentLinks.map((l) => '${l.label} (${l.lastUsed})').toList()}');
+    print('最近使ったグループ数: ${recentGroups.length}');
+    print('_showRecent: $_showRecent');
+    print('showRecent: ${_showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty)}');
+    print('==================');
+    
+    return Listener(
+      onPointerDown: (event) {
+        // 右クリックや他ボタンは無視
+      },
+      onPointerHover: _onMouseMove,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onDoubleTapDown: (details) {
+          _showJumpButtons(details.globalPosition);
+        },
+        child: Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+            title: const Text('Link Navigator D & D', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+        elevation: 2,
+        actions: [
+          // 検索
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: '検索',
+            onPressed: () {
+              setState(() {
+                _showSearchBar = !_showSearchBar;
+                if (!_showSearchBar) _searchQuery = '';
+              });
+            },
+          ),
+          // ピン止め
+          IconButton(
+            icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey),
+            tooltip: _showRecent ? '最近使った非表示' : '最近使ったを上部に表示',
+            onPressed: () {
+              setState(() {
+                _showRecent = !_showRecent;
+              });
+            },
+          ),
+          // お気に入り
+          if (favoriteGroups.isNotEmpty)
+            IconButton(
+              icon: Icon(
+                _showOnlyFavorites ? Icons.star : Icons.star_border,
+                color: _showOnlyFavorites ? Colors.amber : Colors.grey,
+              ),
+                  tooltip: _showOnlyFavorites ? 'すべて表示' : 'グループのお気に入りのみ表示',
+              onPressed: () {
+                setState(() {
+                  _showOnlyFavorites = !_showOnlyFavorites;
+                });
+                  },
+                ),
+              // リンクお気に入り一覧（常に表示）
+              IconButton(
+                icon: const Icon(Icons.star_outline),
+                tooltip: 'リンクのお気に入り一覧',
+                onPressed: () async {
+                  setState(() {
+                    _showFavoriteLinks = !_showFavoriteLinks;
+                  });
+                  if (!_showFavoriteLinks) return;
+              },
+            ),
+          // ダークモード
+          IconButton(
+            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            tooltip: isDarkMode ? 'ライトモード' : 'ダークモード',
+            onPressed: () {
+              ref.read(darkModeProvider.notifier).state = !isDarkMode;
+            },
+          ),
+          // エクスポート
+          IconButton(
+            icon: const Icon(Icons.upload),
+            tooltip: 'Export Data',
+            onPressed: () => _exportData(context),
+          ),
+          // インポート
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: 'Import Data',
+            onPressed: () => _importData(context),
+          ),
+              // グループ追加
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'グループを追加',
+                onPressed: () => _showAddGroupDialog(context),
+              ),
+              IconButton(
+                icon: const Icon(Icons.help_outline),
+                tooltip: 'チュートリアル・ヘルプ',
+                onPressed: _showTutorial,
+              ),
+              // アクセントカラーパレット
+              IconButton(
+                icon: const Icon(Icons.palette),
+                tooltip: 'アクセントカラー変更',
+                onPressed: () async {
+                  final currentColor = ref.read(accentColorProvider);
+                  final colorOptions = [
+                    0xFF3B82F6, // 青（現在のデフォルト）
+                    0xFFEF4444, // 赤
+                    0xFF22C55E, // 緑
+                    0xFFF59E42, // オレンジ
+                    0xFF8B5CF6, // 紫
+                  ];
+                  final colorNames = [
+                    'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル'
+                  ];
+                  final selected = await showDialog<int>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('アクセントカラーを選択'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (int i = 0; i < colorOptions.length; i++)
+                            ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Color(colorOptions[i]),
+                                child: currentColor == colorOptions[i] ? const Icon(Icons.check, color: Colors.white) : null,
+                              ),
+                              title: Text(colorNames[i]),
+                              onTap: () => Navigator.pop(context, colorOptions[i]),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                  if (selected != null && selected != currentColor) {
+                    ref.read(accentColorProvider.notifier).state = selected;
+                  }
+                },
+              ),
+        ],
+        bottom: _showSearchBar
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(44),
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: TextField(
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: '検索（グループ名・リンク名・パス・タイプ）',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          setState(() {
+                            _searchQuery = '';
+                            _showSearchBar = false;
+                          });
+                        },
+                      ),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                    ),
+                    onChanged: (v) {
+                      setState(() {
+                        _searchQuery = v;
+                      });
+                    },
+                  ),
+                ),
+              )
+            : null,
+      ),
+          body: Builder(
+            builder: (bodyContext) {
+              _scaffoldBodyContext = bodyContext;
+              return Stack(
+                children: [
+                  _showFavoriteLinks
+                    ? _buildFavoriteLinksList(favoriteLinks)
+                    : isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : error != null
+              ? Center(child: Text('Error: $error'))
+              : groups.isEmpty
+                  ? _buildEmptyState()
+                  : _buildContent(displayGroups, recentLinks, recentGroups),
+                  if (_isDragOver)
+                    Container(
+                      color: Colors.blue.withOpacity(0.08),
+                      child: const Center(
+                        child: Text('ここにファイルやフォルダをドロップ', style: TextStyle(fontSize: 24, color: Colors.blue)),
+                      ),
+                    ),
+                  if (_centerMessage != null)
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(_centerMessage!, style: const TextStyle(fontSize: 20)),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(List<Group> displayGroups, List<LinkItem> recentLinks, List<Group> recentGroups) {
+    final showRecent = _showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        int crossAxisCount;
+        double gridSpacing;
+        double cardAspectRatio;
+        EdgeInsets gridPadding;
+        if (width > 1400) {
+          crossAxisCount = 4;
+          gridSpacing = 40;
+          cardAspectRatio = 1.3;
+          gridPadding = const EdgeInsets.symmetric(horizontal: 64, vertical: 24);
+        } else if (width > 1100) {
+          crossAxisCount = 3;
+          gridSpacing = 32;
+          cardAspectRatio = 1.2;
+          gridPadding = const EdgeInsets.symmetric(horizontal: 40, vertical: 20);
+        } else if (width > 700) {
+          crossAxisCount = 2;
+          gridSpacing = 24;
+          cardAspectRatio = 1.1;
+          gridPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 16);
+        } else {
+          crossAxisCount = 1;
+          gridSpacing = 12;
+          cardAspectRatio = 1.0;
+          gridPadding = const EdgeInsets.symmetric(horizontal: 4, vertical: 8);
+        }
+    return Stack(
+      children: [
+            DropTarget(
+              onDragEntered: (detail) { setState(() { _isDragOver = true; }); },
+              onDragExited: (detail) { setState(() { _isDragOver = false; }); },
+            onDragDone: (detail) => _handleDrop(context, detail),
+            child: ListView(
+              controller: _scrollController,
+                padding: gridPadding,
+              children: [
+                if (showRecent) ...[
+                  if (recentLinks.isNotEmpty)
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('最近使ったリンク', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                              children: recentLinks.take(10).map((link) => ActionChip(
+                              label: Text(link.label, overflow: TextOverflow.ellipsis),
+                              avatar: Icon(_iconForType(link.type), size: 18),
+                              onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                            )).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: cardAspectRatio,
+                      crossAxisSpacing: gridSpacing,
+                      mainAxisSpacing: gridSpacing,
+                  ),
+                  itemCount: displayGroups.length,
+                  itemBuilder: (context, index) {
+                    final group = displayGroups[index];
+                    return Draggable<Group>(
+                      data: group,
+                      feedback: Material(
+                        elevation: 16,
+                        child: SizedBox(
+                          width: 370,
+                          height: 240,
+                          child: GroupCard(
+                            group: group,
+                            onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
+                            onDeleteGroup: () => _deleteGroup(group.id),
+                            onAddLink: () => _showAddLinkDialog(context, group.id),
+                            onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
+                            onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                            onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                              groupId: group.id,
+                              label: label,
+                              path: path,
+                              type: type,
+                            ),
+                            onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
+                            onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
+                              onEditGroupTitle: (oldTitle) async {
+                                final controller = TextEditingController(text: oldTitle);
+                                int selectedColor = group.color ?? Colors.black.value;
+                                final result = await showDialog<Map<String, dynamic>>(
+                                  context: context,
+                                  builder: (context) => StatefulBuilder(
+                                    builder: (context, setState) => AlertDialog(
+                                      title: const Text('グループ名を編集'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(
+                                            controller: controller,
+                                            autofocus: true,
+                                            decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          ColorPaletteSelector(
+                                            selectedColor: selectedColor,
+                                            onColorSelected: (color) => setState(() => selectedColor = color),
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('キャンセル'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(context, {
+                                            'title': controller.text,
+                                            'color': selectedColor,
+                                          }),
+                                          child: const Text('保存'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                                if (result != null && result['title'] != null && result['title'].trim().isNotEmpty && (result['title'] != oldTitle || result['color'] != group.color)) {
+                                  final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
+                              await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
+                                }
+                            },
+                            onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
+                            onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
+                            onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                              onShowMessage: _showCenterMessage,
+                          ),
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: 0.5,
+                        child: GroupCard(
+                          group: group,
+                          isDragging: true,
+                          onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
+                          onDeleteGroup: () => _deleteGroup(group.id),
+                          onAddLink: () => _showAddLinkDialog(context, group.id),
+                          onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
+                          onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                          onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                            groupId: group.id,
+                            label: label,
+                            path: path,
+                            type: type,
+                          ),
+                          onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
+                          onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
+                            onEditGroupTitle: (oldTitle) async {
+                              final controller = TextEditingController(text: oldTitle);
+                              int selectedColor = group.color ?? Colors.black.value;
+                              final result = await showDialog<Map<String, dynamic>>(
+                                context: context,
+                                builder: (context) => StatefulBuilder(
+                                  builder: (context, setState) => AlertDialog(
+                                    title: const Text('グループ名を編集'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        TextField(
+                                          controller: controller,
+                                          autofocus: true,
+                                          decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        ColorPaletteSelector(
+                                          selectedColor: selectedColor,
+                                          onColorSelected: (color) => setState(() => selectedColor = color),
+                                        ),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('キャンセル'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(context, {
+                                          'title': controller.text,
+                                          'color': selectedColor,
+                                        }),
+                                        child: const Text('保存'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                              if (result != null && result['title'] != null && result['title'].trim().isNotEmpty && (result['title'] != oldTitle || result['color'] != group.color)) {
+                                final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
+                            await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
+                              }
+                          },
+                          onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
+                          onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
+                          onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                            onShowMessage: _showCenterMessage,
+                        ),
+                      ),
+                      child: DragTarget<Group>(
+                        onWillAccept: (data) => data != null && data.id != group.id,
+                        onAccept: (data) async {
+                          final groups = ref.read(linkViewModelProvider).groups;
+                          final fromIndex = groups.indexWhere((g) => g.id == data.id);
+                          final toIndex = groups.indexWhere((g) => g.id == group.id);
+                          if (fromIndex != -1 && toIndex != -1) {
+                            final newOrder = List<Group>.from(groups);
+                            final item = newOrder.removeAt(fromIndex);
+                            newOrder.insert(toIndex, item);
+                            await ref.read(linkViewModelProvider.notifier).updateGroupsOrder(newOrder);
+                          }
+                        },
+                        builder: (context, candidateData, rejectedData) {
+                          return GroupCard(
+                            group: group,
+                            onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
+                            onDeleteGroup: () => _deleteGroup(group.id),
+                            onAddLink: () => _showAddLinkDialog(context, group.id),
+                            onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
+                            onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                            onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                              groupId: group.id,
+                              label: label,
+                              path: path,
+                              type: type,
+                            ),
+                            onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
+                            onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
+                              onEditGroupTitle: (oldTitle) async {
+                                final controller = TextEditingController(text: oldTitle);
+                                int selectedColor = group.color ?? Colors.black.value;
+                                final result = await showDialog<Map<String, dynamic>>(
+                                  context: context,
+                                  builder: (context) => StatefulBuilder(
+                                    builder: (context, setState) => AlertDialog(
+                                      title: const Text('グループ名を編集'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(
+                                            controller: controller,
+                                            autofocus: true,
+                                            decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          ColorPaletteSelector(
+                                            selectedColor: selectedColor,
+                                            onColorSelected: (color) => setState(() => selectedColor = color),
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('キャンセル'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(context, {
+                                            'title': controller.text,
+                                            'color': selectedColor,
+                                          }),
+                                          child: const Text('保存'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                                if (result != null && result['title'] != null && result['title'].trim().isNotEmpty && (result['title'] != oldTitle || result['color'] != group.color)) {
+                                  final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
+                              await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
+                                }
+                            },
+                            onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
+                            onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
+                            onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                              onShowMessage: _showCenterMessage,
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFavoriteLinksList(List<MapEntry<Group, LinkItem>> favoriteLinks) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 64),
+      itemCount: favoriteLinks.length,
+      itemBuilder: (context, index) {
+        final entry = favoriteLinks[index];
+        return FavoriteLinkTile(
+          link: entry.value,
+          group: entry.key,
+          onUnfavorite: () => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(entry.key, entry.value),
+          onLaunch: () => ref.read(linkViewModelProvider.notifier).launchLink(entry.value),
+          isDark: isDark,
+          onShowMessage: _showCenterMessage,
+        );
+      },
+    );
+  }
+
+  IconData _iconForType(LinkType type) {
+    switch (type) {
+      case LinkType.file:
+        return Icons.insert_drive_file;
+      case LinkType.folder:
+        return Icons.folder;
+      case LinkType.url:
+        return Icons.link;
+    }
+  }
+
+  void _showAddGroupDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    int selectedColor = Colors.black.value; // デフォルト黒
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+        title: const Text('Add New Group'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+          controller: titleController,
+          decoration: const InputDecoration(
+            labelText: 'Group Title',
+            hintText: 'Enter group title...',
+          ),
+          autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              ColorPaletteSelector(
+                selectedColor: selectedColor,
+                onColorSelected: (color) => setState(() => selectedColor = color),
+              ),
+            ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (titleController.text.isNotEmpty) {
+                ref.read(linkViewModelProvider.notifier).createGroup(
+                  title: titleController.text,
+                    color: selectedColor,
+                    labels: null,
+                );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddLinkDialog(BuildContext context, String groupId) {
+    final labelController = TextEditingController();
+    final pathController = TextEditingController();
+    LinkType selectedType = LinkType.file;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Add New Link'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: labelController,
+                decoration: const InputDecoration(
+                  labelText: 'Label',
+                  hintText: 'Enter link label...',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: pathController,
+                decoration: const InputDecoration(
+                  labelText: 'Path/URL',
+                  hintText: 'Enter file path or URL...',
+                ),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<LinkType>(
+                value: selectedType,
+                decoration: const InputDecoration(
+                  labelText: 'Type',
+                ),
+                items: LinkType.values.map((type) {
+                  return DropdownMenuItem(
+                    value: type,
+                    child: Text(type.name.toUpperCase()),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => selectedType = value);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (labelController.text.isNotEmpty && 
+                    pathController.text.isNotEmpty) {
+                  ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                    groupId: groupId,
+                    label: labelController.text,
+                    path: pathController.text,
+                    type: selectedType,
+                  );
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleDrop(BuildContext context, dynamic detail) async {
+    if (detail.files != null && detail.files.isNotEmpty) {
+      bool hasUrl = false;
+      for (final file in detail.files) {
+        final path = file.path;
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+          hasUrl = true;
+        }
+      }
+      if (hasUrl) {
+        setState(() {
+          _centerMessage = 'URLのドラッグ＆ドロップは未対応です\nリンク追加ボタンから直接入力してください。';
+        });
+        await Future.delayed(const Duration(seconds: 2));
+        setState(() {
+          _centerMessage = null;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${detail.files.length}件のファイル/フォルダをドロップしました。グループにドラッグして追加できます。')),
+        );
+      }
+    }
+  }
+
+  void _deleteGroup(String groupId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Group'),
+        content: const Text('Are you sure you want to delete this group?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(linkViewModelProvider.notifier).deleteGroup(groupId);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCenterMessage(String message, {IconData? icon, Color? color}) {
+    final overlay = Overlay.of(context);
+    final entry = OverlayEntry(
+      builder: (context) => Positioned.fill(
+        child: IgnorePointer(
+          child: Container(
+            alignment: Alignment.center,
+            color: Colors.black.withOpacity(0.25),
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+                decoration: BoxDecoration(
+                  color: color ?? Colors.black.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 16)],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, color: Colors.white, size: 36),
+                      const SizedBox(width: 16),
+                    ],
+                    Flexible(
+                      child: Text(
+                        message,
+                        style: const TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 2), () => entry.remove());
+  }
+
+  void _exportData(BuildContext context) async {
+    final darkMode = ref.read(darkModeProvider);
+    final fontSize = ref.read(fontSizeProvider);
+    final accentColor = ref.read(accentColorProvider);
+    final data = ref.read(linkViewModelProvider.notifier).exportDataWithSettings(darkMode, fontSize, accentColor);
+    final jsonStr = jsonEncode(data);
+    final now = DateTime.now();
+    final formatted = DateFormat('yyMMddHHmm').format(now);
+    final file = File('linker_f_export_$formatted.json');
+    await file.writeAsString(jsonStr);
+    _showCenterMessage('エクスポートしました: ${file.absolute.path}', icon: Icons.check_circle, color: Colors.green[700]);
+  }
+
+  void _importData(BuildContext context) async {
+    try {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+      
+      if (result != null && result.files.isNotEmpty) {
+        final file = File(result.files.first.path!);
+        final jsonStr = await file.readAsString();
+        final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+        await ref.read(linkViewModelProvider.notifier).importDataWithSettings(
+          data,
+          (bool darkMode, double fontSize, int accentColor) {
+            ref.read(darkModeProvider.notifier).state = darkMode;
+            ref.read(fontSizeProvider.notifier).state = fontSize;
+            ref.read(accentColorProvider.notifier).state = accentColor;
+          },
+        );
+        _showCenterMessage('インポートしました: ${file.path}', icon: Icons.check_circle, color: Colors.blue[700]);
+      }
+      } catch (e) {
+      _showCenterMessage('インポートエラー: $e', icon: Icons.error, color: Colors.red[700]);
+    }
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.folder_open,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No groups yet',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Create your first group to get started',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _checkAndShowTutorial() async {
+    final box = await Hive.openBox('settings');
+    final shown = box.get('tutorial_shown', defaultValue: false);
+    if (!shown) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => TutorialDialog(
+            onFinish: () async {
+              await box.put('tutorial_shown', true);
+              setState(() => _tutorialShown = true);
+            },
+          ),
+        );
+      });
+    } else {
+      setState(() => _tutorialShown = true);
+    }
+  }
+
+  void _showTutorial() {
+    showDialog(
+      context: context,
+      builder: (context) => TutorialDialog(),
+    );
+  }
+
+  void _onMouseMove(PointerEvent event) {
+    final size = MediaQuery.of(context).size;
+    const edgeThreshold = 10.0;
+    final dx = event.position.dx;
+    final dy = event.position.dy;
+    final isLeft = dx <= edgeThreshold;
+    final isRight = dx >= size.width - edgeThreshold;
+    final isTop = dy <= edgeThreshold;
+    final isBottom = dy >= size.height - edgeThreshold;
+    if (isTop) {
+      _showJumpButtons(Offset(size.width / 2, edgeThreshold + 32), edge: 'top');
+    } else if (isBottom) {
+      _showJumpButtons(Offset(size.width / 2, size.height - edgeThreshold - 32), edge: 'bottom');
+    } else if (isLeft) {
+      _showJumpButtons(Offset(edgeThreshold + 32, size.height / 2), edge: 'left');
+    } else if (isRight) {
+      _showJumpButtons(Offset(size.width - edgeThreshold - 32, size.height / 2), edge: 'right');
+    }
+  }
+
+  void _showJumpButtons(Offset position, {String? edge}) {
+    _jumpButtonOverlay?.remove();
+    final isAtTop = _scrollController.offset <= 0;
+    final isAtBottom = _scrollController.offset >= _scrollController.position.maxScrollExtent - 1;
+    List<Widget> jumpButtons = [];
+    
+    // ダブルクリックの場合（edge == null）
+    if (edge == null) {
+      if (!isAtTop) {
+        jumpButtons.add(_jumpButton('前ページ', Icons.arrow_upward, _scrollToPrevPage));
+      }
+      if (!isAtBottom) {
+        jumpButtons.add(_jumpButton('次ページ', Icons.arrow_downward, _scrollToNextPage));
+      }
+      if (isAtTop) {
+        jumpButtons.add(_jumpButton('トップページ', Icons.vertical_align_top, _scrollToTop));
+      }
+      if (isAtBottom) {
+        jumpButtons.add(_jumpButton('最終ページ', Icons.vertical_align_bottom, _scrollToBottom));
+      }
+    } else if (edge == 'top') {
+      if (!isAtTop) {
+        jumpButtons.add(_jumpButton('前ページ', Icons.arrow_upward, _scrollToPrevPage));
+    } else {
+        jumpButtons.add(_jumpButton('トップページ', Icons.vertical_align_top, _scrollToTop));
+      }
+    } else if (edge == 'bottom') {
+      if (!isAtBottom) {
+        jumpButtons.add(_jumpButton('次ページ', Icons.arrow_downward, _scrollToNextPage));
+      } else {
+        jumpButtons.add(_jumpButton('最終ページ', Icons.vertical_align_bottom, _scrollToBottom));
+      }
+    } else if (edge == 'left') {
+      if (!isAtTop) {
+        jumpButtons.add(_jumpButton('前ページ', Icons.arrow_upward, _scrollToPrevPage));
+      } else {
+        jumpButtons.add(_jumpButton('トップページ', Icons.vertical_align_top, _scrollToTop));
+      }
+    } else if (edge == 'right') {
+      if (!isAtBottom) {
+        jumpButtons.add(_jumpButton('次ページ', Icons.arrow_downward, _scrollToNextPage));
+      } else {
+        jumpButtons.add(_jumpButton('最終ページ', Icons.vertical_align_bottom, _scrollToBottom));
+      }
+    }
+    _jumpButtonOverlay = OverlayEntry(
+      builder: (context) => Positioned(
+        left: position.dx - 24,
+        top: position.dy - 24,
+        child: Material(
+          color: Colors.transparent,
+      child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: jumpButtons,
+          ),
+        ),
+      ),
+    );
+    if (_scaffoldBodyContext != null) {
+      final overlay = Overlay.of(_scaffoldBodyContext!, rootOverlay: true);
+      if (overlay != null) {
+        overlay.insert(_jumpButtonOverlay!);
+        Future.delayed(const Duration(seconds: 2), () {
+          if (_jumpButtonOverlay != null) {
+            _jumpButtonOverlay!.remove();
+            _jumpButtonOverlay = null;
+          }
+        });
+      }
+    }
+  }
+
+  Widget _jumpButton(String label, IconData icon, VoidCallback onPressed) {
+    return FloatingActionButton.extended(
+      heroTag: label + icon.toString(),
+      onPressed: () {
+        onPressed();
+        if (_jumpButtonOverlay != null) {
+          _jumpButtonOverlay!.remove();
+          _jumpButtonOverlay = null;
+        }
+      },
+      icon: Icon(icon),
+      label: Text(label),
+    );
+  }
+
+  void _scrollToPrevPage() {
+    final newOffset = (_scrollController.offset - _scrollController.position.viewportDimension).clamp(0.0, _scrollController.position.maxScrollExtent);
+    _scrollController.animateTo(newOffset, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    if (_jumpButtonOverlay != null) {
+      _jumpButtonOverlay!.remove();
+      _jumpButtonOverlay = null;
+    }
+  }
+  void _scrollToNextPage() {
+    final newOffset = (_scrollController.offset + _scrollController.position.viewportDimension).clamp(0.0, _scrollController.position.maxScrollExtent);
+    _scrollController.animateTo(newOffset, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    if (_jumpButtonOverlay != null) {
+      _jumpButtonOverlay!.remove();
+      _jumpButtonOverlay = null;
+    }
+  }
+  void _scrollToTop() {
+    _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    if (_jumpButtonOverlay != null) {
+      _jumpButtonOverlay!.remove();
+      _jumpButtonOverlay = null;
+    }
+  }
+  void _scrollToBottom() {
+    _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    if (_jumpButtonOverlay != null) {
+      _jumpButtonOverlay!.remove();
+      _jumpButtonOverlay = null;
+    }
+  }
+}
+
+// 追加: 共通カラーパレットWidget
+class ColorPaletteSelector extends StatelessWidget {
+  final int selectedColor;
+  final void Function(int) onColorSelected;
+  static const List<Color> palette = [
+    Colors.black, Colors.red, Colors.blue, Colors.yellow, Colors.green
+  ];
+  const ColorPaletteSelector({
+    super.key,
+    required this.selectedColor,
+    required this.onColorSelected,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+        children: [
+        const Text('色: '),
+        ...palette.map((color) => GestureDetector(
+          onTap: () => onColorSelected(color.value),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: selectedColor == color.value ? Colors.black : Colors.transparent,
+                width: 2,
+              ),
+            ),
+          ),
+        )),
+      ],
+    );
+  }
+}
+
+// 追加: お気に入りリンク用タイルWidget
+class FavoriteLinkTile extends StatefulWidget {
+  final LinkItem link;
+  final Group group;
+  final VoidCallback onUnfavorite;
+  final Future<void> Function() onLaunch;
+  final bool isDark;
+  final void Function(String, {IconData? icon, Color? color}) onShowMessage;
+  const FavoriteLinkTile({
+    super.key,
+    required this.link,
+    required this.group,
+    required this.onUnfavorite,
+    required this.onLaunch,
+    required this.isDark,
+    required this.onShowMessage,
+  });
+  @override
+  State<FavoriteLinkTile> createState() => _FavoriteLinkTileState();
+}
+class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
+  bool isHovered = false;
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        decoration: BoxDecoration(
+          color: widget.isDark ? const Color(0xFF23272F) : Colors.white,
+          border: Border.all(
+            color: isHovered ? Colors.amber : (widget.isDark ? Colors.grey[700]! : Colors.grey[300]!),
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: (isHovered ? Colors.amber : Colors.black12).withOpacity(0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: ListTile(
+          dense: true,
+          minVerticalPadding: 4,
+          contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
+          leading: widget.link.type == LinkType.url
+              ? UrlPreviewWidget(url: widget.link.path, isDark: widget.isDark)
+              : widget.link.type == LinkType.file
+                  ? FilePreviewWidget(path: widget.link.path, isDark: widget.isDark)
+                  : const Icon(Icons.star, color: Colors.amber, size: 20),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.link.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: widget.isDark ? Colors.white : Colors.black,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isHovered)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    widget.link.path,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: widget.isDark ? Colors.white70 : Colors.black87,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'グループ: ${widget.group.title}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: widget.isDark ? Colors.white70 : Colors.grey[700],
+                ),
+              ),
+              if (widget.link.type == LinkType.file)
+                IconButton(
+                  icon: const Icon(Icons.folder_open),
+                  tooltip: '保管場所を開く',
+                  onPressed: () async {
+                    final file = File(widget.link.path);
+                    final parent = file.parent;
+                    try {
+                      if (!await file.exists()) {
+                        widget.onShowMessage('ファイルが存在しません', icon: Icons.error, color: Colors.red[700]);
+                        return;
+                      }
+                      if (!await parent.exists()) {
+                        widget.onShowMessage('フォルダが存在しません', icon: Icons.error, color: Colors.red[700]);
+                        return;
+                      }
+                      await Process.start('explorer', [parent.path]);
+                    } catch (e) {
+                      widget.onShowMessage('保管場所を開けません: $e', icon: Icons.error, color: Colors.red[700]);
+                    }
+                  },
+                ),
+              IconButton(
+                icon: const Icon(Icons.star_outline),
+                tooltip: 'お気に入り解除',
+                onPressed: widget.onUnfavorite,
+              ),
+            ],
+          ),
+          onTap: () {
+            Future<void>(() async {
+              try {
+                await widget.onLaunch();
+              } catch (e) {
+                widget.onShowMessage('開けません: $e', icon: Icons.error, color: Colors.red[700]);
+              }
+            });
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// 追加: URLプレビューWidget
+class UrlPreviewWidget extends StatefulWidget {
+  final String url;
+  final bool isDark;
+  const UrlPreviewWidget({super.key, required this.url, required this.isDark});
+  @override
+  State<UrlPreviewWidget> createState() => _UrlPreviewWidgetState();
+}
+class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
+  String? _title;
+  String? _faviconUrl;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPreview();
+  }
+
+  Future<void> _fetchPreview() async {
+    final url = widget.url;
+    // favicon取得（Googleのサービス利用）
+    final favicon = 'https://www.google.com/s2/favicons?sz=32&domain_url=$url';
+    String? title;
+    try {
+      final uri = Uri.parse(url);
+      final response = await Uri.base.resolve(url).isAbsolute
+        ? await Uri.parse(url).resolve('').toString() == url ? null : null
+        : null;
+      // タイトル取得は簡易的に省略（本格実装はhttpパッケージでHTML取得＆<title>抽出）
+      // ここではURLのホスト名をタイトル代わりに表示
+      title = uri.host.isNotEmpty ? uri.host : url;
+    } catch (_) {
+      title = url;
+    }
+    setState(() {
+      _faviconUrl = favicon;
+      _title = title;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return SizedBox(width: 32, height: 32, child: CircularProgressIndicator(strokeWidth: 2));
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_faviconUrl != null)
+          Image.network(_faviconUrl!, width: 20, height: 20, errorBuilder: (_, __, ___) => Icon(Icons.link, size: 20)),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            _title ?? widget.url,
+            style: TextStyle(fontSize: 13, color: widget.isDark ? Colors.white : Colors.black87),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// 追加: ファイルプレビューWidget
+class FilePreviewWidget extends StatefulWidget {
+  final String path;
+  final bool isDark;
+  const FilePreviewWidget({super.key, required this.path, required this.isDark});
+  @override
+  State<FilePreviewWidget> createState() => _FilePreviewWidgetState();
+}
+class _FilePreviewWidgetState extends State<FilePreviewWidget> {
+  String? _textPreview;
+  List<String>? _textFull;
+  bool _isImage = false;
+  bool _isPdf = false;
+  bool _loading = true;
+  OverlayEntry? _previewOverlay;
+
+  @override
+  void dispose() {
+    _removePreviewOverlay();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _detectAndLoad();
+  }
+
+  Future<void> _detectAndLoad() async {
+    final ext = widget.path.toLowerCase();
+    if (ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.gif') || ext.endsWith('.bmp') || ext.endsWith('.webp')) {
+      setState(() {
+        _isImage = true;
+        _loading = false;
+      });
+      return;
+    }
+    if (ext.endsWith('.pdf')) {
+      setState(() {
+        _isPdf = true;
+        _loading = false;
+      });
+      return;
+    }
+    // テキストファイル判定
+    if (ext.endsWith('.txt') || ext.endsWith('.md') || ext.endsWith('.csv') || ext.endsWith('.log')) {
+      try {
+        final file = File(widget.path);
+        final lines = await file.readAsLines();
+        setState(() {
+          _textPreview = lines.take(3).join('\n');
+          _textFull = lines;
+          _loading = false;
+        });
+      } catch (e, st) {
+        print('テキストファイル読み込みエラー: $e\n$st');
+        setState(() {
+          _textPreview = null;
+          _textFull = null;
+          _loading = false;
+        });
+      }
+      return;
+    }
+    // その他
+    setState(() {
+      _loading = false;
+    });
+  }
+
+  void _showPreviewOverlay(Widget child, {double width = 480, double height = 400}) {
+    _removePreviewOverlay();
+    final overlay = Overlay.of(context);
+    _previewOverlay = OverlayEntry(
+      builder: (context) => Positioned.fill(
+        child: IgnorePointer(
+          child: Container(
+            alignment: Alignment.center,
+            color: Colors.black.withOpacity(0.25),
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: width,
+                height: height,
+                padding: const EdgeInsets.all(16),
+                child: child,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(_previewOverlay!);
+  }
+
+  void _removePreviewOverlay() {
+    _previewOverlay?.remove();
+    _previewOverlay = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return SizedBox(width: 32, height: 32, child: CircularProgressIndicator(strokeWidth: 2));
+    }
+    if (_isImage) {
+      return MouseRegion(
+        onEnter: (_) => _showPreviewOverlay(
+          InteractiveViewer(child: Image.file(File(widget.path))),
+          width: 480, height: 400,
+        ),
+        onExit: (_) => _removePreviewOverlay(),
+        child: Image.file(File(widget.path), width: 32, height: 32, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 24)),
+      );
+    }
+    if (_isPdf) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
+          IconButton(
+            icon: Icon(Icons.open_in_new, size: 20, color: Colors.blue),
+            tooltip: '外部アプリで開く',
+            onPressed: () async {
+              try {
+                await Process.start('cmd', ['/c', 'start', '', widget.path]);
+              } catch (e) {
+                print('PDF外部起動エラー: $e');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('外部アプリで開けませんでした')),
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      );
+    }
+    if (_textPreview != null) {
+      final isEmpty = (_textFull == null || _textFull!.isEmpty || (_textFull!.length == 1 && _textFull![0].trim().isEmpty));
+      return MouseRegion(
+        onEnter: (_) => _showPreviewOverlay(
+          Container(
+            color: Colors.black.withOpacity(0.95),
+            child: isEmpty
+              ? const Center(child: Text('内容がありません', style: TextStyle(color: Colors.white, fontSize: 18)))
+              : SingleChildScrollView(
+                  child: SelectableText(
+                    _textFull?.join('\n') ?? '',
+                    style: const TextStyle(fontSize: 15, color: Colors.white, fontFamily: 'monospace'),
+                  ),
+                ),
+          ),
+          width: 520, height: 420,
+        ),
+        onExit: (_) => _removePreviewOverlay(),
+        child: Tooltip(
+          message: isEmpty ? '内容がありません' : _textPreview!,
+          child: Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 24),
+        ),
+      );
+    }
+    // Office系ファイルのアイコン表示（FontAwesome使用）
+    final ext = widget.path.toLowerCase();
+    if (ext.endsWith('.xlsx') || ext.endsWith('.xls')) {
+      return FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green[700], size: 24); // Excel
+    }
+    if (ext.endsWith('.docx') || ext.endsWith('.doc')) {
+      return FaIcon(FontAwesomeIcons.fileWord, color: Colors.blue[700], size: 24); // Word
+    }
+    if (ext.endsWith('.pptx') || ext.endsWith('.ppt')) {
+      return FaIcon(FontAwesomeIcons.filePowerpoint, color: Colors.orange[700], size: 24); // PowerPoint
+    }
+    // その他
+    return Icon(Icons.insert_drive_file, color: widget.isDark ? Colors.white70 : Colors.grey, size: 24);
+  }
+}
+
+// --- カスタムFABロケーション ---
+class _BottomRightWithMarginFabLocation extends FloatingActionButtonLocation {
+  const _BottomRightWithMarginFabLocation();
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
+    const double bottomMargin = 64; // タスクバー分
+    final double fabX = scaffoldGeometry.scaffoldSize.width - scaffoldGeometry.floatingActionButtonSize.width - 16;
+    final double fabY = scaffoldGeometry.scaffoldSize.height - scaffoldGeometry.floatingActionButtonSize.height - bottomMargin;
+    return Offset(fabX, fabY);
+  }
+} 

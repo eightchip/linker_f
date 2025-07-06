@@ -1,0 +1,11 @@
+build/
+.dart_tool/
+.idea/
+.vscode/
+*.iml
+flutter/ephemeral/
+test/
+windows/runner/Debug/
+windows/runner/Release/
+x64/
+x86/
