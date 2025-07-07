@@ -37,6 +37,9 @@ class LinkItem extends HiveObject {
   @HiveField(6)
   bool isFavorite;
 
+  @HiveField(7)
+  String? memo;
+
   LinkItem({
     required this.id,
     required this.label,
@@ -45,6 +48,7 @@ class LinkItem extends HiveObject {
     required this.createdAt,
     this.lastUsed,
     this.isFavorite = false,
+    this.memo,
   });
 
   Map<String, dynamic> toJson() {
@@ -56,6 +60,7 @@ class LinkItem extends HiveObject {
       'createdAt': createdAt.toIso8601String(),
       'lastUsed': lastUsed?.toIso8601String(),
       'isFavorite': isFavorite,
+      'memo': memo,
     };
   }
 
@@ -68,6 +73,7 @@ class LinkItem extends HiveObject {
       createdAt: DateTime.parse(json['createdAt']),
       lastUsed: json['lastUsed'] != null ? DateTime.parse(json['lastUsed']) : null,
       isFavorite: json['isFavorite'] ?? false,
+      memo: json['memo'],
     );
   }
 
@@ -79,6 +85,7 @@ class LinkItem extends HiveObject {
     DateTime? createdAt,
     DateTime? lastUsed,
     bool? isFavorite,
+    String? memo,
   }) {
     return LinkItem(
       id: id ?? this.id,
@@ -88,6 +95,7 @@ class LinkItem extends HiveObject {
       createdAt: createdAt ?? this.createdAt,
       lastUsed: lastUsed ?? this.lastUsed,
       isFavorite: isFavorite ?? this.isFavorite,
+      memo: memo ?? this.memo,
     );
   }
 }

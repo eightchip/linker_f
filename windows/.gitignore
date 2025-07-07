@@ -3,6 +3,7 @@ build/
 .idea/
 .vscode/
 *.iml
+flutter/
 flutter/ephemeral/
 test/
 windows/runner/Debug/

@@ -30,7 +30,7 @@ class _TutorialDialogState extends State<TutorialDialog> {
     ),
     _TutorialStep(
       title: 'リンクの起動・編集・削除',
-      description: 'リンクリックで起動、右側のアイコンでお気に入り登録・編集・削除・グループ内の並び替えができます。',
+      description: 'リンクリックで起動、ホバー時に表示されるアイコンでメモ・お気に入り登録・編集・削除・グループ内の並び替えができます。',
       imageAsset: 'assets/tutorial/link_actions.png',
     ),
     _TutorialStep(

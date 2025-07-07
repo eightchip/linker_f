@@ -225,27 +225,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     0xFF22C55E, // 緑
                     0xFFF59E42, // オレンジ
                     0xFF8B5CF6, // 紫
+                    0xFFEC4899, // ピンク
+                    0xFFEAB308, // 黄
+                    0xFF06B6D4, // 水色
+                    0xFF92400E, // 茶色
+                    0xFF64748B, // グレー
+                    0xFF84CC16, // ライム
+                    0xFF6366F1, // インディゴ
+                    0xFF14B8A6, // ティール
+                    0xFFFB923C, // ディープオレンジ
+                    0xFF7C3AED, // ディープパープル
+                    0xFFFBBF24, // アンバー
+                    0xFF0EA5E9, // シアン
+                    0xFFB45309, // ブラウン
+                    0xFFB91C1C, // レッドブラウン
+                    0xFF166534, // ダークグリーン
                   ];
                   final colorNames = [
-                    'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル'
+                    'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'イエロー', 'シアン', 'ブラウン', 'グレー', 'ライム', 'インディゴ', 'ティール', 'ディープオレンジ', 'ディープパープル', 'アンバー', 'シアン', 'ブラウン', 'レッドブラウン', 'ダークグリーン'
                   ];
                   final selected = await showDialog<int>(
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text('アクセントカラーを選択'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (int i = 0; i < colorOptions.length; i++)
-                            ListTile(
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: colorOptions.map((color) {
+                            return ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: Color(colorOptions[i]),
-                                child: currentColor == colorOptions[i] ? const Icon(Icons.check, color: Colors.white) : null,
+                                backgroundColor: Color(color),
+                                child: currentColor == color ? const Icon(Icons.check, color: Colors.white) : null,
                               ),
-                              title: Text(colorNames[i]),
-                              onTap: () => Navigator.pop(context, colorOptions[i]),
-                            ),
-                        ],
+                              title: Text(colorNames[colorOptions.indexOf(color)]),
+                              onTap: () => Navigator.pop(context, color),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
                   );
@@ -349,22 +365,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (width > 1400) {
           crossAxisCount = 4;
           gridSpacing = 40;
-          cardAspectRatio = 1.3;
+          cardAspectRatio = 1.5;
           gridPadding = const EdgeInsets.symmetric(horizontal: 64, vertical: 24);
         } else if (width > 1100) {
           crossAxisCount = 3;
           gridSpacing = 32;
-          cardAspectRatio = 1.2;
+          cardAspectRatio = 1.5;
           gridPadding = const EdgeInsets.symmetric(horizontal: 40, vertical: 20);
         } else if (width > 700) {
           crossAxisCount = 2;
           gridSpacing = 24;
-          cardAspectRatio = 1.1;
+          cardAspectRatio = 1.5;
           gridPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 16);
         } else {
           crossAxisCount = 1;
           gridSpacing = 12;
-          cardAspectRatio = 1.0;
+          cardAspectRatio = 1.5;
           gridPadding = const EdgeInsets.symmetric(horizontal: 4, vertical: 8);
         }
     return Stack(
@@ -416,8 +432,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       feedback: Material(
                         elevation: 16,
                         child: SizedBox(
-                          width: 370,
-                          height: 240,
+                          width: 296,
+                          height: 192,
                           child: GroupCard(
                             group: group,
                             onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
@@ -441,20 +457,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   builder: (context) => StatefulBuilder(
                                     builder: (context, setState) => AlertDialog(
                                       title: const Text('グループ名を編集'),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          TextField(
-                                            controller: controller,
-                                            autofocus: true,
-                                            decoration: const InputDecoration(labelText: '新しいグループ名'),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          ColorPaletteSelector(
-                                            selectedColor: selectedColor,
-                                            onColorSelected: (color) => setState(() => selectedColor = color),
-                                          ),
-                                        ],
+                                      content: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextField(
+                                              controller: controller,
+                                              autofocus: true,
+                                              decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Row(
+                                              children: [
+                                                const Text('色: '),
+                                                Expanded(child: ColorPaletteSelector(
+                                                  selectedColor: selectedColor,
+                                                  onColorSelected: (color) => setState(() => selectedColor = color),
+                                                )),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                       actions: [
                                         TextButton(
@@ -510,20 +533,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 builder: (context) => StatefulBuilder(
                                   builder: (context, setState) => AlertDialog(
                                     title: const Text('グループ名を編集'),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        TextField(
-                                          controller: controller,
-                                          autofocus: true,
-                                          decoration: const InputDecoration(labelText: '新しいグループ名'),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        ColorPaletteSelector(
-                                          selectedColor: selectedColor,
-                                          onColorSelected: (color) => setState(() => selectedColor = color),
-                                        ),
-                                      ],
+                                    content: SingleChildScrollView(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(
+                                            controller: controller,
+                                            autofocus: true,
+                                            decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Row(
+                                            children: [
+                                              const Text('色: '),
+                                              Expanded(child: ColorPaletteSelector(
+                                                selectedColor: selectedColor,
+                                                onColorSelected: (color) => setState(() => selectedColor = color),
+                                              )),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                     actions: [
                                       TextButton(
@@ -589,20 +619,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   builder: (context) => StatefulBuilder(
                                     builder: (context, setState) => AlertDialog(
                                       title: const Text('グループ名を編集'),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          TextField(
-                                            controller: controller,
-                                            autofocus: true,
-                                            decoration: const InputDecoration(labelText: '新しいグループ名'),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          ColorPaletteSelector(
-                                            selectedColor: selectedColor,
-                                            onColorSelected: (color) => setState(() => selectedColor = color),
-                                          ),
-                                        ],
+                                      content: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            TextField(
+                                              controller: controller,
+                                              autofocus: true,
+                                              decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Row(
+                                              children: [
+                                                const Text('色: '),
+                                                Expanded(child: ColorPaletteSelector(
+                                                  selectedColor: selectedColor,
+                                                  onColorSelected: (color) => setState(() => selectedColor = color),
+                                                )),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                       actions: [
                                         TextButton(
@@ -658,6 +695,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onLaunch: () => ref.read(linkViewModelProvider.notifier).launchLink(entry.value),
           isDark: isDark,
           onShowMessage: _showCenterMessage,
+          ref: ref,
         );
       },
     );
@@ -1134,7 +1172,11 @@ class ColorPaletteSelector extends StatelessWidget {
   final int selectedColor;
   final void Function(int) onColorSelected;
   static const List<Color> palette = [
-    Colors.black, Colors.red, Colors.blue, Colors.yellow, Colors.green
+    Color(0xFF3B82F6), Color(0xFFEF4444), Color(0xFF22C55E), Color(0xFFF59E42),
+    Color(0xFF8B5CF6), Color(0xFFEC4899), Color(0xFFEAB308), Color(0xFF06B6D4),
+    Color(0xFF92400E), Color(0xFF64748B), Color(0xFF84CC16), Color(0xFF6366F1),
+    Color(0xFF14B8A6), Color(0xFFFB923C), Color(0xFF7C3AED), Color(0xFFFBBF24),
+    Color(0xFF0EA5E9), Color(0xFFB45309), Color(0xFFB91C1C), Color(0xFF166534),
   ];
   const ColorPaletteSelector({
     super.key,
@@ -1143,26 +1185,32 @@ class ColorPaletteSelector extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
-    return Row(
-        children: [
-        const Text('色: '),
-        ...palette.map((color) => GestureDetector(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: palette.map((color) {
+        final displayColor = isDark ? color.withOpacity(0.85) : color;
+        return GestureDetector(
           onTap: () => onColorSelected(color.value),
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 2),
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: color,
+              color: displayColor,
               shape: BoxShape.circle,
               border: Border.all(
                 color: selectedColor == color.value ? Colors.black : Colors.transparent,
                 width: 2,
               ),
+              boxShadow: isDark
+                ? [BoxShadow(color: Colors.white.withOpacity(0.15), blurRadius: 4)]
+                : [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 2)],
             ),
           ),
-        )),
-      ],
+        );
+      }).toList(),
     );
   }
 }
@@ -1175,6 +1223,7 @@ class FavoriteLinkTile extends StatefulWidget {
   final Future<void> Function() onLaunch;
   final bool isDark;
   final void Function(String, {IconData? icon, Color? color}) onShowMessage;
+  final WidgetRef ref;
   const FavoriteLinkTile({
     super.key,
     required this.link,
@@ -1183,6 +1232,7 @@ class FavoriteLinkTile extends StatefulWidget {
     required this.onLaunch,
     required this.isDark,
     required this.onShowMessage,
+    required this.ref,
   });
   @override
   State<FavoriteLinkTile> createState() => _FavoriteLinkTileState();
@@ -1251,39 +1301,56 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'グループ: ${widget.group.title}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: widget.isDark ? Colors.white70 : Colors.grey[700],
-                ),
-              ),
-              if (widget.link.type == LinkType.file)
-                IconButton(
-                  icon: const Icon(Icons.folder_open),
-                  tooltip: '保管場所を開く',
+              Tooltip(
+                message: widget.link.memo?.isNotEmpty == true ? widget.link.memo! : 'メモなし',
+                child: IconButton(
+                  icon: const Icon(Icons.note_alt_outlined),
+                  tooltip: '',
                   onPressed: () async {
-                    final file = File(widget.link.path);
-                    final parent = file.parent;
-                    try {
-                      if (!await file.exists()) {
-                        widget.onShowMessage('ファイルが存在しません', icon: Icons.error, color: Colors.red[700]);
-                        return;
-                      }
-                      if (!await parent.exists()) {
-                        widget.onShowMessage('フォルダが存在しません', icon: Icons.error, color: Colors.red[700]);
-                        return;
-                      }
-                      await Process.start('explorer', [parent.path]);
-                    } catch (e) {
-                      widget.onShowMessage('保管場所を開けません: $e', icon: Icons.error, color: Colors.red[700]);
+                    final controller = TextEditingController(text: widget.link.memo ?? '');
+                    final result = await showDialog<String>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('メモ編集'),
+                        content: TextField(
+                          controller: controller,
+                          maxLines: 5,
+                          decoration: const InputDecoration(hintText: 'メモを入力...'),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('キャンセル'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, controller.text),
+                            child: const Text('保存'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (result != null) {
+                      final updated = widget.link.copyWith(memo: result);
+                      widget.ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
+                        groupId: widget.group.id,
+                        updated: updated,
+                      );
                     }
                   },
                 ),
+              ),
               IconButton(
-                icon: const Icon(Icons.star_outline),
-                tooltip: 'お気に入り解除',
-                onPressed: widget.onUnfavorite,
+                icon: Icon(
+                  widget.link.isFavorite ? Icons.star : Icons.star_border,
+                  color: widget.link.isFavorite ? Colors.amber : Colors.grey,
+                ),
+                tooltip: widget.link.isFavorite ? 'お気に入り解除' : 'お気に入り',
+                onPressed: () => widget.onUnfavorite(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                tooltip: 'Delete Link',
+                onPressed: () => widget.onShowMessage('削除機能はここで実装', icon: Icons.delete),
               ),
             ],
           ),
@@ -1353,7 +1420,11 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (_faviconUrl != null)
-          Image.network(_faviconUrl!, width: 20, height: 20, errorBuilder: (_, __, ___) => Icon(Icons.link, size: 20)),
+          Image.network(
+            _faviconUrl!,
+            width: 20,
+            height: 20,
+            errorBuilder: (_, __, ___) => _getFallbackIconForUrl(widget.url)),
         const SizedBox(width: 4),
         Flexible(
           child: Text(
@@ -1364,6 +1435,17 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
         ),
       ],
     );
+  }
+
+  Widget _getFallbackIconForUrl(String url) {
+    if (url.contains('sharepoint.com')) {
+      return FaIcon(FontAwesomeIcons.microsoft, color: Colors.blue, size: 20);
+    }
+    if (url.contains('resonabank.co.jp')) {
+      return Icon(Icons.account_balance, color: Colors.green, size: 20);
+    }
+    // その他はデフォルト
+    return Icon(Icons.link, size: 20);
   }
 }
 
@@ -1540,6 +1622,9 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
     }
     if (ext.endsWith('.pptx') || ext.endsWith('.ppt')) {
       return FaIcon(FontAwesomeIcons.filePowerpoint, color: Colors.orange[700], size: 24); // PowerPoint
+    }
+    if (ext.endsWith('.msg') || ext.endsWith('.eml')) {
+      return FaIcon(FontAwesomeIcons.envelope, color: Colors.blue[800], size: 24);
     }
     // その他
     return Icon(Icons.insert_drive_file, color: widget.isDark ? Colors.white70 : Colors.grey, size: 24);

@@ -57,11 +57,12 @@ class LinkRepository {
   }
 
   // Export/Import
-  Map<String, dynamic> exportData() {
+  Map<String, dynamic> exportData({Map<String, dynamic>? settings}) {
     return {
       'groups': _groupsBox.values.map((g) => g.toJson()).toList(),
       'links': _linksBox.values.map((l) => l.toJson()).toList(),
       'groupsOrder': getGroupsOrder(),
+      if (settings != null) 'settings': settings,
     };
   }
 
@@ -82,6 +83,7 @@ class LinkRepository {
     if (data['groupsOrder'] is List) {
       await saveGroupsOrder(List<String>.from(data['groupsOrder']));
     }
+    // settingsフィールドは今後の拡張用にそのまま返す（ViewModelで反映）
   }
 
   // 並び順の保存

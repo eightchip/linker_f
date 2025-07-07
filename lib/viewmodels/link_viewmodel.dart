@@ -341,17 +341,17 @@ class LinkViewModel extends StateNotifier<LinkState> {
   }
 
   // Export/Import
-  Map<String, dynamic> exportDataWithSettings(bool darkMode, double fontSize, int accentColor) {
-    final data = _repository.exportData();
-    data['settings'] = {
+  Map<String, dynamic> exportDataWithSettings(bool darkMode, double fontSize, int accentColor, {Map<String, dynamic>? customSettings}) {
+    final settings = {
       'darkMode': darkMode,
       'fontSize': fontSize,
       'accentColor': accentColor,
+      if (customSettings != null) ...customSettings,
     };
-    return data;
+    return _repository.exportData(settings: settings);
   }
 
-  Future<void> importDataWithSettings(Map<String, dynamic> data, void Function(bool, double, int) onSettings) async {
+  Future<Map<String, dynamic>?> importDataWithSettings(Map<String, dynamic> data, void Function(bool, double, int) onSettings) async {
     await _repository.importData(data);
     await _loadGroups();
     if (data['settings'] is Map) {
@@ -360,7 +360,9 @@ class LinkViewModel extends StateNotifier<LinkState> {
       final fontSize = settings['fontSize'] is num ? (settings['fontSize'] as num).toDouble() : 1.0;
       final accentColor = settings['accentColor'] is int ? settings['accentColor'] as int : 0xFF3B82F6;
       onSettings(darkMode, fontSize, accentColor);
+      return Map<String, dynamic>.from(settings);
     }
+    return null;
   }
 
   @override

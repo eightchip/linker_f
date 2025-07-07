@@ -31,12 +31,13 @@ void main() async {
   // Desktop window configuration
   await windowManager.ensureInitialized();
 
-  // getPrimaryDisplayで作業領域を取得
-  final display = await ScreenRetriever.instance.getPrimaryDisplay();
+  // get all displays
+  final displays = await ScreenRetriever.instance.getAllDisplays();
+  final display = displays.length > 1 ? displays[1] : displays[0];
   final size = display.size;
   final width = (size.width / 2).round();
   final height = size.height.round();
-  final x = size.width - width;
+  final x = displays.length > 1 ? displays[0].size.width + size.width - width : size.width - width;
   final y = 0;
 
   WindowOptions windowOptions = WindowOptions(
@@ -45,12 +46,14 @@ void main() async {
     backgroundColor: const Color(0xFFF4F5F7),
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.normal,
+    title: 'Link Navigator D & D',
   );
 
   windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
     await windowManager.setPosition(Offset(x.toDouble(), y.toDouble()));
+    await windowManager.setTitle('Link Navigator D & D');
   });
 
   runApp(const ProviderScope(child: LinkLauncherApp()));

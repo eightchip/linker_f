@@ -55,59 +55,61 @@ class _GroupCardState extends State<GroupCard> {
 
   @override
   Widget build(BuildContext context) {
-    const cardHeight = 240.0;
-    final maxLinks = (cardHeight / (13.0 + 12)).floor();
-    final items = widget.group.items ?? [];
-    final linksToShow = items.take(maxLinks).toList();
-    List<String> _droppedFiles = [];
-    final width = MediaQuery.of(context).size.width;
-    final scale = (width / 1200.0).clamp(1.0, 1.15);
-    final isGroupFavorite = widget.group.isFavorite;
-    final borderColor = widget.group.color != null ? Color(widget.group.color!) : Colors.grey.shade300;
-    final borderWidth = 3.0;
-    final hoverBorderColor = widget.group.color != null ? Color(widget.group.color!).withOpacity(0.8) : Colors.blueAccent;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
-    
-    print('GroupCard build: ${widget.group.title}, isFavorite: $isGroupFavorite, cardColor: $borderColor');
-    
-    return Opacity(
-      opacity: widget.isDragging ? 0.85 : 1.0,
-      child: _HoverAnimatedCard(
-        borderColor: borderColor,
-        hoverBorderColor: hoverBorderColor,
-        borderWidth: borderWidth,
-        child: DropTarget(
-          onDragEntered: (detail) => setState(() => _isDropTarget = true),
-          onDragExited: (detail) => setState(() => _isDropTarget = false),
-          onDragDone: (detail) {
-            setState(() => _isDropTarget = false);
-            _handleDrop(context, detail);
-          },
-          child: Card(
-            elevation: widget.isDragging || _isDropTarget ? 24 : 6,
-            color: Theme.of(context).cardColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: _isDropTarget ? Colors.amber : Colors.transparent, width: 0),
+    final isDropOrHover = _isDropTarget || widget.isDragging;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOutCubic,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border.all(
+          color: isDropOrHover ? Colors.amber : widget.group.color != null ? Color(widget.group.color!) : Colors.grey.shade300,
+          width: isDropOrHover ? 8 : 4,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          if (isDropOrHover)
+            BoxShadow(
+              color: (widget.group.color != null ? Color(widget.group.color!) : Colors.amber).withOpacity(0.5),
+              blurRadius: 32,
+              spreadRadius: 8,
             ),
-            child: _GroupCardContent(
-              group: widget.group,
-              isDragging: widget.isDragging,
-              onToggleCollapse: widget.onToggleCollapse,
-              onDeleteGroup: widget.onDeleteGroup,
-              onAddLink: widget.onAddLink,
-              onDeleteLink: widget.onDeleteLink,
-              onLaunchLink: widget.onLaunchLink,
-              onDropAddLink: widget.onDropAddLink,
-              onEditLink: widget.onEditLink,
-              onReorderLinks: widget.onReorderLinks,
-              onMove: widget.onMove,
-              onEditGroupTitle: widget.onEditGroupTitle,
-              onFavoriteToggle: widget.onFavoriteToggle,
-              onLinkFavoriteToggle: widget.onLinkFavoriteToggle,
-              onMoveLinkToGroup: widget.onMoveLinkToGroup,
-            ),
+          BoxShadow(
+            color: Colors.black.withOpacity(isDropOrHover ? 0.18 : 0.08),
+            blurRadius: isDropOrHover ? 24 : 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: DropTarget(
+        onDragEntered: (detail) => setState(() => _isDropTarget = true),
+        onDragExited: (detail) => setState(() => _isDropTarget = false),
+        onDragDone: (detail) {
+          setState(() => _isDropTarget = false);
+          _handleDrop(context, detail);
+        },
+        child: Card(
+          elevation: isDropOrHover ? 24 : 6,
+          color: Theme.of(context).cardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.transparent, width: 0),
+          ),
+          child: _GroupCardContent(
+            group: widget.group,
+            isDragging: widget.isDragging,
+            onToggleCollapse: widget.onToggleCollapse,
+            onDeleteGroup: widget.onDeleteGroup,
+            onAddLink: widget.onAddLink,
+            onDeleteLink: widget.onDeleteLink,
+            onLaunchLink: widget.onLaunchLink,
+            onDropAddLink: widget.onDropAddLink,
+            onEditLink: widget.onEditLink,
+            onReorderLinks: widget.onReorderLinks,
+            onMove: widget.onMove,
+            onEditGroupTitle: widget.onEditGroupTitle,
+            onFavoriteToggle: widget.onFavoriteToggle,
+            onLinkFavoriteToggle: widget.onLinkFavoriteToggle,
+            onMoveLinkToGroup: widget.onMoveLinkToGroup,
           ),
         ),
       ),
@@ -539,6 +541,42 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Tooltip(
+            message: item.memo?.isNotEmpty == true ? item.memo! : 'メモなし',
+            child: IconButton(
+              icon: const Icon(Icons.note_alt_outlined),
+              tooltip: '',
+              onPressed: () async {
+                final controller = TextEditingController(text: item.memo ?? '');
+                final result = await showDialog<String>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('メモ編集'),
+                    content: TextField(
+                      controller: controller,
+                      maxLines: 5,
+                      decoration: const InputDecoration(hintText: 'メモを入力...'),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('キャンセル'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, controller.text),
+                        child: const Text('保存'),
+                      ),
+                    ],
+                  ),
+                );
+                if (result != null) {
+                  final updated = item.copyWith(memo: result);
+                  widget.onEditLink(updated);
+                  setState(() {});
+                }
+              },
+            ),
+          ),
           IconButton(
             icon: Icon(
               isLinkFavorite ? Icons.star : Icons.star_border,
