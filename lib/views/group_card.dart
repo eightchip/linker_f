@@ -56,25 +56,27 @@ class _GroupCardState extends State<GroupCard> {
   @override
   Widget build(BuildContext context) {
     final isDropOrHover = _isDropTarget || widget.isDragging;
+    final borderColor = widget.group.color != null ? Color(widget.group.color!) : Colors.blue;
+    print('DEBUG: GroupCard for "${widget.group.title}" id=${widget.group.id} color=${widget.group.color} borderColor=$borderColor');
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOutCubic,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         border: Border.all(
-          color: isDropOrHover ? Colors.amber : widget.group.color != null ? Color(widget.group.color!) : Colors.grey.shade300,
+          color: isDropOrHover ? borderColor : borderColor.withOpacity(0.7),
           width: isDropOrHover ? 8 : 4,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           if (isDropOrHover)
             BoxShadow(
-              color: (widget.group.color != null ? Color(widget.group.color!) : Colors.amber).withOpacity(0.5),
+              color: borderColor.withOpacity(0.5),
               blurRadius: 32,
               spreadRadius: 8,
             ),
           BoxShadow(
-            color: Colors.black.withOpacity(isDropOrHover ? 0.18 : 0.08),
+            color: borderColor.withOpacity(isDropOrHover ? 0.18 : 0.08),
             blurRadius: isDropOrHover ? 24 : 8,
             offset: const Offset(0, 4),
           ),

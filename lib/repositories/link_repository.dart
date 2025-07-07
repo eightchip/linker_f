@@ -72,7 +72,10 @@ class LinkRepository {
     
     for (final groupData in data['groups'] ?? []) {
       final group = Group.fromJson(groupData);
-      await _groupsBox.put(group.id, group);
+      final fixedGroup = group.color == null
+        ? group.copyWith(color: 0xFF3B82F6) // デフォルト青
+        : group;
+      await _groupsBox.put(fixedGroup.id, fixedGroup);
     }
     
     for (final linkData in data['links'] ?? []) {

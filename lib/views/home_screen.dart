@@ -1241,52 +1241,59 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
   bool isHovered = false;
   @override
   Widget build(BuildContext context) {
+    final isFavorite = widget.link.isFavorite;
     return MouseRegion(
       onEnter: (_) => setState(() => isHovered = true),
       onExit: (_) => setState(() => isHovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeInOutCubic,
         margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        transform: isHovered
+          ? (Matrix4.identity()..scale(1.04))
+          : Matrix4.identity(),
         decoration: BoxDecoration(
-          color: widget.isDark ? const Color(0xFF23272F) : Colors.white,
+          color: isFavorite ? Colors.amber.withOpacity(0.10) : Colors.white,
           border: Border.all(
-            color: isHovered ? Colors.amber : (widget.isDark ? Colors.grey[700]! : Colors.grey[300]!),
-            width: 2,
+            color: isFavorite ? Colors.amber : Colors.grey[300]!,
+            width: isHovered ? 6 : 3,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(
-              color: (isHovered ? Colors.amber : Colors.black12).withOpacity(0.08),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
+            if (isFavorite || isHovered)
+              BoxShadow(
+                color: Colors.amber.withOpacity(0.4),
+                blurRadius: 24,
+                spreadRadius: 6,
+              ),
           ],
         ),
         child: ListTile(
           dense: true,
           minVerticalPadding: 4,
           contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
-          leading: widget.link.type == LinkType.url
-              ? UrlPreviewWidget(url: widget.link.path, isDark: widget.isDark)
-              : widget.link.type == LinkType.file
-                  ? FilePreviewWidget(path: widget.link.path, isDark: widget.isDark)
-                  : const Icon(Icons.star, color: Colors.amber, size: 20),
-          title: Row(
+          leading: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+            child: isFavorite
+              ? Icon(Icons.star, color: Colors.amber, size: isHovered ? 32 : 24, key: const ValueKey('star'))
+              : Icon(Icons.star_border, color: Colors.grey, size: 24, key: const ValueKey('star_border')),
+          ),
+          title: Text(
+            widget.link.label,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: isFavorite ? Colors.amber[900] : Colors.black,
+              shadows: isFavorite ? [const Shadow(color: Colors.amber, blurRadius: 4)] : [],
+            ),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Text(
-                  widget.link.label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: widget.isDark ? Colors.white : Colors.black,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
               if (isHovered)
                 Padding(
-                  padding: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.only(right: 8),
                   child: Text(
                     widget.link.path,
                     style: TextStyle(
@@ -1296,11 +1303,6 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-            ],
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
               Tooltip(
                 message: widget.link.memo?.isNotEmpty == true ? widget.link.memo! : 'メモなし',
                 child: IconButton(
@@ -1341,10 +1343,10 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
               ),
               IconButton(
                 icon: Icon(
-                  widget.link.isFavorite ? Icons.star : Icons.star_border,
-                  color: widget.link.isFavorite ? Colors.amber : Colors.grey,
+                  isFavorite ? Icons.star : Icons.star_border,
+                  color: isFavorite ? Colors.amber : Colors.grey,
                 ),
-                tooltip: widget.link.isFavorite ? 'お気に入り解除' : 'お気に入り',
+                tooltip: isFavorite ? 'お気に入り解除' : 'お気に入り',
                 onPressed: () => widget.onUnfavorite(),
               ),
               IconButton(
