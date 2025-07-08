@@ -46,6 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Offset? _lastMousePosition;
   DateTime? _lastMoveTime;
   BuildContext? _scaffoldBodyContext;
+  final Map<String, bool> _showBottomSpaceMap = {};
 
   @override
   void initState() {
@@ -74,6 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isLoading = ref.watch(linkViewModelProvider).isLoading;
     final error = ref.watch(linkViewModelProvider).error;
     final isDarkMode = ref.watch(darkModeProvider);
+    final accentColor = ref.watch(accentColorProvider);
     
     // お気に入りグループと通常グループを分離
     final favoriteGroups = groups.where((g) => g.isFavorite).toList();
@@ -193,13 +195,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // エクスポート
           IconButton(
             icon: const Icon(Icons.upload),
-            tooltip: 'Export Data',
+            tooltip: 'バックアップ',
             onPressed: () => _exportData(context),
           ),
           // インポート
           IconButton(
             icon: const Icon(Icons.download),
-            tooltip: 'Import Data',
+            tooltip: 'データ復元',
             onPressed: () => _importData(context),
           ),
               // グループ追加
@@ -269,7 +271,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ref.read(accentColorProvider.notifier).state = selected;
                   }
                 },
-              ),
+          ),
         ],
         bottom: _showSearchBar
             ? PreferredSize(
@@ -319,29 +321,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               : groups.isEmpty
                   ? _buildEmptyState()
                   : _buildContent(displayGroups, recentLinks, recentGroups),
-                  if (_isDragOver)
-                    Container(
-                      color: Colors.blue.withOpacity(0.08),
-                      child: const Center(
-                        child: Text('ここにファイルやフォルダをドロップ', style: TextStyle(fontSize: 24, color: Colors.blue)),
-                      ),
-                    ),
-                  if (_centerMessage != null)
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                  // 右下ジャンプボタン（アクセントカラー連動）
+                  Positioned(
+                    right: 24,
+                    bottom: 32,
+                    child: Column(
+                      children: [
+                        FloatingActionButton(
+                          mini: true,
+                          heroTag: 'jumpToTop',
+                          backgroundColor: Color(accentColor).withOpacity(0.85),
+                          foregroundColor: Colors.white,
+                          onPressed: () {
+                            if (_scrollController.hasClients) {
+                              _scrollController.animateTo(
+                                0,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOut,
+                              );
+                            }
+                          },
+                          child: const Icon(Icons.vertical_align_top, size: 20),
                         ),
-                        child: Text(_centerMessage!, style: const TextStyle(fontSize: 20)),
+                        const SizedBox(height: 12),
+                        FloatingActionButton(
+                          mini: true,
+                          heroTag: 'jumpToBottom',
+                          backgroundColor: Color(accentColor).withOpacity(0.85),
+                          foregroundColor: Colors.white,
+                              onPressed: () {
+                            if (_scrollController.hasClients) {
+                              _scrollController.animateTo(
+                                _scrollController.position.maxScrollExtent,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOut,
+                              );
+                            }
+                          },
+                          child: const Icon(Icons.vertical_align_bottom, size: 20),
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -360,158 +379,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final width = constraints.maxWidth;
         int crossAxisCount;
         double gridSpacing;
-        double cardAspectRatio;
         EdgeInsets gridPadding;
         if (width > 1400) {
           crossAxisCount = 4;
           gridSpacing = 40;
-          cardAspectRatio = 1.5;
-          gridPadding = const EdgeInsets.symmetric(horizontal: 64, vertical: 24);
+          gridPadding = const EdgeInsets.symmetric(horizontal: 32, vertical: 16);
         } else if (width > 1100) {
           crossAxisCount = 3;
           gridSpacing = 32;
-          cardAspectRatio = 1.5;
-          gridPadding = const EdgeInsets.symmetric(horizontal: 40, vertical: 20);
+          gridPadding = const EdgeInsets.symmetric(horizontal: 24, vertical: 12);
         } else if (width > 700) {
           crossAxisCount = 2;
           gridSpacing = 24;
-          cardAspectRatio = 1.5;
-          gridPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 16);
+          gridPadding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
         } else {
           crossAxisCount = 1;
           gridSpacing = 12;
-          cardAspectRatio = 1.5;
           gridPadding = const EdgeInsets.symmetric(horizontal: 4, vertical: 8);
         }
-    return Stack(
-      children: [
-            DropTarget(
-              onDragEntered: (detail) { setState(() { _isDragOver = true; }); },
-              onDragExited: (detail) { setState(() { _isDragOver = false; }); },
-            onDragDone: (detail) => _handleDrop(context, detail),
-            child: ListView(
-              controller: _scrollController,
-                padding: gridPadding,
-              children: [
-                if (showRecent) ...[
-                  if (recentLinks.isNotEmpty)
-                    Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('最近使ったリンク', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                              children: recentLinks.take(10).map((link) => ActionChip(
-                              label: Text(link.label, overflow: TextOverflow.ellipsis),
-                              avatar: Icon(_iconForType(link.type), size: 18),
-                              onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                            )).toList(),
-                          ),
-                        ],
-                      ),
+        return Column(
+          children: [
+            if (showRecent)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('最近使ったリンク', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: recentLinks.take(10).map((link) => ActionChip(
+                        label: Text(link.label, overflow: TextOverflow.ellipsis),
+                        avatar: Icon(_iconForType(link.type), size: 18),
+                        onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                      )).toList(),
                     ),
-                ],
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: cardAspectRatio,
-                      crossAxisSpacing: gridSpacing,
-                      mainAxisSpacing: gridSpacing,
-                  ),
-                  itemCount: displayGroups.length,
-                  itemBuilder: (context, index) {
-                    final group = displayGroups[index];
-                    return Draggable<Group>(
-                      data: group,
-                      feedback: Material(
-                        elevation: 16,
-                        child: SizedBox(
-                          width: 296,
-                          height: 192,
-                          child: GroupCard(
-                            group: group,
-                            onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
-                            onDeleteGroup: () => _deleteGroup(group.id),
-                            onAddLink: () => _showAddLinkDialog(context, group.id),
-                            onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
-                            onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                            onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
-                              groupId: group.id,
-                              label: label,
-                              path: path,
-                              type: type,
-                            ),
-                            onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
-                            onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
-                              onEditGroupTitle: (oldTitle) async {
-                                final controller = TextEditingController(text: oldTitle);
-                                int selectedColor = group.color ?? Colors.black.value;
-                                final result = await showDialog<Map<String, dynamic>>(
-                                  context: context,
-                                  builder: (context) => StatefulBuilder(
-                                    builder: (context, setState) => AlertDialog(
-                                      title: const Text('グループ名を編集'),
-                                      content: SingleChildScrollView(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            TextField(
-                                              controller: controller,
-                                              autofocus: true,
-                                              decoration: const InputDecoration(labelText: '新しいグループ名'),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Row(
-                                              children: [
-                                                const Text('色: '),
-                                                Expanded(child: ColorPaletteSelector(
-                                                  selectedColor: selectedColor,
-                                                  onColorSelected: (color) => setState(() => selectedColor = color),
-                                                )),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context),
-                                          child: const Text('キャンセル'),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () => Navigator.pop(context, {
-                                            'title': controller.text,
-                                            'color': selectedColor,
-                                          }),
-                                          child: const Text('保存'),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                                if (result != null && result['title'] != null && result['title'].trim().isNotEmpty && (result['title'] != oldTitle || result['color'] != group.color)) {
-                                  final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
-                              await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
-                                }
-                            },
-                            onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
-                            onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
-                            onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
-                              onShowMessage: _showCenterMessage,
-                          ),
-                        ),
-                      ),
-                      childWhenDragging: Opacity(
-                        opacity: 0.5,
+                  ],
+                ),
+              ),
+            Expanded(
+              child: GridView.builder(
+                controller: _scrollController,
+                padding: gridPadding,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: gridSpacing,
+                  mainAxisSpacing: gridSpacing,
+                  childAspectRatio: 1.5,
+                ),
+                itemCount: displayGroups.length,
+                itemBuilder: (context, index) {
+                  final group = displayGroups[index];
+                  return Draggable<Group>(
+                    data: group,
+                    feedback: Material(
+                      elevation: 16,
+                      child: SizedBox(
+                        width: 296,
+                        height: 192,
                         child: GroupCard(
                           group: group,
-                          isDragging: true,
                           onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
                           onDeleteGroup: () => _deleteGroup(group.id),
                           onAddLink: () => _showAddLinkDialog(context, group.id),
@@ -525,156 +454,230 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
                           onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
-                            onEditGroupTitle: (oldTitle) async {
-                              final controller = TextEditingController(text: oldTitle);
-                              int selectedColor = group.color ?? Colors.black.value;
-                              final result = await showDialog<Map<String, dynamic>>(
-                                context: context,
-                                builder: (context) => StatefulBuilder(
-                                  builder: (context, setState) => AlertDialog(
-                                    title: const Text('グループ名を編集'),
-                                    content: SingleChildScrollView(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          TextField(
-                                            controller: controller,
-                                            autofocus: true,
-                                            decoration: const InputDecoration(labelText: '新しいグループ名'),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Row(
-                                            children: [
-                                              const Text('色: '),
-                                              Expanded(child: ColorPaletteSelector(
-                                                selectedColor: selectedColor,
-                                                onColorSelected: (color) => setState(() => selectedColor = color),
-                                              )),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('キャンセル'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () => Navigator.pop(context, {
-                                          'title': controller.text,
-                                          'color': selectedColor,
-                                        }),
-                                        child: const Text('保存'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                              if (result != null && result['title'] != null && result['title'].trim().isNotEmpty && (result['title'] != oldTitle || result['color'] != group.color)) {
-                                final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
-                            await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
-                              }
-                          },
-                          onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
-                          onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
-                          onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
-                            onShowMessage: _showCenterMessage,
-                        ),
-                      ),
-                      child: DragTarget<Group>(
-                        onWillAccept: (data) => data != null && data.id != group.id,
-                        onAccept: (data) async {
-                          final groups = ref.read(linkViewModelProvider).groups;
-                          final fromIndex = groups.indexWhere((g) => g.id == data.id);
-                          final toIndex = groups.indexWhere((g) => g.id == group.id);
-                          if (fromIndex != -1 && toIndex != -1) {
-                            final newOrder = List<Group>.from(groups);
-                            final item = newOrder.removeAt(fromIndex);
-                            newOrder.insert(toIndex, item);
-                            await ref.read(linkViewModelProvider.notifier).updateGroupsOrder(newOrder);
-                          }
-                        },
-                        builder: (context, candidateData, rejectedData) {
-                          return GroupCard(
-                            group: group,
-                            onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
-                            onDeleteGroup: () => _deleteGroup(group.id),
-                            onAddLink: () => _showAddLinkDialog(context, group.id),
-                            onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
-                            onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                            onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
-                              groupId: group.id,
-                              label: label,
-                              path: path,
-                              type: type,
-                            ),
-                            onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
-                            onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
-                              onEditGroupTitle: (oldTitle) async {
-                                final controller = TextEditingController(text: oldTitle);
-                                int selectedColor = group.color ?? Colors.black.value;
-                                final result = await showDialog<Map<String, dynamic>>(
-                                  context: context,
-                                  builder: (context) => StatefulBuilder(
-                                    builder: (context, setState) => AlertDialog(
-                                      title: const Text('グループ名を編集'),
-                                      content: SingleChildScrollView(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
+                          onEditGroupTitle: (oldTitle) async {
+                            final controller = TextEditingController(text: oldTitle);
+                            int selectedColor = group.color ?? Colors.blue.value;
+                            final result = await showDialog<Map<String, dynamic>>(
+                              context: context,
+                              builder: (context) => StatefulBuilder(
+                                builder: (context, setState) => AlertDialog(
+                                  title: const Text('グループ名を編集'),
+                                  content: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        TextField(
+                                          controller: controller,
+                                          autofocus: true,
+                                          decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Row(
                                           children: [
-                                            TextField(
-                                              controller: controller,
-                                              autofocus: true,
-                                              decoration: const InputDecoration(labelText: '新しいグループ名'),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Row(
-                                              children: [
-                                                const Text('色: '),
-                                                Expanded(child: ColorPaletteSelector(
-                                                  selectedColor: selectedColor,
-                                                  onColorSelected: (color) => setState(() => selectedColor = color),
-                                                )),
-                                              ],
-                                            ),
+                                            const Text('色: '),
+                                            Expanded(child: ColorPaletteSelector(
+                                              selectedColor: selectedColor,
+                                              onColorSelected: (color) => setState(() => selectedColor = color),
+                                            )),
                                           ],
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context),
-                                          child: const Text('キャンセル'),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () => Navigator.pop(context, {
-                                            'title': controller.text,
-                                            'color': selectedColor,
-                                          }),
-                                          child: const Text('保存'),
                                         ),
                                       ],
                                     ),
                                   ),
-                                );
-                                if (result != null && result['title'] != null && result['title'].trim().isNotEmpty && (result['title'] != oldTitle || result['color'] != group.color)) {
-                                  final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('キャンセル'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(context, {
+                                        'title': controller.text,
+                                        'color': selectedColor,
+                                      }),
+                                      child: const Text('保存'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                            if (result != null && result['title'] != null && result['title'].trim().isNotEmpty && (result['title'] != oldTitle || result['color'] != group.color)) {
+                              final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
                               await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
-                                }
-                            },
-                            onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
-                            onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
-                            onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
-                              onShowMessage: _showCenterMessage,
-                          );
-                        },
+                            }
+                          },
+                          onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
+                          onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
+                          onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                          onShowMessage: _showCenterMessage,
+                        ),
                       ),
-                    );
-                  },
-                ),
-              ],
+                    ),
+                    childWhenDragging: Opacity(
+                      opacity: 0.5,
+                      child: GroupCard(
+                        group: group,
+                        isDragging: true,
+                        onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
+                        onDeleteGroup: () => _deleteGroup(group.id),
+                        onAddLink: () => _showAddLinkDialog(context, group.id),
+                        onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
+                        onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                        onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                          groupId: group.id,
+                          label: label,
+                          path: path,
+                          type: type,
+                        ),
+                        onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
+                        onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
+                        onEditGroupTitle: (oldTitle) async {
+                          final controller = TextEditingController(text: oldTitle);
+                          int selectedColor = group.color ?? Colors.blue.value;
+                          final result = await showDialog<Map<String, dynamic>>(
+                            context: context,
+                            builder: (context) => StatefulBuilder(
+                              builder: (context, setState) => AlertDialog(
+                                title: const Text('グループ名を編集'),
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextField(
+                                        controller: controller,
+                                        autofocus: true,
+                                        decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          const Text('色: '),
+                                          Expanded(child: ColorPaletteSelector(
+                                            selectedColor: selectedColor,
+                                            onColorSelected: (color) => setState(() => selectedColor = color),
+                                          )),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('キャンセル'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(context, {
+                                      'title': controller.text,
+                                      'color': selectedColor,
+                                    }),
+                                    child: const Text('保存'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                          if (result != null && result['title'] != null && result['title'].trim().isNotEmpty && (result['title'] != oldTitle || result['color'] != group.color)) {
+                            final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
+                            await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
+                          }
+                        },
+                        onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
+                        onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
+                        onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                        onShowMessage: _showCenterMessage,
+                      ),
+                    ),
+                    child: DragTarget<Group>(
+                      onWillAccept: (data) => data != null && data.id != group.id,
+                      onAccept: (data) async {
+                        final groups = ref.read(linkViewModelProvider).groups;
+                        final fromIndex = groups.indexWhere((g) => g.id == data.id);
+                        final toIndex = groups.indexWhere((g) => g.id == group.id);
+                        if (fromIndex != -1 && toIndex != -1) {
+                          final newOrder = List<Group>.from(groups);
+                          final item = newOrder.removeAt(fromIndex);
+                          newOrder.insert(toIndex, item);
+                          await ref.read(linkViewModelProvider.notifier).updateGroupsOrder(newOrder);
+                        }
+                      },
+                      builder: (context, candidateData, rejectedData) {
+                        return GroupCard(
+                          group: group,
+                          onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
+                          onDeleteGroup: () => _deleteGroup(group.id),
+                          onAddLink: () => _showAddLinkDialog(context, group.id),
+                          onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
+                          onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                          onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                            groupId: group.id,
+                            label: label,
+                            path: path,
+                            type: type,
+                          ),
+                          onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
+                          onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
+                          onEditGroupTitle: (oldTitle) async {
+                            final controller = TextEditingController(text: oldTitle);
+                            int selectedColor = group.color ?? Colors.blue.value;
+                            final result = await showDialog<Map<String, dynamic>>(
+                              context: context,
+                              builder: (context) => StatefulBuilder(
+                                builder: (context, setState) => AlertDialog(
+                                  title: const Text('グループ名を編集'),
+                                  content: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        TextField(
+                                          controller: controller,
+                                          autofocus: true,
+                                          decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Row(
+                                          children: [
+                                            const Text('色: '),
+                                            Expanded(child: ColorPaletteSelector(
+                                              selectedColor: selectedColor,
+                                              onColorSelected: (color) => setState(() => selectedColor = color),
+                                            )),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('キャンセル'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(context, {
+                                        'title': controller.text,
+                                        'color': selectedColor,
+                                      }),
+                                      child: const Text('保存'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                            if (result != null && result['title'] != null && result['title'].trim().isNotEmpty && (result['title'] != oldTitle || result['color'] != group.color)) {
+                              final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
+                              await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
+                            }
+                          },
+                          onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
+                          onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
+                          onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                          onShowMessage: _showCenterMessage,
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
           ],
         );
       },
@@ -1165,6 +1168,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _jumpButtonOverlay = null;
     }
   }
+
+  double calcCardHeight(int linkCount) {
+    const double perLinkHeight = 36;
+    const double minHeight = 120;
+    const double maxHeight = 400;
+    double dynamicHeight = minHeight + (linkCount * perLinkHeight);
+    return dynamicHeight.clamp(minHeight, maxHeight);
+  }
 }
 
 // 追加: 共通カラーパレットWidget
@@ -1249,20 +1260,17 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeInOutCubic,
         margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-        transform: isHovered
-          ? (Matrix4.identity()..scale(1.04))
-          : Matrix4.identity(),
         decoration: BoxDecoration(
-          color: isFavorite ? Colors.amber.withOpacity(0.10) : Colors.white,
+          color: widget.isDark ? const Color(0xFF23272F) : Colors.white,
           border: Border.all(
-            color: isFavorite ? Colors.amber : Colors.grey[300]!,
+            color: widget.group.color != null ? Color(widget.group.color!) : Colors.blue,
             width: isHovered ? 6 : 3,
           ),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            if (isFavorite || isHovered)
+            if (isHovered)
               BoxShadow(
-                color: Colors.amber.withOpacity(0.4),
+                color: (widget.group.color != null ? Color(widget.group.color!) : Colors.amber).withOpacity(0.5),
                 blurRadius: 24,
                 spreadRadius: 6,
               ),
@@ -1284,13 +1292,12 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: isFavorite ? Colors.amber[900] : Colors.black,
-              shadows: isFavorite ? [const Shadow(color: Colors.amber, blurRadius: 4)] : [],
+              color: widget.isDark ? Colors.white : Colors.black,
             ),
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
+        children: [
               if (isHovered)
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -1324,12 +1331,12 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
                             onPressed: () => Navigator.pop(context),
                             child: const Text('キャンセル'),
                           ),
-                          ElevatedButton(
+          ElevatedButton(
                             onPressed: () => Navigator.pop(context, controller.text),
                             child: const Text('保存'),
-                          ),
-                        ],
-                      ),
+          ),
+        ],
+      ),
                     );
                     if (result != null) {
                       final updated = widget.link.copyWith(memo: result);
