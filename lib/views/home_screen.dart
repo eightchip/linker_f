@@ -18,6 +18,10 @@ import 'package:screen_retriever/screen_retriever.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pdf_render/pdf_render.dart';
 import 'package:pdf_render/pdf_render_widgets.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path/path.dart' as p;
+import 'package:flutter/services.dart' show rootBundle;
 // import 'package:pdfx/pdfx.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -268,17 +272,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               );
             },
           ),
-          IconButton(icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showRecent ? '最近使った非表示' : '最近使ったを上部に表示', onPressed: () {
-              setState(() {
-                _showRecent = !_showRecent;
-              });
-            }),
+          IconButton(
+            icon: Icon(Icons.picture_as_pdf, size: iconSize),
+            tooltip: 'メモ付きリンク一覧をPDF出力',
+            onPressed: () => _exportMemoLinksToPdf(context),
+          ),
           IconButton(icon: Icon(Icons.star_outline, size: iconSize), tooltip: 'リンクのお気に入り一覧', onPressed: () async {
                   setState(() {
                     _showFavoriteLinks = !_showFavoriteLinks;
                   });
                   if (!_showFavoriteLinks) return;
               }),
+          IconButton(icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showRecent ? '最近使った非表示' : '最近使ったを上部に表示', onPressed: () {
+              setState(() {
+                _showRecent = !_showRecent;
+              });
+            }),
           IconButton(icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: iconSize), tooltip: isDarkMode ? 'ライトモード' : 'ダークモード', onPressed: () {
               ref.read(darkModeProvider.notifier).state = !isDarkMode;
             }),
@@ -1232,6 +1241,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     const double maxHeight = 400;
     double dynamicHeight = minHeight + (linkCount * perLinkHeight);
     return dynamicHeight.clamp(minHeight, maxHeight);
+  }
+
+  Future<void> _exportMemoLinksToPdf(BuildContext context) async {
+    final groups = ref.read(linkViewModelProvider).groups;
+    final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
+      .where((entry) => entry.value.memo?.isNotEmpty == true)
+      .toList();
+    if (memoLinks.isEmpty) {
+      _showCenterMessage('メモ付きリンクがありません', icon: Icons.info, color: Colors.blueGrey);
+      return;
+    }
+    // 日本語フォントを読み込む
+    final fontData = await rootBundle.load('assets/fonts/NotoSansJP-Regular.ttf');
+    final ttf = pw.Font.ttf(fontData);
+    final pdf = pw.Document();
+    pdf.addPage(
+      pw.MultiPage(
+        build: (context) => [
+          pw.Header(
+            level: 0,
+            child: pw.Text(
+              'メモ付きリンク一覧',
+              style: pw.TextStyle(font: ttf, fontSize: 24),
+            ),
+          ),
+          pw.Table.fromTextArray(
+            headers: [
+              'グループ',
+              'リンク名',
+              'メモ内容',
+            ],
+            data: memoLinks.map((entry) => [
+              entry.key.title,
+              entry.value.label,
+              entry.value.memo ?? '',
+            ]).toList(),
+            cellStyle: pw.TextStyle(font: ttf, fontSize: 12),
+            headerStyle: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 14),
+            headerDecoration: pw.BoxDecoration(color: PdfColors.grey300),
+            border: null,
+          ),
+        ],
+      ),
+    );
+    final now = DateTime.now();
+    final formatted = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
+    final fileName = 'memo_links_$formatted.pdf';
+    final output = File(fileName);
+    await output.writeAsBytes(await pdf.save());
+    _showCenterMessage('PDF出力完了: ${output.absolute.path}', icon: Icons.picture_as_pdf, color: Colors.red[700]);
   }
 }
 
