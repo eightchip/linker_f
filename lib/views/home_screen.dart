@@ -71,6 +71,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = MediaQuery.of(context).size.width < 600 ? 18.0 : 24.0;
+    final titleFontSize = MediaQuery.of(context).size.width < 600 ? 16.0 : 22.0;
     final groups = ref.watch(linkViewModelProvider).groups;
     final isLoading = ref.watch(linkViewModelProvider).isLoading;
     final error = ref.watch(linkViewModelProvider).error;
@@ -133,93 +135,154 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-            title: const Text('Link Navigator D & D', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(
+              'Link Navigator',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
+            ),
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
         elevation: 2,
         actions: [
-          // 検索
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: '検索',
-            onPressed: () {
-              setState(() {
-                _showSearchBar = !_showSearchBar;
-                if (!_showSearchBar) _searchQuery = '';
-              });
+          IconButton(icon: Icon(Icons.add, size: iconSize), tooltip: 'グループを追加', onPressed: () => _showAddGroupDialog(context)),
+          IconButton(icon: Icon(Icons.notes, size: iconSize), tooltip: 'メモ付きリンク一覧', onPressed: () {
+              final groups = ref.read(linkViewModelProvider).groups;
+              final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
+                .where((entry) => entry.value.memo?.isNotEmpty == true)
+                .toList();
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final accentColor = ref.read(accentColorProvider);
+              final memoControllers = <String, TextEditingController>{};
+              for (final entry in memoLinks) {
+                memoControllers[entry.value.id] = TextEditingController(text: entry.value.memo ?? '');
+              }
+              showDialog(
+                context: context,
+                builder: (context) => StatefulBuilder(
+                  builder: (context, setState) => AlertDialog(
+                    title: const Text('メモ付きリンク一覧'),
+                    content: SizedBox(
+                      width: 400,
+                      height: 500,
+                      child: Scrollbar(
+                        child: ListView(
+                          children: memoLinks.map((entry) {
+                            final link = entry.value;
+                            final group = entry.key;
+                            final controller = memoControllers[link.id]!;
+                            final isOverflow = (link.memo?.split('\n').length ?? 0) > 3 || (link.memo?.length ?? 0) > 100;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: Color(accentColor),
+                                          borderRadius: BorderRadius.circular(3),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Icon(Icons.link, color: Colors.blue, size: 18),
+                                      const SizedBox(width: 4),
+                                      InkWell(
+                                        onTap: () {
+                                          ref.read(linkViewModelProvider.notifier).launchLink(link);
+                                        },
+                                        child: Text(
+                                          link.label,
+                                          style: TextStyle(
+                                            color: isDark ? Colors.white : Colors.black,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            decoration: TextDecoration.underline,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  MouseRegion(
+                                    cursor: isOverflow ? SystemMouseCursors.help : SystemMouseCursors.basic,
+                                    child: Tooltip(
+                                      message: isOverflow ? link.memo! : '',
+                                      child: TextField(
+                                        controller: controller,
+                                        maxLines: 3,
+                                        minLines: 1,
+                                        decoration: InputDecoration(
+                                          filled: true,
+                                          fillColor: isDark ? Colors.black : Colors.white,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                            borderSide: BorderSide(
+                                              color: Color(accentColor).withOpacity(isDark ? 0.7 : 0.5),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          contentPadding: const EdgeInsets.all(10),
+                                        ),
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : Colors.black87,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('閉じる'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          for (final entry in memoLinks) {
+                            final link = entry.value;
+                            final group = entry.key;
+                            final newMemo = memoControllers[link.id]!.text;
+                            if (newMemo != link.memo) {
+                              final updated = link.copyWith(memo: newMemo);
+                              ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
+                                groupId: group.id,
+                                updated: updated,
+                              );
+                            }
+                          }
+                          Navigator.pop(context);
+                        },
+                        child: const Text('まとめて保存'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             },
           ),
-          // ピン止め
-          IconButton(
-            icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey),
-            tooltip: _showRecent ? '最近使った非表示' : '最近使ったを上部に表示',
-            onPressed: () {
+          IconButton(icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showRecent ? '最近使った非表示' : '最近使ったを上部に表示', onPressed: () {
               setState(() {
                 _showRecent = !_showRecent;
               });
-            },
-          ),
-          // お気に入り
-          if (favoriteGroups.isNotEmpty)
-            IconButton(
-              icon: Icon(
-                _showOnlyFavorites ? Icons.star : Icons.star_border,
-                color: _showOnlyFavorites ? Colors.amber : Colors.grey,
-              ),
-                  tooltip: _showOnlyFavorites ? 'すべて表示' : 'グループのお気に入りのみ表示',
-              onPressed: () {
-                setState(() {
-                  _showOnlyFavorites = !_showOnlyFavorites;
-                });
-                  },
-                ),
-              // リンクお気に入り一覧（常に表示）
-              IconButton(
-                icon: const Icon(Icons.star_outline),
-                tooltip: 'リンクのお気に入り一覧',
-                onPressed: () async {
+            }),
+          IconButton(icon: Icon(Icons.star_outline, size: iconSize), tooltip: 'リンクのお気に入り一覧', onPressed: () async {
                   setState(() {
                     _showFavoriteLinks = !_showFavoriteLinks;
                   });
                   if (!_showFavoriteLinks) return;
-              },
-            ),
-          // ダークモード
-          IconButton(
-            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            tooltip: isDarkMode ? 'ライトモード' : 'ダークモード',
-            onPressed: () {
+              }),
+          IconButton(icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: iconSize), tooltip: isDarkMode ? 'ライトモード' : 'ダークモード', onPressed: () {
               ref.read(darkModeProvider.notifier).state = !isDarkMode;
-            },
-          ),
-          // エクスポート
-          IconButton(
-            icon: const Icon(Icons.upload),
-            tooltip: 'バックアップ',
-            onPressed: () => _exportData(context),
-          ),
-          // インポート
-          IconButton(
-            icon: const Icon(Icons.download),
-            tooltip: 'データ復元',
-            onPressed: () => _importData(context),
-          ),
-              // グループ追加
-              IconButton(
-                icon: const Icon(Icons.add),
-                tooltip: 'グループを追加',
-                onPressed: () => _showAddGroupDialog(context),
-              ),
-              IconButton(
-                icon: const Icon(Icons.help_outline),
-                tooltip: 'チュートリアル・ヘルプ',
-                onPressed: _showTutorial,
-              ),
-              // アクセントカラーパレット
-              IconButton(
-                icon: const Icon(Icons.palette),
-                tooltip: 'アクセントカラー変更',
-                onPressed: () async {
+            }),
+          IconButton(icon: Icon(Icons.palette, size: iconSize), tooltip: 'アクセントカラー変更', onPressed: () async {
                   final currentColor = ref.read(accentColorProvider);
                   final colorOptions = [
                     0xFF3B82F6, // 青（現在のデフォルト）
@@ -272,6 +335,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   }
                 },
           ),
+          IconButton(icon: Icon(Icons.upload, size: iconSize), tooltip: 'バックアップ', onPressed: () => _exportData(context)),
+          IconButton(icon: Icon(Icons.download, size: iconSize), tooltip: 'データ復元', onPressed: () => _importData(context)),
+          if (favoriteGroups.isNotEmpty)
+            IconButton(icon: Icon(_showOnlyFavorites ? Icons.star : Icons.star_border, color: _showOnlyFavorites ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showOnlyFavorites ? 'すべて表示' : 'グループのお気に入りのみ表示', onPressed: () {
+                setState(() {
+                  _showOnlyFavorites = !_showOnlyFavorites;
+                });
+                  }),
+          IconButton(icon: Icon(Icons.help_outline, size: iconSize), tooltip: 'チュートリアル・ヘルプ', onPressed: _showTutorial),
         ],
         bottom: _showSearchBar
             ? PreferredSize(
@@ -1032,23 +1104,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onMouseMove(PointerEvent event) {
-    final size = MediaQuery.of(context).size;
-    const edgeThreshold = 10.0;
-    final dx = event.position.dx;
-    final dy = event.position.dy;
-    final isLeft = dx <= edgeThreshold;
-    final isRight = dx >= size.width - edgeThreshold;
-    final isTop = dy <= edgeThreshold;
-    final isBottom = dy >= size.height - edgeThreshold;
-    if (isTop) {
-      _showJumpButtons(Offset(size.width / 2, edgeThreshold + 32), edge: 'top');
-    } else if (isBottom) {
-      _showJumpButtons(Offset(size.width / 2, size.height - edgeThreshold - 32), edge: 'bottom');
-    } else if (isLeft) {
-      _showJumpButtons(Offset(edgeThreshold + 32, size.height / 2), edge: 'left');
-    } else if (isRight) {
-      _showJumpButtons(Offset(size.width - edgeThreshold - 32, size.height / 2), edge: 'right');
-    }
+    // 画面端ホバー時のジャンプボタン表示ロジックを削除
+    // 何も処理しない、または他の用途だけ残す
   }
 
   void _showJumpButtons(Offset position, {String? edge}) {
@@ -1250,9 +1307,26 @@ class FavoriteLinkTile extends StatefulWidget {
 }
 class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
   bool isHovered = false;
+  Color _getHighlightColor() {
+    final isFavorite = widget.link.isFavorite;
+    final hasMemo = widget.link.memo?.isNotEmpty == true;
+    if (isFavorite && hasMemo) return Colors.green.withOpacity(0.18);
+    if (hasMemo) return Colors.blue.withOpacity(0.18);
+    if (isFavorite) return Colors.amber.withOpacity(0.18);
+    return widget.isDark ? const Color(0xFF23272F) : Colors.white;
+  }
   @override
   Widget build(BuildContext context) {
     final isFavorite = widget.link.isFavorite;
+    final hasMemo = widget.link.memo?.isNotEmpty == true;
+    Color indicatorColor = Colors.transparent;
+    if (isFavorite && hasMemo) {
+      indicatorColor = Colors.green;
+    } else if (hasMemo) {
+      indicatorColor = Colors.blue;
+    } else if (isFavorite) {
+      indicatorColor = Colors.amber;
+    }
     return MouseRegion(
       onEnter: (_) => setState(() => isHovered = true),
       onExit: (_) => setState(() => isHovered = false),
@@ -1276,102 +1350,129 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
               ),
           ],
         ),
-        child: ListTile(
-          dense: true,
-          minVerticalPadding: 4,
-          contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
-          leading: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-            child: isFavorite
-              ? Icon(Icons.star, color: Colors.amber, size: isHovered ? 32 : 24, key: const ValueKey('star'))
-              : Icon(Icons.star_border, color: Colors.grey, size: 24, key: const ValueKey('star_border')),
-          ),
-          title: Text(
-            widget.link.label,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: widget.isDark ? Colors.white : Colors.black,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // サイドバーインジケータ
+            Container(
+              width: 10,
+              height: 40,
+              decoration: BoxDecoration(
+                color: indicatorColor,
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-        children: [
-              if (isHovered)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Text(
-                    widget.link.path,
+            const SizedBox(width: 8),
+            // メインテキスト＋サブテキスト
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.link.label,
                     style: TextStyle(
-                      fontSize: 11,
-                      color: widget.isDark ? Colors.white70 : Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: widget.isDark ? Colors.white : Colors.black,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              Tooltip(
-                message: widget.link.memo?.isNotEmpty == true ? widget.link.memo! : 'メモなし',
-                child: IconButton(
-                  icon: const Icon(Icons.note_alt_outlined),
-                  tooltip: '',
-                  onPressed: () async {
-                    final controller = TextEditingController(text: widget.link.memo ?? '');
-                    final result = await showDialog<String>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('メモ編集'),
-                        content: TextField(
-                          controller: controller,
-                          maxLines: 5,
-                          decoration: const InputDecoration(hintText: 'メモを入力...'),
+                  if (isHovered)
+                    ClipRect(
+                      child: Text(
+                        widget.link.path,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: widget.isDark ? Colors.white70 : Colors.black87,
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('キャンセル'),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // アイコン群
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Tooltip(
+                      message: widget.link.memo?.isNotEmpty == true ? widget.link.memo! : 'メモなし',
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.note_alt_outlined,
+                          color: widget.link.memo?.isNotEmpty == true ? Colors.orange : Colors.grey,
+                        ),
+                        tooltip: null, // Tooltipは外側で管理
+                        onPressed: () async {
+                          final controller = TextEditingController(text: widget.link.memo ?? '');
+                          final result = await showDialog<String>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('メモ編集'),
+                              content: TextField(
+                                controller: controller,
+                                maxLines: 5,
+                                decoration: const InputDecoration(hintText: 'メモを入力...'),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('キャンセル'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, controller.text),
+                                  child: const Text('保存'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (result != null) {
+                            final updated = widget.link.copyWith(memo: result);
+                            widget.ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
+                              groupId: widget.group.id,
+                              updated: updated,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    if (widget.link.memo?.isNotEmpty == true)
+                      Positioned(
+                        right: 4,
+                        top: 4,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1),
                           ),
-          ElevatedButton(
-                            onPressed: () => Navigator.pop(context, controller.text),
-                            child: const Text('保存'),
-          ),
-        ],
-      ),
-                    );
-                    if (result != null) {
-                      final updated = widget.link.copyWith(memo: result);
-                      widget.ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
-                        groupId: widget.group.id,
-                        updated: updated,
-                      );
-                    }
-                  },
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-              IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.star : Icons.star_border,
-                  color: isFavorite ? Colors.amber : Colors.grey,
+                IconButton(
+                  icon: Icon(
+                    widget.link.isFavorite ? Icons.star : Icons.star_border,
+                    color: widget.link.isFavorite ? Colors.amber : Colors.grey,
+                  ),
+                  tooltip: widget.link.isFavorite ? 'お気に入り解除' : 'お気に入り',
+                  onPressed: () => widget.onUnfavorite(),
                 ),
-                tooltip: isFavorite ? 'お気に入り解除' : 'お気に入り',
-                onPressed: () => widget.onUnfavorite(),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                tooltip: 'Delete Link',
-                onPressed: () => widget.onShowMessage('削除機能はここで実装', icon: Icons.delete),
-              ),
-            ],
-          ),
-          onTap: () {
-            Future<void>(() async {
-              try {
-                await widget.onLaunch();
-              } catch (e) {
-                widget.onShowMessage('開けません: $e', icon: Icons.error, color: Colors.red[700]);
-              }
-            });
-          },
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  tooltip: 'Delete Link',
+                  onPressed: () => widget.onShowMessage('削除機能はここで実装', icon: Icons.delete),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

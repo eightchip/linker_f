@@ -46,14 +46,14 @@ void main() async {
     backgroundColor: const Color(0xFFF4F5F7),
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.normal,
-    title: 'Link Navigator D & D',
+    title: 'Link Navigator',
   );
 
   windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
     await windowManager.setPosition(Offset(x.toDouble(), y.toDouble()));
-    await windowManager.setTitle('Link Navigator D & D');
+    await windowManager.setTitle('Link Navigator');
   });
 
   runApp(const ProviderScope(child: LinkLauncherApp()));

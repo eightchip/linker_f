@@ -13,7 +13,7 @@ class LinkLauncherApp extends ConsumerWidget {
     final accentColor = ref.watch(accentColorProvider);
     
     return MaterialApp(
-      title: 'Link Navigator D & D',
+      title: 'Link Navigator',
       debugShowCheckedModeBanner: false,
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
