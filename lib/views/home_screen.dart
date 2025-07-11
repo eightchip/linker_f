@@ -22,7 +22,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart' show rootBundle;
-// import 'package:pdfx/pdfx.dart';
+import 'package:pdfx/pdfx.dart' as pdfx;
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -147,6 +147,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
         elevation: 2,
         actions: [
+          IconButton(icon: Icon(Icons.search, size: iconSize), tooltip: '検索', onPressed: () {
+              setState(() {
+                _showSearchBar = !_showSearchBar;
+                if (!_showSearchBar) _searchQuery = '';
+              });
+          }),
           IconButton(icon: Icon(Icons.add, size: iconSize), tooltip: 'グループを追加', onPressed: () => _showAddGroupDialog(context)),
           IconButton(icon: Icon(Icons.notes, size: iconSize), tooltip: 'メモ付きリンク一覧', onPressed: () {
               final groups = ref.read(linkViewModelProvider).groups;
@@ -165,15 +171,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   builder: (context, setState) => AlertDialog(
                     title: const Text('メモ付きリンク一覧'),
                     content: SizedBox(
-                      width: 400,
-                      height: 500,
+                      width: 600,
+                      height: 700,
                       child: Scrollbar(
                         child: ListView(
                           children: memoLinks.map((entry) {
                             final link = entry.value;
                             final group = entry.key;
                             final controller = memoControllers[link.id]!;
-                            final isOverflow = (link.memo?.split('\n').length ?? 0) > 3 || (link.memo?.length ?? 0) > 100;
+                            final isOverflow = (link.memo?.split('\n').length ?? 0) > 5 || (link.memo?.length ?? 0) > 100;
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Column(
@@ -249,7 +255,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: const Text('閉じる'),
                       ),
                       ElevatedButton(
-                        onPressed: () {
+            onPressed: () {
                           for (final entry in memoLinks) {
                             final link = entry.value;
                             final group = entry.key;
@@ -479,62 +485,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           gridPadding = const EdgeInsets.symmetric(horizontal: 4, vertical: 8);
         }
         return Column(
-          children: [
+              children: [
             if (showRecent)
-              Padding(
+                    Padding(
                 padding: const EdgeInsets.only(bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('最近使ったリンク', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('最近使ったリンク', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
                       children: recentLinks.take(10).map((link) => ActionChip(
-                        label: Text(link.label, overflow: TextOverflow.ellipsis),
-                        avatar: Icon(_iconForType(link.type), size: 18),
-                        onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                      )).toList(),
+                              label: Text(link.label, overflow: TextOverflow.ellipsis),
+                              avatar: Icon(_iconForType(link.type), size: 18),
+                              onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                            )).toList(),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
             Expanded(
               child: GridView.builder(
                 controller: _scrollController,
                 padding: gridPadding,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
                   crossAxisSpacing: gridSpacing,
                   mainAxisSpacing: gridSpacing,
                   childAspectRatio: 1.5,
-                ),
-                itemCount: displayGroups.length,
-                itemBuilder: (context, index) {
-                  final group = displayGroups[index];
-                  return Draggable<Group>(
-                    data: group,
-                    feedback: Material(
-                      elevation: 16,
-                      child: SizedBox(
+                  ),
+                  itemCount: displayGroups.length,
+                  itemBuilder: (context, index) {
+                    final group = displayGroups[index];
+                    return Draggable<Group>(
+                      data: group,
+                      feedback: Material(
+                        elevation: 16,
+                        child: SizedBox(
                         width: 296,
                         height: 192,
-                        child: GroupCard(
-                          group: group,
-                          onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
-                          onDeleteGroup: () => _deleteGroup(group.id),
-                          onAddLink: () => _showAddLinkDialog(context, group.id),
-                          onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
-                          onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                          onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
-                            groupId: group.id,
-                            label: label,
-                            path: path,
-                            type: type,
-                          ),
-                          onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
-                          onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
+                          child: GroupCard(
+                            group: group,
+                            onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
+                            onDeleteGroup: () => _deleteGroup(group.id),
+                            onAddLink: () => _showAddLinkDialog(context, group.id),
+                            onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
+                            onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                            onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                              groupId: group.id,
+                              label: label,
+                              path: path,
+                              type: type,
+                            ),
+                            onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
+                            onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
                           onEditGroupTitle: (oldTitle) async {
                             final controller = TextEditingController(text: oldTitle);
                             int selectedColor = group.color ?? Colors.blue.value;
@@ -585,32 +591,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
                               await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
                             }
-                          },
-                          onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
-                          onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
-                          onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                            },
+                            onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
+                            onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
+                            onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
                           onShowMessage: _showCenterMessage,
+                          ),
                         ),
                       ),
-                    ),
-                    childWhenDragging: Opacity(
-                      opacity: 0.5,
-                      child: GroupCard(
-                        group: group,
-                        isDragging: true,
-                        onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
-                        onDeleteGroup: () => _deleteGroup(group.id),
-                        onAddLink: () => _showAddLinkDialog(context, group.id),
-                        onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
-                        onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                        onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
-                          groupId: group.id,
-                          label: label,
-                          path: path,
-                          type: type,
-                        ),
-                        onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
-                        onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
+                      childWhenDragging: Opacity(
+                        opacity: 0.5,
+                        child: GroupCard(
+                          group: group,
+                          isDragging: true,
+                          onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
+                          onDeleteGroup: () => _deleteGroup(group.id),
+                          onAddLink: () => _showAddLinkDialog(context, group.id),
+                          onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
+                          onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                          onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                            groupId: group.id,
+                            label: label,
+                            path: path,
+                            type: type,
+                          ),
+                          onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
+                          onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
                         onEditGroupTitle: (oldTitle) async {
                           final controller = TextEditingController(text: oldTitle);
                           int selectedColor = group.color ?? Colors.blue.value;
@@ -661,42 +667,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
                             await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
                           }
-                        },
-                        onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
-                        onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
-                        onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                          },
+                          onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
+                          onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
+                          onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
                         onShowMessage: _showCenterMessage,
+                        ),
                       ),
-                    ),
-                    child: DragTarget<Group>(
-                      onWillAccept: (data) => data != null && data.id != group.id,
-                      onAccept: (data) async {
-                        final groups = ref.read(linkViewModelProvider).groups;
-                        final fromIndex = groups.indexWhere((g) => g.id == data.id);
-                        final toIndex = groups.indexWhere((g) => g.id == group.id);
-                        if (fromIndex != -1 && toIndex != -1) {
-                          final newOrder = List<Group>.from(groups);
-                          final item = newOrder.removeAt(fromIndex);
-                          newOrder.insert(toIndex, item);
-                          await ref.read(linkViewModelProvider.notifier).updateGroupsOrder(newOrder);
-                        }
-                      },
-                      builder: (context, candidateData, rejectedData) {
-                        return GroupCard(
-                          group: group,
-                          onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
-                          onDeleteGroup: () => _deleteGroup(group.id),
-                          onAddLink: () => _showAddLinkDialog(context, group.id),
-                          onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
-                          onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                          onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
-                            groupId: group.id,
-                            label: label,
-                            path: path,
-                            type: type,
-                          ),
-                          onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
-                          onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
+                      child: DragTarget<Group>(
+                        onWillAccept: (data) => data != null && data.id != group.id,
+                        onAccept: (data) async {
+                          final groups = ref.read(linkViewModelProvider).groups;
+                          final fromIndex = groups.indexWhere((g) => g.id == data.id);
+                          final toIndex = groups.indexWhere((g) => g.id == group.id);
+                          if (fromIndex != -1 && toIndex != -1) {
+                            final newOrder = List<Group>.from(groups);
+                            final item = newOrder.removeAt(fromIndex);
+                            newOrder.insert(toIndex, item);
+                            await ref.read(linkViewModelProvider.notifier).updateGroupsOrder(newOrder);
+                          }
+                        },
+                        builder: (context, candidateData, rejectedData) {
+                          return GroupCard(
+                            group: group,
+                            onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
+                            onDeleteGroup: () => _deleteGroup(group.id),
+                            onAddLink: () => _showAddLinkDialog(context, group.id),
+                            onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
+                            onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                            onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                              groupId: group.id,
+                              label: label,
+                              path: path,
+                              type: type,
+                            ),
+                            onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
+                            onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
                           onEditGroupTitle: (oldTitle) async {
                             final controller = TextEditingController(text: oldTitle);
                             int selectedColor = group.color ?? Colors.blue.value;
@@ -747,19 +753,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               final updated = group.copyWith(title: result['title'].trim(), color: result['color']);
                               await ref.read(linkViewModelProvider.notifier).updateGroup(updated);
                             }
-                          },
-                          onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
-                          onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
-                          onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                            },
+                            onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
+                            onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
+                            onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
                           onShowMessage: _showCenterMessage,
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
+                          );
+                        },
+                      ),
+                    );
+                  },
             ),
-          ],
+          ),
+      ],
         );
       },
     );
@@ -1252,12 +1258,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _showCenterMessage('メモ付きリンクがありません', icon: Icons.info, color: Colors.blueGrey);
       return;
     }
+    // Debugging: Print memoLinks content
+    print('=== Memo Links Debugging ===');
+    for (final entry in memoLinks) {
+      print('Group: ${entry.key.title}, Link: ${entry.value.label}, Memo: ${entry.value.memo}');
+    }
+    print('===========================');
     // 日本語フォントを読み込む
     final fontData = await rootBundle.load('assets/fonts/NotoSansJP-Regular.ttf');
     final ttf = pw.Font.ttf(fontData);
     final pdf = pw.Document();
     pdf.addPage(
       pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape, // Change to landscape orientation
         build: (context) => [
           pw.Header(
             level: 0,
@@ -1291,6 +1304,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final output = File(fileName);
     await output.writeAsBytes(await pdf.save());
     _showCenterMessage('PDF出力完了: ${output.absolute.path}', icon: Icons.picture_as_pdf, color: Colors.red[700]);
+
+    // Debugging: Check if the file exists
+    if (await output.exists()) {
+      print('PDF file exists at: ${output.path}');
+    } else {
+      print('PDF file does not exist at: ${output.path}');
+    }
+
+    // Display PDF content on screen with error handling
+    try {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('PDFプレビュー'),
+          content: Container(
+            width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
+            height: MediaQuery.of(context).size.height * 0.8, // 80% of screen height
+            child: pdfx.PdfView(
+              controller: pdfx.PdfController(
+                document: pdfx.PdfDocument.openFile(fileName),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('閉じる'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      print('Error displaying PDF: $e');
+      _showCenterMessage('PDFの表示に失敗しました', icon: Icons.error, color: Colors.red[700]);
+    }
   }
 }
 
@@ -1424,10 +1472,10 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
             const SizedBox(width: 8),
             // メインテキスト＋サブテキスト
             Expanded(
-              child: Column(
+      child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
                   Text(
                     widget.link.label,
                     style: TextStyle(
@@ -1483,12 +1531,12 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
                                   onPressed: () => Navigator.pop(context),
                                   child: const Text('キャンセル'),
                                 ),
-                                ElevatedButton(
+          ElevatedButton(
                                   onPressed: () => Navigator.pop(context, controller.text),
                                   child: const Text('保存'),
-                                ),
-                              ],
-                            ),
+          ),
+        ],
+      ),
                           );
                           if (result != null) {
                             final updated = widget.link.copyWith(memo: result);

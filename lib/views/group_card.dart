@@ -82,21 +82,21 @@ class _GroupCardState extends State<GroupCard> {
           ),
         ],
       ),
-      child: DropTarget(
+        child: DropTarget(
         onDragEntered: (detail) => setState(() => _isDropTarget = true),
         onDragExited: (detail) => setState(() => _isDropTarget = false),
         onDragDone: (detail) {
           setState(() => _isDropTarget = false);
           _handleDrop(context, detail);
         },
-        child: Card(
+          child: Card(
           elevation: isDropOrHover ? 24 : 6,
           color: Theme.of(context).cardColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: Colors.transparent, width: 0),
-          ),
-          child: _GroupCardContent(
+            ),
+            child: _GroupCardContent(
             group: widget.group,
             isDragging: widget.isDragging,
             onToggleCollapse: widget.onToggleCollapse,
