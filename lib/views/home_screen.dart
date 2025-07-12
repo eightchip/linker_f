@@ -1258,12 +1258,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _showCenterMessage('メモ付きリンクがありません', icon: Icons.info, color: Colors.blueGrey);
       return;
     }
-    // Debugging: Print memoLinks content
-    print('=== Memo Links Debugging ===');
-    for (final entry in memoLinks) {
-      print('Group: ${entry.key.title}, Link: ${entry.value.label}, Memo: ${entry.value.memo}');
-    }
-    print('===========================');
     // 日本語フォントを読み込む
     final fontData = await rootBundle.load('assets/fonts/NotoSansJP-Regular.ttf');
     final ttf = pw.Font.ttf(fontData);
@@ -1298,19 +1292,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
-    final now = DateTime.now();
-    final formatted = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
-    final fileName = 'memo_links_$formatted.pdf';
-    final output = File(fileName);
-    await output.writeAsBytes(await pdf.save());
-    _showCenterMessage('PDF出力完了: ${output.absolute.path}', icon: Icons.picture_as_pdf, color: Colors.red[700]);
-
-    // Debugging: Check if the file exists
-    if (await output.exists()) {
-      print('PDF file exists at: ${output.path}');
-    } else {
-      print('PDF file does not exist at: ${output.path}');
-    }
+    final tempDir = Directory.systemTemp;
+    final tempPreviewFileName = '${tempDir.path}/memo_links_preview.pdf';
+    final tempFile = File(tempPreviewFileName);
+    await tempFile.writeAsBytes(await pdf.save());
 
     // Display PDF content on screen with error handling
     try {
@@ -1319,15 +1304,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         builder: (context) => AlertDialog(
           title: const Text('PDFプレビュー'),
           content: Container(
-            width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
-            height: MediaQuery.of(context).size.height * 0.8, // 80% of screen height
+            width: MediaQuery.of(context).size.width * 1.0, // 80% of screen width
+            height: MediaQuery.of(context).size.height * 1.0, // 80% of screen height
             child: pdfx.PdfView(
               controller: pdfx.PdfController(
-                document: pdfx.PdfDocument.openFile(fileName),
+                document: pdfx.PdfDocument.openFile(tempPreviewFileName),
               ),
             ),
           ),
           actions: [
+            TextButton(
+              onPressed: () async {
+                final now = DateTime.now();
+                final formatted = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
+                final fileName = 'memo_links_$formatted.pdf';
+                final output = File(fileName);
+                await output.writeAsBytes(await pdf.save());
+                _showCenterMessage('PDFを保存しました: ${output.absolute.path}', icon: Icons.check_circle, color: Colors.green[700]);
+              },
+              child: const Text('PDF出力'),
+            ),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('閉じる'),
