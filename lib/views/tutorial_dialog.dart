@@ -14,7 +14,7 @@ class _TutorialDialogState extends State<TutorialDialog> {
 
   final List<_TutorialStep> steps = [
     _TutorialStep(
-      title: 'Link Navigator D & D へようこそ！',
+      title: 'Link Navigator へようこそ！',
       description: 'ファイル・フォルダ（URLは手動で入力）をグループで整理し、ドラッグ＆ドロップで直感的に管理できます。',
       imageAsset: 'assets/tutorial/welcome.png',
     ),

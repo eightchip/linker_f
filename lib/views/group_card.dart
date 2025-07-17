@@ -61,6 +61,8 @@ class _GroupCardState extends State<GroupCard> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOutCubic,
+      width: MediaQuery.of(context).size.width * 1.1,
+      height: MediaQuery.of(context).size.height * 1.1,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         border: Border.all(
@@ -518,97 +520,109 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                 padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 0),
                 child: Row(
                   children: [
-                    item.type == LinkType.url
-                      ? UrlPreviewWidget(url: item.path, isDark: isDark)
-                      : item.type == LinkType.file
-                        ? FilePreviewWidget(path: item.path, isDark: isDark)
-                        : Icon(iconData, color: iconColor, size: 25 * scale),
-                    SizedBox(width: 8),
-                    if (item.type != LinkType.url)
-                      Expanded(
-                        child: Tooltip(
-        message: item.path,
-        child: Text(
-          item.label,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
-        ),
-      ),
-                      ),
-                    Visibility(
-                      visible: _hovering,
-                      maintainState: false,
-                      maintainAnimation: false,
-                      maintainSize: false,
+                    Expanded(
                       child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Tooltip(
-            message: item.memo?.isNotEmpty == true ? item.memo! : 'メモなし',
-            child: IconButton(
-              icon: const Icon(Icons.note_alt_outlined),
-              tooltip: '',
-              onPressed: () async {
-                final controller = TextEditingController(text: item.memo ?? '');
-                final result = await showDialog<String>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('メモ編集'),
-                    content: TextField(
-                      controller: controller,
-                      maxLines: 5,
-                      decoration: const InputDecoration(hintText: 'メモを入力...'),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('キャンセル'),
+                        children: [
+                          item.type == LinkType.url
+                            ? UrlPreviewWidget(url: item.path, isDark: isDark)
+                            : item.type == LinkType.file
+                              ? FilePreviewWidget(path: item.path, isDark: isDark)
+                              : Icon(iconData, color: iconColor, size: 25 * scale),
+                          SizedBox(width: 8),
+                          if (item.type != LinkType.url)
+                            Expanded(
+                              child: Tooltip(
+                                message: item.path,
+                                child: Text(
+                                  item.label,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
+                                ),
+                              ),
+                            ),
+                          Visibility(
+                            visible: item.memo?.isNotEmpty == true || _hovering,
+                            maintainState: false,
+                            maintainAnimation: false,
+                            maintainSize: false,
+                            child: Tooltip(
+                              message: item.memo ?? '',
+                              child: IconButton(
+                                icon: const Icon(Icons.note_alt_outlined, color: Colors.orange),
+                                tooltip: '',
+                                onPressed: () async {
+                                  final controller = TextEditingController(text: item.memo ?? '');
+                                  final result = await showDialog<String>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('メモ編集'),
+                                      content: TextField(
+                                        controller: controller,
+                                        maxLines: 5,
+                                        decoration: const InputDecoration(hintText: 'メモを入力...'),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('キャンセル'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(context, controller.text),
+                                          child: const Text('保存'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (result != null) {
+                                    final updated = item.copyWith(memo: result);
+                                    widget.onEditLink(updated);
+                                    setState(() {});
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                          Visibility(
+                            visible: _hovering,
+                            maintainState: false,
+                            maintainAnimation: false,
+                            maintainSize: false,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    isLinkFavorite ? Icons.star : Icons.star_border,
+                                    color: isLinkFavorite ? Colors.amber : Colors.grey,
+                                  ),
+                                  tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
+                                  onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.edit, size: 14 * scale),
+                                  onPressed: () => _showEditLinkDialog(context, item),
+                                  tooltip: 'Edit Link',
+                                  padding: const EdgeInsets.all(4),
+                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                ),
+                                SizedBox(width: 8),
+                                IconButton(
+                                  icon: Icon(Icons.delete, size: 14 * scale),
+                                  onPressed: () => widget.onDeleteLink(item.id),
+                                  tooltip: 'Delete Link',
+                                  padding: const EdgeInsets.all(4),
+                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                ),
+                                SizedBox(width: 8),
+                                // ReorderableDragStartListener(
+                                //   index: items.indexOf(item),
+                                //   child: Icon(Icons.drag_handle, size: 18 * scale, color: const Color.fromARGB(255, 97, 97, 97)),
+                                // ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context, controller.text),
-                        child: const Text('保存'),
-                      ),
-                    ],
-                  ),
-                );
-                if (result != null) {
-                  final updated = item.copyWith(memo: result);
-                  widget.onEditLink(updated);
-                  setState(() {});
-                }
-              },
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              isLinkFavorite ? Icons.star : Icons.star_border,
-              color: isLinkFavorite ? Colors.amber : Colors.grey,
-            ),
-            tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
-            onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
-          ),
-          IconButton(
-            icon: Icon(Icons.edit, size: 14 * scale),
-            onPressed: () => _showEditLinkDialog(context, item),
-            tooltip: 'Edit Link',
-            padding: const EdgeInsets.all(4),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          ),
-          SizedBox(width: 8),
-          IconButton(
-            icon: Icon(Icons.delete, size: 14 * scale),
-            onPressed: () => widget.onDeleteLink(item.id),
-            tooltip: 'Delete Link',
-            padding: const EdgeInsets.all(4),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          ),
-          SizedBox(width: 8),
-          ReorderableDragStartListener(
-            index: key is ValueKey ? items.indexWhere((e) => e.id == (key as ValueKey).value) : 0,
-            child: Icon(Icons.drag_handle, size: 18 * scale, color: Colors.grey[700]),
-          ),
-        ],
-      ),
                     ),
                   ],
                 ),

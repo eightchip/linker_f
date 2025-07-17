@@ -147,13 +147,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
         elevation: 2,
         actions: [
+          IconButton(icon: Icon(Icons.add, size: iconSize), tooltip: 'グループを追加', onPressed: () => _showAddGroupDialog(context)),
           IconButton(icon: Icon(Icons.search, size: iconSize), tooltip: '検索', onPressed: () {
               setState(() {
                 _showSearchBar = !_showSearchBar;
                 if (!_showSearchBar) _searchQuery = '';
               });
           }),
-          IconButton(icon: Icon(Icons.add, size: iconSize), tooltip: 'グループを追加', onPressed: () => _showAddGroupDialog(context)),
+          
           IconButton(icon: Icon(Icons.notes, size: iconSize), tooltip: 'メモ付きリンク一覧', onPressed: () {
               final groups = ref.read(linkViewModelProvider).groups;
               final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
@@ -171,8 +172,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   builder: (context, setState) => AlertDialog(
                     title: const Text('メモ付きリンク一覧'),
                     content: SizedBox(
-                      width: 600,
-                      height: 700,
+                      width: 1000,
+                      height: 1000,
                       child: Scrollbar(
                         child: ListView(
                           children: memoLinks.map((entry) {
@@ -1504,7 +1505,7 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
                   alignment: Alignment.center,
                   children: [
                     Tooltip(
-                      message: widget.link.memo?.isNotEmpty == true ? widget.link.memo! : 'メモなし',
+                      message: widget.link.memo?.isNotEmpty == true ? widget.link.memo! : '',
                       child: IconButton(
                         icon: Icon(
                           Icons.note_alt_outlined,
