@@ -461,94 +461,99 @@ class _GroupCardContentState extends State<_GroupCardContent> {
   }
 
   Widget _buildLinkItem(BuildContext context, LinkItem item, List<LinkItem> items, {double scale = 1.0, Key? key}) {
-    IconData iconData;
-    Color iconColor;
-    switch (item.type) {
-      case LinkType.file:
-        iconData = Icons.insert_drive_file;
-        iconColor = Colors.blue;
-        break;
-      case LinkType.folder:
-        iconData = Icons.folder;
-        iconColor = Colors.orange;
-        break;
-      case LinkType.url:
-        iconData = Icons.link;
-        iconColor = Colors.green;
-        break;
-    }
-    final isLinkFavorite = item.isFavorite;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final rowColor = isLinkFavorite
-        ? (isDark
-            ? Colors.amber.withOpacity(0.22)
-            : Colors.amber.withOpacity(0.16))
-        : Colors.transparent;
-    bool _hovering = false;
-    return KeyedSubtree(
-      key: key,
-      child: Draggable<Map<String, dynamic>>(
-        data: {'link': item, 'fromGroupId': widget.group.id},
-        feedback: Material(
-          color: Colors.transparent,
-          child: Container(
-            width: 320,
-            child: Row(
-              children: [
-                item.type == LinkType.url
+  IconData iconData;
+  Color iconColor;
+  switch (item.type) {
+    case LinkType.file:
+      iconData = Icons.insert_drive_file;
+      iconColor = Colors.blue;
+      break;
+    case LinkType.folder:
+      iconData = Icons.folder;
+      iconColor = Colors.orange;
+      break;
+    case LinkType.url:
+      iconData = Icons.link;
+      iconColor = Colors.green;
+      break;
+  }
+  final isLinkFavorite = item.isFavorite;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final rowColor = isLinkFavorite
+      ? (isDark ? Colors.amber.withOpacity(0.22) : Colors.amber.withOpacity(0.16))
+      : Colors.transparent;
+  bool _hovering = false;
+  return KeyedSubtree(
+    key: key,
+    child: Draggable<Map<String, dynamic>>(
+      data: {'link': item, 'fromGroupId': widget.group.id},
+      feedback: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 320,
+          child: Row(
+            children: [
+              item.type == LinkType.url
                   ? UrlPreviewWidget(url: item.path, isDark: isDark)
                   : item.type == LinkType.file
-                    ? FilePreviewWidget(path: item.path, isDark: isDark)
-                    : Icon(iconData, color: iconColor, size: 25 * scale),
-                SizedBox(width: 8),
-                if (item.type != LinkType.url)
-                  Expanded(
-                    child: Text(item.label, style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Colors.white), overflow: TextOverflow.ellipsis),
+                      ? FilePreviewWidget(path: item.path, isDark: isDark)
+                      : Icon(iconData, color: iconColor, size: 25 * scale),
+              SizedBox(width: 8),
+              if (item.type != LinkType.url)
+                Expanded(
+                  child: Text(
+                    item.label,
+                    style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
-        child: StatefulBuilder(
-          builder: (context, setState) => MouseRegion(
-            onEnter: (_) => setState(() => _hovering = true),
-            onExit: (_) => setState(() => _hovering = false),
-            child: GestureDetector(
-              onTap: () => _launchLink(item),
-              child: Container(
-                color: rowColor,
-                padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 0),
-                child: Row(
-                  children: [
+      ),
+      child: StatefulBuilder(
+        builder: (context, setState) => MouseRegion(
+          onEnter: (_) => setState(() => _hovering = true),
+          onExit: (_) => setState(() => _hovering = false),
+          child: GestureDetector(
+            onTap: () => _launchLink(item),
+            child: Container(
+              color: rowColor,
+              padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 0),
+              child: Row(
+                children: [
+                  // 1. アイコン＋ラベル
+                  item.type == LinkType.url
+                      ? UrlPreviewWidget(url: item.path, isDark: isDark)
+                      : item.type == LinkType.file
+                          ? FilePreviewWidget(path: item.path, isDark: isDark)
+                          : Icon(iconData, color: iconColor, size: 25 * scale),
+                  SizedBox(width: 8),
+                  if (item.type != LinkType.url)
                     Expanded(
-                      child: Row(
-                        children: [
-                          item.type == LinkType.url
-                            ? UrlPreviewWidget(url: item.path, isDark: isDark)
-                            : item.type == LinkType.file
-                              ? FilePreviewWidget(path: item.path, isDark: isDark)
-                              : Icon(iconData, color: iconColor, size: 25 * scale),
-                          SizedBox(width: 8),
-                          if (item.type != LinkType.url)
-                            Expanded(
-                              child: Tooltip(
-                                message: item.path,
-                                child: Text(
-                                  item.label,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
-                                ),
-                              ),
-                            ),
-                          Visibility(
-                            visible: item.memo?.isNotEmpty == true || _hovering,
-                            maintainState: false,
-                            maintainAnimation: false,
-                            maintainSize: false,
-                            child: Tooltip(
+                      child: Tooltip(
+                        message: item.path,
+                        child: Text(
+                          item.label,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
+                        ),
+                      ),
+                    ),
+                  // 2. ボタン群（右端確保のためRow→Containerで幅を制限）
+                  Container(
+                    constraints: BoxConstraints(maxWidth: 230),
+                    // ←右側にまとめて表示（オーバーフローでラベルが縮む）
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // ▼ メモ有り：常時オレンジ、さらにホバー時は4連
+                        if (item.memo?.isNotEmpty == true)
+                          ...[
+                            Tooltip(
                               message: item.memo ?? '',
                               child: IconButton(
-                                icon: const Icon(Icons.note_alt_outlined, color: Colors.orange),
+                                icon: Icon(Icons.note_alt_outlined, color: Colors.orange, size: 20),
                                 tooltip: '',
                                 onPressed: () async {
                                   final controller = TextEditingController(text: item.memo ?? '');
@@ -579,60 +584,125 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                                     setState(() {});
                                   }
                                 },
+                                constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                                padding: EdgeInsets.zero,
                               ),
                             ),
-                          ),
-                          Visibility(
-                            visible: _hovering,
-                            maintainState: false,
-                            maintainAnimation: false,
-                            maintainSize: false,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: Icon(
-                                    isLinkFavorite ? Icons.star : Icons.star_border,
-                                    color: isLinkFavorite ? Colors.amber : Colors.grey,
+                            if (_hovering) ...[
+                              SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(
+                                  isLinkFavorite ? Icons.star : Icons.star_border,
+                                  color: isLinkFavorite ? Colors.amber : Colors.grey,
+                                  size: 20,
+                                ),
+                                tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
+                                onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
+                                constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                                padding: EdgeInsets.zero,
+                              ),
+                              SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(Icons.edit, size: 18),
+                                onPressed: () => _showEditLinkDialog(context, item),
+                                tooltip: 'Edit Link',
+                                constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                                padding: EdgeInsets.zero,
+                              ),
+                              SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(Icons.delete, size: 18),
+                                onPressed: () => widget.onDeleteLink(item.id),
+                                tooltip: 'Delete Link',
+                                constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                                padding: EdgeInsets.zero,
+                              ),
+                            ]
+                          ],
+                        // ▼ メモ無し：ホバー時だけ4連
+                        if (item.memo?.isNotEmpty != true && _hovering)
+                          ...[
+                            IconButton(
+                              icon: Icon(Icons.note_alt_outlined, color: Colors.grey, size: 20),
+                              tooltip: 'メモ追加',
+                              onPressed: () async {
+                                final controller = TextEditingController(text: item.memo ?? '');
+                                final result = await showDialog<String>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('メモ編集'),
+                                    content: TextField(
+                                      controller: controller,
+                                      maxLines: 5,
+                                      decoration: const InputDecoration(hintText: 'メモを入力...'),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('キャンセル'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(context, controller.text),
+                                        child: const Text('保存'),
+                                      ),
+                                    ],
                                   ),
-                                  tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
-                                  onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.edit, size: 14 * scale),
-                                  onPressed: () => _showEditLinkDialog(context, item),
-                                  tooltip: 'Edit Link',
-                                  padding: const EdgeInsets.all(4),
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                ),
-                                SizedBox(width: 8),
-                                IconButton(
-                                  icon: Icon(Icons.delete, size: 14 * scale),
-                                  onPressed: () => widget.onDeleteLink(item.id),
-                                  tooltip: 'Delete Link',
-                                  padding: const EdgeInsets.all(4),
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                ),
-                                SizedBox(width: 8),
-                                // ReorderableDragStartListener(
-                                //   index: items.indexOf(item),
-                                //   child: Icon(Icons.drag_handle, size: 18 * scale, color: const Color.fromARGB(255, 97, 97, 97)),
-                                // ),
-                              ],
+                                );
+                                if (result != null) {
+                                  final updated = item.copyWith(memo: result);
+                                  widget.onEditLink(updated);
+                                  setState(() {});
+                                }
+                              },
+                              constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                              padding: EdgeInsets.zero,
                             ),
-                          ),
-                        ],
-                      ),
+                            SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(
+                                isLinkFavorite ? Icons.star : Icons.star_border,
+                                color: isLinkFavorite ? Colors.amber : Colors.grey,
+                                size: 20,
+                              ),
+                              tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
+                              onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
+                              constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                              padding: EdgeInsets.zero,
+                            ),
+                            SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(Icons.edit, size: 18),
+                              onPressed: () => _showEditLinkDialog(context, item),
+                              tooltip: 'Edit Link',
+                              constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                              padding: EdgeInsets.zero,
+                            ),
+                            SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(Icons.delete, size: 18),
+                              onPressed: () => widget.onDeleteLink(item.id),
+                              tooltip: 'Delete Link',
+                              constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ]
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  // 3. 右端に必ず余白！（32px）
+                  SizedBox(width: 36),
+                ],
               ),
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
+
+
 
   void _showEditLinkDialog(BuildContext context, LinkItem item) {
     final labelController = TextEditingController(text: item.label);
