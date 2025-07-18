@@ -522,32 +522,46 @@ class _GroupCardContentState extends State<_GroupCardContent> {
               padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 0),
               child: Row(
                 children: [
-                  // 1. アイコン＋ラベル
-                  item.type == LinkType.url
-                      ? UrlPreviewWidget(url: item.path, isDark: isDark)
-                      : item.type == LinkType.file
-                          ? FilePreviewWidget(path: item.path, isDark: isDark)
-                          : Icon(iconData, color: iconColor, size: 25 * scale),
-                  SizedBox(width: 8),
-                  if (item.type != LinkType.url)
-                    Expanded(
-                      child: Tooltip(
-                        message: item.path,
-                        child: Text(
-                          item.label,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
-                        ),
-                      ),
+                  // 1. 左側：アイコン＋ラベルやURL（全部Expandedでラップ！）
+                  Expanded(
+                    child: Row(
+                      children: [
+                        item.type == LinkType.url
+                          ? UrlPreviewWidget(url: item.path, isDark: isDark)
+                          : item.type == LinkType.file
+                              ? FilePreviewWidget(path: item.path, isDark: isDark)
+                              : Icon(iconData, color: iconColor, size: 25 * scale),
+                        SizedBox(width: 8),
+                        if (item.type == LinkType.url)
+                          // URLはここ
+                          Flexible(
+                            child: Text(
+                              item.label,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
+                            ),
+                          ),
+                        if (item.type != LinkType.url)
+                          Flexible(
+                            child: Tooltip(
+                              message: item.path,
+                              child: Text(
+                                item.label,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  // 2. ボタン群（右端確保のためRow→Containerで幅を制限）
+                  ),
+                  // 2. 右側：ボタン群（幅固定！）-----------------
                   Container(
-                    constraints: BoxConstraints(maxWidth: 230),
-                    // ←右側にまとめて表示（オーバーフローでラベルが縮む）
+                    constraints: BoxConstraints(maxWidth: 184), // 必要に応じて幅調整
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // ▼ メモ有り：常時オレンジ、さらにホバー時は4連
+                        // メモ有り
                         if (item.memo?.isNotEmpty == true)
                           ...[
                             Tooltip(
@@ -619,7 +633,7 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                               ),
                             ]
                           ],
-                        // ▼ メモ無し：ホバー時だけ4連
+                        // メモ無し
                         if (item.memo?.isNotEmpty != true && _hovering)
                           ...[
                             IconButton(
@@ -689,7 +703,7 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                       ],
                     ),
                   ),
-                  // 3. 右端に必ず余白！（32px）
+                  // 3. 右端に余白（ドラッグハンドル用/予備。不要なら削除OK）
                   SizedBox(width: 36),
                 ],
               ),
@@ -700,6 +714,7 @@ class _GroupCardContentState extends State<_GroupCardContent> {
     ),
   );
 }
+
 
 
 
