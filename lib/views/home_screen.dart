@@ -93,8 +93,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       displayGroups = displayGroups
         .where((g) => g.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           g.items.any((l) => l.label.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            l.path.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            l.type.name.toLowerCase().contains(_searchQuery.toLowerCase())))
+            l.path.toLowerCase().contains(_searchQuery.toLowerCase())))
         .toList();
     }
     // 最近使ったグループ・リンク
@@ -279,17 +278,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               );
             },
           ),
-          IconButton(
-            icon: Icon(Icons.picture_as_pdf, size: iconSize),
-            tooltip: 'メモ付きリンク一覧をPDF出力',
-            onPressed: () => _exportMemoLinksToPdf(context),
-          ),
-          IconButton(icon: Icon(Icons.star_outline, size: iconSize), tooltip: 'リンクのお気に入り一覧', onPressed: () async {
-                  setState(() {
-                    _showFavoriteLinks = !_showFavoriteLinks;
-                  });
-                  if (!_showFavoriteLinks) return;
-              }),
+          // お気に入り（★）とPDF（📄）アイコンを非表示にしました
           IconButton(icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showRecent ? '最近使った非表示' : '最近使ったを上部に表示', onPressed: () {
               setState(() {
                 _showRecent = !_showRecent;
@@ -370,7 +359,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: TextField(
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: '検索（グループ名・リンク名・パス・タイプ）',
+                      hintText: '検索（ファイル名・フォルダ名・URL）',
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.close),
