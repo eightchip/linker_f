@@ -24,6 +24,96 @@ import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdfx/pdfx.dart' as pdfx;
 
+// ハイライト用のウィジェット
+class HighlightedText extends StatelessWidget {
+  final String text;
+  final String? highlight;
+  final TextStyle? style;
+  final TextOverflow? overflow;
+  final int? maxLines;
+
+  const HighlightedText({
+    Key? key,
+    required this.text,
+    this.highlight,
+    this.style,
+    this.overflow,
+    this.maxLines,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (highlight == null || highlight!.isEmpty) {
+      return Text(
+        text,
+        style: style,
+        overflow: overflow,
+        maxLines: maxLines,
+      );
+    }
+
+    final highlightLower = highlight!.toLowerCase();
+    final textLower = text.toLowerCase();
+    final matches = <_TextMatch>[];
+
+    int start = 0;
+    while (start < textLower.length) {
+      final index = textLower.indexOf(highlightLower, start);
+      if (index == -1) break;
+      matches.add(_TextMatch(index, index + highlightLower.length));
+      start = index + 1;
+    }
+
+    if (matches.isEmpty) {
+      return Text(
+        text,
+        style: style,
+        overflow: overflow,
+        maxLines: maxLines,
+      );
+    }
+
+    final spans = <TextSpan>[];
+    int currentIndex = 0;
+
+    for (final match in matches) {
+      if (currentIndex < match.start) {
+        spans.add(TextSpan(
+          text: text.substring(currentIndex, match.start),
+          style: style,
+        ));
+      }
+      spans.add(TextSpan(
+        text: text.substring(match.start, match.end),
+        style: style?.copyWith(
+          backgroundColor: Colors.yellow.withOpacity(0.3),
+          fontWeight: FontWeight.bold,
+        ),
+      ));
+      currentIndex = match.end;
+    }
+
+    if (currentIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(currentIndex),
+        style: style,
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+      overflow: overflow ?? TextOverflow.clip,
+      maxLines: maxLines,
+    );
+  }
+}
+
+class _TextMatch {
+  final int start;
+  final int end;
+  _TextMatch(this.start, this.end);
+}
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -342,13 +432,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           IconButton(icon: Icon(Icons.upload, size: iconSize), tooltip: 'バックアップ', onPressed: () => _exportData(context)),
           IconButton(icon: Icon(Icons.download, size: iconSize), tooltip: 'データ復元', onPressed: () => _importData(context)),
-          if (favoriteGroups.isNotEmpty)
-            IconButton(icon: Icon(_showOnlyFavorites ? Icons.star : Icons.star_border, color: _showOnlyFavorites ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showOnlyFavorites ? 'すべて表示' : 'グループのお気に入りのみ表示', onPressed: () {
-                setState(() {
-                  _showOnlyFavorites = !_showOnlyFavorites;
-                });
-                  }),
-          IconButton(icon: Icon(Icons.help_outline, size: iconSize), tooltip: 'チュートリアル・ヘルプ', onPressed: _showTutorial),
+          // お気に入りアイコンを削除
+          // if (favoriteGroups.isNotEmpty)
+          //   IconButton(icon: Icon(_showOnlyFavorites ? Icons.star : Icons.star_border, color: _showOnlyFavorites ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showOnlyFavorites ? 'すべて表示' : 'グループのお気に入りのみ表示', onPressed: () {
+          //       setState(() {
+          //         _showOnlyFavorites = !_showOnlyFavorites;
+          //       });
+          //         }),
+          // チュートリアルアイコンを削除
+          // IconButton(icon: Icon(Icons.help_outline, size: iconSize), tooltip: 'チュートリアル・ヘルプ', onPressed: _showTutorial),
         ],
         bottom: _showSearchBar
             ? PreferredSize(
@@ -518,6 +610,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         height: 192,
                           child: GroupCard(
                             group: group,
+                            searchQuery: _searchQuery,
                             onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
                             onDeleteGroup: () => _deleteGroup(group.id),
                             onAddLink: () => _showAddLinkDialog(context, group.id),
@@ -593,6 +686,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         opacity: 0.5,
                         child: GroupCard(
                           group: group,
+                          searchQuery: _searchQuery,
                           isDragging: true,
                           onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
                           onDeleteGroup: () => _deleteGroup(group.id),
@@ -680,6 +774,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         builder: (context, candidateData, rejectedData) {
                           return GroupCard(
                             group: group,
+                            searchQuery: _searchQuery,
                             onToggleCollapse: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
                             onDeleteGroup: () => _deleteGroup(group.id),
                             onAddLink: () => _showAddLinkDialog(context, group.id),
@@ -1082,31 +1177,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _checkAndShowTutorial() async {
     final box = await Hive.openBox('settings');
-    final shown = box.get('tutorial_shown', defaultValue: false);
-    if (!shown) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => TutorialDialog(
-            onFinish: () async {
-              await box.put('tutorial_shown', true);
-              setState(() => _tutorialShown = true);
-            },
-          ),
-        );
-      });
-    } else {
-      setState(() => _tutorialShown = true);
-    }
+    // チュートリアル表示を削除
+    // final shown = box.get('tutorial_shown', defaultValue: false);
+    // if (!shown) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     showDialog(
+    //       context: context,
+    //       barrierDismissible: false,
+    //       builder: (context) => TutorialDialog(
+    //         onFinish: () async {
+    //           await box.put('tutorial_shown', true);
+    //           setState(() => _tutorialShown = true);
+    //         },
+    //       ),
+    //     );
+    //   });
+    // } else {
+    //   setState(() => _tutorialShown = true);
+    // }
+    setState(() => _tutorialShown = true);
   }
 
-  void _showTutorial() {
-    showDialog(
-      context: context,
-      builder: (context) => TutorialDialog(),
-    );
-  }
+  // チュートリアルメソッドを削除
+  // void _showTutorial() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => TutorialDialog(),
+  //   );
+  // }
 
   void _onMouseMove(PointerEvent event) {
     // 画面端ホバー時のジャンプボタン表示ロジックを削除
@@ -1550,14 +1648,15 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
                       ),
                   ],
                 ),
-                IconButton(
-                  icon: Icon(
-                    widget.link.isFavorite ? Icons.star : Icons.star_border,
-                    color: widget.link.isFavorite ? Colors.amber : Colors.grey,
-                  ),
-                  tooltip: widget.link.isFavorite ? 'お気に入り解除' : 'お気に入り',
-                  onPressed: () => widget.onUnfavorite(),
-                ),
+                // お気に入りアイコンを削除
+                // IconButton(
+                //   icon: Icon(
+                //     widget.link.isFavorite ? Icons.star : Icons.star_border,
+                //     color: widget.link.isFavorite ? Colors.amber : Colors.grey,
+                //   ),
+                //   tooltip: widget.link.isFavorite ? 'お気に入り解除' : 'お気に入り',
+                //   onPressed: () => widget.onUnfavorite(),
+                // ),
                 IconButton(
                   icon: const Icon(Icons.delete),
                   tooltip: 'Delete Link',
@@ -1576,7 +1675,8 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
 class UrlPreviewWidget extends StatefulWidget {
   final String url;
   final bool isDark;
-  const UrlPreviewWidget({super.key, required this.url, required this.isDark});
+  final String? searchQuery;
+  const UrlPreviewWidget({super.key, required this.url, required this.isDark, this.searchQuery});
   @override
   State<UrlPreviewWidget> createState() => _UrlPreviewWidgetState();
 }
@@ -1630,8 +1730,9 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
             errorBuilder: (_, __, ___) => _getFallbackIconForUrl(widget.url)),
         const SizedBox(width: 4),
         Flexible(
-          child: Text(
-            _title ?? widget.url,
+          child: HighlightedText(
+            text: _title ?? widget.url,
+            highlight: widget.searchQuery,
             style: TextStyle(fontSize: 13, color: widget.isDark ? Colors.white : Colors.black87),
             overflow: TextOverflow.ellipsis,
           ),

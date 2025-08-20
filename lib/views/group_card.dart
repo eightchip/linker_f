@@ -8,6 +8,96 @@ import '../models/link_item.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
 
+// ハイライト用のウィジェット
+class HighlightedText extends StatelessWidget {
+  final String text;
+  final String? highlight;
+  final TextStyle? style;
+  final TextOverflow? overflow;
+  final int? maxLines;
+
+  const HighlightedText({
+    Key? key,
+    required this.text,
+    this.highlight,
+    this.style,
+    this.overflow,
+    this.maxLines,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (highlight == null || highlight!.isEmpty) {
+      return Text(
+        text,
+        style: style,
+        overflow: overflow,
+        maxLines: maxLines,
+      );
+    }
+
+    final highlightLower = highlight!.toLowerCase();
+    final textLower = text.toLowerCase();
+    final matches = <_TextMatch>[];
+
+    int start = 0;
+    while (start < textLower.length) {
+      final index = textLower.indexOf(highlightLower, start);
+      if (index == -1) break;
+      matches.add(_TextMatch(index, index + highlightLower.length));
+      start = index + 1;
+    }
+
+    if (matches.isEmpty) {
+      return Text(
+        text,
+        style: style,
+        overflow: overflow,
+        maxLines: maxLines,
+      );
+    }
+
+    final spans = <TextSpan>[];
+    int currentIndex = 0;
+
+    for (final match in matches) {
+      if (currentIndex < match.start) {
+        spans.add(TextSpan(
+          text: text.substring(currentIndex, match.start),
+          style: style,
+        ));
+      }
+      spans.add(TextSpan(
+        text: text.substring(match.start, match.end),
+        style: style?.copyWith(
+          backgroundColor: Colors.yellow.withOpacity(0.3),
+          fontWeight: FontWeight.bold,
+        ),
+      ));
+      currentIndex = match.end;
+    }
+
+    if (currentIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(currentIndex),
+        style: style,
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+      overflow: overflow ?? TextOverflow.clip,
+      maxLines: maxLines,
+    );
+  }
+}
+
+class _TextMatch {
+  final int start;
+  final int end;
+  _TextMatch(this.start, this.end);
+}
+
 class GroupCard extends StatefulWidget {
   final Group group;
   final VoidCallback onToggleCollapse;
@@ -25,6 +115,7 @@ class GroupCard extends StatefulWidget {
   final void Function(Group, LinkItem) onLinkFavoriteToggle;
   final void Function(LinkItem link, String fromGroupId, String toGroupId)? onMoveLinkToGroup;
   final void Function(String, {IconData? icon, Color? color}) onShowMessage;
+  final String? searchQuery;
 
   const GroupCard({
     Key? key,
@@ -44,6 +135,7 @@ class GroupCard extends StatefulWidget {
     required this.onLinkFavoriteToggle,
     this.onMoveLinkToGroup,
     required this.onShowMessage,
+    this.searchQuery,
   }) : super(key: key);
 
   @override
@@ -114,6 +206,7 @@ class _GroupCardState extends State<GroupCard> {
             onFavoriteToggle: widget.onFavoriteToggle,
             onLinkFavoriteToggle: widget.onLinkFavoriteToggle,
             onMoveLinkToGroup: widget.onMoveLinkToGroup,
+            searchQuery: widget.searchQuery,
           ),
         ),
       ),
@@ -243,6 +336,7 @@ class _GroupCardContent extends StatefulWidget {
   final void Function(Group) onFavoriteToggle;
   final void Function(Group, LinkItem) onLinkFavoriteToggle;
   final void Function(LinkItem link, String fromGroupId, String toGroupId)? onMoveLinkToGroup;
+  final String? searchQuery;
 
   const _GroupCardContent({
     required this.group,
@@ -260,6 +354,7 @@ class _GroupCardContent extends StatefulWidget {
     required this.onFavoriteToggle,
     required this.onLinkFavoriteToggle,
     this.onMoveLinkToGroup,
+    this.searchQuery,
   });
 
   @override
@@ -291,14 +386,15 @@ class _GroupCardContentState extends State<_GroupCardContent> {
               crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                    group.title ?? '名称未設定',
-                    style: TextStyle(
-                      fontSize: 14 * scale,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                    maxLines: 1,
+                child: HighlightedText(
+                  text: group.title ?? '名称未設定',
+                  highlight: widget.searchQuery,
+                  style: TextStyle(
+                    fontSize: 14 * scale,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -310,18 +406,19 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-              IconButton(
-                icon: Icon(
-                  isGroupFavorite ? Icons.star : Icons.star_border,
-                  color: isGroupFavorite ? Colors.amber : Colors.grey,
-                ),
-                tooltip: isGroupFavorite ? 'お気に入り解除' : 'お気に入り',
-                onPressed: () => widget.onFavoriteToggle(group),
-                        iconSize: 18,
-                        padding: EdgeInsets.all(4),
-                        constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-              ),
-                      SizedBox(width: 8),
+                      // お気に入りアイコンを削除
+                      // IconButton(
+                      //   icon: Icon(
+                      //     isGroupFavorite ? Icons.star : Icons.star_border,
+                      //     color: isGroupFavorite ? Colors.amber : Colors.grey,
+                      //   ),
+                      //   tooltip: isGroupFavorite ? 'お気に入り解除' : 'お気に入り',
+                      //   onPressed: () => widget.onFavoriteToggle(group),
+                      //           iconSize: 18,
+                      //           padding: EdgeInsets.all(4),
+                      //           constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                      // ),
+                      // SizedBox(width: 8),
               IconButton(
                         icon: Icon(Icons.edit, size: 16),
                 tooltip: 'Edit Group Name',
@@ -492,10 +589,10 @@ class _GroupCardContentState extends State<_GroupCardContent> {
         child: Container(
           width: 320,
           child: Row(
-            children: [
-              item.type == LinkType.url
-                  ? UrlPreviewWidget(url: item.path, isDark: isDark)
-                  : item.type == LinkType.file
+                         children: [
+               item.type == LinkType.url
+                   ? UrlPreviewWidget(url: item.path, isDark: isDark, searchQuery: widget.searchQuery)
+                   : item.type == LinkType.file
                       ? FilePreviewWidget(path: item.path, isDark: isDark)
                       : Icon(iconData, color: iconColor, size: 25 * scale),
               SizedBox(width: 8),
@@ -524,22 +621,29 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                 children: [
                   // 1. アイコン＋ラベル
                   item.type == LinkType.url
-                      ? UrlPreviewWidget(url: item.path, isDark: isDark)
+                      ? UrlPreviewWidget(url: item.path, isDark: isDark, searchQuery: widget.searchQuery)
                       : item.type == LinkType.file
                           ? FilePreviewWidget(path: item.path, isDark: isDark)
                           : Icon(iconData, color: iconColor, size: 25 * scale),
                   SizedBox(width: 8),
-                  if (item.type != LinkType.url)
-                    Expanded(
-                      child: Tooltip(
-                        message: item.path,
-                        child: Text(
-                          item.label,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
-                        ),
-                      ),
+                  Expanded(
+                    child: Tooltip(
+                      message: item.path,
+                      child: item.type == LinkType.url
+                          ? HighlightedText(
+                              text: item.path,
+                              highlight: widget.searchQuery,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
+                            )
+                          : HighlightedText(
+                              text: item.label,
+                              highlight: widget.searchQuery,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
+                            ),
                     ),
+                  ),
                   // 2. ボタン群（右端確保のためRow→Containerで幅を制限）
                   Container(
                     constraints: BoxConstraints(maxWidth: 230),
@@ -589,19 +693,20 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                               ),
                             ),
                             if (_hovering) ...[
-                              SizedBox(width: 8),
-                              IconButton(
-                                icon: Icon(
-                                  isLinkFavorite ? Icons.star : Icons.star_border,
-                                  color: isLinkFavorite ? Colors.amber : Colors.grey,
-                                  size: 20,
-                                ),
-                                tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
-                                onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
-                                constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                                padding: EdgeInsets.zero,
-                              ),
-                              SizedBox(width: 8),
+                              // お気に入りアイコンを削除
+                              // SizedBox(width: 8),
+                              // IconButton(
+                              //   icon: Icon(
+                              //     isLinkFavorite ? Icons.star : Icons.star_border,
+                              //     color: isLinkFavorite ? Colors.amber : Colors.grey,
+                              //     size: 20,
+                              //   ),
+                              //   tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
+                              //   onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
+                              //   constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                              //   padding: EdgeInsets.zero,
+                              // ),
+                              // SizedBox(width: 8),
                               IconButton(
                                 icon: Icon(Icons.edit, size: 18),
                                 onPressed: () => _showEditLinkDialog(context, item),
@@ -657,19 +762,20 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                               constraints: BoxConstraints(minWidth: 28, minHeight: 28),
                               padding: EdgeInsets.zero,
                             ),
-                            SizedBox(width: 8),
-                            IconButton(
-                              icon: Icon(
-                                isLinkFavorite ? Icons.star : Icons.star_border,
-                                color: isLinkFavorite ? Colors.amber : Colors.grey,
-                                size: 20,
-                              ),
-                              tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
-                              onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
-                              constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                              padding: EdgeInsets.zero,
-                            ),
-                            SizedBox(width: 8),
+                            // お気に入りアイコンを削除
+                            // SizedBox(width: 8),
+                            // IconButton(
+                            //   icon: Icon(
+                            //     isLinkFavorite ? Icons.star : Icons.star_border,
+                            //     color: isLinkFavorite ? Colors.amber : Colors.grey,
+                            //     size: 20,
+                            //   ),
+                            //   tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
+                            //   onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
+                            //   constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                            //   padding: EdgeInsets.zero,
+                            // ),
+                            // SizedBox(width: 8),
                             IconButton(
                               icon: Icon(Icons.edit, size: 18),
                               onPressed: () => _showEditLinkDialog(context, item),
