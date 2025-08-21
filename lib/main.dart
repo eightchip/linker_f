@@ -37,7 +37,7 @@ void main() async {
   final size = display.size;
   final width = (size.width / 2).round();
   final height = size.height.round();
-  final x = displays.length > 1 ? displays[0].size.width + size.width - width : size.width - width;
+  final x = displays.length > 1 ? displays[0].size.width + (size.width - width) : size.width - width;
   final y = 0;
 
   WindowOptions windowOptions = WindowOptions(

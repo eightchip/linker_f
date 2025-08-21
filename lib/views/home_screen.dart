@@ -86,7 +86,7 @@ class HighlightedText extends StatelessWidget {
       spans.add(TextSpan(
         text: text.substring(match.start, match.end),
         style: style?.copyWith(
-          backgroundColor: Colors.yellow.withOpacity(0.3),
+          backgroundColor: Colors.red.withValues(alpha: 0.5),
           fontWeight: FontWeight.bold,
         ),
       ));
@@ -129,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _centerMessage;
   final ScrollController _scrollController = ScrollController();
   bool _showOnlyFavorites = false;
-  bool _showSearchBar = false;
+  bool _showSearchBar = true;
   String _searchQuery = '';
   bool _showRecent = false;
   bool _tutorialShown = false;
@@ -182,8 +182,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (_searchQuery.isNotEmpty) {
       displayGroups = displayGroups
         .where((g) => g.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          g.items.any((l) => l.label.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            l.path.toLowerCase().contains(_searchQuery.toLowerCase())))
+          g.items.any((l) => l.label.toLowerCase().contains(_searchQuery.toLowerCase())))
         .toList();
     }
     // 最近使ったグループ・リンク
@@ -244,7 +243,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               });
           }),
           
-          IconButton(icon: Icon(Icons.notes, size: iconSize), tooltip: 'メモ付きリンク一覧', onPressed: () {
+          IconButton(icon: Icon(Icons.notes, size: iconSize), tooltip: 'メモ一括編集', onPressed: () {
               final groups = ref.read(linkViewModelProvider).groups;
               final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
                 .where((entry) => entry.value.memo?.isNotEmpty == true)
@@ -259,7 +258,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 context: context,
                 builder: (context) => StatefulBuilder(
                   builder: (context, setState) => AlertDialog(
-                    title: const Text('メモ付きリンク一覧'),
+                    title: const Text('メモ一括編集'),
                     content: SizedBox(
                       width: 1000,
                       height: 1000,
@@ -319,7 +318,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           border: OutlineInputBorder(
                                             borderRadius: BorderRadius.circular(8),
                                             borderSide: BorderSide(
-                                              color: Color(accentColor).withOpacity(isDark ? 0.7 : 0.5),
+                                              color: Color(accentColor).withValues(alpha: isDark ? 0.7 : 0.5),
                                               width: 2,
                                             ),
                                           ),
@@ -369,7 +368,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             },
           ),
           // お気に入り（★）とPDF（📄）アイコンを非表示にしました
-          IconButton(icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showRecent ? '最近使った非表示' : '最近使ったを上部に表示', onPressed: () {
+          IconButton(icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showRecent ? '最近使った非表示' : '最近使ったリンクを上部に表示', onPressed: () {
               setState(() {
                 _showRecent = !_showRecent;
               });
@@ -430,8 +429,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   }
                 },
           ),
-          IconButton(icon: Icon(Icons.upload, size: iconSize), tooltip: 'バックアップ', onPressed: () => _exportData(context)),
-          IconButton(icon: Icon(Icons.download, size: iconSize), tooltip: 'データ復元', onPressed: () => _importData(context)),
+          IconButton(icon: Icon(Icons.upload, size: iconSize), tooltip: '設定をエキスポート', onPressed: () => _exportData(context)),
+          IconButton(icon: Icon(Icons.download, size: iconSize), tooltip: '設定をインポート', onPressed: () => _importData(context)),
           // お気に入りアイコンを削除
           // if (favoriteGroups.isNotEmpty)
           //   IconButton(icon: Icon(_showOnlyFavorites ? Icons.star : Icons.star_border, color: _showOnlyFavorites ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showOnlyFavorites ? 'すべて表示' : 'グループのお気に入りのみ表示', onPressed: () {
@@ -448,30 +447,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Container(
                   height: 44,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: TextField(
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: '検索（ファイル名・フォルダ名・URL）',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          setState(() {
-                            _searchQuery = '';
-                            _showSearchBar = false;
-                          });
-                        },
-                      ),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                    ),
-                    onChanged: (v) {
-                      setState(() {
-                        _searchQuery = v;
-                      });
-                    },
-                  ),
+                                     child: TextField(
+                     autofocus: true,
+                     keyboardType: TextInputType.text,
+                     textInputAction: TextInputAction.search,
+                     decoration: InputDecoration(
+                       hintText: '検索（ファイル名・フォルダ名・URL）',
+                       prefixIcon: const Icon(Icons.search),
+                       suffixIcon: IconButton(
+                         icon: const Icon(Icons.close),
+                         onPressed: () {
+                           setState(() {
+                             _searchQuery = '';
+                             _showSearchBar = false;
+                           });
+                         },
+                       ),
+                       isDense: true,
+                       contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                     ),
+                     onChanged: (v) {
+                       setState(() {
+                         _searchQuery = v;
+                       });
+                     },
+                   ),
                 ),
               )
             : null,
@@ -499,7 +500,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         FloatingActionButton(
                           mini: true,
                           heroTag: 'jumpToTop',
-                          backgroundColor: Color(accentColor).withOpacity(0.85),
+                          backgroundColor: Color(accentColor).withValues(alpha: 0.85),
                           foregroundColor: Colors.white,
                           onPressed: () {
                             if (_scrollController.hasClients) {
@@ -516,7 +517,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         FloatingActionButton(
                           mini: true,
                           heroTag: 'jumpToBottom',
-                          backgroundColor: Color(accentColor).withOpacity(0.85),
+                          backgroundColor: Color(accentColor).withValues(alpha: 0.85),
                           foregroundColor: Colors.white,
                               onPressed: () {
                             if (_scrollController.hasClients) {
@@ -1068,13 +1069,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: IgnorePointer(
           child: Container(
             alignment: Alignment.center,
-            color: Colors.black.withOpacity(0.25),
+            color: Colors.black.withValues(alpha: 0.25),
             child: Material(
               color: Colors.transparent,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
                 decoration: BoxDecoration(
-                  color: color ?? Colors.black.withOpacity(0.85),
+                  color: color ?? Colors.black.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 16)],
                 ),
@@ -1449,7 +1450,7 @@ class ColorPaletteSelector extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: palette.map((color) {
-        final displayColor = isDark ? color.withOpacity(0.85) : color;
+        final displayColor = isDark ? color.withValues(alpha: 0.85) : color;
         return GestureDetector(
           onTap: () => onColorSelected(color.value),
           child: Container(
@@ -1464,8 +1465,8 @@ class ColorPaletteSelector extends StatelessWidget {
                 width: 2,
               ),
               boxShadow: isDark
-                ? [BoxShadow(color: Colors.white.withOpacity(0.15), blurRadius: 4)]
-                : [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 2)],
+                ? [BoxShadow(color: Colors.white.withValues(alpha: 0.15), blurRadius: 4)]
+                : [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 2)],
             ),
           ),
         );
@@ -1501,9 +1502,9 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
   Color _getHighlightColor() {
     final isFavorite = widget.link.isFavorite;
     final hasMemo = widget.link.memo?.isNotEmpty == true;
-    if (isFavorite && hasMemo) return Colors.green.withOpacity(0.18);
-    if (hasMemo) return Colors.blue.withOpacity(0.18);
-    if (isFavorite) return Colors.amber.withOpacity(0.18);
+    if (isFavorite && hasMemo) return Colors.green.withValues(alpha: 0.18);
+    if (hasMemo) return Colors.blue.withValues(alpha: 0.18);
+    if (isFavorite) return Colors.amber.withValues(alpha: 0.18);
     return widget.isDark ? const Color(0xFF23272F) : Colors.white;
   }
   @override
@@ -1535,7 +1536,7 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
           boxShadow: [
             if (isHovered)
               BoxShadow(
-                color: (widget.group.color != null ? Color(widget.group.color!) : Colors.amber).withOpacity(0.5),
+                color: (widget.group.color != null ? Color(widget.group.color!) : Colors.amber).withValues(alpha: 0.5),
                 blurRadius: 24,
                 spreadRadius: 6,
               ),
@@ -1831,7 +1832,7 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
         child: IgnorePointer(
           child: Container(
             alignment: Alignment.center,
-            color: Colors.black.withOpacity(0.25),
+            color: Colors.black.withValues(alpha: 0.25),
             child: Material(
               color: Colors.transparent,
               child: Container(
@@ -1897,7 +1898,7 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       return MouseRegion(
         onEnter: (_) => _showPreviewOverlay(
           Container(
-            color: Colors.black.withOpacity(0.95),
+            color: Colors.black.withValues(alpha: 0.95),
             child: isEmpty
               ? const Center(child: Text('内容がありません', style: TextStyle(color: Colors.white, fontSize: 18)))
               : SingleChildScrollView(

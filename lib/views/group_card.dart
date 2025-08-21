@@ -70,7 +70,7 @@ class HighlightedText extends StatelessWidget {
       spans.add(TextSpan(
         text: text.substring(match.start, match.end),
         style: style?.copyWith(
-          backgroundColor: Colors.yellow.withOpacity(0.3),
+          backgroundColor: Colors.lightGreenAccent.withValues(alpha: 0.5),
           fontWeight: FontWeight.bold,
         ),
       ));
@@ -150,11 +150,11 @@ class _GroupCardState extends State<GroupCard> {
     final isDropOrHover = _isDropTarget || widget.isDragging;
     final borderColor = widget.group.color != null ? Color(widget.group.color!) : Colors.blue;
     print('DEBUG: GroupCard for "${widget.group.title}" id=${widget.group.id} color=${widget.group.color} borderColor=$borderColor');
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOutCubic,
-      width: MediaQuery.of(context).size.width * 1.1,
-      height: MediaQuery.of(context).size.height * 1.1,
+         return AnimatedContainer(
+       duration: const Duration(milliseconds: 250),
+       curve: Curves.easeInOutCubic,
+       width: MediaQuery.of(context).size.width * 0.88,
+       height: MediaQuery.of(context).size.height * 0.88,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         border: Border.all(
@@ -596,14 +596,13 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                       ? FilePreviewWidget(path: item.path, isDark: isDark)
                       : Icon(iconData, color: iconColor, size: 25 * scale),
               SizedBox(width: 8),
-              if (item.type != LinkType.url)
-                Expanded(
-                  child: Text(
-                    item.label,
-                    style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Colors.white),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              Expanded(
+                child: Text(
+                  item.label,
+                  style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
                 ),
+              ),
             ],
           ),
         ),
@@ -619,29 +618,23 @@ class _GroupCardContentState extends State<_GroupCardContent> {
               padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 0),
               child: Row(
                 children: [
-                  // 1. アイコン＋ラベル
+                  // 1. アイコン（統一された位置）
                   item.type == LinkType.url
                       ? UrlPreviewWidget(url: item.path, isDark: isDark, searchQuery: widget.searchQuery)
                       : item.type == LinkType.file
                           ? FilePreviewWidget(path: item.path, isDark: isDark)
                           : Icon(iconData, color: iconColor, size: 25 * scale),
                   SizedBox(width: 8),
+                  // 2. ラベル（統一された位置）
                   Expanded(
                     child: Tooltip(
                       message: item.path,
-                      child: item.type == LinkType.url
-                          ? HighlightedText(
-                              text: item.path,
-                              highlight: widget.searchQuery,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
-                            )
-                          : HighlightedText(
-                              text: item.label,
-                              highlight: widget.searchQuery,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
-                            ),
+                      child: HighlightedText(
+                        text: item.label,
+                        highlight: widget.searchQuery,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
+                      ),
                     ),
                   ),
                   // 2. ボタン群（右端確保のためRow→Containerで幅を制限）
