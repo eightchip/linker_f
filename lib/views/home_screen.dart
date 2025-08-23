@@ -182,7 +182,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (_searchQuery.isNotEmpty) {
       displayGroups = displayGroups
         .where((g) => g.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          g.items.any((l) => l.label.toLowerCase().contains(_searchQuery.toLowerCase())))
+          g.items.any((l) {
+            // ラベルでの検索
+            if (l.label.toLowerCase().contains(_searchQuery.toLowerCase())) {
+              return true;
+            }
+            // URLリンクの場合、ドメイン名でも検索
+            if (l.type == LinkType.url) {
+              final domain = _extractDomain(l.path);
+              if (domain.toLowerCase().contains(_searchQuery.toLowerCase())) {
+                return true;
+              }
+            }
+            return false;
+          }))
         .toList();
     }
     // 最近使ったグループ・リンク
@@ -1945,5 +1958,16 @@ class _BottomRightWithMarginFabLocation extends FloatingActionButtonLocation {
     final double fabX = scaffoldGeometry.scaffoldSize.width - scaffoldGeometry.floatingActionButtonSize.width - 16;
     final double fabY = scaffoldGeometry.scaffoldSize.height - scaffoldGeometry.floatingActionButtonSize.height - bottomMargin;
     return Offset(fabX, fabY);
+  }
+}
+
+// URLからドメイン名を抽出するヘルパーメソッド
+String _extractDomain(String url) {
+  try {
+    final uri = Uri.parse(url);
+    return uri.host;
+  } catch (e) {
+    // URLの形式が不正な場合、元のパスを返す
+    return url;
   }
 } 
