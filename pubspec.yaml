@@ -68,6 +68,10 @@ dependencies:
   pdf: ^3.10.4
   pdfx: ^2.9.2
   
+  # Windows API
+  win32: ^5.4.0
+  ffi: ^2.1.2
+  
 
 dev_dependencies:
   flutter_test:

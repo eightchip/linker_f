@@ -70,7 +70,7 @@ class HighlightedText extends StatelessWidget {
       spans.add(TextSpan(
         text: text.substring(match.start, match.end),
         style: style?.copyWith(
-          backgroundColor: Colors.lightGreenAccent.withValues(alpha: 0.5),
+          backgroundColor: Colors.red.withValues(alpha: 0.75),
           fontWeight: FontWeight.bold,
         ),
       ));
@@ -560,19 +560,38 @@ class _GroupCardContentState extends State<_GroupCardContent> {
   Widget _buildLinkItem(BuildContext context, LinkItem item, List<LinkItem> items, {double scale = 1.0, Key? key}) {
   IconData iconData;
   Color iconColor;
-  switch (item.type) {
-    case LinkType.file:
-      iconData = Icons.insert_drive_file;
-      iconColor = Colors.blue;
-      break;
-    case LinkType.folder:
-      iconData = Icons.folder;
-      iconColor = Colors.orange;
-      break;
-    case LinkType.url:
-      iconData = Icons.link;
-      iconColor = Colors.green;
-      break;
+  
+                // フォルダの場合、個別リンクのカスタムアイコンを優先使用
+              if (item.type == LinkType.folder) {
+                if (item.iconData != null) {
+                  print('カスタムアイコン使用: iconData=${item.iconData}, iconColor=${item.iconColor}');
+                  print('地球アイコンのcodePoint: ${Icons.public.codePoint}');
+                  print('Icons.folder.codePoint: ${Icons.folder.codePoint}');
+                  print('Icons.folder_open.codePoint: ${Icons.folder_open.codePoint}');
+                  print('Icons.folder_special.codePoint: ${Icons.folder_special.codePoint}');
+                  print('Icons.folder_shared.codePoint: ${Icons.folder_shared.codePoint}');
+                  iconData = IconData(item.iconData!, fontFamily: 'MaterialIcons');
+                  iconColor = item.iconColor != null ? Color(item.iconColor!) : Colors.orange;
+                } else {
+                  print('デフォルトアイコン使用: ${item.label}');
+                  iconData = Icons.folder;
+                  iconColor = Colors.orange;
+                }
+              } else {
+    switch (item.type) {
+      case LinkType.file:
+        iconData = Icons.insert_drive_file;
+        iconColor = Colors.blue;
+        break;
+      case LinkType.url:
+        iconData = Icons.link;
+        iconColor = Colors.green;
+        break;
+      case LinkType.folder:
+        iconData = Icons.folder;
+        iconColor = Colors.orange;
+        break;
+    }
   }
   final isLinkFavorite = item.isFavorite;
   final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -807,35 +826,46 @@ class _GroupCardContentState extends State<_GroupCardContent> {
     final labelController = TextEditingController(text: item.label);
     final pathController = TextEditingController(text: item.path);
     LinkType selectedType = item.type;
+    IconData selectedIcon;
+    if (item.iconData != null) {
+      print('アイコン復元: iconData=${item.iconData}, Icons.public.codePoint=${Icons.public.codePoint}');
+      print('復元されるcodePointが地球アイコンと一致するか: ${item.iconData == Icons.public.codePoint}');
+      selectedIcon = IconData(item.iconData!, fontFamily: 'MaterialIcons');
+      print('復元されたアイコン: codePoint=${selectedIcon.codePoint}, fontFamily=${selectedIcon.fontFamily}');
+      print('復元されたアイコンが地球アイコンと一致するか: ${selectedIcon.codePoint == Icons.public.codePoint}');
+    } else {
+      selectedIcon = Icons.folder;
+    }
+    Color selectedIconColor = item.iconColor != null ? Color(item.iconColor!) : Colors.orange;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Edit Link'),
+          title: const Text('リンクを編集'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: labelController,
                 decoration: const InputDecoration(
-                  labelText: 'Label',
-                  hintText: 'Enter link label...',
+                  labelText: 'ラベル',
+                  hintText: 'リンクラベルを入力...',
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: pathController,
                 decoration: const InputDecoration(
-                  labelText: 'Path/URL',
-                  hintText: 'Enter file path or URL...',
+                  labelText: 'パス/URL',
+                  hintText: 'ファイルパスまたはURLを入力...',
                 ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<LinkType>(
                 value: selectedType,
                 decoration: const InputDecoration(
-                  labelText: 'Type',
+                  labelText: 'タイプ',
                 ),
                 items: LinkType.values.map((type) {
                   return DropdownMenuItem(
@@ -849,16 +879,42 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                   }
                 },
               ),
+              if (selectedType == LinkType.folder) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Text('アイコン: '),
+                    Expanded(child: IconSelector(
+                      selectedIcon: selectedIcon,
+                      selectedIconColor: selectedIconColor,
+                                             onIconSelected: (iconData, iconColor) {
+                         print('IconSelector callback: iconData.codePoint=${iconData.codePoint}, iconData.fontFamily=${iconData.fontFamily}');
+                         print('Icons.public.codePoint=${Icons.public.codePoint}');
+                         print('選択されたアイコンが地球アイコンかチェック: ${iconData.codePoint == Icons.public.codePoint}');
+                         print('更新前のselectedIcon: codePoint=${selectedIcon.codePoint}');
+                         setState(() {
+                           selectedIcon = iconData;
+                           selectedIconColor = iconColor;
+                         });
+                         print('更新後のselectedIcon: codePoint=${selectedIcon.codePoint}');
+                       },
+                    )),
+                  ],
+                ),
+              ],
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: const Text('キャンセル'),
             ),
             ElevatedButton(
               onPressed: () async {
                 if (labelController.text.isNotEmpty && pathController.text.isNotEmpty) {
+                  print('保存処理開始: selectedIcon.codePoint=${selectedIcon.codePoint}');
+                  print('保存処理開始: selectedIcon.fontFamily=${selectedIcon.fontFamily}');
+                  print('保存処理開始: selectedIconColor.value=${selectedIconColor.value}');
                   final updated = LinkItem(
                     id: item.id,
                     label: labelController.text,
@@ -866,12 +922,20 @@ class _GroupCardContentState extends State<_GroupCardContent> {
                     type: selectedType,
                     createdAt: item.createdAt,
                     lastUsed: item.lastUsed,
+                    isFavorite: item.isFavorite,
+                    memo: item.memo,
+                    iconData: selectedType == LinkType.folder ? selectedIcon.codePoint : null,
+                    iconColor: selectedType == LinkType.folder ? selectedIconColor.value : null,
                   );
+                  print('リンク更新: iconData=${updated.iconData}, iconColor=${updated.iconColor}');
+                  print('選択されたアイコン: codePoint=${selectedIcon.codePoint}, fontFamily=${selectedIcon.fontFamily}');
+                  print('Icons.public.codePoint=${Icons.public.codePoint}');
+                  print('保存されるcodePointが地球アイコンと一致するか: ${updated.iconData == Icons.public.codePoint}');
                   await widget.onEditLink(updated);
                   Navigator.pop(context);
                 }
               },
-              child: const Text('Save'),
+              child: const Text('保存'),
             ),
           ],
         ),

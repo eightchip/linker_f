@@ -31,17 +31,34 @@ void main() async {
   // Desktop window configuration
   await windowManager.ensureInitialized();
 
-  // get all displays
+  // ディスプレイの取得と設定
   final displays = await ScreenRetriever.instance.getAllDisplays();
-  final display = displays.length > 1 ? displays[1] : displays[0];
-  final size = display.size;
-  final width = (size.width / 2).round();
-  final height = size.height.round();
-  final x = displays.length > 1 ? displays[0].size.width + (size.width - width) : size.width - width;
-  final y = 0;
+  
+  // 複数ディスプレイがある場合は小さいディスプレイを選択
+  // 単一ディスプレイの場合はそのディスプレイを使用
+  final targetDisplay = displays.length > 1 
+      ? displays.reduce((a, b) => (a.size.width * a.size.height) < (b.size.width * b.size.height) ? a : b)
+      : displays[0];
+  
+  // 選択したディスプレイの半分のサイズでウィンドウを設定
+  final displaySize = targetDisplay.size;
+  final windowWidth = (displaySize.width / 2).round();
+  final windowHeight = displaySize.height.round();
+  
+  // ウィンドウの位置を設定（選択したディスプレイの右半分に配置）
+  // 複数ディスプレイの場合は2番目のディスプレイ（サブディスプレイ）の右半分に配置
+  final windowX = displays.length > 1 
+      ? displays[0].size.width + (displaySize.width - windowWidth)  // メインディスプレイの幅 + サブディスプレイの右半分
+      : (displaySize.width - windowWidth);  // 単一ディスプレイの場合は右半分
+  final windowY = 0;
+
+  print('ディスプレイ数: ${displays.length}');
+  print('選択したディスプレイサイズ: ${targetDisplay.size}');
+  print('ウィンドウサイズ: ${windowWidth}x${windowHeight}');
+  print('ウィンドウ位置: ($windowX, $windowY)');
 
   WindowOptions windowOptions = WindowOptions(
-    size: Size(width.toDouble(), height.toDouble()),
+    size: Size(windowWidth.toDouble(), windowHeight.toDouble()),
     center: false,
     backgroundColor: const Color(0xFFF4F5F7),
     skipTaskbar: false,
@@ -52,7 +69,7 @@ void main() async {
   windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
-    await windowManager.setPosition(Offset(x.toDouble(), y.toDouble()));
+    await windowManager.setPosition(Offset(windowX.toDouble(), windowY.toDouble()));
     await windowManager.setTitle('Link Navigator');
   });
 

@@ -86,7 +86,7 @@ class HighlightedText extends StatelessWidget {
       spans.add(TextSpan(
         text: text.substring(match.start, match.end),
         style: style?.copyWith(
-          backgroundColor: Colors.red.withValues(alpha: 0.5),
+          backgroundColor: Colors.red.withValues(alpha: 0.75),
           fontWeight: FontWeight.bold,
         ),
       ));
@@ -141,6 +141,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   DateTime? _lastMoveTime;
   BuildContext? _scaffoldBodyContext;
   final Map<String, bool> _showBottomSpaceMap = {};
+  
+  // 追加: カスタムアイコン情報管理
+  int? _pendingIconData;
+  int? _pendingIconColor;
 
   @override
   void initState() {
@@ -630,12 +634,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             onAddLink: () => _showAddLinkDialog(context, group.id),
                             onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
                             onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                            onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
-                              groupId: group.id,
-                              label: label,
-                              path: path,
-                              type: type,
-                            ),
+                            onDropAddLink: (label, path, type) async {
+                              // Windows APIを使ってカスタムアイコンを自動取得するため、
+                              // アイコン選択ダイアログは表示しない
+                              await ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                                groupId: group.id,
+                                label: label,
+                                path: path,
+                                type: type,
+                              );
+                            },
                             onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
                             onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
                           onEditGroupTitle: (oldTitle) async {
@@ -707,12 +715,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           onAddLink: () => _showAddLinkDialog(context, group.id),
                           onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
                           onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                          onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
-                            groupId: group.id,
-                            label: label,
-                            path: path,
-                            type: type,
-                          ),
+                          onDropAddLink: (label, path, type) async {
+                            // Windows APIを使ってカスタムアイコンを自動取得するため、
+                            // アイコン選択ダイアログは表示しない
+                            await ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                              groupId: group.id,
+                              label: label,
+                              path: path,
+                              type: type,
+                            );
+                          },
                           onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
                           onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
                         onEditGroupTitle: (oldTitle) async {
@@ -794,12 +806,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             onAddLink: () => _showAddLinkDialog(context, group.id),
                             onDeleteLink: (linkId) => ref.read(linkViewModelProvider.notifier).removeLinkFromGroup(group.id, linkId),
                             onLaunchLink: (link) => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                            onDropAddLink: (label, path, type) => ref.read(linkViewModelProvider.notifier).addLinkToGroup(
-                              groupId: group.id,
-                              label: label,
-                              path: path,
-                              type: type,
-                            ),
+                            onDropAddLink: (label, path, type) async {
+                              // Windows APIを使ってカスタムアイコンを自動取得するため、
+                              // アイコン選択ダイアログは表示しない
+                              await ref.read(linkViewModelProvider.notifier).addLinkToGroup(
+                                groupId: group.id,
+                                label: label,
+                                path: path,
+                                type: type,
+                              );
+                            },
                             onEditLink: (updated) => ref.read(linkViewModelProvider.notifier).updateLinkInGroup(groupId: group.id, updated: updated),
                             onReorderLinks: (newOrder) => ref.read(linkViewModelProvider.notifier).updateGroupLinksOrder(groupId: group.id, newOrder: newOrder),
                           onEditGroupTitle: (oldTitle) async {
@@ -1450,6 +1466,15 @@ class ColorPaletteSelector extends StatelessWidget {
     Color(0xFF92400E), Color(0xFF64748B), Color(0xFF84CC16), Color(0xFF6366F1),
     Color(0xFF14B8A6), Color(0xFFFB923C), Color(0xFF7C3AED), Color(0xFFFBBF24),
     Color(0xFF0EA5E9), Color(0xFFB45309), Color(0xFFB91C1C), Color(0xFF166534),
+    Color(0xFFFF6B6B), Color(0xFF4ECDC4), Color(0xFF45B7D1), Color(0xFF96CEB4),
+    Color(0xFFFFEAA7), Color(0xFFDDA0DD), Color(0xFF98D8C8), Color(0xFFF7DC6F),
+    Color(0xFFBB8FCE), Color(0xFF85C1E9), Color(0xFFF8C471), Color(0xFFF1948A),
+    Color(0xFF82E0AA), Color(0xFFF7DC6F), Color(0xFFBB8FCE), Color(0xFF85C1E9),
+    Color(0xFFF8C471), Color(0xFFF1948A), Color(0xFF82E0AA), Color(0xFFD7BDE2),
+    Color(0xFFA9CCE3), Color(0xFFFAD7A0), Color(0xFFF5B7B1), Color(0xFFA9DFBF),
+    Color(0xFFF9E79F), Color(0xFFD2B4DE), Color(0xFFAED6F1), Color(0xFFFAD7A0),
+    Color(0xFFF5B7B1), Color(0xFFA9DFBF), Color(0xFFF9E79F), Color(0xFFD2B4DE),
+    Color(0xFFAED6F1), Color(0xFFF8C471), Color(0xFFF1948A), Color(0xFF82E0AA),
   ];
   const ColorPaletteSelector({
     super.key,
@@ -1883,27 +1908,20 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       );
     }
     if (_isPdf) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
-          IconButton(
-            icon: Icon(Icons.open_in_new, size: 20, color: Colors.blue),
-            tooltip: '外部アプリで開く',
-            onPressed: () async {
-              try {
-                await Process.start('cmd', ['/c', 'start', '', widget.path]);
-              } catch (e) {
-                print('PDF外部起動エラー: $e');
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('外部アプリで開けませんでした')),
-                  );
-                }
-              }
-            },
-          ),
-        ],
+      return GestureDetector(
+        onTap: () async {
+          try {
+            await Process.run('cmd', ['/c', 'start', '', widget.path], runInShell: true);
+          } catch (e) {
+            print('PDF外部起動エラー: $e');
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('外部アプリで開けませんでした')),
+              );
+            }
+          }
+        },
+        child: Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
       );
     }
     if (_textPreview != null) {
@@ -1970,4 +1988,563 @@ String _extractDomain(String url) {
     // URLの形式が不正な場合、元のパスを返す
     return url;
   }
+}
+
+// アイコン選択ウィジェット
+class IconSelector extends StatefulWidget {
+  final IconData selectedIcon;
+  final Color selectedIconColor;
+  final Function(IconData, Color) onIconSelected;
+
+  const IconSelector({
+    Key? key,
+    required this.selectedIcon,
+    required this.selectedIconColor,
+    required this.onIconSelected,
+  }) : super(key: key);
+
+  @override
+  State<IconSelector> createState() => _IconSelectorState();
+}
+
+class _IconSelectorState extends State<IconSelector> {
+  late IconData _selectedIcon;
+  late Color _selectedIconColor;
+
+  @override
+  void initState() {
+    super.initState();
+    print('IconSelector初期化: selectedIcon.codePoint=${widget.selectedIcon.codePoint}, selectedIcon.fontFamily=${widget.selectedIcon.fontFamily}');
+    print('初期化時のアイコンが地球アイコンかチェック: ${widget.selectedIcon.codePoint == Icons.public.codePoint}');
+    print('初期化時のアイコンがフォルダアイコンかチェック: ${widget.selectedIcon.codePoint == Icons.folder.codePoint}');
+    _selectedIcon = widget.selectedIcon;
+    _selectedIconColor = widget.selectedIconColor;
+  }
+
+  @override
+  void didUpdateWidget(IconSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedIcon != widget.selectedIcon) {
+      _selectedIcon = widget.selectedIcon;
+    }
+    if (oldWidget.selectedIconColor != widget.selectedIconColor) {
+      _selectedIconColor = widget.selectedIconColor;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // 現在選択されているアイコン
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(_selectedIcon, color: _selectedIconColor, size: 32),
+        ),
+        const SizedBox(height: 8),
+        // アイコン選択ボタン
+        ElevatedButton(
+          onPressed: () => _showIconPicker(),
+          child: const Text('アイコンと色を選択'),
+        ),
+      ],
+    );
+  }
+
+  void _showIconPicker() {
+    bool useWindowsIcons = false;
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('アイコンと色を選択'),
+          content: SizedBox(
+            width: 500,
+            height: 600,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // アイコンタイプ選択タブ
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setDialogState(() {
+                              useWindowsIcons = false;
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: !useWindowsIcons ? Colors.blue : Colors.grey,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Material Icons'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setDialogState(() {
+                              useWindowsIcons = true;
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: useWindowsIcons ? Colors.blue : Colors.grey,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Windows既定'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // アイコン選択セクション
+                  Text(
+                    useWindowsIcons ? 'Windows既定のアイコンを選択:' : 'Material Iconsを選択:',
+                    style: const TextStyle(fontWeight: FontWeight.bold)
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 200,
+                    child: GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 8,
+                        childAspectRatio: 1,
+                        crossAxisSpacing: 4,
+                        mainAxisSpacing: 4,
+                      ),
+                      itemCount: useWindowsIcons ? _windowsIcons.length : _folderIcons.length,
+                      itemBuilder: (context, index) {
+                        final iconData = useWindowsIcons ? _windowsIcons[index] : _folderIcons[index];
+                        final isSelected = iconData.codePoint == _selectedIcon.codePoint;
+                        return GestureDetector(
+                                                onTap: () {
+                        print('アイコン選択: iconData.codePoint=${iconData.codePoint}, iconData.fontFamily=${iconData.fontFamily}');
+                        print('選択されたアイコンが地球アイコンかチェック: ${iconData.codePoint == Icons.public.codePoint}');
+                        print('選択されたアイコンがフォルダアイコンかチェック: ${iconData.codePoint == Icons.folder.codePoint}');
+                        setDialogState(() {
+                          _selectedIcon = iconData;
+                        });
+                        setState(() {
+                          _selectedIcon = iconData;
+                        });
+                        // 即座に親ウィジェットに反映
+                        widget.onIconSelected(_selectedIcon, _selectedIconColor);
+                      },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.blue.withOpacity(0.2) : Colors.transparent,
+                              border: Border.all(
+                                color: isSelected ? Colors.blue : Colors.grey,
+                                width: isSelected ? 2 : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(iconData, color: _selectedIconColor, size: 20),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // 色選択セクション
+                  const Text('色を選択:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ColorPaletteSelector(
+                    selectedColor: _selectedIconColor.value,
+                    onColorSelected: (colorValue) {
+                      setDialogState(() {
+                        _selectedIconColor = Color(colorValue);
+                      });
+                      setState(() {
+                        _selectedIconColor = Color(colorValue);
+                      });
+                      // 即座に親ウィジェットに反映
+                      widget.onIconSelected(_selectedIcon, _selectedIconColor);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // プレビュー
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('プレビュー:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Icon(_selectedIcon, color: _selectedIconColor, size: 32),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                widget.onIconSelected(_selectedIcon, _selectedIconColor);
+                Navigator.pop(context);
+              },
+              child: const Text('決定'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Windows既定のアイコンリスト（実際のWindowsシステムアイコンに近いもの）
+  static const List<IconData> _windowsIcons = [
+    // 基本的なフォルダアイコン
+    Icons.folder,
+    Icons.folder_open,
+    Icons.folder_special,
+    Icons.folder_shared,
+    Icons.folder_zip,
+    Icons.folder_copy,
+    Icons.folder_delete,
+    Icons.folder_off,
+    Icons.folder_outlined,
+    Icons.folder_open_outlined,
+    Icons.folder_special_outlined,
+    Icons.folder_shared_outlined,
+    Icons.folder_zip_outlined,
+    Icons.folder_copy_outlined,
+    Icons.folder_delete_outlined,
+    Icons.folder_off_outlined,
+    Icons.drive_folder_upload,
+    Icons.drive_folder_upload_outlined,
+    Icons.drive_file_move,
+    Icons.drive_file_move_outlined,
+    Icons.drive_file_rename_outline,
+    Icons.drive_file_rename_outline_outlined,
+    // システムアイコン
+    Icons.computer,
+    Icons.computer_outlined,
+    Icons.laptop,
+    Icons.laptop_outlined,
+    Icons.desktop_windows,
+    Icons.desktop_windows_outlined,
+    Icons.storage,
+    Icons.storage_outlined,
+    Icons.sd_storage,
+    Icons.sd_storage_outlined,
+    Icons.usb,
+    Icons.usb_outlined,
+    Icons.memory,
+    Icons.memory_outlined,
+    Icons.dns,
+    Icons.dns_outlined,
+    Icons.router,
+    Icons.router_outlined,
+    Icons.wifi,
+    Icons.wifi_outlined,
+    Icons.bluetooth,
+    Icons.bluetooth_outlined,
+    Icons.nfc,
+    Icons.nfc_outlined,
+    Icons.gps_fixed,
+    Icons.gps_fixed_outlined,
+    Icons.location_on,
+    Icons.location_on_outlined,
+    Icons.map,
+    Icons.map_outlined,
+    Icons.navigation,
+    Icons.navigation_outlined,
+    Icons.directions,
+    Icons.directions_outlined,
+    Icons.explore,
+    Icons.explore_outlined,
+    Icons.travel_explore,
+    Icons.travel_explore_outlined,
+    Icons.flight,
+    Icons.flight_outlined,
+    Icons.train,
+    Icons.train_outlined,
+    Icons.directions_car,
+    Icons.directions_car_outlined,
+    Icons.directions_bus,
+    Icons.directions_bus_outlined,
+    Icons.directions_bike,
+    Icons.directions_bike_outlined,
+    Icons.directions_walk,
+    Icons.directions_walk_outlined,
+    Icons.directions_boat,
+    Icons.directions_boat_outlined,
+    Icons.directions_subway,
+    Icons.directions_subway_outlined,
+    Icons.directions_transit,
+    Icons.directions_transit_outlined,
+    Icons.directions_run,
+    
+    Icons.directions_ferry,
+    Icons.directions_ferry_outlined,
+  ];
+
+  // Material Iconsリスト（カラフルで多様）
+  static const List<IconData> _folderIcons = [
+    // デバッグ用：地球アイコンを最初に配置して確認
+    Icons.public,
+    Icons.folder,
+    Icons.folder_open,
+    Icons.folder_special,
+    Icons.folder_shared,
+    Icons.folder_zip,
+    Icons.folder_copy,
+    Icons.folder_delete,
+    Icons.folder_off,
+    Icons.folder_outlined,
+    Icons.folder_open_outlined,
+    Icons.folder_special_outlined,
+    Icons.folder_shared_outlined,
+    Icons.folder_zip_outlined,
+    Icons.folder_copy_outlined,
+    Icons.folder_delete_outlined,
+    Icons.folder_off_outlined,
+    Icons.drive_folder_upload,
+    Icons.drive_folder_upload_outlined,
+    Icons.drive_file_move,
+    Icons.drive_file_move_outlined,
+    Icons.drive_file_rename_outline,
+    Icons.drive_file_rename_outline_outlined,
+    Icons.book,
+    Icons.book_outlined,
+    Icons.bookmark,
+    Icons.bookmark_outlined,
+    Icons.favorite,
+    Icons.favorite_outlined,
+    Icons.star,
+    Icons.star_outlined,
+    Icons.home,
+    Icons.home_outlined,
+    Icons.work,
+    Icons.work_outlined,
+    Icons.school,
+    Icons.school_outlined,
+    Icons.business,
+    Icons.business_outlined,
+    Icons.store,
+    Icons.store_outlined,
+    Icons.shopping_cart,
+    Icons.shopping_cart_outlined,
+    Icons.music_note,
+    Icons.music_note_outlined,
+    Icons.photo,
+    Icons.photo_outlined,
+    Icons.video_library,
+    Icons.video_library_outlined,
+    Icons.download,
+    Icons.download_outlined,
+    Icons.upload,
+    Icons.upload_outlined,
+    Icons.backup,
+    Icons.backup_outlined,
+    Icons.archive,
+    Icons.archive_outlined,
+    Icons.inbox,
+    Icons.inbox_outlined,
+    Icons.outbox,
+    Icons.outbox_outlined,
+    Icons.drafts,
+    Icons.drafts_outlined,
+    Icons.send,
+    Icons.send_outlined,
+    Icons.mail,
+    Icons.mail_outlined,
+    Icons.contact_mail,
+    Icons.contact_mail_outlined,
+    Icons.person,
+    Icons.person_outlined,
+    Icons.group,
+    Icons.group_outlined,
+    Icons.family_restroom,
+    Icons.family_restroom_outlined,
+    Icons.pets,
+    Icons.pets_outlined,
+    Icons.sports_soccer,
+    Icons.sports_soccer_outlined,
+    Icons.sports_basketball,
+    Icons.sports_basketball_outlined,
+    Icons.sports_esports,
+    Icons.sports_esports_outlined,
+    Icons.games,
+    Icons.games_outlined,
+    Icons.toys,
+    Icons.toys_outlined,
+    Icons.child_care,
+    Icons.child_care_outlined,
+    Icons.library_books,
+    Icons.library_books_outlined,
+    Icons.menu_book,
+    Icons.menu_book_outlined,
+    Icons.auto_stories,
+    Icons.auto_stories_outlined,
+    Icons.emoji_emotions,
+    Icons.emoji_emotions_outlined,
+    Icons.celebration,
+    Icons.celebration_outlined,
+    Icons.cake,
+    Icons.cake_outlined,
+    Icons.local_pizza,
+    Icons.local_pizza_outlined,
+    Icons.local_cafe,
+    Icons.local_cafe_outlined,
+    Icons.local_restaurant,
+    Icons.local_restaurant_outlined,
+    Icons.local_bar,
+    Icons.local_bar_outlined,
+    Icons.local_hotel,
+    Icons.local_hotel_outlined,
+    Icons.local_gas_station,
+    Icons.local_gas_station_outlined,
+    Icons.local_pharmacy,
+    Icons.local_pharmacy_outlined,
+    Icons.local_hospital,
+    Icons.local_hospital_outlined,
+    Icons.local_police,
+    Icons.local_police_outlined,
+    Icons.local_fire_department,
+    Icons.local_fire_department_outlined,
+    Icons.local_post_office,
+    Icons.local_post_office_outlined,
+    Icons.local_atm,
+    Icons.local_atm_outlined,
+    Icons.local_mall,
+    Icons.local_mall_outlined,
+    Icons.local_movies,
+    Icons.local_movies_outlined,
+    Icons.local_play,
+    Icons.local_play_outlined,
+    Icons.local_activity,
+    Icons.local_activity_outlined,
+    Icons.local_parking,
+    Icons.local_parking_outlined,
+    Icons.local_taxi,
+    Icons.local_taxi_outlined,
+    Icons.local_airport,
+    Icons.local_airport_outlined,
+    Icons.local_shipping,
+    Icons.local_shipping_outlined,
+    Icons.local_offer,
+    Icons.local_offer_outlined,
+    Icons.local_florist,
+    Icons.local_florist_outlined,
+    Icons.local_car_wash,
+    Icons.local_car_wash_outlined,
+    Icons.local_laundry_service,
+    Icons.local_laundry_service_outlined,
+    Icons.local_dining,
+    Icons.local_dining_outlined,
+    Icons.local_drink,
+    Icons.local_drink_outlined,
+    // 地球アイコンとその他のアイコンを追加
+    Icons.public_outlined,
+    Icons.language,
+    Icons.language_outlined,
+    Icons.web,
+    Icons.web_outlined,
+    Icons.computer,
+    Icons.computer_outlined,
+    Icons.laptop,
+    Icons.laptop_outlined,
+    Icons.tablet,
+    Icons.tablet_outlined,
+    Icons.phone,
+    Icons.phone_outlined,
+    Icons.smartphone,
+    Icons.smartphone_outlined,
+    Icons.watch,
+    Icons.watch_outlined,
+    Icons.headphones,
+    Icons.headphones_outlined,
+    Icons.speaker,
+    Icons.speaker_outlined,
+    Icons.tv,
+    Icons.tv_outlined,
+    Icons.radio,
+    Icons.radio_outlined,
+    Icons.camera_alt,
+    Icons.camera_alt_outlined,
+    Icons.camera,
+    Icons.camera_outlined,
+    Icons.videocam,
+    Icons.videocam_outlined,
+    Icons.mic,
+    Icons.mic_outlined,
+    Icons.keyboard,
+    Icons.keyboard_outlined,
+    Icons.mouse,
+    Icons.mouse_outlined,
+    Icons.print,
+    Icons.print_outlined,
+    Icons.scanner,
+    Icons.scanner_outlined,
+    Icons.fax,
+    Icons.fax_outlined,
+    Icons.router,
+    Icons.router_outlined,
+    Icons.wifi,
+    Icons.wifi_outlined,
+    Icons.bluetooth,
+    Icons.bluetooth_outlined,
+    Icons.nfc,
+    Icons.nfc_outlined,
+    Icons.gps_fixed,
+    Icons.gps_fixed_outlined,
+    Icons.location_on,
+    Icons.location_on_outlined,
+    Icons.map,
+    Icons.map_outlined,
+    Icons.navigation,
+    Icons.navigation_outlined,
+    Icons.directions,
+    Icons.directions_outlined,
+    Icons.compass_calibration,
+    Icons.compass_calibration_outlined,
+    Icons.explore,
+    Icons.explore_outlined,
+    Icons.travel_explore,
+    Icons.travel_explore_outlined,
+    Icons.flight,
+    Icons.flight_outlined,
+    Icons.train,
+    Icons.train_outlined,
+    Icons.directions_car,
+    Icons.directions_car_outlined,
+    Icons.directions_bus,
+    Icons.directions_bus_outlined,
+    Icons.directions_bike,
+    Icons.directions_bike_outlined,
+    Icons.directions_walk,
+    Icons.directions_walk_outlined,
+    Icons.directions_boat,
+    Icons.directions_boat_outlined,
+    Icons.directions_subway,
+    Icons.directions_subway_outlined,
+    Icons.directions_transit,
+    Icons.directions_transit_outlined,
+    Icons.directions_run,
+    Icons.directions_run_outlined,
+    Icons.directions_railway,
+    Icons.directions_railway_outlined,
+    Icons.directions_ferry,
+    Icons.directions_ferry_outlined,
+    // 地球アイコン（Windowsシステムアイコンにも含まれる）
+    Icons.public,
+    Icons.public_outlined,
+  ];
 } 

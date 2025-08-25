@@ -7,6 +7,7 @@ import '../models/link_item.dart';
 import '../models/group.dart';
 import '../repositories/link_repository.dart';
 import 'package:collection/collection.dart';
+import '../utils/windows_icon_extractor.dart';
 
 final linkRepositoryProvider = Provider<LinkRepository>((ref) {
   return LinkRepository();
@@ -150,13 +151,59 @@ class LinkViewModel extends StateNotifier<LinkState> {
     required String label,
     required String path,
     required LinkType type,
+    int? iconData,
+    int? iconColor,
   }) async {
+    // フォルダの場合、Windows APIを使ってカスタムアイコンを自動取得
+    if (type == LinkType.folder) {
+      if (iconData == null || iconColor == null) {
+        try {
+          final directory = Directory(path);
+          if (await directory.exists()) {
+            print('フォルダ登録: ${directory.path}');
+            print('Windows APIを使用してカスタムアイコンを検出中...');
+            
+            // Windows APIを使ってフォルダのカスタムアイコンを取得
+            final iconInfo = await WindowsIconExtractor.getFolderIcon(path);
+            
+            if (iconInfo != null && iconInfo['isCustom'] == true) {
+              // カスタムアイコンが見つかった場合
+              print('カスタムアイコンを検出しました');
+              iconData = iconInfo['iconHandle'] as int;
+              iconColor = iconInfo['color'] as int;
+              
+              print('設定されたカスタムアイコン: iconData=$iconData, iconColor=$iconColor');
+            } else {
+              // カスタムアイコンがない場合はデフォルトアイコンを設定
+              print('カスタムアイコンが見つかりませんでした。デフォルトアイコンを設定');
+              iconData = Icons.folder.codePoint;
+              iconColor = Colors.orange.value;
+              
+              print('設定されたデフォルトアイコン: iconData=$iconData, iconColor=$iconColor');
+            }
+          }
+        } catch (e) {
+          print('フォルダアイコン検出エラー: $e');
+          // エラーの場合もデフォルトアイコンを設定
+          iconData = Icons.folder.codePoint;
+          iconColor = Colors.orange.value;
+        }
+      } else {
+        print('フォルダ登録: ${path}');
+        print('カスタムアイコンが指定されました: iconData=$iconData, iconColor=$iconColor');
+        print('地球アイコンのcodePoint: ${Icons.public.codePoint}');
+        print('指定されたアイコンが地球アイコンかチェック: ${iconData == Icons.public.codePoint}');
+      }
+    }
+
     final link = LinkItem(
       id: _uuid.v4(),
       label: label,
       path: path,
       type: type,
       createdAt: DateTime.now(),
+      iconData: iconData,
+      iconColor: iconColor,
     );
 
     await _repository.saveLink(link);
@@ -225,7 +272,8 @@ class LinkViewModel extends StateNotifier<LinkState> {
       switch (link.type) {
         case LinkType.file:
           if (await File(link.path).exists()) {
-            await Process.run('start', [link.path], runInShell: true);
+            // Windowsの正しい起動方法
+            await Process.run('cmd', ['/c', 'start', '', link.path], runInShell: true);
           } else {
             throw Exception('File not found: ${link.path}');
           }

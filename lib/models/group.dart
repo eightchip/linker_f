@@ -33,6 +33,12 @@ class Group extends HiveObject {
   @HiveField(8)
   List<String>? labels;
 
+  @HiveField(9)
+  int? iconData;
+
+  @HiveField(10)
+  int? iconColor;
+
   Group({
     required this.id,
     required this.title,
@@ -43,6 +49,8 @@ class Group extends HiveObject {
     this.isFavorite = false,
     this.color,
     this.labels,
+    this.iconData,
+    this.iconColor,
   });
 
   Group copyWith({
@@ -55,6 +63,8 @@ class Group extends HiveObject {
     bool? isFavorite,
     int? color,
     List<String>? labels,
+    int? iconData,
+    int? iconColor,
   }) {
     return Group(
       id: id ?? this.id,
@@ -66,6 +76,8 @@ class Group extends HiveObject {
       isFavorite: isFavorite ?? this.isFavorite,
       color: color ?? this.color,
       labels: labels ?? this.labels,
+      iconData: iconData ?? this.iconData,
+      iconColor: iconColor ?? this.iconColor,
     );
   }
 
@@ -80,6 +92,8 @@ class Group extends HiveObject {
       'isFavorite': isFavorite,
       'color': color,
       'labels': labels,
+      'iconData': iconData,
+      'iconColor': iconColor,
     };
   }
 
@@ -94,6 +108,8 @@ class Group extends HiveObject {
       isFavorite: json['isFavorite'] ?? false,
       color: json['color'],
       labels: (json['labels'] as List?)?.map((e) => e.toString()).toList(),
+      iconData: json['iconData'],
+      iconColor: json['iconColor'],
     );
   }
 }

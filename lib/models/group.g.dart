@@ -26,13 +26,15 @@ class GroupAdapter extends TypeAdapter<Group> {
       isFavorite: fields[6] as bool,
       color: fields[7] as int?,
       labels: (fields[8] as List?)?.cast<String>(),
+      iconData: fields[9] as int?,
+      iconColor: fields[10] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Group obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +52,11 @@ class GroupAdapter extends TypeAdapter<Group> {
       ..writeByte(7)
       ..write(obj.color)
       ..writeByte(8)
-      ..write(obj.labels);
+      ..write(obj.labels)
+      ..writeByte(9)
+      ..write(obj.iconData)
+      ..writeByte(10)
+      ..write(obj.iconColor);
   }
 
   @override

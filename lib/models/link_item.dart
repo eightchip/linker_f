@@ -40,6 +40,12 @@ class LinkItem extends HiveObject {
   @HiveField(7)
   String? memo;
 
+  @HiveField(8)
+  int? iconData;
+
+  @HiveField(9)
+  int? iconColor;
+
   LinkItem({
     required this.id,
     required this.label,
@@ -49,6 +55,8 @@ class LinkItem extends HiveObject {
     this.lastUsed,
     this.isFavorite = false,
     this.memo,
+    this.iconData,
+    this.iconColor,
   });
 
   Map<String, dynamic> toJson() {
@@ -61,6 +69,8 @@ class LinkItem extends HiveObject {
       'lastUsed': lastUsed?.toIso8601String(),
       'isFavorite': isFavorite,
       'memo': memo,
+      'iconData': iconData,
+      'iconColor': iconColor,
     };
   }
 
@@ -74,6 +84,8 @@ class LinkItem extends HiveObject {
       lastUsed: json['lastUsed'] != null ? DateTime.parse(json['lastUsed']) : null,
       isFavorite: json['isFavorite'] ?? false,
       memo: json['memo'],
+      iconData: json['iconData'],
+      iconColor: json['iconColor'],
     );
   }
 
@@ -86,6 +98,8 @@ class LinkItem extends HiveObject {
     DateTime? lastUsed,
     bool? isFavorite,
     String? memo,
+    int? iconData,
+    int? iconColor,
   }) {
     return LinkItem(
       id: id ?? this.id,
@@ -96,6 +110,8 @@ class LinkItem extends HiveObject {
       lastUsed: lastUsed ?? this.lastUsed,
       isFavorite: isFavorite ?? this.isFavorite,
       memo: memo ?? this.memo,
+      iconData: iconData ?? this.iconData,
+      iconColor: iconColor ?? this.iconColor,
     );
   }
 }

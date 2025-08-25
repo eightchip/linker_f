@@ -25,13 +25,15 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
       lastUsed: fields[5] as DateTime?,
       isFavorite: fields[6] as bool,
       memo: fields[7] as String?,
+      iconData: fields[8] as int?,
+      iconColor: fields[9] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, LinkItem obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +49,11 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
       ..writeByte(6)
       ..write(obj.isFavorite)
       ..writeByte(7)
-      ..write(obj.memo);
+      ..write(obj.memo)
+      ..writeByte(8)
+      ..write(obj.iconData)
+      ..writeByte(9)
+      ..write(obj.iconColor);
   }
 
   @override
