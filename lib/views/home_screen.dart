@@ -1761,12 +1761,13 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (_faviconUrl != null)
-          Image.network(
-            _faviconUrl!,
-            width: 20,
-            height: 20,
-            errorBuilder: (_, __, ___) => _getFallbackIconForUrl(widget.url)),
+        _faviconUrl != null
+          ? Image.network(
+              _faviconUrl!,
+              width: 20,
+              height: 20,
+              errorBuilder: (_, __, ___) => _getFallbackIconForUrl(widget.url))
+          : _getFallbackIconForUrl(widget.url),
         const SizedBox(width: 4),
         Flexible(
           child: HighlightedText(
