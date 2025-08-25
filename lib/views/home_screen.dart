@@ -1787,6 +1787,9 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
     if (url.contains('resonabank.co.jp')) {
       return Icon(Icons.account_balance, color: Colors.green, size: 20);
     }
+    if (url.contains('u-next.jp') || url.contains('unext.jp')) {
+      return Icon(Icons.play_circle_filled, color: Colors.red, size: 20);
+    }
     // その他はデフォルト
     return Icon(Icons.link, size: 20);
   }
@@ -1911,7 +1914,9 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       return GestureDetector(
         onTap: () async {
           try {
-            await Process.run('cmd', ['/c', 'start', '', widget.path], runInShell: true);
+            final file = File(widget.path);
+            final absolutePath = file.absolute.path;
+            await Process.run('cmd', ['/c', 'start', absolutePath], runInShell: true);
           } catch (e) {
             print('PDF外部起動エラー: $e');
             if (context.mounted) {

@@ -8,6 +8,8 @@ import '../models/group.dart';
 import '../repositories/link_repository.dart';
 import 'package:collection/collection.dart';
 import '../utils/windows_icon_extractor.dart';
+import 'dart:ffi' as ffi;
+import 'package:win32/win32.dart';
 
 final linkRepositoryProvider = Provider<LinkRepository>((ref) {
   return LinkRepository();
@@ -48,6 +50,40 @@ class LinkViewModel extends StateNotifier<LinkState> {
 
   LinkViewModel(this._repository) : super(LinkState()) {
     _initialize();
+  }
+
+  /// Windowsで特殊文字を含むファイルを安全に開く
+  Future<void> _openFileWithShellExecute(String filePath) async {
+    try {
+      final file = File(filePath);
+      final absolutePath = file.absolute.path;
+      
+      // ShellExecuteを使用してファイルを開く（特殊文字対応）
+      final result = ShellExecute(
+        0, // hwnd
+        TEXT('open'), // lpOperation
+        TEXT(absolutePath), // lpFile
+        ffi.nullptr, // lpParameters
+        ffi.nullptr, // lpDirectory
+        SW_SHOWNORMAL, // nShowCmd
+      );
+      
+      if (result <= 32) {
+        // ShellExecuteが失敗した場合、フォールバックとしてcmdを使用
+        await Process.run('cmd', ['/c', 'start', '', '"$absolutePath"'], runInShell: true);
+      }
+    } catch (e) {
+      print('ShellExecute failed: $e');
+      // 最終的なフォールバック
+      final file = File(filePath);
+      final absolutePath = file.absolute.path;
+      await Process.run('cmd', ['/c', 'start', '', '"$absolutePath"'], runInShell: true);
+    }
+  }
+
+  /// PDFファイルを安全に開く（公開メソッド）
+  Future<void> openPdfFile(String filePath) async {
+    await _openFileWithShellExecute(filePath);
   }
 
   Future<void> _initialize() async {
@@ -272,8 +308,8 @@ class LinkViewModel extends StateNotifier<LinkState> {
       switch (link.type) {
         case LinkType.file:
           if (await File(link.path).exists()) {
-            // Windowsの正しい起動方法
-            await Process.run('cmd', ['/c', 'start', '', link.path], runInShell: true);
+            // Windowsで特殊文字を含むファイルパスを正しく開く方法
+            await _openFileWithShellExecute(link.path);
           } else {
             throw Exception('File not found: ${link.path}');
           }
