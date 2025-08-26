@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../models/group.dart';
@@ -1135,24 +1136,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _exportData(BuildContext context) async {
+    // メモを含めるかどうかの選択ダイアログ
+    final includeMemos = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('エクスポート設定'),
+        content: const Text('メモを含めてエクスポートしますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('含めない'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('含める'),
+          ),
+        ],
+      ),
+    );
+    
+    if (includeMemos == null) return; // キャンセルされた場合
+    
     final darkMode = ref.read(darkModeProvider);
     final fontSize = ref.read(fontSizeProvider);
     final accentColor = ref.read(accentColorProvider);
-    final data = ref.read(linkViewModelProvider.notifier).exportDataWithSettings(darkMode, fontSize, accentColor);
+    
+    // メモ除外オプションを使用してエクスポート
+    final data = ref.read(linkViewModelProvider.notifier).exportDataWithSettings(
+      darkMode, 
+      fontSize, 
+      accentColor,
+      excludeMemos: !includeMemos,
+    );
+    
     final jsonStr = jsonEncode(data);
     final now = DateTime.now();
     final formatted = DateFormat('yyMMddHHmm').format(now);
-    final file = File('linker_f_export_$formatted.json');
+    final memoText = includeMemos ? 'メモあり' : 'メモなし';
+    final file = File('linker_f_export_${memoText}_$formatted.json');
     await file.writeAsString(jsonStr);
-    _showCenterMessage('エクスポートしました: ${file.absolute.path}', icon: Icons.check_circle, color: Colors.green[700]);
+    
+    // SnackBarで保存先パスを表示（緑色で統一）
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('エクスポートしました: ${file.absolute.path}'),
+        backgroundColor: Colors.green,
+        action: SnackBarAction(
+          label: 'フォルダを開く',
+          textColor: Colors.white,
+          onPressed: () async {
+            try {
+              await Process.run('explorer', ['/select,', file.absolute.path]);
+            } catch (e) {
+              print('フォルダを開くエラー: $e');
+            }
+          },
+        ),
+        duration: const Duration(seconds: 5),
+      ),
+    );
   }
 
   void _importData(BuildContext context) async {
     try {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-    );
+      // デフォルトのエクスポートフォルダを初期位置に設定
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        initialDirectory: Directory.current.path, // 現在のディレクトリを初期位置に
+      );
       
       if (result != null && result.files.isNotEmpty) {
         final file = File(result.files.first.path!);
@@ -1166,10 +1218,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ref.read(accentColorProvider.notifier).state = accentColor;
           },
         );
-        _showCenterMessage('インポートしました: ${file.path}', icon: Icons.check_circle, color: Colors.blue[700]);
+        
+        // SnackBarで通知
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('リンクをインポートしました: ${file.path}'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
-      } catch (e) {
-      _showCenterMessage('インポートエラー: $e', icon: Icons.error, color: Colors.red[700]);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('インポートエラー: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
     }
   }
 
@@ -2049,7 +2114,7 @@ class _IconSelectorState extends State<IconSelector> {
             border: Border.all(color: Colors.grey),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(_selectedIcon, color: _selectedIconColor, size: 32),
+          child: _buildIconWidget(_selectedIcon, _selectedIconColor, size: 32),
         ),
         const SizedBox(height: 8),
         // アイコン選択ボタン
@@ -2075,44 +2140,32 @@ class _IconSelectorState extends State<IconSelector> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // アイコンタイプ選択タブ
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setDialogState(() {
-                              useWindowsIcons = false;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: !useWindowsIcons ? Colors.blue : Colors.grey,
-                            foregroundColor: Colors.white,
+                  // アイコンタイプ選択タブ（Material Iconsに統一）
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.folder, color: Colors.blue, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Material Icons',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
                           ),
-                          child: const Text('Material Icons'),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setDialogState(() {
-                              useWindowsIcons = true;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: useWindowsIcons ? Colors.blue : Colors.grey,
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Windows既定'),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   // アイコン選択セクション
                   Text(
-                    useWindowsIcons ? 'Windows既定のアイコンを選択:' : 'Material Iconsを選択:',
+                    'フォルダアイコンを選択:',
                     style: const TextStyle(fontWeight: FontWeight.bold)
                   ),
                   const SizedBox(height: 8),
@@ -2125,34 +2178,42 @@ class _IconSelectorState extends State<IconSelector> {
                         crossAxisSpacing: 4,
                         mainAxisSpacing: 4,
                       ),
-                      itemCount: useWindowsIcons ? _windowsIcons.length : _folderIcons.length,
+                      itemCount: _folderIcons.length,
                       itemBuilder: (context, index) {
-                        final iconData = useWindowsIcons ? _windowsIcons[index] : _folderIcons[index];
+                        final iconData = _folderIcons[index];
                         final isSelected = iconData.codePoint == _selectedIcon.codePoint;
-                        return GestureDetector(
-                                                onTap: () {
-                        print('アイコン選択: iconData.codePoint=${iconData.codePoint}, iconData.fontFamily=${iconData.fontFamily}');
-                        print('選択されたアイコンが地球アイコンかチェック: ${iconData.codePoint == Icons.public.codePoint}');
-                        print('選択されたアイコンがフォルダアイコンかチェック: ${iconData.codePoint == Icons.folder.codePoint}');
-                        setDialogState(() {
-                          _selectedIcon = iconData;
-                        });
-                        setState(() {
-                          _selectedIcon = iconData;
-                        });
-                        // 即座に親ウィジェットに反映
-                        widget.onIconSelected(_selectedIcon, _selectedIconColor);
-                      },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.blue.withOpacity(0.2) : Colors.transparent,
-                              border: Border.all(
-                                color: isSelected ? Colors.blue : Colors.grey,
-                                width: isSelected ? 2 : 1,
+                        return Tooltip(
+                          message: _getIconTooltip(iconData),
+                          child: GestureDetector(
+                            onTap: () {
+                              setDialogState(() {
+                                _selectedIcon = iconData;
+                              });
+                              setState(() {
+                                _selectedIcon = iconData;
+                              });
+                              // Font Awesomeアイコンの場合はブランドカラーを保持
+                              Color iconColor = _selectedIconColor;
+                              if (iconData.fontFamily == 'FontAwesomeSolid' || 
+                                  iconData.fontFamily == 'FontAwesomeRegular' || 
+                                  iconData.fontFamily == 'FontAwesomeBrands') {
+                                // Font Awesomeアイコンの場合は、ブランドカラーを取得
+                                iconColor = _getBrandColor(iconData);
+                              }
+                              // 即座に親ウィジェットに反映
+                              widget.onIconSelected(_selectedIcon, iconColor);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isSelected ? Colors.blue.withOpacity(0.2) : Colors.transparent,
+                                border: Border.all(
+                                  color: isSelected ? Colors.blue : Colors.grey,
+                                  width: isSelected ? 2 : 1,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              borderRadius: BorderRadius.circular(8),
+                              child: _buildIconWidget(iconData, _selectedIconColor),
                             ),
-                            child: Icon(iconData, color: _selectedIconColor, size: 20),
                           ),
                         );
                       },
@@ -2187,7 +2248,7 @@ class _IconSelectorState extends State<IconSelector> {
                       children: [
                         const Text('プレビュー:', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
-                        Icon(_selectedIcon, color: _selectedIconColor, size: 32),
+                        _buildIconWidget(_selectedIcon, _selectedIconColor, size: 32),
                       ],
                     ),
                   ),
@@ -2213,93 +2274,716 @@ class _IconSelectorState extends State<IconSelector> {
     );
   }
 
-  // Windows既定のアイコンリスト（実際のWindowsシステムアイコンに近いもの）
-  static const List<IconData> _windowsIcons = [
-    // 基本的なフォルダアイコン
-    Icons.folder,
-    Icons.folder_open,
-    Icons.folder_special,
-    Icons.folder_shared,
-    Icons.folder_zip,
-    Icons.folder_copy,
-    Icons.folder_delete,
-    Icons.folder_off,
-    Icons.folder_outlined,
-    Icons.folder_open_outlined,
-    Icons.folder_special_outlined,
-    Icons.folder_shared_outlined,
-    Icons.folder_zip_outlined,
-    Icons.folder_copy_outlined,
-    Icons.folder_delete_outlined,
-    Icons.folder_off_outlined,
-    Icons.drive_folder_upload,
-    Icons.drive_folder_upload_outlined,
-    Icons.drive_file_move,
-    Icons.drive_file_move_outlined,
-    Icons.drive_file_rename_outline,
-    Icons.drive_file_rename_outline_outlined,
-    // システムアイコン
-    Icons.computer,
-    Icons.computer_outlined,
-    Icons.laptop,
-    Icons.laptop_outlined,
-    Icons.desktop_windows,
-    Icons.desktop_windows_outlined,
-    Icons.storage,
-    Icons.storage_outlined,
-    Icons.sd_storage,
-    Icons.sd_storage_outlined,
-    Icons.usb,
-    Icons.usb_outlined,
-    Icons.memory,
-    Icons.memory_outlined,
-    Icons.dns,
-    Icons.dns_outlined,
-    Icons.router,
-    Icons.router_outlined,
-    Icons.wifi,
-    Icons.wifi_outlined,
-    Icons.bluetooth,
-    Icons.bluetooth_outlined,
-    Icons.nfc,
-    Icons.nfc_outlined,
-    Icons.gps_fixed,
-    Icons.gps_fixed_outlined,
-    Icons.location_on,
-    Icons.location_on_outlined,
-    Icons.map,
-    Icons.map_outlined,
-    Icons.navigation,
-    Icons.navigation_outlined,
-    Icons.directions,
-    Icons.directions_outlined,
-    Icons.explore,
-    Icons.explore_outlined,
-    Icons.travel_explore,
-    Icons.travel_explore_outlined,
-    Icons.flight,
-    Icons.flight_outlined,
-    Icons.train,
-    Icons.train_outlined,
-    Icons.directions_car,
-    Icons.directions_car_outlined,
-    Icons.directions_bus,
-    Icons.directions_bus_outlined,
-    Icons.directions_bike,
-    Icons.directions_bike_outlined,
-    Icons.directions_walk,
-    Icons.directions_walk_outlined,
-    Icons.directions_boat,
-    Icons.directions_boat_outlined,
-    Icons.directions_subway,
-    Icons.directions_subway_outlined,
-    Icons.directions_transit,
-    Icons.directions_transit_outlined,
-    Icons.directions_run,
+  // カラフルアイコンウィジェットを構築
+  Widget _buildIconWidget(IconData iconData, Color color, {double size = 20}) {
+    // Font Awesomeアイコンの場合はブランドカラーを適用
+    if (iconData.fontFamily == 'FontAwesomeSolid' || 
+        iconData.fontFamily == 'FontAwesomeRegular' || 
+        iconData.fontFamily == 'FontAwesomeBrands') {
+      return _buildBrandIcon(iconData, size: size);
+    }
+    // Material Iconsの場合は指定された色を使用
+    return Icon(iconData, color: color, size: size);
+  }
+
+  // ブランドカラーを取得するメソッド
+  Color _getBrandColor(IconData iconData) {
+    // ブランドカラーの定義
+    if (iconData.codePoint == FontAwesomeIcons.google.codePoint) {
+      return const Color(0xFF4285F4); // Google Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.github.codePoint) {
+      return const Color(0xFF181717); // GitHub Black
+    } else if (iconData.codePoint == FontAwesomeIcons.youtube.codePoint) {
+      return const Color(0xFFFF0000); // YouTube Red
+    } else if (iconData.codePoint == FontAwesomeIcons.twitter.codePoint) {
+      return const Color(0xFF1DA1F2); // Twitter Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.facebook.codePoint) {
+      return const Color(0xFF1877F2); // Facebook Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.instagram.codePoint) {
+      return const Color(0xFFE4405F); // Instagram Pink
+    } else if (iconData.codePoint == FontAwesomeIcons.linkedin.codePoint) {
+      return const Color(0xFF0A66C2); // LinkedIn Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.discord.codePoint) {
+      return const Color(0xFF5865F2); // Discord Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.slack.codePoint) {
+      return const Color(0xFF4A154B); // Slack Purple
+    } else if (iconData.codePoint == FontAwesomeIcons.spotify.codePoint) {
+      return const Color(0xFF1DB954); // Spotify Green
+    } else if (iconData.codePoint == FontAwesomeIcons.amazon.codePoint) {
+      return const Color(0xFFFF9900); // Amazon Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.apple.codePoint) {
+      return const Color(0xFF000000); // Apple Black
+    } else if (iconData.codePoint == FontAwesomeIcons.microsoft.codePoint) {
+      return const Color(0xFF00A4EF); // Microsoft Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.chrome.codePoint) {
+      return const Color(0xFF4285F4); // Chrome Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.firefox.codePoint) {
+      return const Color(0xFFFF7139); // Firefox Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.safari.codePoint) {
+      return const Color(0xFF006CFF); // Safari Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.edge.codePoint) {
+      return const Color(0xFF0078D4); // Edge Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.opera.codePoint) {
+      return const Color(0xFFFF1B2D); // Opera Red
+    } else if (iconData.codePoint == FontAwesomeIcons.steam.codePoint) {
+      return const Color(0xFF00ADE6); // Steam Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.reddit.codePoint) {
+      return const Color(0xFFFF4500); // Reddit Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.stackOverflow.codePoint) {
+      return const Color(0xFFF58025); // Stack Overflow Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.gitlab.codePoint) {
+      return const Color(0xFFFCA326); // GitLab Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.bitbucket.codePoint) {
+      return const Color(0xFF0052CC); // Bitbucket Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.docker.codePoint) {
+      return const Color(0xFF2496ED); // Docker Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.aws.codePoint) {
+      return const Color(0xFFFF9900); // AWS Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.wordpress.codePoint) {
+      return const Color(0xFF21759B); // WordPress Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.shopify.codePoint) {
+      return const Color(0xFF7AB55C); // Shopify Green
+    } else if (iconData.codePoint == FontAwesomeIcons.stripe.codePoint) {
+      return const Color(0xFF6772E5); // Stripe Purple
+    } else if (iconData.codePoint == FontAwesomeIcons.paypal.codePoint) {
+      return const Color(0xFF003087); // PayPal Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.bitcoin.codePoint) {
+      return const Color(0xFFF7931A); // Bitcoin Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.ethereum.codePoint) {
+      return const Color(0xFF627EEA); // Ethereum Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.telegram.codePoint) {
+      return const Color(0xFF0088CC); // Telegram Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.whatsapp.codePoint) {
+      return const Color(0xFF25D366); // WhatsApp Green
+    } else if (iconData.codePoint == FontAwesomeIcons.skype.codePoint) {
+      return const Color(0xFF00AFF0); // Skype Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.dropbox.codePoint) {
+      return const Color(0xFF0061FF); // Dropbox Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.box.codePoint) {
+      return const Color(0xFF0061D5); // Box Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.figma.codePoint) {
+      return const Color(0xFFF24E1E); // Figma Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.blender.codePoint) {
+      return const Color(0xFFF5792A); // Blender Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.python.codePoint) {
+      return const Color(0xFF3776AB); // Python Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.react.codePoint) {
+      return const Color(0xFF61DAFB); // React Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.angular.codePoint) {
+      return const Color(0xFFDD0031); // Angular Red
+    } else if (iconData.codePoint == FontAwesomeIcons.flutter.codePoint) {
+      return const Color(0xFF02569B); // Flutter Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.bootstrap.codePoint) {
+      return const Color(0xFF7952B3); // Bootstrap Purple
+    } else if (iconData.codePoint == FontAwesomeIcons.node.codePoint) {
+      return const Color(0xFF339933); // Node.js Green
+    } else if (iconData.codePoint == FontAwesomeIcons.npm.codePoint) {
+      return const Color(0xFFCB3837); // npm Red
+    } else if (iconData.codePoint == FontAwesomeIcons.yarn.codePoint) {
+      return const Color(0xFF2C8EBB); // Yarn Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.git.codePoint) {
+      return const Color(0xFFF05032); // Git Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.linux.codePoint) {
+      return const Color(0xFFFCC624); // Linux Yellow
+    } else if (iconData.codePoint == FontAwesomeIcons.windows.codePoint) {
+      return const Color(0xFF0078D4); // Windows Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.android.codePoint) {
+      return const Color(0xFF3DDC84); // Android Green
+    } else if (iconData.codePoint == FontAwesomeIcons.html5.codePoint) {
+      return const Color(0xFFE34F26); // HTML5 Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.css3.codePoint) {
+      return const Color(0xFF1572B6); // CSS3 Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.js.codePoint) {
+      return const Color(0xFFF7DF1E); // JavaScript Yellow
+    } else if (iconData.codePoint == FontAwesomeIcons.php.codePoint) {
+      return const Color(0xFF777BB4); // PHP Purple
+    } else if (iconData.codePoint == FontAwesomeIcons.java.codePoint) {
+      return const Color(0xFFED8B00); // Java Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.c.codePoint) {
+      return const Color(0xFFA8B9CC); // C Gray
+    } else if (iconData.codePoint == FontAwesomeIcons.swift.codePoint) {
+      return const Color(0xFFFA7343); // Swift Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.r.codePoint) {
+      return const Color(0xFF276DC3); // R Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.salesforce.codePoint) {
+      return const Color(0xFF00A1E0); // Salesforce Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.hubspot.codePoint) {
+      return const Color(0xFFFF7A59); // HubSpot Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.mailchimp.codePoint) {
+      return const Color(0xFFFFE01B); // Mailchimp Yellow
+    } else if (iconData.codePoint == FontAwesomeIcons.trello.codePoint) {
+      return const Color(0xFF0079BF); // Trello Blue
+    }
     
-    Icons.directions_ferry,
-    Icons.directions_ferry_outlined,
-  ];
+    return Colors.grey; // デフォルト色
+  }
+
+  // ブランドアイコンを構築（カラフル）
+  Widget _buildBrandIcon(IconData iconData, {double size = 20}) {
+    Color brandColor = Colors.grey; // デフォルト色
+    
+    // ブランドカラーの定義
+    if (iconData.codePoint == FontAwesomeIcons.google.codePoint) {
+      brandColor = const Color(0xFF4285F4); // Google Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.github.codePoint) {
+      brandColor = const Color(0xFF181717); // GitHub Black
+    } else if (iconData.codePoint == FontAwesomeIcons.youtube.codePoint) {
+      brandColor = const Color(0xFFFF0000); // YouTube Red
+    } else if (iconData.codePoint == FontAwesomeIcons.twitter.codePoint) {
+      brandColor = const Color(0xFF1DA1F2); // Twitter Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.facebook.codePoint) {
+      brandColor = const Color(0xFF1877F2); // Facebook Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.instagram.codePoint) {
+      brandColor = const Color(0xFFE4405F); // Instagram Pink
+    } else if (iconData.codePoint == FontAwesomeIcons.linkedin.codePoint) {
+      brandColor = const Color(0xFF0A66C2); // LinkedIn Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.discord.codePoint) {
+      brandColor = const Color(0xFF5865F2); // Discord Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.slack.codePoint) {
+      brandColor = const Color(0xFF4A154B); // Slack Purple
+    } else if (iconData.codePoint == FontAwesomeIcons.spotify.codePoint) {
+      brandColor = const Color(0xFF1DB954); // Spotify Green
+    } else if (iconData.codePoint == FontAwesomeIcons.amazon.codePoint) {
+      brandColor = const Color(0xFFFF9900); // Amazon Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.apple.codePoint) {
+      brandColor = const Color(0xFF000000); // Apple Black
+    } else if (iconData.codePoint == FontAwesomeIcons.microsoft.codePoint) {
+      brandColor = const Color(0xFF00A4EF); // Microsoft Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.chrome.codePoint) {
+      brandColor = const Color(0xFF4285F4); // Chrome Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.firefox.codePoint) {
+      brandColor = const Color(0xFFFF7139); // Firefox Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.safari.codePoint) {
+      brandColor = const Color(0xFF006CFF); // Safari Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.edge.codePoint) {
+      brandColor = const Color(0xFF0078D4); // Edge Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.opera.codePoint) {
+      brandColor = const Color(0xFFFF1B2D); // Opera Red
+    } else if (iconData.codePoint == FontAwesomeIcons.steam.codePoint) {
+      brandColor = const Color(0xFF00ADE6); // Steam Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.reddit.codePoint) {
+      brandColor = const Color(0xFFFF4500); // Reddit Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.stackOverflow.codePoint) {
+      brandColor = const Color(0xFFF58025); // Stack Overflow Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.gitlab.codePoint) {
+      brandColor = const Color(0xFFFCA326); // GitLab Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.bitbucket.codePoint) {
+      brandColor = const Color(0xFF0052CC); // Bitbucket Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.docker.codePoint) {
+      brandColor = const Color(0xFF2496ED); // Docker Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.aws.codePoint) {
+      brandColor = const Color(0xFFFF9900); // AWS Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.wordpress.codePoint) {
+      brandColor = const Color(0xFF21759B); // WordPress Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.shopify.codePoint) {
+      brandColor = const Color(0xFF7AB55C); // Shopify Green
+    } else if (iconData.codePoint == FontAwesomeIcons.stripe.codePoint) {
+      brandColor = const Color(0xFF6772E5); // Stripe Purple
+    } else if (iconData.codePoint == FontAwesomeIcons.paypal.codePoint) {
+      brandColor = const Color(0xFF003087); // PayPal Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.bitcoin.codePoint) {
+      brandColor = const Color(0xFFF7931A); // Bitcoin Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.ethereum.codePoint) {
+      brandColor = const Color(0xFF627EEA); // Ethereum Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.telegram.codePoint) {
+      brandColor = const Color(0xFF0088CC); // Telegram Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.whatsapp.codePoint) {
+      brandColor = const Color(0xFF25D366); // WhatsApp Green
+    } else if (iconData.codePoint == FontAwesomeIcons.skype.codePoint) {
+      brandColor = const Color(0xFF00AFF0); // Skype Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.dropbox.codePoint) {
+      brandColor = const Color(0xFF0061FF); // Dropbox Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.box.codePoint) {
+      brandColor = const Color(0xFF0061D5); // Box Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.figma.codePoint) {
+      brandColor = const Color(0xFFF24E1E); // Figma Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.blender.codePoint) {
+      brandColor = const Color(0xFFF5792A); // Blender Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.python.codePoint) {
+      brandColor = const Color(0xFF3776AB); // Python Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.react.codePoint) {
+      brandColor = const Color(0xFF61DAFB); // React Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.angular.codePoint) {
+      brandColor = const Color(0xFFDD0031); // Angular Red
+    } else if (iconData.codePoint == FontAwesomeIcons.flutter.codePoint) {
+      brandColor = const Color(0xFF02569B); // Flutter Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.bootstrap.codePoint) {
+      brandColor = const Color(0xFF7952B3); // Bootstrap Purple
+    } else if (iconData.codePoint == FontAwesomeIcons.node.codePoint) {
+      brandColor = const Color(0xFF339933); // Node.js Green
+    } else if (iconData.codePoint == FontAwesomeIcons.npm.codePoint) {
+      brandColor = const Color(0xFFCB3837); // npm Red
+    } else if (iconData.codePoint == FontAwesomeIcons.yarn.codePoint) {
+      brandColor = const Color(0xFF2C8EBB); // Yarn Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.git.codePoint) {
+      brandColor = const Color(0xFFF05032); // Git Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.linux.codePoint) {
+      brandColor = const Color(0xFFFCC624); // Linux Yellow
+    } else if (iconData.codePoint == FontAwesomeIcons.windows.codePoint) {
+      brandColor = const Color(0xFF0078D4); // Windows Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.android.codePoint) {
+      brandColor = const Color(0xFF3DDC84); // Android Green
+    } else if (iconData.codePoint == FontAwesomeIcons.html5.codePoint) {
+      brandColor = const Color(0xFFE34F26); // HTML5 Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.css3.codePoint) {
+      brandColor = const Color(0xFF1572B6); // CSS3 Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.js.codePoint) {
+      brandColor = const Color(0xFFF7DF1E); // JavaScript Yellow
+    } else if (iconData.codePoint == FontAwesomeIcons.php.codePoint) {
+      brandColor = const Color(0xFF777BB4); // PHP Purple
+    } else if (iconData.codePoint == FontAwesomeIcons.java.codePoint) {
+      brandColor = const Color(0xFFED8B00); // Java Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.c.codePoint) {
+      brandColor = const Color(0xFFA8B9CC); // C Gray
+    } else if (iconData.codePoint == FontAwesomeIcons.swift.codePoint) {
+      brandColor = const Color(0xFFFA7343); // Swift Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.r.codePoint) {
+      brandColor = const Color(0xFF276DC3); // R Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.salesforce.codePoint) {
+      brandColor = const Color(0xFF00A1E0); // Salesforce Blue
+    } else if (iconData.codePoint == FontAwesomeIcons.hubspot.codePoint) {
+      brandColor = const Color(0xFFFF7A59); // HubSpot Orange
+    } else if (iconData.codePoint == FontAwesomeIcons.mailchimp.codePoint) {
+      brandColor = const Color(0xFFFFE01B); // Mailchimp Yellow
+    } else if (iconData.codePoint == FontAwesomeIcons.trello.codePoint) {
+      brandColor = const Color(0xFF0079BF); // Trello Blue
+    }
+    
+    return Icon(iconData, color: brandColor, size: size);
+  }
+
+  // アイコンのTooltipを取得するメソッド
+  String _getIconTooltip(IconData icon) {
+    // Font AwesomeアイコンのTooltipを先にチェック
+    if (icon.codePoint == FontAwesomeIcons.google.codePoint) return 'Google';
+    if (icon.codePoint == FontAwesomeIcons.github.codePoint) return 'GitHub';
+    if (icon.codePoint == FontAwesomeIcons.youtube.codePoint) return 'YouTube';
+    if (icon.codePoint == FontAwesomeIcons.twitter.codePoint) return 'Twitter';
+    if (icon.codePoint == FontAwesomeIcons.facebook.codePoint) return 'Facebook';
+    if (icon.codePoint == FontAwesomeIcons.instagram.codePoint) return 'Instagram';
+    if (icon.codePoint == FontAwesomeIcons.linkedin.codePoint) return 'LinkedIn';
+    if (icon.codePoint == FontAwesomeIcons.discord.codePoint) return 'Discord';
+    if (icon.codePoint == FontAwesomeIcons.slack.codePoint) return 'Slack';
+    if (icon.codePoint == FontAwesomeIcons.spotify.codePoint) return 'Spotify';
+    if (icon.codePoint == FontAwesomeIcons.amazon.codePoint) return 'Amazon';
+    if (icon.codePoint == FontAwesomeIcons.apple.codePoint) return 'Apple';
+    if (icon.codePoint == FontAwesomeIcons.microsoft.codePoint) return 'Microsoft';
+    if (icon.codePoint == FontAwesomeIcons.chrome.codePoint) return 'Chrome';
+    if (icon.codePoint == FontAwesomeIcons.firefox.codePoint) return 'Firefox';
+    if (icon.codePoint == FontAwesomeIcons.safari.codePoint) return 'Safari';
+    if (icon.codePoint == FontAwesomeIcons.edge.codePoint) return 'Edge';
+    if (icon.codePoint == FontAwesomeIcons.opera.codePoint) return 'Opera';
+    if (icon.codePoint == FontAwesomeIcons.steam.codePoint) return 'Steam';
+    if (icon.codePoint == FontAwesomeIcons.reddit.codePoint) return 'Reddit';
+    if (icon.codePoint == FontAwesomeIcons.stackOverflow.codePoint) return 'Stack Overflow';
+    if (icon.codePoint == FontAwesomeIcons.gitlab.codePoint) return 'GitLab';
+    if (icon.codePoint == FontAwesomeIcons.bitbucket.codePoint) return 'Bitbucket';
+    if (icon.codePoint == FontAwesomeIcons.docker.codePoint) return 'Docker';
+    if (icon.codePoint == FontAwesomeIcons.aws.codePoint) return 'AWS';
+    if (icon.codePoint == FontAwesomeIcons.wordpress.codePoint) return 'WordPress';
+    if (icon.codePoint == FontAwesomeIcons.shopify.codePoint) return 'Shopify';
+    if (icon.codePoint == FontAwesomeIcons.stripe.codePoint) return 'Stripe';
+    if (icon.codePoint == FontAwesomeIcons.paypal.codePoint) return 'PayPal';
+    if (icon.codePoint == FontAwesomeIcons.bitcoin.codePoint) return 'Bitcoin';
+    if (icon.codePoint == FontAwesomeIcons.ethereum.codePoint) return 'Ethereum';
+    if (icon.codePoint == FontAwesomeIcons.telegram.codePoint) return 'Telegram';
+    if (icon.codePoint == FontAwesomeIcons.whatsapp.codePoint) return 'WhatsApp';
+    if (icon.codePoint == FontAwesomeIcons.skype.codePoint) return 'Skype';
+    if (icon.codePoint == FontAwesomeIcons.dropbox.codePoint) return 'Dropbox';
+    if (icon.codePoint == FontAwesomeIcons.box.codePoint) return 'Box';
+    if (icon.codePoint == FontAwesomeIcons.figma.codePoint) return 'Figma';
+    if (icon.codePoint == FontAwesomeIcons.blender.codePoint) return 'Blender';
+    if (icon.codePoint == FontAwesomeIcons.python.codePoint) return 'Python';
+    if (icon.codePoint == FontAwesomeIcons.react.codePoint) return 'React';
+    if (icon.codePoint == FontAwesomeIcons.angular.codePoint) return 'Angular';
+    if (icon.codePoint == FontAwesomeIcons.flutter.codePoint) return 'Flutter';
+    if (icon.codePoint == FontAwesomeIcons.bootstrap.codePoint) return 'Bootstrap';
+    if (icon.codePoint == FontAwesomeIcons.node.codePoint) return 'Node.js';
+    if (icon.codePoint == FontAwesomeIcons.npm.codePoint) return 'npm';
+    if (icon.codePoint == FontAwesomeIcons.yarn.codePoint) return 'Yarn';
+    if (icon.codePoint == FontAwesomeIcons.git.codePoint) return 'Git';
+    if (icon.codePoint == FontAwesomeIcons.linux.codePoint) return 'Linux';
+    if (icon.codePoint == FontAwesomeIcons.windows.codePoint) return 'Windows';
+    if (icon.codePoint == FontAwesomeIcons.android.codePoint) return 'Android';
+    if (icon.codePoint == FontAwesomeIcons.html5.codePoint) return 'HTML5';
+    if (icon.codePoint == FontAwesomeIcons.css3.codePoint) return 'CSS3';
+    if (icon.codePoint == FontAwesomeIcons.js.codePoint) return 'JavaScript';
+    if (icon.codePoint == FontAwesomeIcons.php.codePoint) return 'PHP';
+    if (icon.codePoint == FontAwesomeIcons.java.codePoint) return 'Java';
+    if (icon.codePoint == FontAwesomeIcons.c.codePoint) return 'C';
+    if (icon.codePoint == FontAwesomeIcons.swift.codePoint) return 'Swift';
+    if (icon.codePoint == FontAwesomeIcons.r.codePoint) return 'R';
+    if (icon.codePoint == FontAwesomeIcons.salesforce.codePoint) return 'Salesforce';
+    if (icon.codePoint == FontAwesomeIcons.hubspot.codePoint) return 'HubSpot';
+    if (icon.codePoint == FontAwesomeIcons.mailchimp.codePoint) return 'Mailchimp';
+    if (icon.codePoint == FontAwesomeIcons.trello.codePoint) return 'Trello';
+    
+    // Material IconsのTooltip
+    if (icon.codePoint == Icons.public.codePoint) return '地球アイコン';
+    if (icon.codePoint == Icons.folder.codePoint) return 'フォルダ';
+    if (icon.codePoint == Icons.folder_open.codePoint) return '開いたフォルダ';
+    if (icon.codePoint == Icons.folder_special.codePoint) return '特別なフォルダ';
+    if (icon.codePoint == Icons.folder_shared.codePoint) return '共有フォルダ';
+    if (icon.codePoint == Icons.folder_zip.codePoint) return '圧縮フォルダ';
+    if (icon.codePoint == Icons.folder_copy.codePoint) return 'コピーフォルダ';
+    if (icon.codePoint == Icons.folder_delete.codePoint) return '削除フォルダ';
+    if (icon.codePoint == Icons.folder_off.codePoint) return '無効フォルダ';
+    if (icon.codePoint == Icons.folder_outlined.codePoint) return 'フォルダ（アウトライン）';
+    if (icon.codePoint == Icons.folder_open_outlined.codePoint) return '開いたフォルダ（アウトライン）';
+    if (icon.codePoint == Icons.folder_special_outlined.codePoint) return '特別なフォルダ（アウトライン）';
+    if (icon.codePoint == Icons.folder_shared_outlined.codePoint) return '共有フォルダ（アウトライン）';
+    if (icon.codePoint == Icons.folder_zip_outlined.codePoint) return '圧縮フォルダ（アウトライン）';
+    if (icon.codePoint == Icons.folder_copy_outlined.codePoint) return 'コピーフォルダ（アウトライン）';
+    if (icon.codePoint == Icons.folder_delete_outlined.codePoint) return '削除フォルダ（アウトライン）';
+    if (icon.codePoint == Icons.folder_off_outlined.codePoint) return '無効フォルダ（アウトライン）';
+    if (icon.codePoint == Icons.drive_folder_upload.codePoint) return 'アップロードフォルダ';
+    if (icon.codePoint == Icons.drive_folder_upload_outlined.codePoint) return 'アップロードフォルダ（アウトライン）';
+    if (icon.codePoint == Icons.drive_file_move.codePoint) return 'ファイル移動';
+    if (icon.codePoint == Icons.drive_file_move_outlined.codePoint) return 'ファイル移動（アウトライン）';
+    if (icon.codePoint == Icons.drive_file_rename_outline.codePoint) return 'ファイル名変更';
+    if (icon.codePoint == Icons.drive_file_rename_outline_outlined.codePoint) return 'ファイル名変更（アウトライン）';
+    if (icon.codePoint == Icons.book.codePoint) return '本';
+    if (icon.codePoint == Icons.book_outlined.codePoint) return '本（アウトライン）';
+    if (icon.codePoint == Icons.bookmark.codePoint) return 'ブックマーク';
+    if (icon.codePoint == Icons.bookmark_outlined.codePoint) return 'ブックマーク（アウトライン）';
+    if (icon.codePoint == Icons.favorite.codePoint) return 'お気に入り';
+    if (icon.codePoint == Icons.favorite_outlined.codePoint) return 'お気に入り（アウトライン）';
+    if (icon.codePoint == Icons.star.codePoint) return '星';
+    if (icon.codePoint == Icons.star_outlined.codePoint) return '星（アウトライン）';
+    if (icon.codePoint == Icons.home.codePoint) return 'ホーム';
+    if (icon.codePoint == Icons.home_outlined.codePoint) return 'ホーム（アウトライン）';
+    if (icon.codePoint == Icons.work.codePoint) return '仕事';
+    if (icon.codePoint == Icons.work_outlined.codePoint) return '仕事（アウトライン）';
+    if (icon.codePoint == Icons.school.codePoint) return '学校';
+    if (icon.codePoint == Icons.school_outlined.codePoint) return '学校（アウトライン）';
+    if (icon.codePoint == Icons.business.codePoint) return 'ビジネス';
+    if (icon.codePoint == Icons.business_outlined.codePoint) return 'ビジネス（アウトライン）';
+    if (icon.codePoint == Icons.store.codePoint) return '店舗';
+    if (icon.codePoint == Icons.store_outlined.codePoint) return '店舗（アウトライン）';
+    if (icon.codePoint == Icons.shopping_cart.codePoint) return 'ショッピングカート';
+    if (icon.codePoint == Icons.shopping_cart_outlined.codePoint) return 'ショッピングカート（アウトライン）';
+    if (icon.codePoint == Icons.music_note.codePoint) return '音楽';
+    if (icon.codePoint == Icons.music_note_outlined.codePoint) return '音楽（アウトライン）';
+    if (icon.codePoint == Icons.photo.codePoint) return '写真';
+    if (icon.codePoint == Icons.photo_outlined.codePoint) return '写真（アウトライン）';
+    if (icon.codePoint == Icons.video_library.codePoint) return '動画ライブラリ';
+    if (icon.codePoint == Icons.video_library_outlined.codePoint) return '動画ライブラリ（アウトライン）';
+    if (icon.codePoint == Icons.download.codePoint) return 'ダウンロード';
+    if (icon.codePoint == Icons.download_outlined.codePoint) return 'ダウンロード（アウトライン）';
+    if (icon.codePoint == Icons.upload.codePoint) return 'アップロード';
+    if (icon.codePoint == Icons.upload_outlined.codePoint) return 'アップロード（アウトライン）';
+    if (icon.codePoint == Icons.backup.codePoint) return 'バックアップ';
+    if (icon.codePoint == Icons.backup_outlined.codePoint) return 'バックアップ（アウトライン）';
+    if (icon.codePoint == Icons.archive.codePoint) return 'アーカイブ';
+    if (icon.codePoint == Icons.archive_outlined.codePoint) return 'アーカイブ（アウトライン）';
+    if (icon.codePoint == Icons.inbox.codePoint) return '受信トレイ';
+    if (icon.codePoint == Icons.inbox_outlined.codePoint) return '受信トレイ（アウトライン）';
+    if (icon.codePoint == Icons.outbox.codePoint) return '送信トレイ';
+    if (icon.codePoint == Icons.outbox_outlined.codePoint) return '送信トレイ（アウトライン）';
+    if (icon.codePoint == Icons.drafts.codePoint) return '下書き';
+    if (icon.codePoint == Icons.drafts_outlined.codePoint) return '下書き（アウトライン）';
+    if (icon.codePoint == Icons.send.codePoint) return '送信';
+    if (icon.codePoint == Icons.send_outlined.codePoint) return '送信（アウトライン）';
+    if (icon.codePoint == Icons.mail.codePoint) return 'メール';
+    if (icon.codePoint == Icons.mail_outlined.codePoint) return 'メール（アウトライン）';
+    if (icon.codePoint == Icons.contact_mail.codePoint) return '連絡先メール';
+    if (icon.codePoint == Icons.contact_mail_outlined.codePoint) return '連絡先メール（アウトライン）';
+    if (icon.codePoint == Icons.person.codePoint) return '人物';
+    if (icon.codePoint == Icons.person_outlined.codePoint) return '人物（アウトライン）';
+    if (icon.codePoint == Icons.group.codePoint) return 'グループ';
+    if (icon.codePoint == Icons.group_outlined.codePoint) return 'グループ（アウトライン）';
+    if (icon.codePoint == Icons.family_restroom.codePoint) return '家族';
+    if (icon.codePoint == Icons.family_restroom_outlined.codePoint) return '家族（アウトライン）';
+    if (icon.codePoint == Icons.pets.codePoint) return 'ペット';
+    if (icon.codePoint == Icons.pets_outlined.codePoint) return 'ペット（アウトライン）';
+    if (icon.codePoint == Icons.sports_soccer.codePoint) return 'サッカー';
+    if (icon.codePoint == Icons.sports_soccer_outlined.codePoint) return 'サッカー（アウトライン）';
+    if (icon.codePoint == Icons.sports_basketball.codePoint) return 'バスケットボール';
+    if (icon.codePoint == Icons.sports_basketball_outlined.codePoint) return 'バスケットボール（アウトライン）';
+    if (icon.codePoint == Icons.sports_esports.codePoint) return 'eスポーツ';
+    if (icon.codePoint == Icons.sports_esports_outlined.codePoint) return 'eスポーツ（アウトライン）';
+    if (icon.codePoint == Icons.games.codePoint) return 'ゲーム';
+    if (icon.codePoint == Icons.games_outlined.codePoint) return 'ゲーム（アウトライン）';
+    if (icon.codePoint == Icons.toys.codePoint) return 'おもちゃ';
+    if (icon.codePoint == Icons.toys_outlined.codePoint) return 'おもちゃ（アウトライン）';
+    if (icon.codePoint == Icons.child_care.codePoint) return '育児';
+    if (icon.codePoint == Icons.child_care_outlined.codePoint) return '育児（アウトライン）';
+    if (icon.codePoint == Icons.library_books.codePoint) return '図書館';
+    if (icon.codePoint == Icons.library_books_outlined.codePoint) return '図書館（アウトライン）';
+    if (icon.codePoint == Icons.menu_book.codePoint) return 'メニューブック';
+    if (icon.codePoint == Icons.menu_book_outlined.codePoint) return 'メニューブック（アウトライン）';
+    if (icon.codePoint == Icons.auto_stories.codePoint) return '自動ストーリー';
+    if (icon.codePoint == Icons.auto_stories_outlined.codePoint) return '自動ストーリー（アウトライン）';
+    if (icon.codePoint == Icons.emoji_emotions.codePoint) return '絵文字';
+    if (icon.codePoint == Icons.emoji_emotions_outlined.codePoint) return '絵文字（アウトライン）';
+    if (icon.codePoint == Icons.celebration.codePoint) return 'お祝い';
+    if (icon.codePoint == Icons.celebration_outlined.codePoint) return 'お祝い（アウトライン）';
+    if (icon.codePoint == Icons.cake.codePoint) return 'ケーキ';
+    if (icon.codePoint == Icons.cake_outlined.codePoint) return 'ケーキ（アウトライン）';
+    if (icon.codePoint == Icons.local_pizza.codePoint) return 'ピザ';
+    if (icon.codePoint == Icons.local_pizza_outlined.codePoint) return 'ピザ（アウトライン）';
+    if (icon.codePoint == Icons.local_cafe.codePoint) return 'カフェ';
+    if (icon.codePoint == Icons.local_cafe_outlined.codePoint) return 'カフェ（アウトライン）';
+    if (icon.codePoint == Icons.local_restaurant.codePoint) return 'レストラン';
+    if (icon.codePoint == Icons.local_restaurant_outlined.codePoint) return 'レストラン（アウトライン）';
+    if (icon.codePoint == Icons.local_bar.codePoint) return 'バー';
+    if (icon.codePoint == Icons.local_bar_outlined.codePoint) return 'バー（アウトライン）';
+    if (icon.codePoint == Icons.local_hotel.codePoint) return 'ホテル';
+    if (icon.codePoint == Icons.local_hotel_outlined.codePoint) return 'ホテル（アウトライン）';
+    if (icon.codePoint == Icons.local_gas_station.codePoint) return 'ガソリンスタンド';
+    if (icon.codePoint == Icons.local_gas_station_outlined.codePoint) return 'ガソリンスタンド（アウトライン）';
+    if (icon.codePoint == Icons.local_pharmacy.codePoint) return '薬局';
+    if (icon.codePoint == Icons.local_pharmacy_outlined.codePoint) return '薬局（アウトライン）';
+    if (icon.codePoint == Icons.local_hospital.codePoint) return '病院';
+    if (icon.codePoint == Icons.local_hospital_outlined.codePoint) return '病院（アウトライン）';
+    if (icon.codePoint == Icons.local_police.codePoint) return '警察';
+    if (icon.codePoint == Icons.local_police_outlined.codePoint) return '警察（アウトライン）';
+    if (icon.codePoint == Icons.local_fire_department.codePoint) return '消防署';
+    if (icon.codePoint == Icons.local_fire_department_outlined.codePoint) return '消防署（アウトライン）';
+    if (icon.codePoint == Icons.local_post_office.codePoint) return '郵便局';
+    if (icon.codePoint == Icons.local_post_office_outlined.codePoint) return '郵便局（アウトライン）';
+    if (icon.codePoint == Icons.local_atm.codePoint) return 'ATM';
+    if (icon.codePoint == Icons.local_atm_outlined.codePoint) return 'ATM（アウトライン）';
+    if (icon.codePoint == Icons.local_mall.codePoint) return 'ショッピングモール';
+    if (icon.codePoint == Icons.local_mall_outlined.codePoint) return 'ショッピングモール（アウトライン）';
+    if (icon.codePoint == Icons.local_movies.codePoint) return '映画館';
+    if (icon.codePoint == Icons.local_movies_outlined.codePoint) return '映画館（アウトライン）';
+    if (icon.codePoint == Icons.local_play.codePoint) return '遊び場';
+    if (icon.codePoint == Icons.local_play_outlined.codePoint) return '遊び場（アウトライン）';
+    if (icon.codePoint == Icons.local_activity.codePoint) return 'アクティビティ';
+    if (icon.codePoint == Icons.local_activity_outlined.codePoint) return 'アクティビティ（アウトライン）';
+    if (icon.codePoint == Icons.local_parking.codePoint) return '駐車場';
+    if (icon.codePoint == Icons.local_parking_outlined.codePoint) return '駐車場（アウトライン）';
+    if (icon.codePoint == Icons.local_taxi.codePoint) return 'タクシー';
+    if (icon.codePoint == Icons.local_taxi_outlined.codePoint) return 'タクシー（アウトライン）';
+    if (icon.codePoint == Icons.local_airport.codePoint) return '空港';
+    if (icon.codePoint == Icons.local_airport_outlined.codePoint) return '空港（アウトライン）';
+    if (icon.codePoint == Icons.local_shipping.codePoint) return '配送';
+    if (icon.codePoint == Icons.local_shipping_outlined.codePoint) return '配送（アウトライン）';
+    if (icon.codePoint == Icons.local_offer.codePoint) return 'オファー';
+    if (icon.codePoint == Icons.local_offer_outlined.codePoint) return 'オファー（アウトライン）';
+    if (icon.codePoint == Icons.local_florist.codePoint) return '花屋';
+    if (icon.codePoint == Icons.local_florist_outlined.codePoint) return '花屋（アウトライン）';
+    if (icon.codePoint == Icons.local_car_wash.codePoint) return '洗車場';
+    if (icon.codePoint == Icons.local_car_wash_outlined.codePoint) return '洗車場（アウトライン）';
+    if (icon.codePoint == Icons.local_laundry_service.codePoint) return 'クリーニング';
+    if (icon.codePoint == Icons.local_laundry_service_outlined.codePoint) return 'クリーニング（アウトライン）';
+    if (icon.codePoint == Icons.local_dining.codePoint) return '食事';
+    if (icon.codePoint == Icons.local_dining_outlined.codePoint) return '食事（アウトライン）';
+    if (icon.codePoint == Icons.local_drink.codePoint) return '飲み物';
+    if (icon.codePoint == Icons.local_drink_outlined.codePoint) return '飲み物（アウトライン）';
+    if (icon.codePoint == Icons.public_outlined.codePoint) return '地球（アウトライン）';
+    if (icon.codePoint == Icons.language.codePoint) return '言語';
+    if (icon.codePoint == Icons.language_outlined.codePoint) return '言語（アウトライン）';
+    if (icon.codePoint == Icons.web.codePoint) return 'ウェブ';
+    if (icon.codePoint == Icons.web_outlined.codePoint) return 'ウェブ（アウトライン）';
+    if (icon.codePoint == Icons.computer.codePoint) return 'コンピューター';
+    if (icon.codePoint == Icons.computer_outlined.codePoint) return 'コンピューター（アウトライン）';
+    if (icon.codePoint == Icons.laptop.codePoint) return 'ラップトップ';
+    if (icon.codePoint == Icons.laptop_outlined.codePoint) return 'ラップトップ（アウトライン）';
+    if (icon.codePoint == Icons.tablet.codePoint) return 'タブレット';
+    if (icon.codePoint == Icons.tablet_outlined.codePoint) return 'タブレット（アウトライン）';
+    if (icon.codePoint == Icons.phone.codePoint) return '電話';
+    if (icon.codePoint == Icons.phone_outlined.codePoint) return '電話（アウトライン）';
+    if (icon.codePoint == Icons.smartphone.codePoint) return 'スマートフォン';
+    if (icon.codePoint == Icons.smartphone_outlined.codePoint) return 'スマートフォン（アウトライン）';
+    if (icon.codePoint == Icons.watch.codePoint) return '時計';
+    if (icon.codePoint == Icons.watch_outlined.codePoint) return '時計（アウトライン）';
+    if (icon.codePoint == Icons.headphones.codePoint) return 'ヘッドフォン';
+    if (icon.codePoint == Icons.headphones_outlined.codePoint) return 'ヘッドフォン（アウトライン）';
+    if (icon.codePoint == Icons.speaker.codePoint) return 'スピーカー';
+    if (icon.codePoint == Icons.speaker_outlined.codePoint) return 'スピーカー（アウトライン）';
+    if (icon.codePoint == Icons.tv.codePoint) return 'テレビ';
+    if (icon.codePoint == Icons.tv_outlined.codePoint) return 'テレビ（アウトライン）';
+    if (icon.codePoint == Icons.radio.codePoint) return 'ラジオ';
+    if (icon.codePoint == Icons.radio_outlined.codePoint) return 'ラジオ（アウトライン）';
+    if (icon.codePoint == Icons.camera_alt.codePoint) return 'カメラ';
+    if (icon.codePoint == Icons.camera_alt_outlined.codePoint) return 'カメラ（アウトライン）';
+    if (icon.codePoint == Icons.camera.codePoint) return 'カメラ';
+    if (icon.codePoint == Icons.camera_outlined.codePoint) return 'カメラ（アウトライン）';
+    if (icon.codePoint == Icons.videocam.codePoint) return 'ビデオカメラ';
+    if (icon.codePoint == Icons.videocam_outlined.codePoint) return 'ビデオカメラ（アウトライン）';
+    if (icon.codePoint == Icons.mic.codePoint) return 'マイク';
+    if (icon.codePoint == Icons.mic_outlined.codePoint) return 'マイク（アウトライン）';
+    if (icon.codePoint == Icons.keyboard.codePoint) return 'キーボード';
+    if (icon.codePoint == Icons.keyboard_outlined.codePoint) return 'キーボード（アウトライン）';
+    if (icon.codePoint == Icons.mouse.codePoint) return 'マウス';
+    if (icon.codePoint == Icons.mouse_outlined.codePoint) return 'マウス（アウトライン）';
+    if (icon.codePoint == Icons.print.codePoint) return 'プリンター';
+    if (icon.codePoint == Icons.print_outlined.codePoint) return 'プリンター（アウトライン）';
+    if (icon.codePoint == Icons.scanner.codePoint) return 'スキャナー';
+    if (icon.codePoint == Icons.scanner_outlined.codePoint) return 'スキャナー（アウトライン）';
+    if (icon.codePoint == Icons.fax.codePoint) return 'ファックス';
+    if (icon.codePoint == Icons.fax_outlined.codePoint) return 'ファックス（アウトライン）';
+    if (icon.codePoint == Icons.router.codePoint) return 'ルーター';
+    if (icon.codePoint == Icons.router_outlined.codePoint) return 'ルーター（アウトライン）';
+    if (icon.codePoint == Icons.wifi.codePoint) return 'Wi-Fi';
+    if (icon.codePoint == Icons.wifi_outlined.codePoint) return 'Wi-Fi（アウトライン）';
+    if (icon.codePoint == Icons.bluetooth.codePoint) return 'Bluetooth';
+    if (icon.codePoint == Icons.bluetooth_outlined.codePoint) return 'Bluetooth（アウトライン）';
+    if (icon.codePoint == Icons.nfc.codePoint) return 'NFC';
+    if (icon.codePoint == Icons.nfc_outlined.codePoint) return 'NFC（アウトライン）';
+    if (icon.codePoint == Icons.gps_fixed.codePoint) return 'GPS';
+    if (icon.codePoint == Icons.gps_fixed_outlined.codePoint) return 'GPS（アウトライン）';
+    if (icon.codePoint == Icons.location_on.codePoint) return '位置情報';
+    if (icon.codePoint == Icons.location_on_outlined.codePoint) return '位置情報（アウトライン）';
+    if (icon.codePoint == Icons.map.codePoint) return '地図';
+    if (icon.codePoint == Icons.map_outlined.codePoint) return '地図（アウトライン）';
+    if (icon.codePoint == Icons.navigation.codePoint) return 'ナビゲーション';
+    if (icon.codePoint == Icons.navigation_outlined.codePoint) return 'ナビゲーション（アウトライン）';
+    if (icon.codePoint == Icons.directions.codePoint) return '方向';
+    if (icon.codePoint == Icons.directions_outlined.codePoint) return '方向（アウトライン）';
+    if (icon.codePoint == Icons.compass_calibration.codePoint) return 'コンパス';
+    if (icon.codePoint == Icons.compass_calibration_outlined.codePoint) return 'コンパス（アウトライン）';
+    if (icon.codePoint == Icons.explore.codePoint) return '探索';
+    if (icon.codePoint == Icons.explore_outlined.codePoint) return '探索（アウトライン）';
+    if (icon.codePoint == Icons.travel_explore.codePoint) return '旅行探索';
+    if (icon.codePoint == Icons.travel_explore_outlined.codePoint) return '旅行探索（アウトライン）';
+    if (icon.codePoint == Icons.flight.codePoint) return '飛行機';
+    if (icon.codePoint == Icons.flight_outlined.codePoint) return '飛行機（アウトライン）';
+    if (icon.codePoint == Icons.train.codePoint) return '電車';
+    if (icon.codePoint == Icons.train_outlined.codePoint) return '電車（アウトライン）';
+    if (icon.codePoint == Icons.directions_car.codePoint) return '車';
+    if (icon.codePoint == Icons.directions_car_outlined.codePoint) return '車（アウトライン）';
+    if (icon.codePoint == Icons.directions_bus.codePoint) return 'バス';
+    if (icon.codePoint == Icons.directions_bus_outlined.codePoint) return 'バス（アウトライン）';
+    if (icon.codePoint == Icons.directions_bike.codePoint) return '自転車';
+    if (icon.codePoint == Icons.directions_bike_outlined.codePoint) return '自転車（アウトライン）';
+    if (icon.codePoint == Icons.directions_walk.codePoint) return '歩行';
+    if (icon.codePoint == Icons.directions_walk_outlined.codePoint) return '歩行（アウトライン）';
+    if (icon.codePoint == Icons.directions_boat.codePoint) return 'ボート';
+    if (icon.codePoint == Icons.directions_boat_outlined.codePoint) return 'ボート（アウトライン）';
+    if (icon.codePoint == Icons.directions_subway.codePoint) return '地下鉄';
+    if (icon.codePoint == Icons.directions_subway_outlined.codePoint) return '地下鉄（アウトライン）';
+    if (icon.codePoint == Icons.directions_transit.codePoint) return '公共交通';
+    if (icon.codePoint == Icons.directions_transit_outlined.codePoint) return '公共交通（アウトライン）';
+    if (icon.codePoint == Icons.directions_run.codePoint) return 'ランニング';
+    if (icon.codePoint == Icons.directions_run_outlined.codePoint) return 'ランニング（アウトライン）';
+    if (icon.codePoint == Icons.directions_railway.codePoint) return '鉄道';
+    if (icon.codePoint == Icons.directions_railway_outlined.codePoint) return '鉄道（アウトライン）';
+    if (icon.codePoint == Icons.directions_ferry.codePoint) return 'フェリー';
+    if (icon.codePoint == Icons.directions_ferry_outlined.codePoint) return 'フェリー（アウトライン）';
+    if (icon.codePoint == Icons.public.codePoint) return '地球';
+    if (icon.codePoint == Icons.public_outlined.codePoint) return '地球（アウトライン）';
+    
+    // ビジネス向けアイコンのTooltip
+    if (icon.codePoint == Icons.business.codePoint) return 'ビジネス';
+    if (icon.codePoint == Icons.business_outlined.codePoint) return 'ビジネス（アウトライン）';
+    if (icon.codePoint == Icons.account_balance.codePoint) return '銀行';
+    if (icon.codePoint == Icons.account_balance_outlined.codePoint) return '銀行（アウトライン）';
+    if (icon.codePoint == Icons.account_balance_wallet.codePoint) return 'ウォレット';
+    if (icon.codePoint == Icons.account_balance_wallet_outlined.codePoint) return 'ウォレット（アウトライン）';
+    if (icon.codePoint == Icons.attach_money.codePoint) return 'お金';
+    if (icon.codePoint == Icons.attach_money_outlined.codePoint) return 'お金（アウトライン）';
+    if (icon.codePoint == Icons.money.codePoint) return '現金';
+    if (icon.codePoint == Icons.money_outlined.codePoint) return '現金（アウトライン）';
+    if (icon.codePoint == Icons.credit_card.codePoint) return 'クレジットカード';
+    if (icon.codePoint == Icons.credit_card_outlined.codePoint) return 'クレジットカード（アウトライン）';
+    if (icon.codePoint == Icons.payment.codePoint) return '支払い';
+    if (icon.codePoint == Icons.payment_outlined.codePoint) return '支払い（アウトライン）';
+    if (icon.codePoint == Icons.receipt.codePoint) return 'レシート';
+    if (icon.codePoint == Icons.receipt_outlined.codePoint) return 'レシート（アウトライン）';
+    if (icon.codePoint == Icons.analytics.codePoint) return '分析';
+    if (icon.codePoint == Icons.analytics_outlined.codePoint) return '分析（アウトライン）';
+    if (icon.codePoint == Icons.trending_up.codePoint) return '上昇トレンド';
+    if (icon.codePoint == Icons.trending_up_outlined.codePoint) return '上昇トレンド（アウトライン）';
+    if (icon.codePoint == Icons.trending_down.codePoint) return '下降トレンド';
+    if (icon.codePoint == Icons.trending_down_outlined.codePoint) return '下降トレンド（アウトライン）';
+    if (icon.codePoint == Icons.bar_chart.codePoint) return '棒グラフ';
+    if (icon.codePoint == Icons.bar_chart_outlined.codePoint) return '棒グラフ（アウトライン）';
+    if (icon.codePoint == Icons.pie_chart.codePoint) return '円グラフ';
+    if (icon.codePoint == Icons.show_chart.codePoint) return 'チャート';
+    if (icon.codePoint == Icons.show_chart_outlined.codePoint) return 'チャート（アウトライン）';
+    if (icon.codePoint == Icons.insights.codePoint) return 'インサイト';
+    if (icon.codePoint == Icons.insights_outlined.codePoint) return 'インサイト（アウトライン）';
+    if (icon.codePoint == Icons.query_stats.codePoint) return '統計';
+    if (icon.codePoint == Icons.query_stats_outlined.codePoint) return '統計（アウトライン）';
+    if (icon.codePoint == Icons.timeline.codePoint) return 'タイムライン';
+    if (icon.codePoint == Icons.timeline_outlined.codePoint) return 'タイムライン（アウトライン）';
+    if (icon.codePoint == Icons.schedule.codePoint) return 'スケジュール';
+    if (icon.codePoint == Icons.schedule_outlined.codePoint) return 'スケジュール（アウトライン）';
+    if (icon.codePoint == Icons.event.codePoint) return 'イベント';
+    if (icon.codePoint == Icons.event_outlined.codePoint) return 'イベント（アウトライン）';
+    if (icon.codePoint == Icons.calendar_today.codePoint) return '今日';
+    if (icon.codePoint == Icons.calendar_today_outlined.codePoint) return '今日（アウトライン）';
+    if (icon.codePoint == Icons.calendar_month.codePoint) return '月';
+    if (icon.codePoint == Icons.calendar_month_outlined.codePoint) return '月（アウトライン）';
+    if (icon.codePoint == Icons.work.codePoint) return '仕事';
+    if (icon.codePoint == Icons.work_outlined.codePoint) return '仕事（アウトライン）';
+    if (icon.codePoint == Icons.business_center.codePoint) return 'ビジネスセンター';
+    if (icon.codePoint == Icons.business_center_outlined.codePoint) return 'ビジネスセンター（アウトライン）';
+    if (icon.codePoint == Icons.meeting_room.codePoint) return '会議室';
+    if (icon.codePoint == Icons.meeting_room_outlined.codePoint) return '会議室（アウトライン）';
+    if (icon.codePoint == Icons.people.codePoint) return '人々';
+    if (icon.codePoint == Icons.people_outlined.codePoint) return '人々（アウトライン）';
+    if (icon.codePoint == Icons.people_alt.codePoint) return 'グループ';
+    if (icon.codePoint == Icons.people_alt_outlined.codePoint) return 'グループ（アウトライン）';
+    if (icon.codePoint == Icons.engineering.codePoint) return 'エンジニアリング';
+    if (icon.codePoint == Icons.engineering_outlined.codePoint) return 'エンジニアリング（アウトライン）';
+    if (icon.codePoint == Icons.architecture.codePoint) return 'アーキテクチャ';
+    if (icon.codePoint == Icons.architecture_outlined.codePoint) return 'アーキテクチャ（アウトライン）';
+    if (icon.codePoint == Icons.construction.codePoint) return '建設';
+    if (icon.codePoint == Icons.construction_outlined.codePoint) return '建設（アウトライン）';
+    if (icon.codePoint == Icons.build.codePoint) return '構築';
+    if (icon.codePoint == Icons.build_outlined.codePoint) return '構築（アウトライン）';
+    if (icon.codePoint == Icons.settings.codePoint) return '設定';
+    if (icon.codePoint == Icons.settings_outlined.codePoint) return '設定（アウトライン）';
+    if (icon.codePoint == Icons.security.codePoint) return 'セキュリティ';
+    if (icon.codePoint == Icons.security_outlined.codePoint) return 'セキュリティ（アウトライン）';
+    if (icon.codePoint == Icons.verified_user.codePoint) return '認証ユーザー';
+    if (icon.codePoint == Icons.verified_user_outlined.codePoint) return '認証ユーザー（アウトライン）';
+    if (icon.codePoint == Icons.assignment.codePoint) return '課題';
+    if (icon.codePoint == Icons.assignment_outlined.codePoint) return '課題（アウトライン）';
+    if (icon.codePoint == Icons.assessment.codePoint) return '評価';
+    if (icon.codePoint == Icons.assessment_outlined.codePoint) return '評価（アウトライン）';
+    if (icon.codePoint == Icons.quiz.codePoint) return 'クイズ';
+    if (icon.codePoint == Icons.quiz_outlined.codePoint) return 'クイズ（アウトライン）';
+    if (icon.codePoint == Icons.leaderboard.codePoint) return 'リーダーボード';
+    if (icon.codePoint == Icons.leaderboard_outlined.codePoint) return 'リーダーボード（アウトライン）';
+    if (icon.codePoint == Icons.update.codePoint) return '更新';
+    if (icon.codePoint == Icons.update_outlined.codePoint) return '更新（アウトライン）';
+    if (icon.codePoint == Icons.access_time.codePoint) return 'アクセス時間';
+    if (icon.codePoint == Icons.access_time_outlined.codePoint) return 'アクセス時間（アウトライン）';
+    if (icon.codePoint == Icons.today.codePoint) return '今日';
+    if (icon.codePoint == Icons.today_outlined.codePoint) return '今日（アウトライン）';
+    if (icon.codePoint == Icons.location_city.codePoint) return '都市';
+    if (icon.codePoint == Icons.location_city_outlined.codePoint) return '都市（アウトライン）';
+    if (icon.codePoint == Icons.location_on.codePoint) return '位置';
+    if (icon.codePoint == Icons.location_on_outlined.codePoint) return '位置（アウトライン）';
+    if (icon.codePoint == Icons.place.codePoint) return '場所';
+    if (icon.codePoint == Icons.place_outlined.codePoint) return '場所（アウトライン）';
+    if (icon.codePoint == Icons.flight.codePoint) return '飛行機';
+    if (icon.codePoint == Icons.flight_outlined.codePoint) return '飛行機（アウトライン）';
+    if (icon.codePoint == Icons.train.codePoint) return '電車';
+    if (icon.codePoint == Icons.train_outlined.codePoint) return '電車（アウトライン）';
+    if (icon.codePoint == Icons.local_shipping.codePoint) return '配送';
+    if (icon.codePoint == Icons.local_shipping_outlined.codePoint) return '配送（アウトライン）';
+    if (icon.codePoint == Icons.local_airport.codePoint) return '空港';
+    if (icon.codePoint == Icons.local_airport_outlined.codePoint) return '空港（アウトライン）';
+    if (icon.codePoint == Icons.local_hotel.codePoint) return 'ホテル';
+    if (icon.codePoint == Icons.local_hotel_outlined.codePoint) return 'ホテル（アウトライン）';
+    if (icon.codePoint == Icons.local_restaurant.codePoint) return 'レストラン';
+    if (icon.codePoint == Icons.local_restaurant_outlined.codePoint) return 'レストラン（アウトライン）';
+    if (icon.codePoint == Icons.local_cafe.codePoint) return 'カフェ';
+    if (icon.codePoint == Icons.local_cafe_outlined.codePoint) return 'カフェ（アウトライン）';
+    if (icon.codePoint == Icons.local_atm.codePoint) return 'ATM';
+    if (icon.codePoint == Icons.local_atm_outlined.codePoint) return 'ATM（アウトライン）';
+    if (icon.codePoint == Icons.local_mall.codePoint) return 'ショッピングモール';
+    if (icon.codePoint == Icons.local_mall_outlined.codePoint) return 'ショッピングモール（アウトライン）';
+    if (icon.codePoint == Icons.local_offer.codePoint) return 'オファー';
+    if (icon.codePoint == Icons.local_offer_outlined.codePoint) return 'オファー（アウトライン）';
+    
+    // アイコンが見つからない場合は、アイコンの種類に応じて適切な名前を返す
+    if (icon.fontFamily == 'FontAwesomeSolid' || 
+        icon.fontFamily == 'FontAwesomeRegular' || 
+        icon.fontFamily == 'FontAwesomeBrands') {
+      return 'ブランドアイコン';
+    } else if (icon.fontFamily == 'MaterialIcons') {
+      return 'マテリアルアイコン';
+    } else {
+      return 'アイコン';
+    }
+  }
 
   // Material Iconsリスト（カラフルで多様）
   static const List<IconData> _folderIcons = [
@@ -2401,6 +3085,371 @@ class _IconSelectorState extends State<IconSelector> {
     Icons.auto_stories_outlined,
     Icons.emoji_emotions,
     Icons.emoji_emotions_outlined,
+    
+    // ビジネス向けアイコン
+    Icons.business,
+    Icons.business_outlined,
+    Icons.account_balance,
+    Icons.account_balance_outlined,
+    Icons.account_balance_wallet,
+    Icons.account_balance_wallet_outlined,
+    Icons.attach_money,
+    Icons.attach_money_outlined,
+    Icons.money,
+    Icons.money_outlined,
+    Icons.money_off,
+    Icons.money_off_outlined,
+    Icons.credit_card,
+    Icons.credit_card_outlined,
+    Icons.payment,
+    Icons.payment_outlined,
+    Icons.receipt,
+    Icons.receipt_outlined,
+    Icons.receipt_long,
+    Icons.receipt_long_outlined,
+    Icons.account_circle,
+    Icons.account_circle_outlined,
+    Icons.person_add,
+    Icons.person_add_outlined,
+    Icons.group_add,
+    Icons.group_add_outlined,
+    Icons.people,
+    Icons.people_outlined,
+    Icons.people_alt,
+    Icons.people_alt_outlined,
+    Icons.engineering,
+    Icons.engineering_outlined,
+    Icons.architecture,
+    Icons.architecture_outlined,
+    Icons.construction,
+    Icons.construction_outlined,
+    Icons.handyman,
+    Icons.handyman_outlined,
+    Icons.build,
+    Icons.build_outlined,
+    Icons.build_circle,
+    Icons.build_circle_outlined,
+    Icons.settings,
+    Icons.settings_outlined,
+    Icons.settings_applications,
+    Icons.settings_applications_outlined,
+    Icons.settings_backup_restore,
+    Icons.settings_backup_restore_outlined,
+    Icons.settings_brightness,
+    Icons.settings_brightness_outlined,
+    Icons.settings_cell,
+    Icons.settings_cell_outlined,
+    Icons.settings_ethernet,
+    Icons.settings_ethernet_outlined,
+    Icons.settings_input_antenna,
+    Icons.settings_input_antenna_outlined,
+    Icons.settings_input_component,
+    Icons.settings_input_component_outlined,
+    Icons.settings_input_composite,
+    Icons.settings_input_composite_outlined,
+    Icons.settings_input_hdmi,
+    Icons.settings_input_hdmi_outlined,
+    Icons.settings_input_svideo,
+    Icons.settings_input_svideo_outlined,
+    Icons.settings_overscan,
+    Icons.settings_overscan_outlined,
+    Icons.settings_phone,
+    Icons.settings_phone_outlined,
+    Icons.settings_power,
+    Icons.settings_power_outlined,
+    Icons.settings_remote,
+    Icons.settings_remote_outlined,
+    Icons.settings_voice,
+    Icons.settings_voice_outlined,
+    Icons.manage_accounts,
+    Icons.manage_accounts_outlined,
+    Icons.admin_panel_settings,
+    Icons.admin_panel_settings_outlined,
+    Icons.security,
+    Icons.security_outlined,
+    Icons.verified_user,
+    Icons.verified_user_outlined,
+    Icons.verified,
+    Icons.verified_outlined,
+    Icons.assignment,
+    Icons.assignment_outlined,
+    Icons.assignment_ind,
+    Icons.assignment_ind_outlined,
+    Icons.assignment_late,
+    Icons.assignment_late_outlined,
+    Icons.assignment_return,
+    Icons.assignment_return_outlined,
+    Icons.assignment_returned,
+    Icons.assignment_returned_outlined,
+    Icons.assignment_turned_in,
+    Icons.assignment_turned_in_outlined,
+    Icons.assessment,
+    Icons.assessment_outlined,
+    Icons.quiz,
+    Icons.quiz_outlined,
+    Icons.analytics,
+    Icons.analytics_outlined,
+    Icons.trending_up,
+    Icons.trending_up_outlined,
+    Icons.trending_down,
+    Icons.trending_down_outlined,
+    Icons.trending_flat,
+    Icons.trending_flat_outlined,
+    Icons.bar_chart,
+    Icons.bar_chart_outlined,
+    Icons.pie_chart,
+    Icons.bubble_chart,
+    Icons.bubble_chart_outlined,
+    Icons.show_chart,
+    Icons.show_chart_outlined,
+    Icons.insert_chart,
+    Icons.insert_chart_outlined,
+    Icons.insert_chart_outlined_outlined,
+    Icons.multiline_chart,
+    Icons.multiline_chart_outlined,
+    Icons.scatter_plot,
+    Icons.scatter_plot_outlined,
+    Icons.candlestick_chart,
+    Icons.candlestick_chart_outlined,
+    Icons.leaderboard,
+    Icons.leaderboard_outlined,
+    Icons.insights,
+    Icons.insights_outlined,
+    Icons.query_stats,
+    Icons.query_stats_outlined,
+    Icons.schema,
+    Icons.schema_outlined,
+    Icons.timeline,
+    Icons.timeline_outlined,
+    Icons.update,
+    Icons.update_outlined,
+    Icons.update_disabled,
+    Icons.update_disabled_outlined,
+    Icons.access_time,
+    Icons.access_time_outlined,
+    Icons.access_time_filled,
+    Icons.access_time_filled_outlined,
+    Icons.schedule,
+    Icons.schedule_outlined,
+    Icons.schedule_send,
+    Icons.schedule_send_outlined,
+    Icons.today,
+    Icons.today_outlined,
+    Icons.event,
+    Icons.event_outlined,
+    Icons.event_available,
+    Icons.event_available_outlined,
+    Icons.event_busy,
+    Icons.event_busy_outlined,
+    Icons.event_note,
+    Icons.event_note_outlined,
+    Icons.event_seat,
+    Icons.event_seat_outlined,
+    Icons.calendar_today,
+    Icons.calendar_today_outlined,
+    Icons.calendar_month,
+    Icons.calendar_month_outlined,
+    Icons.calendar_view_day,
+    Icons.calendar_view_day_outlined,
+    Icons.calendar_view_week,
+    Icons.calendar_view_week_outlined,
+    Icons.calendar_view_month,
+    Icons.calendar_view_month_outlined,
+    Icons.work_off,
+    Icons.work_off_outlined,
+    Icons.work_outline,
+    Icons.work_outline_outlined,
+    Icons.work_history,
+    Icons.work_history_outlined,
+    Icons.work,
+    Icons.work_outlined,
+    Icons.business_center,
+    Icons.business_center_outlined,
+    Icons.corporate_fare,
+    Icons.corporate_fare_outlined,
+    Icons.meeting_room,
+    Icons.meeting_room_outlined,
+    Icons.room_service,
+    Icons.room_service_outlined,
+    Icons.hotel,
+    Icons.hotel_outlined,
+    Icons.apartment,
+    Icons.apartment_outlined,
+    Icons.house,
+    Icons.house_outlined,
+    Icons.home_work,
+    Icons.home_work_outlined,
+    Icons.location_city,
+    Icons.location_city_outlined,
+    Icons.location_on,
+    Icons.location_on_outlined,
+    Icons.location_off,
+    Icons.location_off_outlined,
+    Icons.location_searching,
+    Icons.location_searching_outlined,
+    Icons.location_disabled,
+    Icons.location_disabled_outlined,
+    Icons.my_location,
+    Icons.my_location_outlined,
+    Icons.place,
+    Icons.place_outlined,
+    Icons.navigation,
+    Icons.navigation_outlined,
+    Icons.directions,
+    Icons.directions_outlined,
+    Icons.directions_car,
+    Icons.directions_car_outlined,
+    Icons.directions_bus,
+    Icons.directions_bus_outlined,
+    Icons.directions_bike,
+    Icons.directions_bike_outlined,
+    Icons.directions_walk,
+    Icons.directions_walk_outlined,
+    Icons.directions_boat,
+    Icons.directions_boat_outlined,
+    Icons.directions_subway,
+    Icons.directions_subway_outlined,
+    Icons.directions_transit,
+    Icons.directions_transit_outlined,
+    Icons.directions_run,
+    Icons.directions_run_outlined,
+    Icons.directions_railway,
+    Icons.directions_railway_outlined,
+    Icons.directions_ferry,
+    Icons.directions_ferry_outlined,
+    Icons.flight,
+    Icons.flight_outlined,
+    Icons.train,
+    Icons.train_outlined,
+    Icons.local_taxi,
+    Icons.local_taxi_outlined,
+    Icons.local_shipping,
+    Icons.local_shipping_outlined,
+    Icons.local_airport,
+    Icons.local_airport_outlined,
+    Icons.local_hotel,
+    Icons.local_hotel_outlined,
+    Icons.local_restaurant,
+    Icons.local_restaurant_outlined,
+    Icons.local_cafe,
+    Icons.local_cafe_outlined,
+    Icons.local_bar,
+    Icons.local_bar_outlined,
+    Icons.local_pizza,
+    Icons.local_pizza_outlined,
+    Icons.local_dining,
+    Icons.local_dining_outlined,
+    Icons.local_drink,
+    Icons.local_drink_outlined,
+    Icons.local_gas_station,
+    Icons.local_gas_station_outlined,
+    Icons.local_pharmacy,
+    Icons.local_pharmacy_outlined,
+    Icons.local_hospital,
+    Icons.local_hospital_outlined,
+    Icons.local_police,
+    Icons.local_police_outlined,
+    Icons.local_fire_department,
+    Icons.local_fire_department_outlined,
+    Icons.local_post_office,
+    Icons.local_post_office_outlined,
+    Icons.local_atm,
+    Icons.local_atm_outlined,
+    Icons.local_mall,
+    Icons.local_mall_outlined,
+    Icons.local_movies,
+    Icons.local_movies_outlined,
+    Icons.local_play,
+    Icons.local_play_outlined,
+    Icons.local_activity,
+    Icons.local_activity_outlined,
+    Icons.local_parking,
+    Icons.local_parking_outlined,
+    Icons.local_offer,
+    Icons.local_offer_outlined,
+    Icons.local_florist,
+    Icons.local_florist_outlined,
+    Icons.local_car_wash,
+    Icons.local_car_wash_outlined,
+    Icons.local_laundry_service,
+    Icons.local_laundry_service_outlined,
+    Icons.celebration,
+    Icons.celebration_outlined,
+    Icons.cake,
+    Icons.cake_outlined,
+    Icons.public,
+    Icons.public_outlined,
+    
+    // Font Awesome カラフルアイコン（実際に存在するもののみ）
+    FontAwesomeIcons.google,
+    FontAwesomeIcons.github,
+    FontAwesomeIcons.youtube,
+    FontAwesomeIcons.twitter,
+    FontAwesomeIcons.facebook,
+    FontAwesomeIcons.instagram,
+    FontAwesomeIcons.linkedin,
+    FontAwesomeIcons.discord,
+    FontAwesomeIcons.slack,
+    FontAwesomeIcons.spotify,
+    FontAwesomeIcons.amazon,
+    FontAwesomeIcons.apple,
+    FontAwesomeIcons.microsoft,
+    FontAwesomeIcons.chrome,
+    FontAwesomeIcons.firefox,
+    FontAwesomeIcons.safari,
+    FontAwesomeIcons.edge,
+    FontAwesomeIcons.opera,
+    FontAwesomeIcons.steam,
+    FontAwesomeIcons.reddit,
+    FontAwesomeIcons.stackOverflow,
+    FontAwesomeIcons.gitlab,
+    FontAwesomeIcons.bitbucket,
+    FontAwesomeIcons.docker,
+    FontAwesomeIcons.aws,
+    FontAwesomeIcons.wordpress,
+    FontAwesomeIcons.shopify,
+    FontAwesomeIcons.stripe,
+    FontAwesomeIcons.paypal,
+    FontAwesomeIcons.bitcoin,
+    FontAwesomeIcons.ethereum,
+    FontAwesomeIcons.telegram,
+    FontAwesomeIcons.whatsapp,
+    FontAwesomeIcons.skype,
+    FontAwesomeIcons.dropbox,
+    FontAwesomeIcons.box,
+    FontAwesomeIcons.figma,
+    FontAwesomeIcons.blender,
+    FontAwesomeIcons.python,
+    FontAwesomeIcons.react,
+    FontAwesomeIcons.angular,
+    FontAwesomeIcons.flutter,
+    FontAwesomeIcons.bootstrap,
+    FontAwesomeIcons.node,
+    FontAwesomeIcons.npm,
+    FontAwesomeIcons.yarn,
+    FontAwesomeIcons.git,
+    FontAwesomeIcons.linux,
+    FontAwesomeIcons.windows,
+    FontAwesomeIcons.android,
+    FontAwesomeIcons.html5,
+    FontAwesomeIcons.css3,
+    FontAwesomeIcons.js,
+    FontAwesomeIcons.php,
+    FontAwesomeIcons.java,
+    FontAwesomeIcons.c,
+    FontAwesomeIcons.swift,
+    FontAwesomeIcons.r,
+    
+    // ビジネス向けブランドアイコン（実際に存在するもののみ）
+    FontAwesomeIcons.salesforce,
+    FontAwesomeIcons.hubspot,
+    FontAwesomeIcons.mailchimp,
+    FontAwesomeIcons.skype,
+    FontAwesomeIcons.slack,
+    FontAwesomeIcons.trello,
+    FontAwesomeIcons.dropbox,
+    FontAwesomeIcons.box,
+    FontAwesomeIcons.figma,
     Icons.celebration,
     Icons.celebration_outlined,
     Icons.cake,

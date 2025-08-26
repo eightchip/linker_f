@@ -56,14 +56,120 @@ class LinkRepository {
     }
   }
 
-  // Export/Import
-  Map<String, dynamic> exportData({Map<String, dynamic>? settings}) {
-    return {
-      'groups': _groupsBox.values.map((g) => g.toJson()).toList(),
-      'links': _linksBox.values.map((l) => l.toJson()).toList(),
-      'groupsOrder': getGroupsOrder(),
-      if (settings != null) 'settings': settings,
-    };
+      // Export/Import
+  Map<String, dynamic> exportData({Map<String, dynamic>? settings, bool excludeMemos = false}) {
+    print('=== exportData 呼び出し ===');
+    print('excludeMemos: $excludeMemos');
+    
+    if (excludeMemos) {
+      print('=== メモ除外エクスポート開始 ===');
+      
+      // 元のデータを確認
+      print('=== 元のデータ確認 ===');
+      for (final group in _groupsBox.values) {
+        for (final item in group.items) {
+          if (item.memo != null) {
+            print('元データ: グループ "${group.title}" のリンク "${item.label}": memo="${item.memo}"');
+          }
+        }
+      }
+      for (final link in _linksBox.values) {
+        if (link.memo != null) {
+          print('元データ: 個別リンク "${link.label}": memo="${link.memo}"');
+        }
+      }
+      
+      // メモを除外したデータを作成（より確実な方法）
+      final groupsWithoutMemos = _groupsBox.values.map((group) {
+        final itemsWithoutMemos = group.items.map((item) {
+          // メモがnullでない場合（空文字列も含む）のみ除外処理をログ出力
+          if (item.memo != null && item.memo!.isNotEmpty) {
+            print('グループ "${group.title}" のリンク "${item.label}": メモを除外 (元: "${item.memo}" -> null)');
+          } else if (item.memo != null) {
+            print('グループ "${group.title}" のリンク "${item.label}": 空メモを除外 (元: "" -> null)');
+          }
+          // 新しいLinkItemオブジェクトを作成してメモを確実にnullにする
+          final itemWithoutMemo = LinkItem(
+            id: item.id,
+            label: item.label,
+            path: item.path,
+            type: item.type,
+            createdAt: item.createdAt,
+            lastUsed: item.lastUsed,
+            isFavorite: item.isFavorite,
+            memo: null, // 確実にnullに設定
+            iconData: item.iconData,
+            iconColor: item.iconColor,
+          );
+          print('除外後: グループ "${group.title}" のリンク "${item.label}": memo="${itemWithoutMemo.memo}"');
+          return itemWithoutMemo;
+        }).toList();
+        return group.copyWith(items: itemsWithoutMemos);
+      }).toList();
+      
+      final linksWithoutMemos = _linksBox.values.map((link) {
+        // メモがnullでない場合（空文字列も含む）のみ除外処理をログ出力
+        if (link.memo != null && link.memo!.isNotEmpty) {
+          print('個別リンク "${link.label}": メモを除外 (元: "${link.memo}" -> null)');
+        } else if (link.memo != null) {
+          print('個別リンク "${link.label}": 空メモを除外 (元: "" -> null)');
+        }
+        // 新しいLinkItemオブジェクトを作成してメモを確実にnullにする
+        final linkWithoutMemo = LinkItem(
+          id: link.id,
+          label: link.label,
+          path: link.path,
+          type: link.type,
+          createdAt: link.createdAt,
+          lastUsed: link.lastUsed,
+          isFavorite: link.isFavorite,
+          memo: null, // 確実にnullに設定
+          iconData: link.iconData,
+          iconColor: link.iconColor,
+        );
+        print('除外後: 個別リンク "${link.label}": memo="${linkWithoutMemo.memo}"');
+        return linkWithoutMemo;
+      }).toList();
+      
+      print('=== メモ除外エクスポート完了 ===');
+      
+      // 最終的なJSONデータを確認
+      final result = {
+        'groups': groupsWithoutMemos.map((g) => g.toJson()).toList(),
+        'links': linksWithoutMemos.map((l) => l.toJson()).toList(),
+        'groupsOrder': getGroupsOrder(),
+        if (settings != null) 'settings': settings,
+      };
+      
+      // デバッグ: 結果を確認
+      print('=== エクスポート結果確認 ===');
+      final groups = result['groups'] as List;
+      for (final group in groups) {
+        final items = group['items'] as List;
+        for (final item in items) {
+          if (item['memo'] != null) {
+            print('警告: グループ "${group['title']}" のリンク "${item['label']}" にメモが残っています: "${item['memo']}"');
+          }
+        }
+      }
+      final links = result['links'] as List;
+      for (final link in links) {
+        if (link['memo'] != null) {
+          print('警告: 個別リンク "${link['label']}" にメモが残っています: "${link['memo']}"');
+        }
+      }
+      print('=== エクスポート結果確認完了 ===');
+      
+      return result;
+    } else {
+      print('=== メモを含むエクスポート ===');
+      return {
+        'groups': _groupsBox.values.map((g) => g.toJson()).toList(),
+        'links': _linksBox.values.map((l) => l.toJson()).toList(),
+        'groupsOrder': getGroupsOrder(),
+        if (settings != null) 'settings': settings,
+      };
+    }
   }
 
   Future<void> importData(Map<String, dynamic> data) async {

@@ -425,14 +425,14 @@ class LinkViewModel extends StateNotifier<LinkState> {
   }
 
   // Export/Import
-  Map<String, dynamic> exportDataWithSettings(bool darkMode, double fontSize, int accentColor, {Map<String, dynamic>? customSettings}) {
+  Map<String, dynamic> exportDataWithSettings(bool darkMode, double fontSize, int accentColor, {Map<String, dynamic>? customSettings, bool excludeMemos = false}) {
     final settings = {
       'darkMode': darkMode,
       'fontSize': fontSize,
       'accentColor': accentColor,
       if (customSettings != null) ...customSettings,
     };
-    return _repository.exportData(settings: settings);
+    return _repository.exportData(settings: settings, excludeMemos: excludeMemos);
   }
 
   Future<Map<String, dynamic>?> importDataWithSettings(Map<String, dynamic> data, void Function(bool, double, int) onSettings) async {
