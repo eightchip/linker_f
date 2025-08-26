@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
 import 'home_screen.dart';
 

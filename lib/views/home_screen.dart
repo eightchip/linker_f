@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
@@ -12,13 +10,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
-import 'tutorial_dialog.dart';
 import 'package:hive/hive.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:screen_retriever/screen_retriever.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:pdf_render/pdf_render.dart';
-import 'package:pdf_render/pdf_render_widgets.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path/path.dart' as p;

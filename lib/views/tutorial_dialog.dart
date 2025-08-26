@@ -9,7 +9,6 @@ class TutorialDialog extends StatefulWidget {
 }
 
 class _TutorialDialogState extends State<TutorialDialog> {
-  final PageController _controller = PageController();
   int _page = 0;
 
   final List<_TutorialStep> steps = [
