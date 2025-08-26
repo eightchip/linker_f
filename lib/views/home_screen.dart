@@ -1176,23 +1176,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final file = File('linker_f_export_${memoText}_$formatted.json');
     await file.writeAsString(jsonStr);
     
-    // SnackBarで保存先パスを表示（緑色で統一）
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('エクスポートしました: ${file.absolute.path}'),
-        backgroundColor: Colors.green,
-        action: SnackBarAction(
-          label: 'フォルダを開く',
-          textColor: Colors.white,
-          onPressed: () async {
-            try {
-              await Process.run('explorer', ['/select,', file.absolute.path]);
-            } catch (e) {
-              print('フォルダを開くエラー: $e');
-            }
-          },
+    // 画面中央にエクスポート完了メッセージを表示
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 24),
+            SizedBox(width: 8),
+            Text('エクスポート完了'),
+          ],
         ),
-        duration: const Duration(seconds: 5),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('エクスポートしました:'),
+            SizedBox(height: 8),
+            Text(
+              file.absolute.path,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'monospace',
+                backgroundColor: Colors.grey[100],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              try {
+                await Process.run('explorer', ['/select,', file.absolute.path]);
+              } catch (e) {
+                print('フォルダを開くエラー: $e');
+              }
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.folder_open),
+            label: Text('フォルダを開く'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
