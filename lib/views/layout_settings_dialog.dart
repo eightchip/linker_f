@@ -13,7 +13,8 @@ class _LayoutSettingsDialogState extends ConsumerState<LayoutSettingsDialog> {
   late LayoutSettings _currentSettings;
   late TextEditingController _crossAxisCountController;
   late TextEditingController _gridSpacingController;
-  late TextEditingController _aspectRatioController;
+  late TextEditingController _cardWidthController;
+  late TextEditingController _cardHeightController;
   late TextEditingController _marginController;
   late TextEditingController _paddingController;
   late TextEditingController _fontSizeController;
@@ -27,7 +28,8 @@ class _LayoutSettingsDialogState extends ConsumerState<LayoutSettingsDialog> {
     _currentSettings = ref.read(layoutSettingsProvider);
     _crossAxisCountController = TextEditingController(text: _currentSettings.defaultCrossAxisCount.toString());
     _gridSpacingController = TextEditingController(text: _currentSettings.defaultGridSpacing.toString());
-    _aspectRatioController = TextEditingController(text: _currentSettings.defaultChildAspectRatio.toString());
+    _cardWidthController = TextEditingController(text: _currentSettings.cardWidth.toString());
+    _cardHeightController = TextEditingController(text: _currentSettings.cardHeight.toString());
     _marginController = TextEditingController(text: _currentSettings.linkItemMargin.toString());
     _paddingController = TextEditingController(text: _currentSettings.linkItemPadding.toString());
     _fontSizeController = TextEditingController(text: _currentSettings.linkItemFontSize.toString());
@@ -40,7 +42,8 @@ class _LayoutSettingsDialogState extends ConsumerState<LayoutSettingsDialog> {
   void dispose() {
     _crossAxisCountController.dispose();
     _gridSpacingController.dispose();
-    _aspectRatioController.dispose();
+    _cardWidthController.dispose();
+    _cardHeightController.dispose();
     _marginController.dispose();
     _paddingController.dispose();
     _fontSizeController.dispose();
@@ -54,7 +57,8 @@ class _LayoutSettingsDialogState extends ConsumerState<LayoutSettingsDialog> {
     final newSettings = LayoutSettings(
       defaultCrossAxisCount: int.tryParse(_crossAxisCountController.text) ?? _currentSettings.defaultCrossAxisCount,
       defaultGridSpacing: double.tryParse(_gridSpacingController.text) ?? _currentSettings.defaultGridSpacing,
-      defaultChildAspectRatio: double.tryParse(_aspectRatioController.text) ?? _currentSettings.defaultChildAspectRatio,
+      cardWidth: double.tryParse(_cardWidthController.text) ?? _currentSettings.cardWidth,
+      cardHeight: double.tryParse(_cardHeightController.text) ?? _currentSettings.cardHeight,
       linkItemMargin: double.tryParse(_marginController.text) ?? _currentSettings.linkItemMargin,
       linkItemPadding: double.tryParse(_paddingController.text) ?? _currentSettings.linkItemPadding,
       linkItemFontSize: double.tryParse(_fontSizeController.text) ?? _currentSettings.linkItemFontSize,
@@ -76,7 +80,8 @@ class _LayoutSettingsDialogState extends ConsumerState<LayoutSettingsDialog> {
       _currentSettings = defaultSettings;
       _crossAxisCountController.text = defaultSettings.defaultCrossAxisCount.toString();
       _gridSpacingController.text = defaultSettings.defaultGridSpacing.toString();
-      _aspectRatioController.text = defaultSettings.defaultChildAspectRatio.toString();
+      _cardWidthController.text = defaultSettings.cardWidth.toString();
+      _cardHeightController.text = defaultSettings.cardHeight.toString();
       _marginController.text = defaultSettings.linkItemMargin.toString();
       _paddingController.text = defaultSettings.linkItemPadding.toString();
       _fontSizeController.text = defaultSettings.linkItemFontSize.toString();
@@ -258,53 +263,113 @@ class _LayoutSettingsDialogState extends ConsumerState<LayoutSettingsDialog> {
                       
                       const SizedBox(height: 16),
                       
-                      // アスペクト比設定
+                      // カードサイズ設定
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('カードのアスペクト比', style: TextStyle(fontWeight: FontWeight.w500)),
-                          const Text('幅÷高さの比率（0.5-2.0）。小さいほど縦長、大きいほど横長', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const Text('カードサイズ', style: TextStyle(fontWeight: FontWeight.w500)),
+                          const Text('各カードの幅と高さを直接設定できます（px）', style: TextStyle(fontSize: 12, color: Colors.grey)),
                           const SizedBox(height: 8),
                           Row(
                             children: [
                               Expanded(
-                                child: TextField(
-                                  controller: _aspectRatioController,
-                                  decoration: const InputDecoration(
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (value) => _updateSettings(),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('幅', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _cardWidthController,
+                                            decoration: const InputDecoration(
+                                              border: OutlineInputBorder(),
+                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            onChanged: (value) => _updateSettings(),
+                                          ),
+                                        ),
+                                        Column(
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.keyboard_arrow_up, size: 20),
+                                              onPressed: () {
+                                                final current = double.tryParse(_cardWidthController.text) ?? 200.0;
+                                                _cardWidthController.text = (current + 10.0).toString();
+                                                _updateSettings();
+                                              },
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                                              onPressed: () {
+                                                final current = double.tryParse(_cardWidthController.text) ?? 200.0;
+                                                if (current > 100.0) {
+                                                  _cardWidthController.text = (current - 10.0).toString();
+                                                  _updateSettings();
+                                                }
+                                              },
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Column(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.keyboard_arrow_up, size: 20),
-                                    onPressed: () {
-                                      final current = double.tryParse(_aspectRatioController.text) ?? 1.2;
-                                      if (current < 2.0) {
-                                        _aspectRatioController.text = (current + 0.1).toStringAsFixed(1);
-                                        _updateSettings();
-                                      }
-                                    },
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-                                    onPressed: () {
-                                      final current = double.tryParse(_aspectRatioController.text) ?? 1.2;
-                                      if (current > 0.5) {
-                                        _aspectRatioController.text = (current - 0.1).toStringAsFixed(1);
-                                        _updateSettings();
-                                      }
-                                    },
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                  ),
-                                ],
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('高さ', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _cardHeightController,
+                                            decoration: const InputDecoration(
+                                              border: OutlineInputBorder(),
+                                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            onChanged: (value) => _updateSettings(),
+                                          ),
+                                        ),
+                                        Column(
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.keyboard_arrow_up, size: 20),
+                                              onPressed: () {
+                                                final current = double.tryParse(_cardHeightController.text) ?? 120.0;
+                                                _cardHeightController.text = (current + 10.0).toString();
+                                                _updateSettings();
+                                              },
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                                              onPressed: () {
+                                                final current = double.tryParse(_cardHeightController.text) ?? 120.0;
+                                                if (current > 60.0) {
+                                                  _cardHeightController.text = (current - 10.0).toString();
+                                                  _updateSettings();
+                                                }
+                                              },
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),

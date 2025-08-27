@@ -867,7 +867,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisCount: crossAxisCount,
                   crossAxisSpacing: gridSpacing,
                   mainAxisSpacing: gridSpacing,
-                    childAspectRatio: 0.7, // より大きなカードにするためアスペクト比を小さく
+                    childAspectRatio: layoutSettings.cardWidth / layoutSettings.cardHeight,
                   ),
                   itemCount: displayGroups.length,
                   itemBuilder: (context, index) {

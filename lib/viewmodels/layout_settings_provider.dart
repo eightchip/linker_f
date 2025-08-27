@@ -5,7 +5,8 @@ import 'package:hive/hive.dart';
 class LayoutSettings {
   final int defaultCrossAxisCount;
   final double defaultGridSpacing;
-  final double defaultChildAspectRatio;
+  final double cardWidth;  // カードの幅（px）
+  final double cardHeight; // カードの高さ（px）
   final double linkItemMargin;
   final double linkItemPadding;
   final double linkItemFontSize;
@@ -17,7 +18,8 @@ class LayoutSettings {
   LayoutSettings({
     this.defaultCrossAxisCount = 4,
     this.defaultGridSpacing = 8.0,
-    this.defaultChildAspectRatio = 1.2,
+    this.cardWidth = 200.0,  // デフォルト幅
+    this.cardHeight = 120.0, // デフォルト高さ
     this.linkItemMargin = 1.0,
     this.linkItemPadding = 2.0,
     this.linkItemFontSize = 9.0,
@@ -30,7 +32,8 @@ class LayoutSettings {
   LayoutSettings copyWith({
     int? defaultCrossAxisCount,
     double? defaultGridSpacing,
-    double? defaultChildAspectRatio,
+    double? cardWidth,
+    double? cardHeight,
     double? linkItemMargin,
     double? linkItemPadding,
     double? linkItemFontSize,
@@ -41,7 +44,8 @@ class LayoutSettings {
     return LayoutSettings(
       defaultCrossAxisCount: defaultCrossAxisCount ?? this.defaultCrossAxisCount,
       defaultGridSpacing: defaultGridSpacing ?? this.defaultGridSpacing,
-      defaultChildAspectRatio: defaultChildAspectRatio ?? this.defaultChildAspectRatio,
+      cardWidth: cardWidth ?? this.cardWidth,
+      cardHeight: cardHeight ?? this.cardHeight,
       linkItemMargin: linkItemMargin ?? this.linkItemMargin,
       linkItemPadding: linkItemPadding ?? this.linkItemPadding,
       linkItemFontSize: linkItemFontSize ?? this.linkItemFontSize,
@@ -55,7 +59,8 @@ class LayoutSettings {
     return {
       'defaultCrossAxisCount': defaultCrossAxisCount,
       'defaultGridSpacing': defaultGridSpacing,
-      'defaultChildAspectRatio': defaultChildAspectRatio,
+      'cardWidth': cardWidth,
+      'cardHeight': cardHeight,
       'linkItemMargin': linkItemMargin,
       'linkItemPadding': linkItemPadding,
       'linkItemFontSize': linkItemFontSize,
@@ -69,7 +74,8 @@ class LayoutSettings {
     return LayoutSettings(
       defaultCrossAxisCount: json['defaultCrossAxisCount'] ?? 4,
       defaultGridSpacing: json['defaultGridSpacing']?.toDouble() ?? 8.0,
-      defaultChildAspectRatio: json['defaultChildAspectRatio']?.toDouble() ?? 1.2,
+      cardWidth: json['cardWidth']?.toDouble() ?? 200.0,
+      cardHeight: json['cardHeight']?.toDouble() ?? 120.0,
       linkItemMargin: json['linkItemMargin']?.toDouble() ?? 1.0,
       linkItemPadding: json['linkItemPadding']?.toDouble() ?? 2.0,
       linkItemFontSize: json['linkItemFontSize']?.toDouble() ?? 9.0,
@@ -122,8 +128,13 @@ class LayoutSettingsNotifier extends StateNotifier<LayoutSettings> {
     _saveSettings();
   }
 
-  void updateChildAspectRatio(double ratio) {
-    state = state.copyWith(defaultChildAspectRatio: ratio);
+  void updateCardWidth(double width) {
+    state = state.copyWith(cardWidth: width);
+    _saveSettings();
+  }
+
+  void updateCardHeight(double height) {
+    state = state.copyWith(cardHeight: height);
     _saveSettings();
   }
 
@@ -156,8 +167,6 @@ class LayoutSettingsNotifier extends StateNotifier<LayoutSettings> {
     state = state.copyWith(autoAdjustLayout: !state.autoAdjustLayout);
     _saveSettings();
   }
-
-
 
   void resetToDefaults() {
     state = LayoutSettings();
