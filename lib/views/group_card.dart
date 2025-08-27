@@ -581,6 +581,9 @@ class _GroupCardState extends State<GroupCard> {
     bool added = false;
     List<String> failed = [];
     List<String> urls = [];
+    int fileCount = 0;
+    int folderCount = 0;
+    int urlCount = 0;
     
     // ファイルとフォルダの処理
     if (detail.files != null && detail.files.isNotEmpty) {
@@ -604,6 +607,7 @@ class _GroupCardState extends State<GroupCard> {
                 if (widget.onDropAddLink != null) {
                   await widget.onDropAddLink!(p.basename(path), path, type);
                   added = true;
+                  folderCount++;
                 }
               } else {
                 failed.add(path);
@@ -620,6 +624,7 @@ class _GroupCardState extends State<GroupCard> {
                 if (widget.onDropAddLink != null) {
                   await widget.onDropAddLink!(p.basename(path), path, type);
                   added = true;
+                  fileCount++;
                 }
               } else {
                 failed.add(path);
@@ -713,6 +718,7 @@ class _GroupCardState extends State<GroupCard> {
         if (widget.onDropAddLink != null) {
           await widget.onDropAddLink!(label, url, LinkType.url);
           added = true;
+          urlCount++;
         }
       } catch (e) {
         failed.add(url);
@@ -721,8 +727,33 @@ class _GroupCardState extends State<GroupCard> {
     
     // 結果を表示
     if (added) {
-      final count = uniqueUrls.length;
-      final message = count == 1 ? 'リンクを追加しました' : '$count個のリンクを追加しました';
+      List<String> messages = [];
+      
+      if (fileCount > 0) {
+        if (fileCount == 1) {
+          messages.add('ファイルを追加しました');
+        } else {
+          messages.add('$fileCount個のファイルを追加しました');
+        }
+      }
+      
+      if (folderCount > 0) {
+        if (folderCount == 1) {
+          messages.add('フォルダを追加しました');
+        } else {
+          messages.add('$folderCount個のフォルダを追加しました');
+        }
+      }
+      
+      if (urlCount > 0) {
+        if (urlCount == 1) {
+          messages.add('リンクを追加しました');
+        } else {
+          messages.add('$urlCount個のリンクを追加しました');
+        }
+      }
+      
+      final message = messages.join('、');
       widget.onShowMessage(
         message,
         icon: Icons.check_circle,
