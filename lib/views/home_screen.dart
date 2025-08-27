@@ -1559,12 +1559,9 @@ class ColorPaletteSelector extends StatelessWidget {
     Color(0xFFFF6B6B), Color(0xFF4ECDC4), Color(0xFF45B7D1), Color(0xFF96CEB4),
     Color(0xFFFFEAA7), Color(0xFFDDA0DD), Color(0xFF98D8C8), Color(0xFFF7DC6F),
     Color(0xFFBB8FCE), Color(0xFF85C1E9), Color(0xFFF8C471), Color(0xFFF1948A),
-    Color(0xFF82E0AA), Color(0xFFF7DC6F), Color(0xFFBB8FCE), Color(0xFF85C1E9),
-    Color(0xFFF8C471), Color(0xFFF1948A), Color(0xFF82E0AA), Color(0xFFD7BDE2),
-    Color(0xFFA9CCE3), Color(0xFFFAD7A0), Color(0xFFF5B7B1), Color(0xFFA9DFBF),
-    Color(0xFFF9E79F), Color(0xFFD2B4DE), Color(0xFFAED6F1), Color(0xFFFAD7A0),
+    Color(0xFF82E0AA), Color(0xFFD7BDE2), Color(0xFFA9CCE3), Color(0xFFFAD7A0),
     Color(0xFFF5B7B1), Color(0xFFA9DFBF), Color(0xFFF9E79F), Color(0xFFD2B4DE),
-    Color(0xFFAED6F1), Color(0xFFF8C471), Color(0xFFF1948A), Color(0xFF82E0AA),
+    Color(0xFFAED6F1),
   ];
   const ColorPaletteSelector({
     super.key,
