@@ -357,6 +357,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
               elevation: 2,
               actions: [
+                // 主要なアクション（頻繁に使用されるもの）
                 IconButton(
                   icon: Icon(Icons.add, size: iconSize), 
                   tooltip: 'グループを追加 (Ctrl+N)', 
@@ -382,209 +383,113 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     });
                   },
                 ),
-                // ショートカットヘルプボタンを追加
-                IconButton(
-                  icon: const Icon(Icons.keyboard),
-                  tooltip: 'ショートカットキー (F1)',
-                  onPressed: () => _showShortcutHelp(context),
-                ),
-                IconButton(icon: Icon(Icons.notes, size: iconSize), tooltip: 'メモ一括編集', onPressed: () {
-                    final groups = ref.read(linkViewModelProvider).groups;
-                    final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
-                      .where((entry) => entry.value.memo?.isNotEmpty == true)
-                      .toList();
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                    final accentColor = ref.read(accentColorProvider);
-                    final memoControllers = <String, TextEditingController>{};
-                    for (final entry in memoLinks) {
-                      memoControllers[entry.value.id] = TextEditingController(text: entry.value.memo ?? '');
+                // ハンバーガーメニュー（その他のアクション）
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, size: iconSize),
+                  tooltip: 'その他のオプション',
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'shortcut_help':
+                        _showShortcutHelp(context);
+                        break;
+                      case 'memo_bulk_edit':
+                        _showMemoBulkEditDialog(context);
+                        break;
+                      case 'recent_links':
+                        setState(() {
+                          _showRecent = !_showRecent;
+                        });
+                        break;
+                      case 'dark_mode':
+                        ref.read(darkModeProvider.notifier).state = !isDarkMode;
+                        break;
+                      case 'accent_color':
+                        _showAccentColorDialog(context);
+                        break;
+                      case 'export':
+                        _exportData(context);
+                        break;
+                      case 'import':
+                        _importData(context);
+                        break;
                     }
-                    showDialog(
-                      context: context,
-                      builder: (context) => StatefulBuilder(
-                        builder: (context, setState) => AlertDialog(
-                          title: const Text('メモ一括編集'),
-                          content: SizedBox(
-                            width: 1000,
-                            height: 1000,
-                            child: Scrollbar(
-                              child: ListView(
-                                children: memoLinks.map((entry) {
-                                  final link = entry.value;
-                                  final group = entry.key;
-                                  final controller = memoControllers[link.id]!;
-                                  final isOverflow = (link.memo?.split('\n').length ?? 0) > 5 || (link.memo?.length ?? 0) > 100;
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Container(
-                                              width: 6,
-                                              height: 28,
-                                              decoration: BoxDecoration(
-                                                color: Color(accentColor),
-                                                borderRadius: BorderRadius.circular(3),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Icon(Icons.link, color: Colors.blue, size: 18),
-                                            const SizedBox(width: 4),
-                                            InkWell(
-                                              onTap: () {
-                                                ref.read(linkViewModelProvider.notifier).launchLink(link);
-                                              },
-                                              child: Text(
-                                                link.label,
-                                                style: TextStyle(
-                                                  color: isDark ? Colors.white : Colors.black,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                  decoration: TextDecoration.underline,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        MouseRegion(
-                                          cursor: isOverflow ? SystemMouseCursors.help : SystemMouseCursors.basic,
-                                          child: Tooltip(
-                                            message: isOverflow ? link.memo! : '',
-                                            child: TextField(
-                                              controller: controller,
-                                              maxLines: 3,
-                                              minLines: 1,
-                                              decoration: InputDecoration(
-                                                filled: true,
-                                                fillColor: isDark ? Colors.black : Colors.white,
-                                                border: OutlineInputBorder(
-                                                  borderRadius: BorderRadius.circular(8),
-                                                  borderSide: BorderSide(
-                                                    color: Color(accentColor).withValues(alpha: isDark ? 0.7 : 0.5),
-                                                    width: 2,
-                                                  ),
-                                                ),
-                                                contentPadding: const EdgeInsets.all(10),
-                                              ),
-                                              style: TextStyle(
-                                                color: isDark ? Colors.white : Colors.black87,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('閉じる'),
-                            ),
-                            ElevatedButton(
-          onPressed: () {
-                                for (final entry in memoLinks) {
-                                  final link = entry.value;
-                                  final group = entry.key;
-                                  final newMemo = memoControllers[link.id]!.text;
-                                  if (newMemo != link.memo) {
-                                    final updated = link.copyWith(memo: newMemo);
-                                    ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
-                                      groupId: group.id,
-                                      updated: updated,
-                                    );
-                                  }
-                                }
-                                Navigator.pop(context);
-                              },
-                              child: const Text('まとめて保存'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
                   },
-                ),
-                // お気に入り（★）とPDF（📄）アイコンを非表示にしました
-                IconButton(icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showRecent ? '最近使った非表示' : '最近使ったリンクを上部に表示', onPressed: () {
-                    setState(() {
-                      _showRecent = !_showRecent;
-                    });
-                  }),
-                IconButton(icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: iconSize), tooltip: isDarkMode ? 'ライトモード' : 'ダークモード', onPressed: () {
-                    ref.read(darkModeProvider.notifier).state = !isDarkMode;
-                  }),
-                IconButton(icon: Icon(Icons.palette, size: iconSize), tooltip: 'アクセントカラー変更', onPressed: () async {
-                        final currentColor = ref.read(accentColorProvider);
-                        final colorOptions = [
-                          0xFF3B82F6, // 青（現在のデフォルト）
-                          0xFFEF4444, // 赤
-                          0xFF22C55E, // 緑
-                          0xFFF59E42, // オレンジ
-                          0xFF8B5CF6, // 紫
-                          0xFFEC4899, // ピンク
-                          0xFFEAB308, // 黄
-                          0xFF06B6D4, // 水色
-                          0xFF92400E, // 茶色
-                          0xFF64748B, // グレー
-                          0xFF84CC16, // ライム
-                          0xFF6366F1, // インディゴ
-                          0xFF14B8A6, // ティール
-                          0xFFFB923C, // ディープオレンジ
-                          0xFF7C3AED, // ディープパープル
-                          0xFFFBBF24, // アンバー
-                          0xFF0EA5E9, // シアン
-                          0xFFB45309, // ブラウン
-                          0xFFB91C1C, // レッドブラウン
-                          0xFF166534, // ダークグリーン
-                        ];
-                        final colorNames = [
-                          'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'イエロー', 'シアン', 'ブラウン', 'グレー', 'ライム', 'インディゴ', 'ティール', 'ディープオレンジ', 'ディープパープル', 'アンバー', 'シアン', 'ブラウン', 'レッドブラウン', 'ダークグリーン'
-                        ];
-                        final selected = await showDialog<int>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('アクセントカラーを選択'),
-                            content: SingleChildScrollView(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: colorOptions.map((color) {
-                                  return ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: Color(color),
-                                      child: currentColor == color ? const Icon(Icons.check, color: Colors.white) : null,
-                                    ),
-                                    title: Text(colorNames[colorOptions.indexOf(color)]),
-                                    onTap: () => Navigator.pop(context, color),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'shortcut_help',
+                      child: Row(
+                        children: [
+                          Icon(Icons.keyboard, size: 20),
+                          SizedBox(width: 8),
+                          Text('ショートカットキー (F1)'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'memo_bulk_edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.notes, size: 20),
+                          SizedBox(width: 8),
+                          Text('メモ一括編集'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'recent_links',
+                      child: Row(
+                        children: [
+                          Icon(Icons.push_pin, 
+                            color: _showRecent ? Colors.amber : Colors.grey, 
+                            size: 20
                           ),
-                        );
-                        if (selected != null && selected != currentColor) {
-                          ref.read(accentColorProvider.notifier).state = selected;
-                        }
-                      },
+                          SizedBox(width: 8),
+                          Text(_showRecent ? '最近使った非表示' : '最近使ったリンクを表示'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'dark_mode',
+                      child: Row(
+                        children: [
+                          Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: 20),
+                          SizedBox(width: 8),
+                          Text(isDarkMode ? 'ライトモード' : 'ダークモード'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'accent_color',
+                      child: Row(
+                        children: [
+                          Icon(Icons.palette, size: 20),
+                          SizedBox(width: 8),
+                          Text('アクセントカラー変更'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'export',
+                      child: Row(
+                        children: [
+                          Icon(Icons.upload, size: 20),
+                          SizedBox(width: 8),
+                          Text('設定をエクスポート'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'import',
+                      child: Row(
+                        children: [
+                          Icon(Icons.download, size: 20),
+                          SizedBox(width: 8),
+                          Text('設定をインポート'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                IconButton(icon: Icon(Icons.upload, size: iconSize), tooltip: '設定をエキスポート', onPressed: () => _exportData(context)),
-                IconButton(icon: Icon(Icons.download, size: iconSize), tooltip: '設定をインポート', onPressed: () => _importData(context)),
-                // お気に入りアイコンを削除
-                // if (favoriteGroups.isNotEmpty)
-                //   IconButton(icon: Icon(_showOnlyFavorites ? Icons.star : Icons.star_border, color: _showOnlyFavorites ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showOnlyFavorites ? 'すべて表示' : 'グループのお気に入りのみ表示', onPressed: () {
-                //       setState(() {
-                //         _showOnlyFavorites = !_showOnlyFavorites;
-                //       });
-                //         }),
-                // チュートリアルアイコンを削除
-                // IconButton(icon: Icon(Icons.help_outline, size: iconSize), tooltip: 'チュートリアル・ヘルプ', onPressed: _showTutorial),
               ],
               bottom: _showSearchBar
                   ? PreferredSize(
@@ -1829,6 +1734,185 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       print('Error displaying PDF: $e');
       _showCenterMessage('PDFの表示に失敗しました', icon: Icons.error, color: Colors.red[700]);
     }
+  }
+
+  // アクセントカラー選択ダイアログを表示するメソッド
+  void _showAccentColorDialog(BuildContext context) async {
+    final currentColor = ref.read(accentColorProvider);
+    final colorOptions = [
+      0xFF3B82F6, // 青（現在のデフォルト）
+      0xFFEF4444, // 赤
+      0xFF22C55E, // 緑
+      0xFFF59E42, // オレンジ
+      0xFF8B5CF6, // 紫
+      0xFFEC4899, // ピンク
+      0xFFEAB308, // 黄
+      0xFF06B6D4, // 水色
+      0xFF92400E, // 茶色
+      0xFF64748B, // グレー
+      0xFF84CC16, // ライム
+      0xFF6366F1, // インディゴ
+      0xFF14B8A6, // ティール
+      0xFFFB923C, // ディープオレンジ
+      0xFF7C3AED, // ディープパープル
+      0xFFFBBF24, // アンバー
+      0xFF0EA5E9, // シアン
+      0xFFB45309, // ブラウン
+      0xFFB91C1C, // レッドブラウン
+      0xFF166534, // ダークグリーン
+    ];
+    final colorNames = [
+      'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'イエロー', 'シアン', 'ブラウン', 'グレー', 'ライム', 'インディゴ', 'ティール', 'ディープオレンジ', 'ディープパープル', 'アンバー', 'シアン', 'ブラウン', 'レッドブラウン', 'ダークグリーン'
+    ];
+    final selected = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('アクセントカラーを選択'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: colorOptions.map((color) {
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Color(color),
+                  child: currentColor == color ? const Icon(Icons.check, color: Colors.white) : null,
+                ),
+                title: Text(colorNames[colorOptions.indexOf(color)]),
+                onTap: () => Navigator.pop(context, color),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+    if (selected != null && selected != currentColor) {
+      ref.read(accentColorProvider.notifier).state = selected;
+    }
+  }
+
+  // メモ一括編集ダイアログを表示するメソッド
+  void _showMemoBulkEditDialog(BuildContext context) {
+    final groups = ref.read(linkViewModelProvider).groups;
+    final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
+      .where((entry) => entry.value.memo?.isNotEmpty == true)
+      .toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = ref.read(accentColorProvider);
+    final memoControllers = <String, TextEditingController>{};
+    for (final entry in memoLinks) {
+      memoControllers[entry.value.id] = TextEditingController(text: entry.value.memo ?? '');
+    }
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('メモ一括編集'),
+          content: SizedBox(
+            width: 1000,
+            height: 1000,
+            child: Scrollbar(
+              child: ListView(
+                children: memoLinks.map((entry) {
+                  final link = entry.value;
+                  final group = entry.key;
+                  final controller = memoControllers[link.id]!;
+                  final isOverflow = (link.memo?.split('\n').length ?? 0) > 5 || (link.memo?.length ?? 0) > 100;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: Color(accentColor),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(Icons.link, color: Colors.blue, size: 18),
+                            const SizedBox(width: 4),
+                            InkWell(
+                              onTap: () {
+                                ref.read(linkViewModelProvider.notifier).launchLink(link);
+                              },
+                              child: Text(
+                                link.label,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        MouseRegion(
+                          cursor: isOverflow ? SystemMouseCursors.help : SystemMouseCursors.basic,
+                          child: Tooltip(
+                            message: isOverflow ? link.memo! : '',
+                            child: TextField(
+                              controller: controller,
+                              maxLines: 3,
+                              minLines: 1,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: isDark ? Colors.black : Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: Color(accentColor).withValues(alpha: isDark ? 0.7 : 0.5),
+                                    width: 2,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.all(10),
+                              ),
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('閉じる'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                for (final entry in memoLinks) {
+                  final link = entry.value;
+                  final group = entry.key;
+                  final newMemo = memoControllers[link.id]!.text;
+                  if (newMemo != link.memo) {
+                    final updated = link.copyWith(memo: newMemo);
+                    ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
+                      groupId: group.id,
+                      updated: updated,
+                    );
+                  }
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('まとめて保存'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
