@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
+import '../viewmodels/layout_settings_provider.dart';
 import '../models/group.dart';
 import '../models/link_item.dart';
 import 'group_card.dart';
+import 'layout_settings_dialog.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
@@ -126,9 +128,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showOnlyFavorites = false;
   bool _showSearchBar = true;
   String _searchQuery = '';
+  LinkType? _selectedLinkTypeFilter; // リンクタイプフィルター
   bool _showRecent = false;
   bool _tutorialShown = false;
   bool _showFavoriteLinks = false;
+  List<String> _availableTags = []; // 利用可能なタグ一覧
   // 表示モード管理
   bool _isListViewMode = false;
   
@@ -154,13 +158,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final groups = ref.read(linkViewModelProvider).groups;
     _orderedGroups = List<Group>.from(groups);
     
+    // FocusNodeのリスナーを追加
+    _shortcutFocusNode.addListener(() {
+      print('ショートカットFocusNode状態: hasFocus=${_shortcutFocusNode.hasFocus}');
+    });
+    
     // ScrollControllerの初期化を遅延させる
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() {});
+        _updateAvailableTags();
       }
     });
     _checkAndShowTutorial();
+  }
+
+  // 利用可能なタグを更新
+  void _updateAvailableTags() {
+    final groups = ref.read(linkViewModelProvider).groups;
+    final allTags = <String>{};
+    
+    for (final group in groups) {
+      for (final link in group.items) {
+        allTags.addAll(link.tags);
+      }
+    }
+    
+    setState(() {
+      _availableTags = allTags.toList()..sort();
+    });
   }
 
   @override
@@ -177,17 +203,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final key = event.logicalKey;
       final isControlPressed = HardwareKeyboard.instance.isControlPressed;
       final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+      final isAltPressed = HardwareKeyboard.instance.isAltPressed;
+      final isMetaPressed = HardwareKeyboard.instance.isMetaPressed;
+      
+      // 詳細なデバッグ情報を出力
+      print('=== ショートカット詳細デバッグ ===');
+      print('キー: ${key.keyLabel} (${key})');
+      print('修飾キー状態: Ctrl=$isControlPressed, Shift=$isShiftPressed, Alt=$isAltPressed, Meta=$isMetaPressed');
+      print('イベントタイプ: ${event.runtimeType}');
+      print('フォーカスノード: ${_shortcutFocusNode.hasFocus}');
+      print('===============================');
       
       // Ctrl+N: 新しいグループを作成
       if (key == LogicalKeyboardKey.keyN && isControlPressed) {
+        print('✅ Ctrl+N 検出: グループ追加ダイアログを表示');
         _showAddGroupDialog(context);
       }
       // Ctrl+L: 新しいリンクを追加
       else if (key == LogicalKeyboardKey.keyL && isControlPressed) {
+        print('✅ Ctrl+L 検出: リンク追加ダイアログを表示');
         _showAddLinkDialogShortcut(context);
       }
       // Ctrl+F: 検索にフォーカス（検索バーを開く）
       else if (key == LogicalKeyboardKey.keyF && isControlPressed) {
+        print('✅ Ctrl+F 検出: 検索バーを開く');
         setState(() {
           _showSearchBar = true;
         });
@@ -198,28 +237,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
       // Ctrl+Shift+E: データをエクスポート
       else if (key == LogicalKeyboardKey.keyE && isControlPressed && isShiftPressed) {
+        print('✅ Ctrl+Shift+E 検出: データエクスポート');
         _exportData(context);
       }
       // Ctrl+Shift+I: データをインポート
       else if (key == LogicalKeyboardKey.keyI && isControlPressed && isShiftPressed) {
+        print('✅ Ctrl+Shift+I 検出: データインポート');
         _importData(context);
       }
       // Ctrl+G: グリッド/リスト表示切り替え
       else if (key == LogicalKeyboardKey.keyG && isControlPressed) {
+        print('✅ Ctrl+G 検出: 表示モード切り替え');
         setState(() {
           _isListViewMode = !_isListViewMode;
         });
       }
       // F1: ヘルプを表示
       else if (key == LogicalKeyboardKey.f1) {
+        print('✅ F1 検出: ヘルプ表示');
         _showShortcutHelp(context);
       }
       // Escape: 検索を閉じる
       else if (key == LogicalKeyboardKey.escape) {
+        print('✅ Escape 検出: 検索バーを閉じる');
         setState(() {
           _showSearchBar = false;
           _searchQuery = '';
         });
+      }
+      // Tab: タグ選択を切り替え（すべて → ファイル → フォルダ → URL → すべて）
+      else if (key == LogicalKeyboardKey.tab) {
+        print('✅ Tab 検出: タグ選択を切り替え');
+        setState(() {
+          if (_selectedLinkTypeFilter == null) {
+            _selectedLinkTypeFilter = LinkType.file;
+          } else if (_selectedLinkTypeFilter == LinkType.file) {
+            _selectedLinkTypeFilter = LinkType.folder;
+          } else if (_selectedLinkTypeFilter == LinkType.folder) {
+            _selectedLinkTypeFilter = LinkType.url;
+          } else if (_selectedLinkTypeFilter == LinkType.url) {
+            _selectedLinkTypeFilter = null; // すべてに戻る
+          }
+        });
+      } else {
+        print('❌ ショートカットに一致しませんでした');
       }
     }
   }
@@ -235,6 +296,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
 
+
+  // レイアウト設定ダイアログ
+  void _showLayoutSettingsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const LayoutSettingsDialog(),
+    );
+  }
 
   // ショートカットヘルプダイアログ
   void _showShortcutHelp(BuildContext context) {
@@ -252,6 +321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _ShortcutItem('Ctrl+F', '検索バーを開く'),
               _ShortcutItem('Ctrl+G', 'グリッド/リスト表示切り替え'),
               _ShortcutItem('Escape', '検索バーを閉じる'),
+              _ShortcutItem('Tab', 'タグ選択を切り替え（すべて→ファイル→フォルダ→URL）'),
               _ShortcutItem('Ctrl+Shift+E', 'データをエクスポート'),
               _ShortcutItem('Ctrl+Shift+I', 'データをインポート'),
               _ShortcutItem('F1', 'このヘルプを表示'),
@@ -284,6 +354,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     // 検索・最近使ったフィルタ適用
     List<Group> displayGroups = _showOnlyFavorites ? favoriteGroups : [...favoriteGroups, ...normalGroups];
+    
+    // リンクタイプフィルター適用
+    if (_selectedLinkTypeFilter != null) {
+      displayGroups = displayGroups
+        .map((g) => g.copyWith(
+          items: g.items.where((l) => l.type == _selectedLinkTypeFilter).toList(),
+        ))
+        .where((g) => g.items.isNotEmpty)
+        .toList();
+    }
+    
+    // テキスト検索フィルター適用
     if (_searchQuery.isNotEmpty) {
       displayGroups = displayGroups
         .where((g) => g.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -298,6 +380,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               if (domain.toLowerCase().contains(_searchQuery.toLowerCase())) {
                 return true;
               }
+            }
+            // タグでの検索
+            if (l.tags.any((tag) => tag.toLowerCase().contains(_searchQuery.toLowerCase()))) {
+              return true;
             }
             return false;
           }))
@@ -332,11 +418,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     print('showRecent: ${_showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty)}');
     print('==================');
     
-    return KeyboardListener(
-      focusNode: _shortcutFocusNode,
-      onKeyEvent: _handleShortcut,
-      autofocus: true,
-      child: Listener(
+    return Listener(
       onPointerDown: (event) {
         // 右クリックや他ボタンは無視
       },
@@ -346,7 +428,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onDoubleTapDown: (details) {
           _showJumpButtons(details.globalPosition);
         },
-        child: Scaffold(
+        child: KeyboardListener(
+          focusNode: _shortcutFocusNode,
+          onKeyEvent: _handleShortcut,
+          autofocus: true,
+          child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
             title: Text(
@@ -411,6 +497,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         break;
                       case 'import':
                         _importData(context);
+                        break;
+                      case 'layout_settings':
+                        _showLayoutSettingsDialog(context);
                         break;
                     }
                   },
@@ -487,42 +576,159 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           Text('設定をインポート'),
                         ],
                       ),
+                    ),
+                    PopupMenuItem(
+                      value: 'layout_settings',
+                      child: Row(
+                        children: [
+                          Icon(Icons.settings, size: 20),
+                          SizedBox(width: 8),
+                          Text('レイアウト設定'),
+                        ],
                       ),
+                    ),
                     ],
                   ),
         ],
         bottom: _showSearchBar
             ? PreferredSize(
-                preferredSize: const Size.fromHeight(44),
+                preferredSize: Size.fromHeight(_availableTags.isNotEmpty ? 116.0 : 88.0),
                 child: Container(
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                     child: TextField(
-                           focusNode: _searchFocusNode,
-                     keyboardType: TextInputType.text,
-                     textInputAction: TextInputAction.search,
-                     decoration: InputDecoration(
-                       hintText: '検索（ファイル名・フォルダ名・URL）',
-                       prefixIcon: const Icon(Icons.search),
-                       suffixIcon: IconButton(
-                         icon: const Icon(Icons.close),
-                         onPressed: () {
-                           setState(() {
-                             _searchQuery = '';
-                             _showSearchBar = false;
-                           });
-                         },
-                       ),
-                       isDense: true,
-                       contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                     ),
-                     onChanged: (v) {
+                  height: _availableTags.isNotEmpty ? 116.0 : 88.0,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Column(
+                    children: [
+                                             // 検索テキストフィールド
+                       TextField(
+                         focusNode: _searchFocusNode,
+                         keyboardType: TextInputType.text,
+                         textInputAction: TextInputAction.search,
+                         decoration: InputDecoration(
+                           hintText: '検索（ファイル名・フォルダ名・URL・タグ）',
+                           prefixIcon: const Icon(Icons.search),
+                           suffixIcon: IconButton(
+                             icon: const Icon(Icons.close),
+                             onPressed: () {
+                               setState(() {
+                                 _searchQuery = '';
+                                 _selectedLinkTypeFilter = null;
+                                 _showSearchBar = false;
+                               });
+                             },
+                           ),
+                           isDense: true,
+                           contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                         ),
+                                              onChanged: (v) {
                        setState(() {
                          _searchQuery = v;
                        });
                      },
-                   ),
+                     onSubmitted: (v) {
+                       _updateAvailableTags();
+                     },
+                       ),
+                       // タグ候補表示
+                       if (_availableTags.isNotEmpty) ...[
+                         const SizedBox(height: 4),
+                         Container(
+                           height: 24,
+                           child: ListView.builder(
+                             scrollDirection: Axis.horizontal,
+                             itemCount: _availableTags.length,
+                             itemBuilder: (context, index) {
+                               final tag = _availableTags[index];
+                               return Padding(
+                                 padding: const EdgeInsets.only(right: 4),
+                                 child: InkWell(
+                                   onTap: () {
+                                     setState(() {
+                                       _searchQuery = tag;
+                                     });
+                                   },
+                                   child: Container(
+                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                     decoration: BoxDecoration(
+                                       color: Colors.blue.withValues(alpha: 0.1),
+                                       borderRadius: BorderRadius.circular(12),
+                                       border: Border.all(
+                                         color: Colors.blue.withValues(alpha: 0.3),
+                                         width: 1,
+                                       ),
+                                     ),
+                                     child: Text(
+                                       tag,
+                                       style: const TextStyle(
+                                         fontSize: 10,
+                                         color: Colors.blue,
+                                       ),
+                                     ),
+                                   ),
+                                 ),
+                               );
+                             },
+                           ),
+                         ),
+                       ],
+                      const SizedBox(height: 8),
+                      // リンクタイプフィルターラジオボタン
+                      Row(
+                        children: [
+                          const Text('タイプ: ', style: TextStyle(fontSize: 12)),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Radio<LinkType?>(
+                                  value: null,
+                                  groupValue: _selectedLinkTypeFilter,
+                                  onChanged: (LinkType? value) {
+                                    setState(() {
+                                      _selectedLinkTypeFilter = value;
+                                    });
+                                  },
+                                ),
+                                const Text('すべて', style: TextStyle(fontSize: 12)),
+                                const SizedBox(width: 8),
+                                Radio<LinkType?>(
+                                  value: LinkType.file,
+                                  groupValue: _selectedLinkTypeFilter,
+                                  onChanged: (LinkType? value) {
+                                    setState(() {
+                                      _selectedLinkTypeFilter = value;
+                                    });
+                                  },
+                                ),
+                                const Text('ファイル', style: TextStyle(fontSize: 12)),
+                                const SizedBox(width: 8),
+                                Radio<LinkType?>(
+                                  value: LinkType.folder,
+                                  groupValue: _selectedLinkTypeFilter,
+                                  onChanged: (LinkType? value) {
+                                    setState(() {
+                                      _selectedLinkTypeFilter = value;
+                                    });
+                                  },
+                                ),
+                                const Text('フォルダ', style: TextStyle(fontSize: 12)),
+                                const SizedBox(width: 8),
+                                Radio<LinkType?>(
+                                  value: LinkType.url,
+                                  groupValue: _selectedLinkTypeFilter,
+                                  onChanged: (LinkType? value) {
+                                    setState(() {
+                                      _selectedLinkTypeFilter = value;
+                                    });
+                                  },
+                                ),
+                                const Text('URL', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               )
             : null,
@@ -595,28 +801,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildContent(List<Group> displayGroups, List<LinkItem> recentLinks, List<Group> recentGroups) {
     final showRecent = _showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty);
+    final layoutSettings = ref.watch(layoutSettingsProvider);
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         int crossAxisCount;
         double gridSpacing;
         EdgeInsets gridPadding;
-        if (width > 1400) {
-          crossAxisCount = 4; // 画面最大時に4列×3行のレイアウト
-          gridSpacing = 16; // 間隔をさらに縮小
-          gridPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
-        } else if (width > 1100) {
-          crossAxisCount = 4; // 4列を維持
-          gridSpacing = 14; // 間隔をさらに縮小
-          gridPadding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8);
-        } else if (width > 700) {
-          crossAxisCount = 3; // より多くのカードを表示
-          gridSpacing = 12; // 間隔をさらに縮小
-          gridPadding = const EdgeInsets.symmetric(horizontal: 12, vertical: 6);
+        
+        if (layoutSettings.autoAdjustLayout) {
+          // 自動調整モード
+          if (width > 1400) {
+            crossAxisCount = layoutSettings.defaultCrossAxisCount;
+            gridSpacing = 4.0; // より詰めた間隔
+            gridPadding = const EdgeInsets.symmetric(horizontal: 8, vertical: 6);
+          } else if (width > 1100) {
+            crossAxisCount = layoutSettings.defaultCrossAxisCount;
+            gridSpacing = 3.0; // より詰めた間隔
+            gridPadding = const EdgeInsets.symmetric(horizontal: 6, vertical: 4);
+          } else if (width > 700) {
+            crossAxisCount = (layoutSettings.defaultCrossAxisCount - 1).clamp(2, 4);
+            gridSpacing = 2.0; // より詰めた間隔
+            gridPadding = const EdgeInsets.symmetric(horizontal: 4, vertical: 3);
+          } else {
+            crossAxisCount = 2;
+            gridSpacing = 1.0; // より詰めた間隔
+            gridPadding = const EdgeInsets.symmetric(horizontal: 2, vertical: 2);
+          }
         } else {
-          crossAxisCount = 2; // より多くのカードを表示
-          gridSpacing = 10; // 間隔をさらに縮小
-          gridPadding = const EdgeInsets.symmetric(horizontal: 10, vertical: 4);
+          // 手動設定モード
+          crossAxisCount = layoutSettings.defaultCrossAxisCount;
+          gridSpacing = layoutSettings.defaultGridSpacing;
+          gridPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
         }
         return Column(
               children: [
@@ -650,7 +867,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisCount: crossAxisCount,
                   crossAxisSpacing: gridSpacing,
                   mainAxisSpacing: gridSpacing,
-                    childAspectRatio: 0.85, // カードをより横長にして4列×3行のレイアウトに最適化
+                    childAspectRatio: 0.7, // より大きなカードにするためアスペクト比を小さく
                   ),
                   itemCount: displayGroups.length,
                   itemBuilder: (context, index) {
@@ -1111,7 +1328,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ? Center(
                         child: Text(
                           '${group.items.length} 個のリンク',
-                          style: TextStyle(color: textColor?.withOpacity(0.6)),
+                          style: TextStyle(color: textColor?.withValues(alpha: 0.6)),
                         ),
                       )
                     : Wrap(
@@ -1156,36 +1373,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showAddLinkDialog(BuildContext context, String groupId) {
     final labelController = TextEditingController();
     final pathController = TextEditingController();
+    final tagsController = TextEditingController();
     LinkType selectedType = LinkType.file;
+
+    // リンクタイプが変更されたときにデフォルトタグを更新
+    void updateDefaultTags() {
+      String defaultTag = '';
+      switch (selectedType) {
+        case LinkType.file:
+          defaultTag = 'ファイル';
+          break;
+        case LinkType.folder:
+          defaultTag = 'フォルダ';
+          break;
+        case LinkType.url:
+          defaultTag = 'URL';
+          break;
+      }
+      tagsController.text = defaultTag;
+    }
+
+    // 初期デフォルトタグを設定
+    updateDefaultTags();
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Add New Link'),
+          title: const Text('リンクを追加'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: labelController,
                 decoration: const InputDecoration(
-                  labelText: 'Label',
-                  hintText: 'Enter link label...',
+                  labelText: 'ラベル',
+                  hintText: 'リンクラベルを入力...',
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: pathController,
                 decoration: const InputDecoration(
-                  labelText: 'Path/URL',
-                  hintText: 'Enter file path or URL...',
+                  labelText: 'パス/URL',
+                  hintText: 'ファイルパスまたはURLを入力...',
                 ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<LinkType>(
                 value: selectedType,
                 decoration: const InputDecoration(
-                  labelText: 'Type',
+                  labelText: 'タイプ',
                 ),
                 items: LinkType.values.map((type) {
                   return DropdownMenuItem(
@@ -1195,31 +1433,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 }).toList(),
                 onChanged: (value) {
                   if (value != null) {
-                    setState(() => selectedType = value);
+                    setState(() {
+                      selectedType = value;
+                      updateDefaultTags();
+                    });
                   }
                 },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: tagsController,
+                decoration: const InputDecoration(
+                  labelText: 'タグ',
+                  hintText: 'カンマ区切りでタグを入力（例: 仕事, 重要, プロジェクト）',
+                ),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: const Text('キャンセル'),
             ),
             ElevatedButton(
               onPressed: () {
                 if (labelController.text.isNotEmpty && 
                     pathController.text.isNotEmpty) {
+                  // タグをパース
+                  final tags = tagsController.text
+                      .split(',')
+                      .map((tag) => tag.trim())
+                      .where((tag) => tag.isNotEmpty)
+                      .toList();
+                  
                   ref.read(linkViewModelProvider.notifier).addLinkToGroup(
                     groupId: groupId,
                     label: labelController.text,
                     path: pathController.text,
                     type: selectedType,
+                    tags: tags,
                   );
                   Navigator.pop(context);
                 }
               },
-              child: const Text('Add'),
+              child: const Text('追加'),
             ),
           ],
         ),

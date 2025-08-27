@@ -91,6 +91,8 @@ class LinkViewModel extends StateNotifier<LinkState> {
     try {
       await _repository.initialize();
       await _loadGroups();
+      // 既存のリンクにデフォルトタグを追加
+      await addDefaultTagsToExistingLinks();
     } catch (e) {
       state = state.copyWith(error: e.toString());
     } finally {
@@ -189,6 +191,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
     required LinkType type,
     int? iconData,
     int? iconColor,
+    List<String>? tags,
   }) async {
     // フォルダの場合、Windows APIを使ってカスタムアイコンを自動取得
     if (type == LinkType.folder) {
@@ -240,6 +243,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
       createdAt: DateTime.now(),
       iconData: iconData,
       iconColor: iconColor,
+      tags: tags ?? [],
     );
 
     await _repository.saveLink(link);
@@ -358,6 +362,48 @@ class LinkViewModel extends StateNotifier<LinkState> {
       final updatedItems = group.items.map((e) => e.id == updated.id ? updated : e).toList();
       final updatedGroup = group.copyWith(items: updatedItems);
       await _repository.saveGroup(updatedGroup);
+      await _loadGroups();
+    }
+  }
+
+  // 既存のリンクにデフォルトタグを追加
+  Future<void> addDefaultTagsToExistingLinks() async {
+    final groups = state.groups;
+    bool hasChanges = false;
+    
+    for (final group in groups) {
+      final updatedItems = group.items.map((link) {
+        // 既にタグがある場合はスキップ
+        if (link.tags.isNotEmpty) return link;
+        
+        // リンクタイプに基づいてデフォルトタグを追加
+        String defaultTag = '';
+        switch (link.type) {
+          case LinkType.file:
+            defaultTag = 'ファイル';
+            break;
+          case LinkType.folder:
+            defaultTag = 'フォルダ';
+            break;
+          case LinkType.url:
+            defaultTag = 'URL';
+            break;
+        }
+        
+        if (defaultTag.isNotEmpty) {
+          hasChanges = true;
+          return link.copyWith(tags: [defaultTag]);
+        }
+        return link;
+      }).toList();
+      
+      if (hasChanges) {
+        final updatedGroup = group.copyWith(items: updatedItems);
+        await _repository.saveGroup(updatedGroup);
+      }
+    }
+    
+    if (hasChanges) {
       await _loadGroups();
     }
   }
