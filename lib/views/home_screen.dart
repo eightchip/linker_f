@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
@@ -140,6 +141,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int? _pendingIconData;
   int? _pendingIconColor;
 
+  // ショートカットキー用のFocusNode
+  final FocusNode _shortcutFocusNode = FocusNode();
+  // 検索バー用のFocusNode
+  final FocusNode _searchFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -158,7 +164,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _shortcutFocusNode.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  // ショートカットキー処理
+  void _handleShortcut(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      final key = event.logicalKey;
+      final isControlPressed = HardwareKeyboard.instance.isControlPressed;
+      final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+      
+      // Ctrl+N: 新しいグループを作成
+      if (key == LogicalKeyboardKey.keyN && isControlPressed) {
+        _showAddGroupDialog(context);
+      }
+      // Ctrl+L: 新しいリンクを追加
+      else if (key == LogicalKeyboardKey.keyL && isControlPressed) {
+        _showAddLinkDialogShortcut(context);
+      }
+      // Ctrl+F: 検索にフォーカス（検索バーを開く）
+      else if (key == LogicalKeyboardKey.keyF && isControlPressed) {
+        setState(() {
+          _showSearchBar = true;
+        });
+        // 検索バーが表示された後にフォーカスを設定
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _searchFocusNode.requestFocus();
+        });
+      }
+      // Ctrl+Shift+E: データをエクスポート
+      else if (key == LogicalKeyboardKey.keyE && isControlPressed && isShiftPressed) {
+        _exportData(context);
+      }
+      // Ctrl+Shift+I: データをインポート
+      else if (key == LogicalKeyboardKey.keyI && isControlPressed && isShiftPressed) {
+        _importData(context);
+      }
+      // F1: ヘルプを表示
+      else if (key == LogicalKeyboardKey.f1) {
+        _showShortcutHelp(context);
+      }
+      // Escape: 検索を閉じる
+      else if (key == LogicalKeyboardKey.escape) {
+        setState(() {
+          _showSearchBar = false;
+          _searchQuery = '';
+        });
+      }
+    }
+  }
+
+  // ショートカットアクション実装
+  void _showAddLinkDialogShortcut(BuildContext context) {
+    // 既存のリンク追加ロジックを使用
+    // 最初のグループを選択してダイアログを表示
+    final groups = ref.read(linkViewModelProvider).groups;
+    if (groups.isNotEmpty) {
+      _showAddLinkDialog(context, groups.first.id);
+    }
+  }
+
+
+
+  // ショートカットヘルプダイアログ
+  void _showShortcutHelp(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('キーボードショートカット'),
+        content: SizedBox(
+          width: 400,
+          height: 300,
+          child: ListView(
+            children: const [
+              _ShortcutItem('Ctrl+N', '新しいグループを作成'),
+              _ShortcutItem('Ctrl+L', '新しいリンクを追加'),
+              _ShortcutItem('Ctrl+F', '検索バーを開く'),
+              _ShortcutItem('Escape', '検索バーを閉じる'),
+              _ShortcutItem('Ctrl+Shift+E', 'データをエクスポート'),
+              _ShortcutItem('Ctrl+Shift+I', 'データをインポート'),
+              _ShortcutItem('F1', 'このヘルプを表示'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -225,328 +323,346 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     print('showRecent: ${_showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty)}');
     print('==================');
     
-    return Listener(
-      onPointerDown: (event) {
-        // 右クリックや他ボタンは無視
-      },
-      onPointerHover: _onMouseMove,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onDoubleTapDown: (details) {
-          _showJumpButtons(details.globalPosition);
+    return KeyboardListener(
+      focusNode: _shortcutFocusNode,
+      onKeyEvent: _handleShortcut,
+      autofocus: true,
+      child: Listener(
+        onPointerDown: (event) {
+          // 右クリックや他ボタンは無視
         },
-        child: Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-            title: Text(
-              'Link Navigator',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
-            ),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
-        elevation: 2,
-        actions: [
-          IconButton(icon: Icon(Icons.add, size: iconSize), tooltip: 'グループを追加', onPressed: () => _showAddGroupDialog(context)),
-          IconButton(icon: Icon(Icons.search, size: iconSize), tooltip: '検索', onPressed: () {
-              setState(() {
-                _showSearchBar = !_showSearchBar;
-                if (!_showSearchBar) _searchQuery = '';
-              });
-          }),
-          
-          IconButton(icon: Icon(Icons.notes, size: iconSize), tooltip: 'メモ一括編集', onPressed: () {
-              final groups = ref.read(linkViewModelProvider).groups;
-              final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
-                .where((entry) => entry.value.memo?.isNotEmpty == true)
-                .toList();
-              final isDark = Theme.of(context).brightness == Brightness.dark;
-              final accentColor = ref.read(accentColorProvider);
-              final memoControllers = <String, TextEditingController>{};
-              for (final entry in memoLinks) {
-                memoControllers[entry.value.id] = TextEditingController(text: entry.value.memo ?? '');
-              }
-              showDialog(
-                context: context,
-                builder: (context) => StatefulBuilder(
-                  builder: (context, setState) => AlertDialog(
-                    title: const Text('メモ一括編集'),
-                    content: SizedBox(
-                      width: 1000,
-                      height: 1000,
-                      child: Scrollbar(
-                        child: ListView(
-                          children: memoLinks.map((entry) {
-                            final link = entry.value;
-                            final group = entry.key;
-                            final controller = memoControllers[link.id]!;
-                            final isOverflow = (link.memo?.split('\n').length ?? 0) > 5 || (link.memo?.length ?? 0) > 100;
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 6,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          color: Color(accentColor),
-                                          borderRadius: BorderRadius.circular(3),
+        onPointerHover: _onMouseMove,
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onDoubleTapDown: (details) {
+            _showJumpButtons(details.globalPosition);
+          },
+          child: Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            appBar: AppBar(
+              title: Text(
+                'Link Navigator',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
+              ),
+              backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+              foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+              elevation: 2,
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.add, size: iconSize), 
+                  tooltip: 'グループを追加 (Ctrl+N)', 
+                  onPressed: () => _showAddGroupDialog(context)
+                ),
+                IconButton(
+                  icon: Icon(Icons.search, size: iconSize), 
+                  tooltip: '検索 (Ctrl+F)', 
+                  onPressed: () {
+                    setState(() {
+                      _showSearchBar = !_showSearchBar;
+                      if (!_showSearchBar) _searchQuery = '';
+                    });
+                  }
+                ),
+                // ショートカットヘルプボタンを追加
+                IconButton(
+                  icon: const Icon(Icons.keyboard),
+                  tooltip: 'ショートカットキー (F1)',
+                  onPressed: () => _showShortcutHelp(context),
+                ),
+                IconButton(icon: Icon(Icons.notes, size: iconSize), tooltip: 'メモ一括編集', onPressed: () {
+                    final groups = ref.read(linkViewModelProvider).groups;
+                    final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
+                      .where((entry) => entry.value.memo?.isNotEmpty == true)
+                      .toList();
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    final accentColor = ref.read(accentColorProvider);
+                    final memoControllers = <String, TextEditingController>{};
+                    for (final entry in memoLinks) {
+                      memoControllers[entry.value.id] = TextEditingController(text: entry.value.memo ?? '');
+                    }
+                    showDialog(
+                      context: context,
+                      builder: (context) => StatefulBuilder(
+                        builder: (context, setState) => AlertDialog(
+                          title: const Text('メモ一括編集'),
+                          content: SizedBox(
+                            width: 1000,
+                            height: 1000,
+                            child: Scrollbar(
+                              child: ListView(
+                                children: memoLinks.map((entry) {
+                                  final link = entry.value;
+                                  final group = entry.key;
+                                  final controller = memoControllers[link.id]!;
+                                  final isOverflow = (link.memo?.split('\n').length ?? 0) > 5 || (link.memo?.length ?? 0) > 100;
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              width: 6,
+                                              height: 28,
+                                              decoration: BoxDecoration(
+                                                color: Color(accentColor),
+                                                borderRadius: BorderRadius.circular(3),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Icon(Icons.link, color: Colors.blue, size: 18),
+                                            const SizedBox(width: 4),
+                                            InkWell(
+                                              onTap: () {
+                                                ref.read(linkViewModelProvider.notifier).launchLink(link);
+                                              },
+                                              child: Text(
+                                                link.label,
+                                                style: TextStyle(
+                                                  color: isDark ? Colors.white : Colors.black,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                  decoration: TextDecoration.underline,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Icon(Icons.link, color: Colors.blue, size: 18),
-                                      const SizedBox(width: 4),
-                                      InkWell(
-                                        onTap: () {
-                                          ref.read(linkViewModelProvider.notifier).launchLink(link);
-                                        },
-                                        child: Text(
-                                          link.label,
-                                          style: TextStyle(
-                                            color: isDark ? Colors.white : Colors.black,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            decoration: TextDecoration.underline,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  MouseRegion(
-                                    cursor: isOverflow ? SystemMouseCursors.help : SystemMouseCursors.basic,
-                                    child: Tooltip(
-                                      message: isOverflow ? link.memo! : '',
-                                      child: TextField(
-                                        controller: controller,
-                                        maxLines: 3,
-                                        minLines: 1,
-                                        decoration: InputDecoration(
-                                          filled: true,
-                                          fillColor: isDark ? Colors.black : Colors.white,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                            borderSide: BorderSide(
-                                              color: Color(accentColor).withValues(alpha: isDark ? 0.7 : 0.5),
-                                              width: 2,
+                                        const SizedBox(height: 4),
+                                        MouseRegion(
+                                          cursor: isOverflow ? SystemMouseCursors.help : SystemMouseCursors.basic,
+                                          child: Tooltip(
+                                            message: isOverflow ? link.memo! : '',
+                                            child: TextField(
+                                              controller: controller,
+                                              maxLines: 3,
+                                              minLines: 1,
+                                              decoration: InputDecoration(
+                                                filled: true,
+                                                fillColor: isDark ? Colors.black : Colors.white,
+                                                border: OutlineInputBorder(
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  borderSide: BorderSide(
+                                                    color: Color(accentColor).withValues(alpha: isDark ? 0.7 : 0.5),
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                contentPadding: const EdgeInsets.all(10),
+                                              ),
+                                              style: TextStyle(
+                                                color: isDark ? Colors.white : Colors.black87,
+                                                fontSize: 14,
+                                              ),
                                             ),
                                           ),
-                                          contentPadding: const EdgeInsets.all(10),
                                         ),
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white : Colors.black87,
-                                          fontSize: 14,
-                                        ),
-                                      ),
+                                      ],
                                     ),
-                                  ),
-                                ],
+                                  );
+                                }).toList(),
                               ),
-                            );
-                          }).toList(),
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('閉じる'),
+                            ),
+                            ElevatedButton(
+          onPressed: () {
+                                for (final entry in memoLinks) {
+                                  final link = entry.value;
+                                  final group = entry.key;
+                                  final newMemo = memoControllers[link.id]!.text;
+                                  if (newMemo != link.memo) {
+                                    final updated = link.copyWith(memo: newMemo);
+                                    ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
+                                      groupId: group.id,
+                                      updated: updated,
+                                    );
+                                  }
+                                }
+                                Navigator.pop(context);
+                              },
+                              child: const Text('まとめて保存'),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('閉じる'),
-                      ),
-                      ElevatedButton(
-            onPressed: () {
-                          for (final entry in memoLinks) {
-                            final link = entry.value;
-                            final group = entry.key;
-                            final newMemo = memoControllers[link.id]!.text;
-                            if (newMemo != link.memo) {
-                              final updated = link.copyWith(memo: newMemo);
-                              ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
-                                groupId: group.id,
-                                updated: updated,
-                              );
-                            }
-                          }
-                          Navigator.pop(context);
-                        },
-                        child: const Text('まとめて保存'),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          // お気に入り（★）とPDF（📄）アイコンを非表示にしました
-          IconButton(icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showRecent ? '最近使った非表示' : '最近使ったリンクを上部に表示', onPressed: () {
-              setState(() {
-                _showRecent = !_showRecent;
-              });
-            }),
-          IconButton(icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: iconSize), tooltip: isDarkMode ? 'ライトモード' : 'ダークモード', onPressed: () {
-              ref.read(darkModeProvider.notifier).state = !isDarkMode;
-            }),
-          IconButton(icon: Icon(Icons.palette, size: iconSize), tooltip: 'アクセントカラー変更', onPressed: () async {
-                  final currentColor = ref.read(accentColorProvider);
-                  final colorOptions = [
-                    0xFF3B82F6, // 青（現在のデフォルト）
-                    0xFFEF4444, // 赤
-                    0xFF22C55E, // 緑
-                    0xFFF59E42, // オレンジ
-                    0xFF8B5CF6, // 紫
-                    0xFFEC4899, // ピンク
-                    0xFFEAB308, // 黄
-                    0xFF06B6D4, // 水色
-                    0xFF92400E, // 茶色
-                    0xFF64748B, // グレー
-                    0xFF84CC16, // ライム
-                    0xFF6366F1, // インディゴ
-                    0xFF14B8A6, // ティール
-                    0xFFFB923C, // ディープオレンジ
-                    0xFF7C3AED, // ディープパープル
-                    0xFFFBBF24, // アンバー
-                    0xFF0EA5E9, // シアン
-                    0xFFB45309, // ブラウン
-                    0xFFB91C1C, // レッドブラウン
-                    0xFF166534, // ダークグリーン
-                  ];
-                  final colorNames = [
-                    'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'イエロー', 'シアン', 'ブラウン', 'グレー', 'ライム', 'インディゴ', 'ティール', 'ディープオレンジ', 'ディープパープル', 'アンバー', 'シアン', 'ブラウン', 'レッドブラウン', 'ダークグリーン'
-                  ];
-                  final selected = await showDialog<int>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('アクセントカラーを選択'),
-                      content: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: colorOptions.map((color) {
-                            return ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Color(color),
-                                child: currentColor == color ? const Icon(Icons.check, color: Colors.white) : null,
+                // お気に入り（★）とPDF（📄）アイコンを非表示にしました
+                IconButton(icon: Icon(Icons.push_pin, color: _showRecent ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showRecent ? '最近使った非表示' : '最近使ったリンクを上部に表示', onPressed: () {
+                    setState(() {
+                      _showRecent = !_showRecent;
+                    });
+                  }),
+                IconButton(icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: iconSize), tooltip: isDarkMode ? 'ライトモード' : 'ダークモード', onPressed: () {
+                    ref.read(darkModeProvider.notifier).state = !isDarkMode;
+                  }),
+                IconButton(icon: Icon(Icons.palette, size: iconSize), tooltip: 'アクセントカラー変更', onPressed: () async {
+                        final currentColor = ref.read(accentColorProvider);
+                        final colorOptions = [
+                          0xFF3B82F6, // 青（現在のデフォルト）
+                          0xFFEF4444, // 赤
+                          0xFF22C55E, // 緑
+                          0xFFF59E42, // オレンジ
+                          0xFF8B5CF6, // 紫
+                          0xFFEC4899, // ピンク
+                          0xFFEAB308, // 黄
+                          0xFF06B6D4, // 水色
+                          0xFF92400E, // 茶色
+                          0xFF64748B, // グレー
+                          0xFF84CC16, // ライム
+                          0xFF6366F1, // インディゴ
+                          0xFF14B8A6, // ティール
+                          0xFFFB923C, // ディープオレンジ
+                          0xFF7C3AED, // ディープパープル
+                          0xFFFBBF24, // アンバー
+                          0xFF0EA5E9, // シアン
+                          0xFFB45309, // ブラウン
+                          0xFFB91C1C, // レッドブラウン
+                          0xFF166534, // ダークグリーン
+                        ];
+                        final colorNames = [
+                          'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'イエロー', 'シアン', 'ブラウン', 'グレー', 'ライム', 'インディゴ', 'ティール', 'ディープオレンジ', 'ディープパープル', 'アンバー', 'シアン', 'ブラウン', 'レッドブラウン', 'ダークグリーン'
+                        ];
+                        final selected = await showDialog<int>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('アクセントカラーを選択'),
+                            content: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: colorOptions.map((color) {
+                                  return ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Color(color),
+                                      child: currentColor == color ? const Icon(Icons.check, color: Colors.white) : null,
+                                    ),
+                                    title: Text(colorNames[colorOptions.indexOf(color)]),
+                                    onTap: () => Navigator.pop(context, color),
+                                  );
+                                }).toList(),
                               ),
-                              title: Text(colorNames[colorOptions.indexOf(color)]),
-                              onTap: () => Navigator.pop(context, color),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                  );
-                  if (selected != null && selected != currentColor) {
-                    ref.read(accentColorProvider.notifier).state = selected;
-                  }
-                },
-          ),
-          IconButton(icon: Icon(Icons.upload, size: iconSize), tooltip: '設定をエキスポート', onPressed: () => _exportData(context)),
-          IconButton(icon: Icon(Icons.download, size: iconSize), tooltip: '設定をインポート', onPressed: () => _importData(context)),
-          // お気に入りアイコンを削除
-          // if (favoriteGroups.isNotEmpty)
-          //   IconButton(icon: Icon(_showOnlyFavorites ? Icons.star : Icons.star_border, color: _showOnlyFavorites ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showOnlyFavorites ? 'すべて表示' : 'グループのお気に入りのみ表示', onPressed: () {
-          //       setState(() {
-          //         _showOnlyFavorites = !_showOnlyFavorites;
-          //       });
-          //         }),
-          // チュートリアルアイコンを削除
-          // IconButton(icon: Icon(Icons.help_outline, size: iconSize), tooltip: 'チュートリアル・ヘルプ', onPressed: _showTutorial),
-        ],
-        bottom: _showSearchBar
-            ? PreferredSize(
-                preferredSize: const Size.fromHeight(44),
-                child: Container(
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                     child: TextField(
-                     autofocus: true,
-                     keyboardType: TextInputType.text,
-                     textInputAction: TextInputAction.search,
-                     decoration: InputDecoration(
-                       hintText: '検索（ファイル名・フォルダ名・URL）',
-                       prefixIcon: const Icon(Icons.search),
-                       suffixIcon: IconButton(
-                         icon: const Icon(Icons.close),
-                         onPressed: () {
-                           setState(() {
-                             _searchQuery = '';
-                             _showSearchBar = false;
-                           });
-                         },
-                       ),
-                       isDense: true,
-                       contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                     ),
-                     onChanged: (v) {
-                       setState(() {
-                         _searchQuery = v;
-                       });
-                     },
-                   ),
+                            ),
+                          ),
+                        );
+                        if (selected != null && selected != currentColor) {
+                          ref.read(accentColorProvider.notifier).state = selected;
+                        }
+                      },
                 ),
-              )
-            : null,
-      ),
-          body: Builder(
-            builder: (bodyContext) {
-              _scaffoldBodyContext = bodyContext;
-              return Stack(
-                children: [
-                  _showFavoriteLinks
-                    ? _buildFavoriteLinksList(favoriteLinks)
-                    : isLoading
+                IconButton(icon: Icon(Icons.upload, size: iconSize), tooltip: '設定をエキスポート', onPressed: () => _exportData(context)),
+                IconButton(icon: Icon(Icons.download, size: iconSize), tooltip: '設定をインポート', onPressed: () => _importData(context)),
+                // お気に入りアイコンを削除
+                // if (favoriteGroups.isNotEmpty)
+                //   IconButton(icon: Icon(_showOnlyFavorites ? Icons.star : Icons.star_border, color: _showOnlyFavorites ? Colors.amber : Colors.grey, size: iconSize), tooltip: _showOnlyFavorites ? 'すべて表示' : 'グループのお気に入りのみ表示', onPressed: () {
+                //       setState(() {
+                //         _showOnlyFavorites = !_showOnlyFavorites;
+                //       });
+                //         }),
+                // チュートリアルアイコンを削除
+                // IconButton(icon: Icon(Icons.help_outline, size: iconSize), tooltip: 'チュートリアル・ヘルプ', onPressed: _showTutorial),
+              ],
+              bottom: _showSearchBar
+                  ? PreferredSize(
+                      preferredSize: const Size.fromHeight(44),
+                      child: Container(
+                        height: 44,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                         child: TextField(
+                           focusNode: _searchFocusNode,
+                           keyboardType: TextInputType.text,
+                           textInputAction: TextInputAction.search,
+                           decoration: InputDecoration(
+                             hintText: '検索（ファイル名・フォルダ名・URL）',
+                             prefixIcon: const Icon(Icons.search),
+                             suffixIcon: IconButton(
+                               icon: const Icon(Icons.close),
+                               onPressed: () {
+                                 setState(() {
+                                   _searchQuery = '';
+                                   _showSearchBar = false;
+                                 });
+                               },
+                             ),
+                             isDense: true,
+                             contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                           ),
+                           onChanged: (v) {
+                             setState(() {
+                               _searchQuery = v;
+                             });
+                           },
+                         ),
+                      ),
+                    )
+                  : null,
+            ),
+            body: Builder(
+              builder: (bodyContext) {
+                _scaffoldBodyContext = bodyContext;
+                return Stack(
+                  children: [
+                    _showFavoriteLinks
+                      ? _buildFavoriteLinksList(favoriteLinks)
+                      : isLoading
           ? const Center(child: CircularProgressIndicator())
           : error != null
               ? Center(child: Text('Error: $error'))
               : groups.isEmpty
                   ? _buildEmptyState()
                   : _buildContent(displayGroups, recentLinks, recentGroups),
-                  // 右下ジャンプボタン（アクセントカラー連動）
-                  Positioned(
-                    right: 24,
-                    bottom: 32,
-                    child: Column(
-                      children: [
-                        FloatingActionButton(
-                          mini: true,
-                          heroTag: 'jumpToTop',
-                          backgroundColor: Color(accentColor).withValues(alpha: 0.85),
-                          foregroundColor: Colors.white,
-                          onPressed: () {
-                            if (_scrollController.hasClients) {
-                              _scrollController.animateTo(
-                                0,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
-                              );
-                            }
-                          },
-                          child: const Icon(Icons.vertical_align_top, size: 20),
-                        ),
-                        const SizedBox(height: 12),
-                        FloatingActionButton(
-                          mini: true,
-                          heroTag: 'jumpToBottom',
-                          backgroundColor: Color(accentColor).withValues(alpha: 0.85),
-                          foregroundColor: Colors.white,
-                              onPressed: () {
-                            if (_scrollController.hasClients) {
-                              _scrollController.animateTo(
-                                _scrollController.position.maxScrollExtent,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
-                              );
-                            }
-                          },
-                          child: const Icon(Icons.vertical_align_bottom, size: 20),
+                    // 右下ジャンプボタン（アクセントカラー連動）
+                    Positioned(
+                      right: 24,
+                      bottom: 32,
+                      child: Column(
+                        children: [
+                          FloatingActionButton(
+                            mini: true,
+                            heroTag: 'jumpToTop',
+                            backgroundColor: Color(accentColor).withValues(alpha: 0.85),
+                            foregroundColor: Colors.white,
+                            onPressed: () {
+                              if (_scrollController.hasClients) {
+                                _scrollController.animateTo(
+                                  0,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOut,
+                                );
+                              }
+                            },
+                            child: const Icon(Icons.vertical_align_top, size: 20),
                           ),
-                        ],
+                          const SizedBox(height: 12),
+                          FloatingActionButton(
+                            mini: true,
+                            heroTag: 'jumpToBottom',
+                            backgroundColor: Color(accentColor).withValues(alpha: 0.85),
+                            foregroundColor: Colors.white,
+                                onPressed: () {
+                              if (_scrollController.hasClients) {
+                                _scrollController.animateTo(
+                                  _scrollController.position.maxScrollExtent,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOut,
+                                );
+                              }
+                            },
+                            child: const Icon(Icons.vertical_align_bottom, size: 20),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -3625,3 +3741,33 @@ class _IconSelectorState extends State<IconSelector> {
     Icons.public_outlined,
   ];
 } 
+
+// ショートカット項目ウィジェット
+class _ShortcutItem extends StatelessWidget {
+  final String shortcut;
+  final String description;
+
+  const _ShortcutItem(this.shortcut, this.description);
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(description),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          shortcut,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}
