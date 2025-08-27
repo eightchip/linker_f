@@ -337,26 +337,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onKeyEvent: _handleShortcut,
       autofocus: true,
       child: Listener(
-        onPointerDown: (event) {
-          // 右クリックや他ボタンは無視
+      onPointerDown: (event) {
+        // 右クリックや他ボタンは無視
+      },
+      onPointerHover: _onMouseMove,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onDoubleTapDown: (details) {
+          _showJumpButtons(details.globalPosition);
         },
-        onPointerHover: _onMouseMove,
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onDoubleTapDown: (details) {
-            _showJumpButtons(details.globalPosition);
-          },
-          child: Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            appBar: AppBar(
-              title: Text(
-                'Link Navigator',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
-              ),
-              backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-              foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
-              elevation: 2,
-              actions: [
+        child: Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+            title: Text(
+              'Link Navigator',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
+            ),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+        elevation: 2,
+        actions: [
                 // 主要なアクション（頻繁に使用されるもの）
                 IconButton(
                   icon: Icon(Icons.add, size: iconSize), 
@@ -367,10 +367,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   icon: Icon(Icons.search, size: iconSize), 
                   tooltip: '検索 (Ctrl+F)', 
                   onPressed: () {
-                    setState(() {
-                      _showSearchBar = !_showSearchBar;
-                      if (!_showSearchBar) _searchQuery = '';
-                    });
+              setState(() {
+                _showSearchBar = !_showSearchBar;
+                if (!_showSearchBar) _searchQuery = '';
+              });
                   }
                 ),
                 // 表示モード切り替えボタン
@@ -487,105 +487,105 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           Text('設定をインポート'),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ],
-              bottom: _showSearchBar
-                  ? PreferredSize(
-                      preferredSize: const Size.fromHeight(44),
-                      child: Container(
-                        height: 44,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                                         child: TextField(
-                           focusNode: _searchFocusNode,
-                           keyboardType: TextInputType.text,
-                           textInputAction: TextInputAction.search,
-                           decoration: InputDecoration(
-                             hintText: '検索（ファイル名・フォルダ名・URL）',
-                             prefixIcon: const Icon(Icons.search),
-                             suffixIcon: IconButton(
-                               icon: const Icon(Icons.close),
-                               onPressed: () {
-                                 setState(() {
-                                   _searchQuery = '';
-                                   _showSearchBar = false;
-                                 });
-                               },
-                             ),
-                             isDense: true,
-                             contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                           ),
-                           onChanged: (v) {
-                             setState(() {
-                               _searchQuery = v;
-                             });
-                           },
-                         ),
                       ),
-                    )
-                  : null,
-            ),
-            body: Builder(
-              builder: (bodyContext) {
-                _scaffoldBodyContext = bodyContext;
-                return Stack(
-                  children: [
-                    _showFavoriteLinks
-                      ? _buildFavoriteLinksList(favoriteLinks)
-                      : isLoading
+                    ],
+                  ),
+        ],
+        bottom: _showSearchBar
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(44),
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                     child: TextField(
+                           focusNode: _searchFocusNode,
+                     keyboardType: TextInputType.text,
+                     textInputAction: TextInputAction.search,
+                     decoration: InputDecoration(
+                       hintText: '検索（ファイル名・フォルダ名・URL）',
+                       prefixIcon: const Icon(Icons.search),
+                       suffixIcon: IconButton(
+                         icon: const Icon(Icons.close),
+                         onPressed: () {
+                           setState(() {
+                             _searchQuery = '';
+                             _showSearchBar = false;
+                           });
+                         },
+                       ),
+                       isDense: true,
+                       contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                     ),
+                     onChanged: (v) {
+                       setState(() {
+                         _searchQuery = v;
+                       });
+                     },
+                   ),
+                ),
+              )
+            : null,
+      ),
+          body: Builder(
+            builder: (bodyContext) {
+              _scaffoldBodyContext = bodyContext;
+              return Stack(
+                children: [
+                  _showFavoriteLinks
+                    ? _buildFavoriteLinksList(favoriteLinks)
+                    : isLoading
           ? const Center(child: CircularProgressIndicator())
           : error != null
               ? Center(child: Text('Error: $error'))
               : groups.isEmpty
                   ? _buildEmptyState()
                   : _buildContent(displayGroups, recentLinks, recentGroups),
-                    // 右下ジャンプボタン（アクセントカラー連動）
-                    Positioned(
-                      right: 24,
-                      bottom: 32,
-                      child: Column(
-                        children: [
-                          FloatingActionButton(
-                            mini: true,
-                            heroTag: 'jumpToTop',
-                            backgroundColor: Color(accentColor).withValues(alpha: 0.85),
-                            foregroundColor: Colors.white,
-                            onPressed: () {
-                              if (_scrollController.hasClients) {
-                                _scrollController.animateTo(
-                                  0,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOut,
-                                );
-                              }
-                            },
-                            child: const Icon(Icons.vertical_align_top, size: 20),
-                          ),
-                          const SizedBox(height: 12),
-                          FloatingActionButton(
-                            mini: true,
-                            heroTag: 'jumpToBottom',
-                            backgroundColor: Color(accentColor).withValues(alpha: 0.85),
-                            foregroundColor: Colors.white,
-                                onPressed: () {
-                              if (_scrollController.hasClients) {
-                                _scrollController.animateTo(
-                                  _scrollController.position.maxScrollExtent,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeOut,
-                                );
-                              }
-                            },
-                            child: const Icon(Icons.vertical_align_bottom, size: 20),
-                            ),
-                          ],
+                  // 右下ジャンプボタン（アクセントカラー連動）
+                  Positioned(
+                    right: 24,
+                    bottom: 32,
+                    child: Column(
+                      children: [
+                        FloatingActionButton(
+                          mini: true,
+                          heroTag: 'jumpToTop',
+                          backgroundColor: Color(accentColor).withValues(alpha: 0.85),
+                          foregroundColor: Colors.white,
+                          onPressed: () {
+                            if (_scrollController.hasClients) {
+                              _scrollController.animateTo(
+                                0,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOut,
+                              );
+                            }
+                          },
+                          child: const Icon(Icons.vertical_align_top, size: 20),
                         ),
+                        const SizedBox(height: 12),
+                        FloatingActionButton(
+                          mini: true,
+                          heroTag: 'jumpToBottom',
+                          backgroundColor: Color(accentColor).withValues(alpha: 0.85),
+                          foregroundColor: Colors.white,
+                              onPressed: () {
+                            if (_scrollController.hasClients) {
+                              _scrollController.animateTo(
+                                _scrollController.position.maxScrollExtent,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOut,
+                              );
+                            }
+                          },
+                          child: const Icon(Icons.vertical_align_bottom, size: 20),
+                          ),
+                        ],
                       ),
-                  ],
-                );
-              },
+                    ),
+                ],
+              );
+            },
             ),
           ),
         ),
@@ -602,21 +602,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         double gridSpacing;
         EdgeInsets gridPadding;
         if (width > 1400) {
-          crossAxisCount = 4;
-          gridSpacing = 40;
-          gridPadding = const EdgeInsets.symmetric(horizontal: 32, vertical: 16);
+          crossAxisCount = 4; // 画面最大時に4列×3行のレイアウト
+          gridSpacing = 16; // 間隔をさらに縮小
+          gridPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 10);
         } else if (width > 1100) {
-          crossAxisCount = 3;
-          gridSpacing = 32;
-          gridPadding = const EdgeInsets.symmetric(horizontal: 24, vertical: 12);
+          crossAxisCount = 4; // 4列を維持
+          gridSpacing = 14; // 間隔をさらに縮小
+          gridPadding = const EdgeInsets.symmetric(horizontal: 14, vertical: 8);
         } else if (width > 700) {
-          crossAxisCount = 2;
-          gridSpacing = 24;
-          gridPadding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
+          crossAxisCount = 3; // より多くのカードを表示
+          gridSpacing = 12; // 間隔をさらに縮小
+          gridPadding = const EdgeInsets.symmetric(horizontal: 12, vertical: 6);
         } else {
-          crossAxisCount = 1;
-          gridSpacing = 12;
-          gridPadding = const EdgeInsets.symmetric(horizontal: 4, vertical: 8);
+          crossAxisCount = 2; // より多くのカードを表示
+          gridSpacing = 10; // 間隔をさらに縮小
+          gridPadding = const EdgeInsets.symmetric(horizontal: 10, vertical: 4);
         }
         return Column(
               children: [
@@ -644,13 +644,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: _isListViewMode
                 ? _buildListView(displayGroups, gridPadding)
                 : GridView.builder(
-                  controller: _scrollController,
-                  padding: gridPadding,
+                controller: _scrollController,
+                padding: gridPadding,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: gridSpacing,
-                    mainAxisSpacing: gridSpacing,
-                    childAspectRatio: 1.5,
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: gridSpacing,
+                  mainAxisSpacing: gridSpacing,
+                    childAspectRatio: 0.85, // カードをより横長にして4列×3行のレイアウトに最適化
                   ),
                   itemCount: displayGroups.length,
                   itemBuilder: (context, index) {
@@ -1146,8 +1146,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
               ),
-            ),
-          ],
+          ),
+        ],
         ),
       ),
     );
@@ -3994,7 +3994,7 @@ class _IconSelectorState extends State<IconSelector> {
     Icons.public,
     Icons.public_outlined,
   ];
-}
+} 
 
 // ショートカット項目ウィジェット
 class _ShortcutItem extends StatelessWidget {

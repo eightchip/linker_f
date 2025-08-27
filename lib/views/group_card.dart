@@ -513,48 +513,65 @@ class _GroupCardState extends State<GroupCard> {
   Widget build(BuildContext context) {
     final isDropOrHover = _isDropTarget || widget.isDragging;
     final borderColor = widget.group.color != null ? Color(widget.group.color!) : Colors.blue;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     print('DEBUG: GroupCard for "${widget.group.title}" id=${widget.group.id} color=${widget.group.color} borderColor=$borderColor');
-         return AnimatedContainer(
-       duration: const Duration(milliseconds: 250),
-       curve: Curves.easeInOutCubic,
-       width: MediaQuery.of(context).size.width * 0.88,
-       height: MediaQuery.of(context).size.height * 0.88,
+    
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOutCubic,
+      width: double.infinity, // 親コンテナに合わせて幅を調整
+      height: double.infinity, // 親コンテナに合わせて高さを調整
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         border: Border.all(
           color: isDropOrHover ? borderColor : borderColor.withOpacity(0.7),
           width: isDropOrHover ? 8 : 4,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20), // より丸みを帯びたデザイン
         boxShadow: [
+          // メインシャドウ（より深い影）
+          BoxShadow(
+            color: isDark 
+              ? Colors.black.withOpacity(isDropOrHover ? 0.4 : 0.3)
+              : Colors.black.withOpacity(isDropOrHover ? 0.25 : 0.15),
+            blurRadius: isDropOrHover ? 32 : 16,
+            offset: const Offset(0, 8),
+            spreadRadius: isDropOrHover ? 4 : 2,
+          ),
+          // アクセントシャドウ（ボーダーカラー連動）
           if (isDropOrHover)
             BoxShadow(
-              color: borderColor.withOpacity(0.5),
-              blurRadius: 32,
-              spreadRadius: 8,
+              color: borderColor.withOpacity(0.4),
+              blurRadius: 24,
+              spreadRadius: 2,
+              offset: const Offset(0, 4),
             ),
+          // ハイライトシャドウ（上部の光沢効果）
           BoxShadow(
-            color: borderColor.withOpacity(isDropOrHover ? 0.18 : 0.08),
-            blurRadius: isDropOrHover ? 24 : 8,
-            offset: const Offset(0, 4),
+            color: isDark 
+              ? Colors.white.withOpacity(0.05)
+              : Colors.white.withOpacity(0.8),
+            blurRadius: 4,
+            offset: const Offset(0, -1),
+            spreadRadius: 0,
           ),
         ],
       ),
-        child: DropTarget(
-          onDragEntered: (detail) => setState(() => _isDropTarget = true),
-          onDragExited: (detail) => setState(() => _isDropTarget = false),
-          onDragDone: (detail) {
-            setState(() => _isDropTarget = false);
-            _handleDrop(context, detail);
-          },
-          child: Card(
-          elevation: isDropOrHover ? 24 : 6,
+      child: DropTarget(
+        onDragEntered: (detail) => setState(() => _isDropTarget = true),
+        onDragExited: (detail) => setState(() => _isDropTarget = false),
+        onDragDone: (detail) {
+          setState(() => _isDropTarget = false);
+          _handleDrop(context, detail);
+        },
+        child: Card(
+          elevation: isDropOrHover ? 32 : 12, // より高いエレベーション
           color: Theme.of(context).cardColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: Colors.transparent, width: 0),
-            ),
-            child: _GroupCardContent(
+          ),
+          child: _GroupCardContent(
             group: widget.group,
             isDragging: widget.isDragging,
             onToggleCollapse: widget.onToggleCollapse,
@@ -866,66 +883,130 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
     final isGroupFavorite = group.isFavorite;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
+    final groupBorderColor = group.color != null ? Color(group.color!) : Colors.blue;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: EdgeInsets.all(14 * scale),
+          padding: EdgeInsets.all(12 * scale), // よりコンパクトに
+          decoration: BoxDecoration(
+            color: isDark 
+              ? Colors.grey.shade900.withOpacity(0.3)
+              : Colors.grey.shade50.withOpacity(0.8),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+            border: Border(
+              bottom: BorderSide(
+                color: isDark 
+                  ? Colors.grey.shade700.withOpacity(0.5)
+                  : Colors.grey.shade300.withOpacity(0.8),
+                width: 1,
+              ),
+            ),
+          ),
           child: MouseRegion(
             onEnter: (_) => setState(() => _hovering = true),
             onExit: (_) => setState(() => _hovering = false),
-          child: Row(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: HighlightedText(
-                  text: group.title ?? '名称未設定',
-                  highlight: widget.searchQuery,
-                  style: TextStyle(
-                    fontSize: 14 * scale,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
+              children: [
+                                  // グループアイコン（視覚的な階層を明確化）
+                  Container(
+                    padding: EdgeInsets.all(6 * scale), // よりコンパクトに
+                    decoration: BoxDecoration(
+                      color: groupBorderColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10), // よりコンパクトに
+                      border: Border.all(
+                        color: groupBorderColor.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.folder,
+                      color: groupBorderColor,
+                      size: 18 * scale, // よりコンパクトに
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                SizedBox(width: 12 * scale),
+                // グループタイトル
+                Expanded(
+                  child: HighlightedText(
+                    text: group.title ?? '名称未設定',
+                    highlight: widget.searchQuery,
+                    style: TextStyle(
+                      fontSize: 14 * scale, // よりコンパクトに
+                      fontWeight: FontWeight.w600, // より太いフォント
+                      color: textColor,
+                      letterSpacing: 0.3, // よりコンパクトに
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
+                // アクションボタン群（アクセシビリティ改善）
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.edit, size: 16),
-                      tooltip: 'Edit Group Name',
+                      icon: Icon(Icons.edit, size: 20 * scale), // アイコンサイズ拡大
+                      tooltip: 'グループ名を編集',
                       onPressed: () => widget.onEditGroupTitle?.call(group.title),
-                      iconSize: 18,
-                      padding: EdgeInsets.all(4),
-                      constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                      iconSize: 22 * scale,
+                      padding: EdgeInsets.all(6 * scale), // さらに詰めて
+                      constraints: BoxConstraints(
+                        minWidth: 36 * scale, // よりコンパクトに
+                         minHeight: 36 * scale, // よりコンパクトに
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: isDark 
+                          ? Colors.grey.shade800.withOpacity(0.5)
+                          : Colors.grey.shade200.withOpacity(0.5),
+                        foregroundColor: isDark ? Colors.white : Colors.black87,
+                      ),
                     ),
-                    SizedBox(width: 8),
+                    SizedBox(width: 8 * scale),
                     IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red, size: 16),
+                      icon: Icon(Icons.delete, color: Colors.red.shade600, size: 20 * scale),
                       onPressed: widget.onDeleteGroup,
-                      tooltip: 'Delete Group',
-                      iconSize: 18,
-                      padding: EdgeInsets.all(4),
-                      constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                      tooltip: 'グループを削除',
+                      iconSize: 22 * scale,
+                      padding: EdgeInsets.all(6 * scale), // さらに詰めて
+                      constraints: BoxConstraints(
+                        minWidth: 36 * scale,
+                        minHeight: 36 * scale,
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: isDark 
+                          ? Colors.red.shade900.withOpacity(0.3)
+                          : Colors.red.shade50.withOpacity(0.8),
+                        foregroundColor: Colors.red.shade600,
+                      ),
                     ),
                     if (canAddLink) ...[
-                      SizedBox(width: 8),
+                      SizedBox(width: 6 * scale), // さらに詰めて
                       IconButton(
-                        icon: Icon(Icons.add, size: 16),
+                        icon: Icon(Icons.add, size: 20 * scale),
                         onPressed: widget.onAddLink,
-                        tooltip: 'Add Link',
-                        iconSize: 18,
-                        padding: EdgeInsets.all(4),
-                        constraints: BoxConstraints(minWidth: 28, minHeight: 28),
+                        tooltip: 'リンクを追加',
+                        iconSize: 22 * scale,
+                        padding: EdgeInsets.all(6 * scale), // さらに詰めて
+                        constraints: BoxConstraints(
+                          minWidth: 36 * scale,
+                          minHeight: 36 * scale,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: groupBorderColor.withOpacity(0.1),
+                          foregroundColor: groupBorderColor,
+                        ),
                       ),
                     ],
                   ],
                 ),
-            ],
+              ],
+            ),
           ),
-        ),
         ),
           const Divider(height: 1),
           Expanded(
@@ -1014,6 +1095,7 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
           return ReorderableListView(
             shrinkWrap: true,
             physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.zero, // パディングを削除してより多くのアイテムを表示
             onReorder: (oldIndex, newIndex) async {
               if (oldIndex < newIndex) newIndex--;
               final newItems = List<LinkItem>.from(sortedItems);
@@ -1031,47 +1113,52 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
   }
 
   Widget _buildLinkItem(BuildContext context, LinkItem item, List<LinkItem> items, {double scale = 1.0, Key? key}) {
-  IconData iconData;
-  Color iconColor;
-  
-                // フォルダの場合、個別リンクのカスタムアイコンを優先使用
-              if (item.type == LinkType.folder) {
-                if (item.iconData != null) {
-                  print('カスタムアイコン使用: iconData=${item.iconData}, iconColor=${item.iconColor}');
-                  print('地球アイコンのcodePoint: ${Icons.public.codePoint}');
-                  print('Icons.folder.codePoint: ${Icons.folder.codePoint}');
-                  print('Icons.folder_open.codePoint: ${Icons.folder_open.codePoint}');
-                  print('Icons.folder_special.codePoint: ${Icons.folder_special.codePoint}');
-                  print('Icons.folder_shared.codePoint: ${Icons.folder_shared.codePoint}');
-                  iconData = IconData(item.iconData!, fontFamily: 'MaterialIcons');
-                  iconColor = item.iconColor != null ? Color(item.iconColor!) : Colors.orange;
-                } else {
-                  print('デフォルトアイコン使用: ${item.label}');
-                  iconData = Icons.folder;
-                  iconColor = Colors.orange;
-                }
-              } else {
-    switch (item.type) {
-      case LinkType.file:
-        iconData = Icons.insert_drive_file;
-        iconColor = Colors.blue;
-        break;
-      case LinkType.url:
-        iconData = Icons.link;
-        iconColor = Colors.green;
-        break;
-      case LinkType.folder:
+    IconData iconData;
+    Color iconColor;
+    
+    // フォルダの場合、個別リンクのカスタムアイコンを優先使用
+    if (item.type == LinkType.folder) {
+      if (item.iconData != null) {
+        print('カスタムアイコン使用: iconData=${item.iconData}, iconColor=${item.iconColor}');
+        print('地球アイコンのcodePoint: ${Icons.public.codePoint}');
+        print('Icons.folder.codePoint: ${Icons.folder.codePoint}');
+        print('Icons.folder_open.codePoint: ${Icons.folder_open.codePoint}');
+        print('Icons.folder_special.codePoint: ${Icons.folder_special.codePoint}');
+        print('Icons.folder_shared.codePoint: ${Icons.folder_shared.codePoint}');
+        iconData = IconData(item.iconData!, fontFamily: 'MaterialIcons');
+        iconColor = item.iconColor != null ? Color(item.iconColor!) : Colors.orange;
+      } else {
+        print('デフォルトアイコン使用: ${item.label}');
         iconData = Icons.folder;
         iconColor = Colors.orange;
-        break;
+      }
+    } else {
+      switch (item.type) {
+        case LinkType.file:
+          iconData = Icons.insert_drive_file;
+          iconColor = Colors.blue;
+          break;
+        case LinkType.url:
+          iconData = Icons.link;
+          iconColor = Colors.green;
+          break;
+        case LinkType.folder:
+          iconData = Icons.folder;
+          iconColor = Colors.orange;
+          break;
+      }
     }
-  }
-  final isLinkFavorite = item.isFavorite;
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final rowColor = isLinkFavorite
-      ? (isDark ? Colors.amber.withOpacity(0.22) : Colors.amber.withOpacity(0.16))
-      : Colors.transparent;
-  bool _hovering = false;
+    
+    final isLinkFavorite = item.isFavorite;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final groupBorderColor = widget.group.color != null ? Color(widget.group.color!) : Colors.blue;
+    
+    // より明確な背景色の階層
+    final rowColor = isLinkFavorite
+        ? (isDark ? Colors.amber.withOpacity(0.25) : Colors.amber.withOpacity(0.2))
+        : (isDark ? Colors.grey.shade800.withOpacity(0.3) : Colors.grey.shade50.withOpacity(0.5));
+    
+    bool _hovering = false;
   return KeyedSubtree(
     key: key,
     child: Draggable<Map<String, dynamic>>(
@@ -1106,17 +1193,47 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
           child: GestureDetector(
             onTap: () => _launchLink(item),
             child: Container(
-              color: rowColor,
-              padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 0),
+              margin: EdgeInsets.symmetric(horizontal: 2 * scale, vertical: 0.5 * scale), // さらに詰めて
+              padding: EdgeInsets.all(4 * scale), // さらに詰めて
+              decoration: BoxDecoration(
+                color: rowColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isLinkFavorite 
+                    ? Colors.amber.withOpacity(0.3)
+                    : (isDark ? Colors.grey.shade700.withOpacity(0.3) : Colors.grey.shade300.withOpacity(0.5)),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark 
+                      ? Colors.black.withOpacity(0.1)
+                      : Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Row(
                 children: [
                   // 1. アイコン（統一された位置）
-                  item.type == LinkType.url
-                      ? UrlPreviewWidget(url: item.path, isDark: isDark, searchQuery: widget.searchQuery)
-                      : item.type == LinkType.file
-                          ? FilePreviewWidget(path: item.path, isDark: isDark)
-                          : buildIconWidget(restoreIconData(item.iconData) ?? Icons.folder, Color(item.iconColor ?? 0xFF000000), size: 25 * scale),
-                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.all(4 * scale),
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: iconColor.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                                         child: item.type == LinkType.url
+                         ? UrlPreviewWidget(url: item.path, isDark: isDark, searchQuery: widget.searchQuery)
+                         : item.type == LinkType.file
+                             ? FilePreviewWidget(path: item.path, isDark: isDark)
+                                                           : buildIconWidget(restoreIconData(item.iconData) ?? Icons.folder, Color(item.iconColor ?? 0xFF000000), size: 22 * scale), // さらに詰めて
+                  ),
+                  SizedBox(width: 6 * scale), // さらに詰めて
                   // 2. ラベル（統一された位置）
                   Expanded(
                     child: Tooltip(
@@ -1125,14 +1242,18 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                         text: item.label,
                         highlight: widget.searchQuery,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface),
+                        style: TextStyle(
+                          fontSize: 10 * scale, // さらに詰めて
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          letterSpacing: 0.05, // さらに詰めて
+                        ),
                       ),
                     ),
                   ),
-                  // 2. ボタン群（右端確保のためRow→Containerで幅を制限）
+                  // 2. ボタン群（アクセシビリティ改善）
                   Container(
-                    constraints: BoxConstraints(maxWidth: 230),
-                    // ←右側にまとめて表示（オーバーフローでラベルが縮む）
+                    constraints: BoxConstraints(maxWidth: 180 * scale), // さらに詰めて
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1142,8 +1263,8 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                             Tooltip(
                               message: item.memo ?? '',
                               child: IconButton(
-                                icon: Icon(Icons.note_alt_outlined, color: Colors.orange, size: 20),
-                                tooltip: '',
+                                icon: Icon(Icons.note_alt_outlined, color: Colors.orange.shade600, size: 20 * scale), // さらに詰めて
+                                tooltip: 'メモを編集',
                                 onPressed: () async {
                                   final controller = TextEditingController(text: item.memo ?? '');
                                   final result = await showDialog<String>(
@@ -1173,39 +1294,51 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                                     setState(() {});
                                   }
                                 },
-                                constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(
+                                  minWidth: 36 * scale, // さらに詰めて
+                                  minHeight: 36 * scale,
+                                ),
+                                padding: EdgeInsets.all(4 * scale), // さらに詰めて
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.orange.shade50.withOpacity(0.8),
+                                  foregroundColor: Colors.orange.shade600,
+                                ),
                               ),
                             ),
                             if (_hovering) ...[
-                              // お気に入りアイコンを削除
-                              // SizedBox(width: 8),
-                              // IconButton(
-                              //   icon: Icon(
-                              //     isLinkFavorite ? Icons.star : Icons.star_border,
-                              //     color: isLinkFavorite ? Colors.amber : Colors.grey,
-                              //     size: 20,
-                              //   ),
-                              //   tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
-                              //   onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
-                              //   constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                              //   padding: EdgeInsets.zero,
-                              // ),
-                              // SizedBox(width: 8),
+                              SizedBox(width: 2 * scale), // さらに詰めて
                               IconButton(
-                                icon: Icon(Icons.edit, size: 18),
+                                icon: Icon(Icons.edit, size: 18 * scale), // さらに詰めて
                                 onPressed: () => _showEditLinkDialog(context, item),
-                                tooltip: 'Edit Link',
-                                constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                                padding: EdgeInsets.zero,
+                                tooltip: 'リンクを編集',
+                                constraints: BoxConstraints(
+                                  minWidth: 36 * scale, // さらに詰めて
+                                  minHeight: 36 * scale,
+                                ),
+                                padding: EdgeInsets.all(4 * scale), // さらに詰めて
+                                style: IconButton.styleFrom(
+                                  backgroundColor: isDark 
+                                    ? Colors.grey.shade800.withOpacity(0.5)
+                                    : Colors.grey.shade200.withOpacity(0.5),
+                                  foregroundColor: isDark ? Colors.white : Colors.black87,
+                                ),
                               ),
-                              SizedBox(width: 8),
+                              SizedBox(width: 2 * scale), // さらに詰めて
                               IconButton(
-                                icon: Icon(Icons.delete, size: 18),
+                                icon: Icon(Icons.delete, size: 18 * scale), // さらに詰めて
                                 onPressed: () => widget.onDeleteLink(item.id),
-                                tooltip: 'Delete Link',
-                                constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                                padding: EdgeInsets.zero,
+                                tooltip: 'リンクを削除',
+                                constraints: BoxConstraints(
+                                  minWidth: 36 * scale, // さらに詰めて
+                                  minHeight: 36 * scale,
+                                ),
+                                padding: EdgeInsets.all(4 * scale), // さらに詰めて
+                                style: IconButton.styleFrom(
+                                  backgroundColor: isDark 
+                                    ? Colors.red.shade900.withOpacity(0.3)
+                                    : Colors.red.shade50.withOpacity(0.8),
+                                  foregroundColor: Colors.red.shade600,
+                                ),
                               ),
                             ]
                           ],
@@ -1213,7 +1346,7 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                         if (item.memo?.isNotEmpty != true && _hovering)
                           ...[
                             IconButton(
-                              icon: Icon(Icons.note_alt_outlined, color: Colors.grey, size: 20),
+                              icon: Icon(Icons.note_alt_outlined, color: Colors.grey.shade600, size: 20 * scale), // さらに詰めて
                               tooltip: 'メモ追加',
                               onPressed: () async {
                                 final controller = TextEditingController(text: item.memo ?? '');
@@ -1244,44 +1377,58 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                                   setState(() {});
                                 }
                               },
-                              constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(
+                                minWidth: 36 * scale, // さらに詰めて
+                                minHeight: 36 * scale,
+                              ),
+                              padding: EdgeInsets.all(4 * scale), // さらに詰めて
+                              style: IconButton.styleFrom(
+                                backgroundColor: isDark 
+                                  ? Colors.grey.shade800.withOpacity(0.3)
+                                  : Colors.grey.shade200.withOpacity(0.5),
+                                foregroundColor: Colors.grey.shade600,
+                              ),
                             ),
-                            // お気に入りアイコンを削除
-                            // SizedBox(width: 8),
-                            // IconButton(
-                            //   icon: Icon(
-                            //     isLinkFavorite ? Icons.star : Icons.star_border,
-                            //     color: isLinkFavorite ? Colors.amber : Colors.grey,
-                            //     size: 20,
-                            //   ),
-                            //   tooltip: isLinkFavorite ? 'お気に入り解除' : 'お気に入り',
-                            //   onPressed: () => widget.onLinkFavoriteToggle(widget.group, item),
-                            //   constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                            //   padding: EdgeInsets.zero,
-                            // ),
-                            // SizedBox(width: 8),
+                            SizedBox(width: 2 * scale), // さらに詰めて
                             IconButton(
-                              icon: Icon(Icons.edit, size: 18),
+                              icon: Icon(Icons.edit, size: 20 * scale),
                               onPressed: () => _showEditLinkDialog(context, item),
-                              tooltip: 'Edit Link',
-                              constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                              padding: EdgeInsets.zero,
-                            ),
-                            SizedBox(width: 8),
-                            IconButton(
-                              icon: Icon(Icons.delete, size: 18),
+                              tooltip: 'リンクを編集',
+                              constraints: BoxConstraints(
+                                minWidth: 36 * scale, // さらに詰めて
+                                minHeight: 36 * scale,
+                              ),
+                              padding: EdgeInsets.all(4 * scale), // さらに詰めて
+                              style: IconButton.styleFrom(
+                                backgroundColor: isDark 
+                                  ? Colors.grey.shade800.withOpacity(0.5)
+                                  : Colors.grey.shade200.withOpacity(0.5),
+                                foregroundColor: isDark ? Colors.white : Colors.black87,
+                              ),
+                                                          ),
+                              SizedBox(width: 2 * scale), // さらに詰めて
+                              IconButton(
+                              icon: Icon(Icons.delete, size: 18 * scale), // さらに詰めて
                               onPressed: () => widget.onDeleteLink(item.id),
-                              tooltip: 'Delete Link',
-                              constraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                              padding: EdgeInsets.zero,
+                              tooltip: 'リンクを削除',
+                              constraints: BoxConstraints(
+                                minWidth: 36 * scale, // さらに詰めて
+                                minHeight: 36 * scale,
+                              ),
+                              padding: EdgeInsets.all(4 * scale), // さらに詰めて
+                              style: IconButton.styleFrom(
+                                backgroundColor: isDark 
+                                  ? Colors.red.shade900.withOpacity(0.3)
+                                  : Colors.red.shade50.withOpacity(0.8),
+                                foregroundColor: Colors.red.shade600,
+                              ),
                             ),
                           ]
                       ],
                     ),
                   ),
-                  // 3. 右端に必ず余白！（32px）
-                  SizedBox(width: 36),
+                  // 3. 右端に必ず余白！（調整）
+                  SizedBox(width: 6 * scale), // さらに詰めて
                 ],
               ),
             ),
