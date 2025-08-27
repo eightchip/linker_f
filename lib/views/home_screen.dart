@@ -129,6 +129,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showRecent = false;
   bool _tutorialShown = false;
   bool _showFavoriteLinks = false;
+  // 表示モード管理
+  bool _isListViewMode = false;
   
   // 追加: ジャンプボタン表示制御用
   OverlayEntry? _jumpButtonOverlay;
@@ -202,6 +204,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       else if (key == LogicalKeyboardKey.keyI && isControlPressed && isShiftPressed) {
         _importData(context);
       }
+      // Ctrl+G: グリッド/リスト表示切り替え
+      else if (key == LogicalKeyboardKey.keyG && isControlPressed) {
+        setState(() {
+          _isListViewMode = !_isListViewMode;
+        });
+      }
       // F1: ヘルプを表示
       else if (key == LogicalKeyboardKey.f1) {
         _showShortcutHelp(context);
@@ -242,6 +250,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _ShortcutItem('Ctrl+N', '新しいグループを作成'),
               _ShortcutItem('Ctrl+L', '新しいリンクを追加'),
               _ShortcutItem('Ctrl+F', '検索バーを開く'),
+              _ShortcutItem('Ctrl+G', 'グリッド/リスト表示切り替え'),
               _ShortcutItem('Escape', '検索バーを閉じる'),
               _ShortcutItem('Ctrl+Shift+E', 'データをエクスポート'),
               _ShortcutItem('Ctrl+Shift+I', 'データをインポート'),
@@ -362,6 +371,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       if (!_showSearchBar) _searchQuery = '';
                     });
                   }
+                ),
+                // 表示モード切り替えボタン
+                IconButton(
+                  icon: Icon(_isListViewMode ? Icons.grid_view : Icons.view_list, size: iconSize),
+                  tooltip: _isListViewMode ? 'グリッド表示 (Ctrl+G)' : 'リスト表示 (Ctrl+G)',
+                  onPressed: () {
+                    setState(() {
+                      _isListViewMode = !_isListViewMode;
+                    });
+                  },
                 ),
                 // ショートカットヘルプボタンを追加
                 IconButton(
@@ -717,14 +736,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
             Expanded(
-              child: GridView.builder(
-                controller: _scrollController,
-                padding: gridPadding,
+              child: _isListViewMode
+                ? _buildListView(displayGroups, gridPadding)
+                : GridView.builder(
+                  controller: _scrollController,
+                  padding: gridPadding,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: gridSpacing,
-                  mainAxisSpacing: gridSpacing,
-                  childAspectRatio: 1.5,
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: gridSpacing,
+                    mainAxisSpacing: gridSpacing,
+                    childAspectRatio: 1.5,
                   ),
                   itemCount: displayGroups.length,
                   itemBuilder: (context, index) {
@@ -1073,6 +1094,155 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: const Text('Create'),
           ),
         ],
+        ),
+      ),
+    );
+  }
+
+  // リスト表示用のウィジェット
+  Widget _buildListView(List<Group> displayGroups, EdgeInsets padding) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: padding,
+      itemCount: displayGroups.length,
+      itemBuilder: (context, index) {
+        final group = displayGroups[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Draggable<Group>(
+            data: group,
+            feedback: Material(
+              elevation: 16,
+              child: SizedBox(
+                width: 400,
+                height: 120,
+                child: _buildListGroupCard(group, true),
+              ),
+            ),
+            childWhenDragging: Opacity(
+              opacity: 0.5,
+              child: _buildListGroupCard(group, true),
+            ),
+            child: DragTarget<Group>(
+              onWillAccept: (data) => data != null && data.id != group.id,
+              onAccept: (data) async {
+                final groups = ref.read(linkViewModelProvider).groups;
+                final fromIndex = groups.indexWhere((g) => g.id == data.id);
+                final toIndex = groups.indexWhere((g) => g.id == group.id);
+                if (fromIndex != -1 && toIndex != -1) {
+                  final newOrder = List<Group>.from(groups);
+                  final item = newOrder.removeAt(fromIndex);
+                  newOrder.insert(toIndex, item);
+                  await ref.read(linkViewModelProvider.notifier).updateGroupsOrder(newOrder);
+                }
+              },
+              builder: (context, candidateData, rejectedData) {
+                return _buildListGroupCard(group, false);
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // リスト表示用のグループカードウィジェット
+  Widget _buildListGroupCard(Group group, bool isDragging) {
+    final accentColor = ref.watch(accentColorProvider);
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final linkItems = group.items.where((link) => 
+      link.label.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+      link.path.toLowerCase().contains(_searchQuery.toLowerCase())
+    ).toList();
+
+    return Card(
+      elevation: isDragging ? 0 : 2,
+      color: isDragging ? Colors.transparent : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDragging ? Colors.transparent : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDragging ? Color(accentColor).withOpacity(0.7) : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          children: [
+            // 左側: グループ情報
+            Container(
+              width: 200,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Color(group.color ?? accentColor).withOpacity(isDragging ? 0.5 : 0.8),
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(8)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    group.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${group.items.length} アイテム',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            // 中央: リンク一覧
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: group.collapsed
+                    ? Center(
+                        child: Text(
+                          '${group.items.length} 個のリンク',
+                          style: TextStyle(color: textColor?.withOpacity(0.6)),
+                        ),
+                      )
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: linkItems.map((link) => ActionChip(
+                          label: Text(link.label, overflow: TextOverflow.ellipsis),
+                          avatar: Icon(_iconForType(link.type), size: 18),
+                          onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                        )).toList(),
+                      ),
+              ),
+            ),
+            // 右側: アクションボタン
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      group.collapsed ? Icons.expand_more : Icons.expand_less,
+                      size: 20,
+                    ),
+                    onPressed: () => ref.read(linkViewModelProvider.notifier).toggleGroupCollapse(group.id),
+                    tooltip: group.collapsed ? '展開' : '折りたたみ',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_link, size: 20),
+                    onPressed: () => _showAddLinkDialog(context, group.id),
+                    tooltip: 'リンクを追加',
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -3740,7 +3910,7 @@ class _IconSelectorState extends State<IconSelector> {
     Icons.public,
     Icons.public_outlined,
   ];
-} 
+}
 
 // ショートカット項目ウィジェット
 class _ShortcutItem extends StatelessWidget {
