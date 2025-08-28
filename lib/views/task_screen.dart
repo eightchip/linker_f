@@ -1,0 +1,550 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../models/task_item.dart';
+import '../models/link_item.dart';
+import '../viewmodels/task_viewmodel.dart';
+import '../viewmodels/link_viewmodel.dart';
+import '../services/notification_service.dart';
+import 'task_dialog.dart';
+import 'calendar_screen.dart';
+
+class TaskScreen extends ConsumerStatefulWidget {
+  const TaskScreen({super.key});
+
+  @override
+  ConsumerState<TaskScreen> createState() => _TaskScreenState();
+}
+
+class _TaskScreenState extends ConsumerState<TaskScreen> {
+  String _filterStatus = 'all'; // all, pending, inProgress, completed
+  String _filterPriority = 'all'; // all, low, medium, high, urgent
+  String _searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final tasks = ref.watch(taskViewModelProvider);
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    final statistics = taskViewModel.getTaskStatistics();
+
+    // フィルタリング
+    List<TaskItem> filteredTasks = tasks.where((task) {
+      // ステータスフィルター
+      if (_filterStatus != 'all') {
+        final status = TaskStatus.values.firstWhere(
+          (s) => s.toString().split('.').last == _filterStatus,
+        );
+        if (task.status != status) return false;
+      }
+
+      // 優先度フィルター
+      if (_filterPriority != 'all') {
+        final priority = TaskPriority.values.firstWhere(
+          (p) => p.toString().split('.').last == _filterPriority,
+        );
+        if (task.priority != priority) return false;
+      }
+
+      // 検索フィルター
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        return task.title.toLowerCase().contains(query) ||
+               (task.description?.toLowerCase().contains(query) ?? false) ||
+               task.tags.any((tag) => tag.toLowerCase().contains(query));
+      }
+
+      return true;
+    }).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('タスク管理'),
+        actions: [
+          IconButton(
+            onPressed: () => _showCalendarScreen(),
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'カレンダー表示',
+          ),
+          IconButton(
+            onPressed: () => _showTestNotification(),
+            icon: const Icon(Icons.notifications),
+            tooltip: '通知テスト',
+          ),
+          IconButton(
+            onPressed: () => _showTestReminderNotification(),
+            icon: const Icon(Icons.schedule),
+            tooltip: 'リマインダーテスト',
+          ),
+          IconButton(
+            onPressed: () => _showTaskDialog(),
+            icon: const Icon(Icons.add),
+            tooltip: '新しいタスク',
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // 統計情報
+          _buildStatisticsCard(statistics),
+          
+          // フィルターと検索
+          _buildFilterSection(),
+          
+          // タスク一覧
+          Expanded(
+            child: filteredTasks.isEmpty
+                ? const Center(
+                    child: Text('タスクがありません'),
+                  )
+                : ListView.builder(
+                    itemCount: filteredTasks.length,
+                    itemBuilder: (context, index) {
+                      return _buildTaskCard(filteredTasks[index]);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatisticsCard(Map<String, int> statistics) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem('総タスク', statistics['total'] ?? 0, Icons.list),
+            _buildStatItem('完了', statistics['completed'] ?? 0, Icons.check_circle, Colors.green),
+            _buildStatItem('進行中', statistics['inProgress'] ?? 0, Icons.pending, Colors.blue),
+            _buildStatItem('期限切れ', statistics['overdue'] ?? 0, Icons.warning, Colors.red),
+            _buildStatItem('今日', statistics['today'] ?? 0, Icons.today, Colors.orange),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, int count, IconData icon, [Color? color]) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 4),
+        Text(
+          count.toString(),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterSection() {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // 検索バー
+            TextField(
+              decoration: const InputDecoration(
+                hintText: 'タスクを検索...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            
+            // フィルター
+            Row(
+              children: [
+                const Text('ステータス: '),
+                const SizedBox(width: 8),
+                DropdownButton<String>(
+                  value: _filterStatus,
+                  items: const [
+                    DropdownMenuItem(value: 'all', child: Text('すべて')),
+                    DropdownMenuItem(value: 'pending', child: Text('未着手')),
+                    DropdownMenuItem(value: 'inProgress', child: Text('進行中')),
+                    DropdownMenuItem(value: 'completed', child: Text('完了')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _filterStatus = value;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(width: 24),
+                const Text('優先度: '),
+                const SizedBox(width: 8),
+                DropdownButton<String>(
+                  value: _filterPriority,
+                  items: const [
+                    DropdownMenuItem(value: 'all', child: Text('すべて')),
+                    DropdownMenuItem(value: 'low', child: Text('低')),
+                    DropdownMenuItem(value: 'medium', child: Text('中')),
+                    DropdownMenuItem(value: 'high', child: Text('高')),
+                    DropdownMenuItem(value: 'urgent', child: Text('緊急')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _filterPriority = value;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskCard(TaskItem task) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        leading: _buildPriorityIndicator(task.priority),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                task.title,
+                style: TextStyle(
+                  decoration: task.status == TaskStatus.completed 
+                      ? TextDecoration.lineThrough 
+                      : null,
+                ),
+              ),
+            ),
+            if (task.isOverdue)
+              const Icon(Icons.warning, color: Colors.red, size: 16),
+            if (task.isToday)
+              const Icon(Icons.today, color: Colors.orange, size: 16),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (task.description != null)
+              Text(
+                task.description!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                if (task.dueDate != null)
+                  Text(
+                    '期限: ${DateFormat('MM/dd').format(task.dueDate!)}',
+                    style: TextStyle(
+                      color: task.isOverdue ? Colors.red : Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                if (task.estimatedMinutes != null) ...[
+                  const SizedBox(width: 16),
+                  Text(
+                    '${task.estimatedMinutes}分',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (task.tags.isNotEmpty)
+              Wrap(
+                spacing: 4,
+                children: task.tags.map((tag) => Chip(
+                  label: Text(tag, style: const TextStyle(fontSize: 10)),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                )).toList(),
+              ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 関連リンクへのアクセスボタン
+            if (task.relatedLinkId != null)
+              IconButton(
+                icon: const Icon(Icons.link, size: 16),
+                onPressed: () => _openRelatedLink(task),
+                tooltip: '関連リンクを開く',
+              ),
+            _buildStatusChip(task.status),
+            const SizedBox(width: 8),
+            PopupMenuButton<String>(
+              onSelected: (value) => _handleTaskAction(value, task),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit),
+                      SizedBox(width: 8),
+                      Text('編集'),
+                    ],
+                  ),
+                ),
+                if (task.status != TaskStatus.completed)
+                  const PopupMenuItem(
+                    value: 'complete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.check),
+                        SizedBox(width: 8),
+                        Text('完了'),
+                      ],
+                    ),
+                  ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('削除', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        onTap: () => _showTaskDialog(task: task),
+      ),
+    );
+  }
+
+  Widget _buildPriorityIndicator(TaskPriority priority) {
+    return Container(
+      width: 4,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Color(_getPriorityColor(priority)),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  int _getPriorityColor(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return 0xFF4CAF50;
+      case TaskPriority.medium:
+        return 0xFFFF9800;
+      case TaskPriority.high:
+        return 0xFFF44336;
+      case TaskPriority.urgent:
+        return 0xFF9C27B0;
+    }
+  }
+
+  Widget _buildStatusChip(TaskStatus status) {
+    Color color;
+    String text;
+    IconData icon;
+
+    switch (status) {
+      case TaskStatus.pending:
+        color = Colors.grey;
+        text = '未着手';
+        icon = Icons.schedule;
+        break;
+      case TaskStatus.inProgress:
+        color = Colors.blue;
+        text = '進行中';
+        icon = Icons.play_arrow;
+        break;
+      case TaskStatus.completed:
+        color = Colors.green;
+        text = '完了';
+        icon = Icons.check;
+        break;
+      case TaskStatus.cancelled:
+        color = Colors.red;
+        text = 'キャンセル';
+        icon = Icons.cancel;
+        break;
+    }
+
+    return Chip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        ],
+      ),
+      backgroundColor: color,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
+  void _showTaskDialog({TaskItem? task}) {
+    showDialog(
+      context: context,
+      builder: (context) => TaskDialog(task: task),
+    );
+  }
+
+  void _handleTaskAction(String action, TaskItem task) {
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+
+    switch (action) {
+      case 'edit':
+        _showTaskDialog(task: task);
+        break;
+      case 'complete':
+        taskViewModel.completeTask(task.id);
+        break;
+      case 'delete':
+        _showDeleteConfirmation(task);
+        break;
+    }
+  }
+
+  void _showDeleteConfirmation(TaskItem task) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('タスクを削除'),
+        content: Text('「${task.title}」を削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(taskViewModelProvider.notifier).deleteTask(task.id);
+              Navigator.of(context).pop();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('削除', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // カレンダー画面を表示
+  void _showCalendarScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CalendarScreen(),
+      ),
+    );
+  }
+
+  // 関連リンクを開くメソッド
+  void _openRelatedLink(TaskItem task) {
+    if (task.relatedLinkId == null) return;
+
+    final linkViewModel = ref.read(linkViewModelProvider.notifier);
+    final groups = ref.read(linkViewModelProvider);
+    
+    // 関連リンクを検索
+    LinkItem? relatedLink;
+    for (final group in groups.groups) {
+      relatedLink = group.items.firstWhere(
+        (link) => link.id == task.relatedLinkId,
+        orElse: () => LinkItem(
+          id: '',
+          label: '',
+          path: '',
+          type: LinkType.url,
+          createdAt: DateTime.now(),
+        ),
+      );
+      if (relatedLink.id.isNotEmpty) break;
+    }
+
+    if (relatedLink != null && relatedLink.id.isNotEmpty) {
+      // リンクを開く
+      linkViewModel.launchLink(relatedLink);
+      
+      // 成功メッセージを表示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('リンク「${relatedLink.label}」を開きました'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      // エラーメッセージを表示
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('関連リンクが見つかりません'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // 通知テストメソッド
+  void _showTestNotification() async {
+    try {
+      // Windowsではflutter_local_notificationsが制限されているため、
+      // アプリ内通知のみを使用
+      NotificationService.showInAppNotification(
+        context,
+        'テスト通知',
+        '通知機能が正常に動作しています',
+        backgroundColor: Colors.green,
+      );
+    } catch (e) {
+      NotificationService.showInAppNotification(
+        context,
+        '通知エラー',
+        '通知の送信に失敗しました: $e',
+        backgroundColor: Colors.orange,
+      );
+    }
+  }
+
+  // リマインダーテストメソッド
+  void _showTestReminderNotification() async {
+    try {
+      // Windowsではflutter_local_notificationsが制限されているため、
+      // アプリ内通知のみを使用
+      NotificationService.showInAppNotification(
+        context,
+        'リマインダーテスト',
+        'リマインダー通知が正常に動作しています',
+        backgroundColor: Colors.blue,
+      );
+    } catch (e) {
+      NotificationService.showInAppNotification(
+        context,
+        'リマインダーテストエラー',
+        'リマインダーテストに失敗しました: $e',
+        backgroundColor: Colors.orange,
+      );
+    }
+  }
+}

@@ -27,13 +27,15 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
       memo: fields[7] as String?,
       iconData: fields[8] as int?,
       iconColor: fields[9] as int?,
+      tags: (fields[10] as List).cast<String>(),
+      hasActiveTasks: fields[11] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, LinkItem obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +55,11 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
       ..writeByte(8)
       ..write(obj.iconData)
       ..writeByte(9)
-      ..write(obj.iconColor);
+      ..write(obj.iconColor)
+      ..writeByte(10)
+      ..write(obj.tags)
+      ..writeByte(11)
+      ..write(obj.hasActiveTasks);
   }
 
   @override

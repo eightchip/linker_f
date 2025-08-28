@@ -6,7 +6,9 @@ import 'dart:io';
 import 'dart:async';
 import '../models/group.dart';
 import '../models/link_item.dart';
+import '../models/task_item.dart';
 import '../viewmodels/layout_settings_provider.dart';
+import '../viewmodels/task_viewmodel.dart';
 import 'home_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -832,7 +834,7 @@ class _HoverAnimatedCardState extends State<_HoverAnimatedCard> {
   }
 }
 
-class _GroupCardContent extends StatefulWidget {
+class _GroupCardContent extends ConsumerStatefulWidget {
   final Group group;
   final VoidCallback onToggleCollapse;
   final VoidCallback onDeleteGroup;
@@ -870,10 +872,10 @@ class _GroupCardContent extends StatefulWidget {
   });
 
   @override
-  State<_GroupCardContent> createState() => _GroupCardContentState();
+  ConsumerState<_GroupCardContent> createState() => _GroupCardContentState();
 }
 
-class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMixin {
+class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconBuilderMixin {
   bool showOnlyFavorites = false;
   bool _hovering = false;
 
@@ -1299,7 +1301,7 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                    ),
                    // 3. ボタン群（固定幅）
                    Container(
-                     width: 120 * scale, // 3つのボタン用に調整
+                     width: 160 * scale, // 4つのボタン用に調整
                      child: Row(
                        mainAxisSize: MainAxisSize.min,
                        children: [
@@ -1354,6 +1356,27 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                                 : (isDark ? Colors.grey.shade800.withValues(alpha: 0.3) : Colors.grey.shade200.withValues(alpha: 0.5)),
                               foregroundColor: item.memo?.isNotEmpty == true ? Colors.orange.shade600 : Colors.grey.shade600,
                             ),
+                          ),
+                        ),
+                        SizedBox(width: 2 * scale),
+                        
+                        // タスク作成ボタン
+                        IconButton(
+                          icon: Icon(Icons.task_alt, size: 18 * scale),
+                          onPressed: () => _createTaskFromLink(context, item),
+                          tooltip: item.hasActiveTasks ? 'アクティブなタスクがあります' : 'このリンクからタスクを作成',
+                          constraints: BoxConstraints(
+                            minWidth: layoutSettings.buttonSize * scale,
+                            minHeight: layoutSettings.buttonSize * scale,
+                          ),
+                          padding: EdgeInsets.all(4 * scale),
+                          style: IconButton.styleFrom(
+                            backgroundColor: item.hasActiveTasks 
+                              ? Colors.orange.shade50.withValues(alpha: 0.8)
+                              : (isDark 
+                                ? Colors.grey.shade800.withValues(alpha: 0.5)
+                                : Colors.grey.shade200.withValues(alpha: 0.5)),
+                            foregroundColor: item.hasActiveTasks ? Colors.orange.shade600 : (isDark ? Colors.white : Colors.black87),
                           ),
                         ),
                         SizedBox(width: 2 * scale),
@@ -1697,5 +1720,78 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
     _memoPreviewTimer?.cancel();
     _removeMemoPreviewOverlay();
     super.dispose();
+  }
+
+  // リンクからタスクを作成するメソッド
+  void _createTaskFromLink(BuildContext context, LinkItem link) {
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    
+    // リンクの情報を基にタスクを作成
+    final task = TaskItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: '${link.label}の作業',
+      description: 'リンク: ${link.path}',
+      relatedLinkId: link.id,
+      createdAt: DateTime.now(),
+      tags: [link.label, 'リンク関連'],
+    );
+
+    // タスク作成ダイアログを表示
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('タスクを作成'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('リンク: ${link.label}'),
+            const SizedBox(height: 8),
+            Text('パス: ${link.path}'),
+            const SizedBox(height: 16),
+            const Text('タスクの詳細を入力してください:'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: TextEditingController(text: task.title),
+              decoration: const InputDecoration(
+                labelText: 'タスクタイトル',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => task.title = value,
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: TextEditingController(text: task.description ?? ''),
+              decoration: const InputDecoration(
+                labelText: '説明',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              onChanged: (value) => task.description = value,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              taskViewModel.addTask(task);
+              Navigator.pop(context);
+              // 成功メッセージを表示
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('タスク「${task.title}」を作成しました'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            child: const Text('作成'),
+          ),
+        ],
+      ),
+    );
   }
 } 

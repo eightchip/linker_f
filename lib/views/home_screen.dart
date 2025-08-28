@@ -6,10 +6,13 @@ import 'package:flutter/foundation.dart';
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../viewmodels/layout_settings_provider.dart';
+import '../viewmodels/task_viewmodel.dart';
 import '../models/group.dart';
 import '../models/link_item.dart';
+import '../models/task_item.dart';
 import 'group_card.dart';
 import 'layout_settings_dialog.dart';
+import 'task_screen.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -322,6 +325,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // タスク管理画面を表示
+  void _showTaskScreen(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const TaskScreen(),
+      ),
+    );
+  }
+
   // ショートカットヘルプダイアログ
   void _showShortcutHelp(BuildContext context) {
     showDialog(
@@ -471,6 +483,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     icon: Icon(Icons.add, size: iconSize), 
                     tooltip: 'グループを追加 (Ctrl+N)', 
                     onPressed: () => _showAddGroupDialog(context)
+                  ),
+                  // タスク管理ボタン
+                  IconButton(
+                    icon: Icon(Icons.task_alt, size: iconSize),
+                    tooltip: 'タスク管理',
+                    onPressed: () => _showTaskScreen(context),
                   ),
                   IconButton(
                     icon: Icon(Icons.search, size: iconSize), 
@@ -1630,13 +1648,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final fontSize = ref.read(fontSizeProvider);
     final accentColor = ref.read(accentColorProvider);
     
-    // メモ除外オプションを使用してエクスポート
-    final data = ref.read(linkViewModelProvider.notifier).exportDataWithSettings(
+    // リンクデータとタスクデータを取得
+    final linkData = ref.read(linkViewModelProvider.notifier).exportDataWithSettings(
       darkMode, 
       fontSize, 
       accentColor,
       excludeMemos: !includeMemos,
     );
+    
+    final taskData = ref.read(taskViewModelProvider.notifier).exportData();
+    
+    // 統合データを作成
+    final data = {
+      ...linkData,
+      'tasks': taskData['tasks'],
+      'tasksExportedAt': taskData['exportedAt'],
+    };
     
     final jsonStr = jsonEncode(data);
     final now = DateTime.now();
@@ -1737,6 +1764,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final file = File(result.files.first.path!);
         final jsonStr = await file.readAsString();
         final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+        
+        print('=== インポート処理開始 ===');
+        print('データのキー: ${data.keys.toList()}');
+        
+        // リンクデータをインポート
+        print('リンクデータをインポート中...');
         await ref.read(linkViewModelProvider.notifier).importDataWithSettings(
           data,
           (bool darkMode, double fontSize, int accentColor) {
@@ -1745,16 +1778,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ref.read(accentColorProvider.notifier).state = accentColor;
           },
         );
+        print('リンクデータのインポート完了');
+        
+        // タスクデータをインポート（存在する場合）
+        if (data.containsKey('tasks')) {
+          print('タスクデータが見つかりました');
+          final taskData = {
+            'tasks': data['tasks'],
+          };
+          print('タスクデータ構造: $taskData');
+          await ref.read(taskViewModelProvider.notifier).importData(taskData);
+          print('タスクデータのインポート完了');
+        } else {
+          print('タスクデータが見つかりません');
+        }
+        
+        // データの永続化を確実にするため、少し待機
+        await Future.delayed(const Duration(milliseconds: 500));
         
         // SnackBarで通知
+        final hasTasks = data.containsKey('tasks');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('リンクをインポートしました: ${file.path}'),
+            content: Text(hasTasks 
+              ? 'リンクとタスクをインポートしました: ${file.path}'
+              : 'リンクをインポートしました: ${file.path}'),
             duration: const Duration(seconds: 3),
           ),
         );
+        
+        print('=== インポート処理完了 ===');
       }
     } catch (e) {
+      print('インポートエラー: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('インポートエラー: $e'),

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'models/link_item.dart';
 import 'models/group.dart';
+import 'models/task_item.dart';
 import 'views/link_launcher_app.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screen_retriever/screen_retriever.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,14 +19,50 @@ void main() async {
   await Hive.initFlutter(appDocDir.path);
   
   // Register adapters
-  Hive.registerAdapter(LinkTypeAdapter());
-  Hive.registerAdapter(LinkItemAdapter());
-  Hive.registerAdapter(GroupAdapter());
-  Hive.registerAdapter(OffsetAdapter());
+  try {
+    Hive.registerAdapter(LinkTypeAdapter());
+  } catch (e) {
+    // Already registered
+  }
+  try {
+    Hive.registerAdapter(LinkItemAdapter());
+  } catch (e) {
+    // Already registered
+  }
+  try {
+    Hive.registerAdapter(GroupAdapter());
+  } catch (e) {
+    // Already registered
+  }
+  try {
+    Hive.registerAdapter(OffsetAdapter());
+  } catch (e) {
+    // Already registered
+  }
+  try {
+    Hive.registerAdapter(TaskPriorityAdapter());
+  } catch (e) {
+    // Already registered
+  }
+  try {
+    Hive.registerAdapter(TaskStatusAdapter());
+  } catch (e) {
+    // Already registered
+  }
+  try {
+    Hive.registerAdapter(TaskItemAdapter());
+  } catch (e) {
+    // Already registered
+  }
   
-  // テスト用データ削除は本番では絶対に実行しない
+  // データベースファイルの永続化を確実にする
+  // 注意: スキーマ変更時のみ以下の行を有効にする
   // await Hive.deleteBoxFromDisk('groups');
   // await Hive.deleteBoxFromDisk('links');
+  // await Hive.deleteBoxFromDisk('tasks');
+  
+  // 通知機能の初期化
+  await NotificationService.initialize();
   
   // Desktop window configuration
   await windowManager.ensureInitialized();

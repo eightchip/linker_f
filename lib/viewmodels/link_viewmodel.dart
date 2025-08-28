@@ -11,6 +11,7 @@ import '../utils/windows_icon_extractor.dart';
 import 'dart:ffi' as ffi;
 import 'package:win32/win32.dart';
 import 'package:flutter/foundation.dart';
+import '../models/task_item.dart';
 
 final linkRepositoryProvider = Provider<LinkRepository>((ref) {
   return LinkRepository();
@@ -168,14 +169,33 @@ class LinkViewModel extends StateNotifier<LinkState> {
       
       for (int j = 0; j < group1.items.length; j++) {
         final item1 = group1.items[j];
-        final item2 = group2.items[j];
+        final item2 = groups2[i].items[j];
         
         if (item1.id != item2.id ||
             item1.label != item2.label ||
             item1.path != item2.path ||
             item1.type != item2.type ||
             item1.isFavorite != item2.isFavorite ||
-            item1.lastUsed != item2.lastUsed) {
+            item1.lastUsed != item2.lastUsed ||
+            item1.hasActiveTasks != item2.hasActiveTasks) {
+          
+          // デバッグ情報を出力
+          if (kDebugMode) {
+            print('=== グループ等価性チェックで不一致を検出 ===');
+            print('グループ: ${group1.title}');
+            print('リンク: ${item1.label}');
+            print('ID: ${item1.id == item2.id}');
+            print('ラベル: ${item1.label == item2.label}');
+            print('パス: ${item1.path == item2.path}');
+            print('タイプ: ${item1.type == item2.type}');
+            print('お気に入り: ${item1.isFavorite == item2.isFavorite}');
+            print('最終使用: ${item1.lastUsed == item2.lastUsed}');
+            print('アクティブタスク: ${item1.hasActiveTasks == item2.hasActiveTasks}');
+            print('item1.hasActiveTasks: ${item1.hasActiveTasks}');
+            print('item2.hasActiveTasks: ${item2.hasActiveTasks}');
+            print('==========================================');
+          }
+          
           return false;
         }
       }
@@ -542,17 +562,92 @@ class LinkViewModel extends StateNotifier<LinkState> {
   }
 
   Future<Map<String, dynamic>?> importDataWithSettings(Map<String, dynamic> data, void Function(bool, double, int) onSettings) async {
-    await _repository.importData(data);
-    await _loadGroups();
-    if (data['settings'] is Map) {
-      final settings = data['settings'] as Map;
-      final darkMode = settings['darkMode'] is bool ? settings['darkMode'] as bool : false;
-      final fontSize = settings['fontSize'] is num ? (settings['fontSize'] as num).toDouble() : 1.0;
-      final accentColor = settings['accentColor'] is int ? settings['accentColor'] as int : 0xFF3B82F6;
-      onSettings(darkMode, fontSize, accentColor);
-      return Map<String, dynamic>.from(settings);
+    try {
+      print('=== LinkViewModel インポート開始 ===');
+      print('受信データのキー: ${data.keys.toList()}');
+      
+      // リンクデータをインポート
+      await _repository.importData(data);
+      print('リポジトリへのインポート完了');
+      
+      // グループデータを再読み込み
+      await _loadGroups();
+      print('グループデータの再読み込み完了');
+      
+      // 設定データを処理
+      if (data['settings'] is Map) {
+        final settings = data['settings'] as Map;
+        final darkMode = settings['darkMode'] is bool ? settings['darkMode'] as bool : false;
+        final fontSize = settings['fontSize'] is num ? (settings['fontSize'] as num).toDouble() : 1.0;
+        final accentColor = settings['accentColor'] is int ? settings['accentColor'] as int : 0xFF3B82F6;
+        onSettings(darkMode, fontSize, accentColor);
+        print('設定データの適用完了');
+        return Map<String, dynamic>.from(settings);
+      }
+      
+      print('=== LinkViewModel インポート完了 ===');
+      return null;
+    } catch (e) {
+      print('LinkViewModel インポートエラー: $e');
+      rethrow;
     }
-    return null;
+  }
+
+  // タスク状態に基づいてリンクのhasActiveTasksを更新
+  Future<void> updateLinkTaskStatus(List<TaskItem> tasks) async {
+    try {
+      print('=== updateLinkTaskStatus開始 ===');
+      print('受信タスク数: ${tasks.length}');
+      print('現在のグループ数: ${state.groups.length}');
+      
+      final groups = state.groups;
+      bool hasChanges = false;
+      
+      for (final group in groups) {
+        print('グループ "${group.title}" を処理中...');
+        final updatedItems = <LinkItem>[];
+        
+        for (final link in group.items) {
+          // このリンクに関連する完了していないタスクがあるかチェック
+          final hasActiveTasks = tasks.any((task) => 
+            task.relatedLinkId == link.id && 
+            task.status != TaskStatus.completed
+          );
+          
+          print('リンク "${link.label}": 現在のhasActiveTasks=${link.hasActiveTasks}, 計算結果=${hasActiveTasks}');
+          
+          if (link.hasActiveTasks != hasActiveTasks) {
+            final updatedLink = link.copyWith(hasActiveTasks: hasActiveTasks);
+            updatedItems.add(updatedLink);
+            hasChanges = true;
+            print('リンク "${link.label}" のhasActiveTasksを更新: ${link.hasActiveTasks} -> ${hasActiveTasks}');
+          } else {
+            updatedItems.add(link);
+          }
+        }
+        
+        if (hasChanges) {
+          final updatedGroup = group.copyWith(items: updatedItems);
+          await _repository.updateGroup(updatedGroup);
+          print('グループ "${group.title}" を更新しました');
+        }
+      }
+      
+      if (hasChanges) {
+        await _loadGroups();
+        if (kDebugMode) {
+          print('リンクのタスク状態を更新しました');
+        }
+      } else {
+        print('変更はありませんでした');
+      }
+      
+      print('=== updateLinkTaskStatus完了 ===');
+    } catch (e) {
+      if (kDebugMode) {
+        print('リンクのタスク状態更新エラー: $e');
+      }
+    }
   }
 
   @override

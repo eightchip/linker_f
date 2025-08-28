@@ -48,6 +48,9 @@ class LinkItem extends HiveObject {
   @HiveField(10)
   List<String> tags;
 
+  @HiveField(11)
+  bool hasActiveTasks;
+
   LinkItem({
     required this.id,
     required this.label,
@@ -60,6 +63,7 @@ class LinkItem extends HiveObject {
     this.iconData,
     this.iconColor,
     this.tags = const [],
+    this.hasActiveTasks = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -75,6 +79,7 @@ class LinkItem extends HiveObject {
       'iconData': iconData,
       'iconColor': iconColor,
       'tags': tags,
+      'hasActiveTasks': hasActiveTasks,
     };
   }
 
@@ -91,6 +96,7 @@ class LinkItem extends HiveObject {
       iconData: json['iconData'],
       iconColor: json['iconColor'],
       tags: List<String>.from(json['tags'] ?? []),
+      hasActiveTasks: json['hasActiveTasks'] ?? false,
     );
   }
 
@@ -106,6 +112,7 @@ class LinkItem extends HiveObject {
     int? iconData,
     int? iconColor,
     List<String>? tags,
+    bool? hasActiveTasks,
   }) {
     return LinkItem(
       id: id ?? this.id,
@@ -119,6 +126,7 @@ class LinkItem extends HiveObject {
       iconData: iconData ?? this.iconData,
       iconColor: iconColor ?? this.iconColor,
       tags: tags ?? this.tags,
+      hasActiveTasks: hasActiveTasks ?? this.hasActiveTasks,
     );
   }
 }

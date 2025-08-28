@@ -173,26 +173,51 @@ class LinkRepository {
   }
 
   Future<void> importData(Map<String, dynamic> data) async {
-    await _groupsBox.clear();
-    await _linksBox.clear();
-    
-    for (final groupData in data['groups'] ?? []) {
-      final group = Group.fromJson(groupData);
-      final fixedGroup = group.color == null
-        ? group.copyWith(color: 0xFF3B82F6) // デフォルト青
-        : group;
-      await _groupsBox.put(fixedGroup.id, fixedGroup);
+    try {
+      print('=== LinkRepository インポート開始 ===');
+      print('受信データのキー: ${data.keys.toList()}');
+      
+      // 既存データをクリア
+      await _groupsBox.clear();
+      await _linksBox.clear();
+      print('既存データのクリア完了');
+      
+      // グループデータをインポート
+      final groupsData = data['groups'] ?? [];
+      print('グループデータ数: ${groupsData.length}');
+      for (final groupData in groupsData) {
+        final group = Group.fromJson(groupData);
+        final fixedGroup = group.color == null
+          ? group.copyWith(color: 0xFF3B82F6) // デフォルト青
+          : group;
+        await _groupsBox.put(fixedGroup.id, fixedGroup);
+        print('グループ保存: ${fixedGroup.title} (ID: ${fixedGroup.id})');
+      }
+      
+      // リンクデータをインポート
+      final linksData = data['links'] ?? [];
+      print('リンクデータ数: ${linksData.length}');
+      for (final linkData in linksData) {
+        final link = LinkItem.fromJson(linkData);
+        await _linksBox.put(link.id, link);
+        print('リンク保存: ${link.label} (ID: ${link.id})');
+      }
+      
+      // グループ順序も復元
+      if (data['groupsOrder'] is List) {
+        final order = List<String>.from(data['groupsOrder']);
+        await saveGroupsOrder(order);
+        print('グループ順序を復元: $order');
+      }
+      
+      // データの永続化を確実にするため、少し待機
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      print('=== LinkRepository インポート完了 ===');
+    } catch (e) {
+      print('LinkRepository インポートエラー: $e');
+      rethrow;
     }
-    
-    for (final linkData in data['links'] ?? []) {
-      final link = LinkItem.fromJson(linkData);
-      await _linksBox.put(link.id, link);
-    }
-    // グループ順序も復元
-    if (data['groupsOrder'] is List) {
-      await saveGroupsOrder(List<String>.from(data['groupsOrder']));
-    }
-    // settingsフィールドは今後の拡張用にそのまま返す（ViewModelで反映）
   }
 
   // 並び順の保存
