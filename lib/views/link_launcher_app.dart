@@ -14,7 +14,9 @@ class LinkLauncherApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Link Navigator',
       debugShowCheckedModeBanner: false,
+      // ちらつきを防ぐための設定
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -32,6 +34,12 @@ class LinkLauncherApp extends ConsumerWidget {
           backgroundColor: Color(0xFFFFFFFF),
           foregroundColor: Color(0xFF1E293B),
           elevation: 0,
+        ),
+        // アニメーションを最小限にしてちらつきを防ぐ
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+          },
         ),
       ),
       darkTheme: ThemeData(
@@ -51,6 +59,12 @@ class LinkLauncherApp extends ConsumerWidget {
           backgroundColor: Color(0xFF1E293B),
           foregroundColor: Color(0xFFF1F5F9),
           elevation: 0,
+        ),
+        // アニメーションを最小限にしてちらつきを防ぐ
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+          },
         ),
       ),
       home: const HomeScreen(),

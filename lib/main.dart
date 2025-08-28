@@ -61,6 +61,8 @@ void main() async {
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.normal,
     title: 'Link Navigator',
+    // ちらつきを防ぐための設定
+    alwaysOnTop: false,
   );
 
   windowManager.waitUntilReadyToShow(windowOptions, () async {

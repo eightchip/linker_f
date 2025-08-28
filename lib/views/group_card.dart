@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:path/path.dart' as p;
 import 'dart:io';
+import 'dart:async';
 import '../models/group.dart';
 import '../models/link_item.dart';
 import '../viewmodels/layout_settings_provider.dart';
@@ -970,7 +971,7 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                     ),
                     SizedBox(width: 8 * scale),
                     IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red.shade600, size: 20 * scale),
+                      icon: Icon(Icons.delete, size: 20 * scale),
                       onPressed: widget.onDeleteGroup,
                       tooltip: 'グループを削除',
                       iconSize: 22 * scale,
@@ -981,9 +982,9 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                       ),
                       style: IconButton.styleFrom(
                         backgroundColor: isDark 
-                          ? Colors.red.shade900.withValues(alpha: 0.3)
-                          : Colors.red.shade50.withValues(alpha: 0.8),
-                        foregroundColor: Colors.red.shade600,
+                          ? Colors.grey.shade800.withValues(alpha: 0.5)
+                          : Colors.grey.shade200.withValues(alpha: 0.5),
+                        foregroundColor: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
                     if (canAddLink) ...[
@@ -1302,9 +1303,10 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                      child: Row(
                        mainAxisSize: MainAxisSize.min,
                        children: [
-                        // メモボタン（常時表示）
-                        Tooltip(
-                          message: item.memo ?? '',
+                                                 // メモボタン（常時表示）
+                         MouseRegion(
+                           onEnter: item.memo?.isNotEmpty == true ? (_) => _handleMemoHoverEnter(item.memo!) : null,
+                           onExit: item.memo?.isNotEmpty == true ? (_) => _handleMemoHoverExit() : null,
                           child: IconButton(
                             icon: Icon(
                               Icons.note_alt_outlined, 
@@ -1387,9 +1389,9 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
                           padding: EdgeInsets.all(4 * scale),
                           style: IconButton.styleFrom(
                             backgroundColor: isDark 
-                              ? Colors.red.shade900.withValues(alpha: 0.3)
-                              : Colors.red.shade50.withValues(alpha: 0.8),
-                            foregroundColor: Colors.red.shade600,
+                              ? Colors.grey.shade800.withValues(alpha: 0.5)
+                              : Colors.grey.shade200.withValues(alpha: 0.5),
+                            foregroundColor: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
 
@@ -1597,5 +1599,103 @@ class _GroupCardContentState extends State<_GroupCardContent> with IconBuilderMi
   Future<void> _launchLink(LinkItem item) async {
     // LinkViewModelのlaunchLinkメソッドを呼び出して、lastUsedを更新する
     widget.onLaunchLink(item);
+  }
+
+  // メモプレビュー用のオーバーレイ
+  OverlayEntry? _memoPreviewOverlay;
+  Timer? _memoPreviewTimer;
+
+  void _showMemoPreviewOverlay(String memo) {
+    _removeMemoPreviewOverlay();
+    
+    // マウス位置を取得
+    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    
+    final overlay = Overlay.of(context);
+    _memoPreviewOverlay = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 100, // 固定位置に配置
+        right: 20,
+        child: Material(
+          elevation: 12,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 350,
+            height: 250,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.note_alt_outlined, color: Colors.orange.shade600, size: 20),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'メモ',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _removeMemoPreviewOverlay,
+                      child: Icon(Icons.close, size: 16, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      memo,
+                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(_memoPreviewOverlay!);
+  }
+
+  void _handleMemoHoverEnter(String memo) {
+    _memoPreviewTimer?.cancel();
+    _memoPreviewTimer = Timer(const Duration(milliseconds: 300), () {
+      _showMemoPreviewOverlay(memo);
+    });
+  }
+
+  void _handleMemoHoverExit() {
+    _memoPreviewTimer?.cancel();
+    _memoPreviewTimer = Timer(const Duration(milliseconds: 200), () {
+      _removeMemoPreviewOverlay();
+    });
+  }
+
+  void _removeMemoPreviewOverlay() {
+    _memoPreviewOverlay?.remove();
+    _memoPreviewOverlay = null;
+  }
+
+  @override
+  void dispose() {
+    _memoPreviewTimer?.cancel();
+    _removeMemoPreviewOverlay();
+    super.dispose();
   }
 } 

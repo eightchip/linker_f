@@ -68,6 +68,9 @@ dependencies:
   pdf: ^3.10.4
   pdfx: ^2.9.2
   
+  # Office file processing
+  excel: ^2.1.0
+  
   # Windows API
   win32: ^5.4.0
   ffi: ^2.1.2

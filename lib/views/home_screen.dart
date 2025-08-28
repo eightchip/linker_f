@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
@@ -11,6 +12,7 @@ import 'group_card.dart';
 import 'layout_settings_dialog.dart';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
@@ -20,6 +22,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdfx/pdfx.dart' as pdfx;
+
 
 // ハイライト用のウィジェット
 class HighlightedText extends StatelessWidget {
@@ -166,14 +169,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // ScrollControllerの初期化を遅延させる
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        setState(() {});
+        // setState(() {}); // この行を削除
         _updateAvailableTags();
       }
     });
     _checkAndShowTutorial();
   }
 
-  // 利用可能なタグを更新
+  // 利用可能なタグを更新（setStateを最適化）
   void _updateAvailableTags() {
     final groups = ref.read(linkViewModelProvider).groups;
     final allTags = <String>{};
@@ -184,9 +187,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     }
     
-    setState(() {
-      _availableTags = allTags.toList()..sort();
-    });
+    final newTags = allTags.toList()..sort();
+    
+    // タグが実際に変更された場合のみsetStateを実行
+    if (!_areTagsEqual(_availableTags, newTags)) {
+      setState(() {
+        _availableTags = newTags;
+      });
+    }
+  }
+
+  // タグの等価性をチェックするヘルパーメソッド
+  bool _areTagsEqual(List<String> tags1, List<String> tags2) {
+    if (tags1.length != tags2.length) return false;
+    for (int i = 0; i < tags1.length; i++) {
+      if (tags1[i] != tags2[i]) return false;
+    }
+    return true;
   }
 
   @override
@@ -342,9 +359,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final iconSize = MediaQuery.of(context).size.width < 600 ? 18.0 : 24.0;
     final titleFontSize = MediaQuery.of(context).size.width < 600 ? 16.0 : 22.0;
-    final groups = ref.watch(linkViewModelProvider).groups;
-    final isLoading = ref.watch(linkViewModelProvider).isLoading;
-    final error = ref.watch(linkViewModelProvider).error;
+    
+    // 状態を一度だけ取得してローカル変数にキャッシュ
+    final linkState = ref.watch(linkViewModelProvider);
+    final groups = linkState.groups;
+    final isLoading = linkState.isLoading;
+    final error = linkState.error;
     final isDarkMode = ref.watch(darkModeProvider);
     final accentColor = ref.watch(accentColorProvider);
     
@@ -408,390 +428,396 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       .where((entry) => entry.value.isFavorite)
       .toList();
     
-    // デバッグ情報
-    print('=== デバッグ情報 ===');
-    print('総リンク数: ${groups.expand((g) => g.items).length}');
-    print('lastUsedが設定されているリンク数: ${recentLinks.length}');
-    print('最近使ったリンク: ${recentLinks.map((l) => '${l.label} (${l.lastUsed})').toList()}');
-    print('最近使ったグループ数: ${recentGroups.length}');
-    print('_showRecent: $_showRecent');
-    print('showRecent: ${_showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty)}');
-    print('==================');
+    // デバッグ情報（開発時のみ）
+    if (kDebugMode) {
+      print('=== デバッグ情報 ===');
+      print('総リンク数: ${groups.expand((g) => g.items).length}');
+      print('lastUsedが設定されているリンク数: ${recentLinks.length}');
+      print('最近使ったリンク: ${recentLinks.map((l) => '${l.label} (${l.lastUsed})').toList()}');
+      print('最近使ったグループ数: ${recentGroups.length}');
+      print('_showRecent: $_showRecent');
+      print('showRecent: ${_showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty)}');
+      print('==================');
+    }
     
-    return Listener(
-      onPointerDown: (event) {
-        // 右クリックや他ボタンは無視
-      },
-      onPointerHover: _onMouseMove,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onDoubleTapDown: (details) {
-          _showJumpButtons(details.globalPosition);
+    return RepaintBoundary(
+      child: Listener(
+        onPointerDown: (event) {
+          // 右クリックや他ボタンは無視
         },
-        child: KeyboardListener(
-          focusNode: _shortcutFocusNode,
-          onKeyEvent: _handleShortcut,
-          autofocus: true,
-          child: Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-            title: Text(
-              'Link Navigator',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
-            ),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
-        elevation: 2,
-        actions: [
-                // 主要なアクション（頻繁に使用されるもの）
-                IconButton(
-                  icon: Icon(Icons.add, size: iconSize), 
-                  tooltip: 'グループを追加 (Ctrl+N)', 
-                  onPressed: () => _showAddGroupDialog(context)
+        onPointerHover: _onMouseMove,
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onDoubleTapDown: (details) {
+            _showJumpButtons(details.globalPosition);
+          },
+          child: KeyboardListener(
+            focusNode: _shortcutFocusNode,
+            onKeyEvent: _handleShortcut,
+            autofocus: true,
+            child: Scaffold(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              appBar: AppBar(
+                title: Text(
+                  'Link Navigator',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
                 ),
-                IconButton(
-                  icon: Icon(Icons.search, size: iconSize), 
-                  tooltip: '検索 (Ctrl+F)', 
-                  onPressed: () {
-              setState(() {
-                _showSearchBar = !_showSearchBar;
-                if (!_showSearchBar) _searchQuery = '';
-              });
-                  }
-                ),
-                // 表示モード切り替えボタン
-                IconButton(
-                  icon: Icon(_isListViewMode ? Icons.grid_view : Icons.view_list, size: iconSize),
-                  tooltip: _isListViewMode ? 'グリッド表示 (Ctrl+G)' : 'リスト表示 (Ctrl+G)',
-                  onPressed: () {
-                    setState(() {
-                      _isListViewMode = !_isListViewMode;
-                    });
-                  },
-                ),
-                // ハンバーガーメニュー（その他のアクション）
-                PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, size: iconSize),
-                  tooltip: 'その他のオプション',
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'shortcut_help':
-                        _showShortcutHelp(context);
-                        break;
-                      case 'memo_bulk_edit':
-                        _showMemoBulkEditDialog(context);
-                        break;
-                      case 'recent_links':
-                        setState(() {
-                          _showRecent = !_showRecent;
-                        });
-                        break;
-                      case 'dark_mode':
-                        ref.read(darkModeProvider.notifier).state = !isDarkMode;
-                        break;
-                      case 'accent_color':
-                        _showAccentColorDialog(context);
-                        break;
-                      case 'export':
-                        _exportData(context);
-                        break;
-                      case 'import':
-                        _importData(context);
-                        break;
-                      case 'layout_settings':
-                        _showLayoutSettingsDialog(context);
-                        break;
+                backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+                foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
+                elevation: 2,
+                actions: [
+                  // 主要なアクション（頻繁に使用されるもの）
+                  IconButton(
+                    icon: Icon(Icons.add, size: iconSize), 
+                    tooltip: 'グループを追加 (Ctrl+N)', 
+                    onPressed: () => _showAddGroupDialog(context)
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.search, size: iconSize), 
+                    tooltip: '検索 (Ctrl+F)', 
+                    onPressed: () {
+                      setState(() {
+                        _showSearchBar = !_showSearchBar;
+                        if (!_showSearchBar) _searchQuery = '';
+                      });
                     }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'shortcut_help',
-                      child: Row(
-                        children: [
-                          Icon(Icons.keyboard, size: 20),
-                          SizedBox(width: 8),
-                          Text('ショートカットキー (F1)'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'memo_bulk_edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.notes, size: 20),
-                          SizedBox(width: 8),
-                          Text('メモ一括編集'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'recent_links',
-                      child: Row(
-                        children: [
-                          Icon(Icons.push_pin, 
-                            color: _showRecent ? Colors.amber : Colors.grey, 
-                            size: 20
-                          ),
-                          SizedBox(width: 8),
-                          Text(_showRecent ? '最近使った非表示' : '最近使ったリンクを表示'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'dark_mode',
-                      child: Row(
-                        children: [
-                          Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: 20),
-                          SizedBox(width: 8),
-                          Text(isDarkMode ? 'ライトモード' : 'ダークモード'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'accent_color',
-                      child: Row(
-                        children: [
-                          Icon(Icons.palette, size: 20),
-                          SizedBox(width: 8),
-                          Text('アクセントカラー変更'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'export',
-                      child: Row(
-                        children: [
-                          Icon(Icons.upload, size: 20),
-                          SizedBox(width: 8),
-                          Text('設定をエクスポート'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'import',
-                      child: Row(
-                        children: [
-                          Icon(Icons.download, size: 20),
-                          SizedBox(width: 8),
-                          Text('設定をインポート'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'layout_settings',
-                      child: Row(
-                        children: [
-                          Icon(Icons.settings, size: 20),
-                          SizedBox(width: 8),
-                          Text('レイアウト設定'),
-                        ],
-                      ),
-                    ),
-                    ],
                   ),
-        ],
-        bottom: _showSearchBar
-            ? PreferredSize(
-                preferredSize: Size.fromHeight(_availableTags.isNotEmpty ? 116.0 : 88.0),
-                child: Container(
-                  height: _availableTags.isNotEmpty ? 116.0 : 88.0,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Column(
-                    children: [
-                                             // 検索テキストフィールド
-                       TextField(
-                         focusNode: _searchFocusNode,
-                         keyboardType: TextInputType.text,
-                         textInputAction: TextInputAction.search,
-                         decoration: InputDecoration(
-                           hintText: '検索（ファイル名・フォルダ名・URL・タグ）',
-                           prefixIcon: const Icon(Icons.search),
-                           suffixIcon: IconButton(
-                             icon: const Icon(Icons.close),
-                             onPressed: () {
-                               setState(() {
-                                 _searchQuery = '';
-                                 _selectedLinkTypeFilter = null;
-                                 _showSearchBar = false;
-                               });
-                             },
-                           ),
-                           isDense: true,
-                           contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                         ),
-                                              onChanged: (v) {
-                       setState(() {
-                         _searchQuery = v;
-                       });
-                     },
-                     onSubmitted: (v) {
-                       _updateAvailableTags();
-                     },
-                       ),
-                       // タグ候補表示
-                       if (_availableTags.isNotEmpty) ...[
-                         const SizedBox(height: 4),
-                         Container(
-                           height: 24,
-                           child: ListView.builder(
-                             scrollDirection: Axis.horizontal,
-                             itemCount: _availableTags.length,
-                             itemBuilder: (context, index) {
-                               final tag = _availableTags[index];
-                               return Padding(
-                                 padding: const EdgeInsets.only(right: 4),
-                                 child: InkWell(
-                                   onTap: () {
-                                     setState(() {
-                                       _searchQuery = tag;
-                                     });
-                                   },
-                                   child: Container(
-                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                     decoration: BoxDecoration(
-                                       color: Colors.blue.withValues(alpha: 0.1),
-                                       borderRadius: BorderRadius.circular(12),
-                                       border: Border.all(
-                                         color: Colors.blue.withValues(alpha: 0.3),
-                                         width: 1,
-                                       ),
-                                     ),
-                                     child: Text(
-                                       tag,
-                                       style: const TextStyle(
-                                         fontSize: 10,
-                                         color: Colors.blue,
-                                       ),
-                                     ),
-                                   ),
-                                 ),
-                               );
-                             },
-                           ),
-                         ),
-                       ],
-                      const SizedBox(height: 8),
-                      // リンクタイプフィルターラジオボタン
-                      Row(
-                        children: [
-                          const Text('タイプ: ', style: TextStyle(fontSize: 12)),
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Radio<LinkType?>(
-                                  value: null,
-                                  groupValue: _selectedLinkTypeFilter,
-                                  onChanged: (LinkType? value) {
-                                    setState(() {
-                                      _selectedLinkTypeFilter = value;
-                                    });
-                                  },
-                                ),
-                                const Text('すべて', style: TextStyle(fontSize: 12)),
-                                const SizedBox(width: 8),
-                                Radio<LinkType?>(
-                                  value: LinkType.file,
-                                  groupValue: _selectedLinkTypeFilter,
-                                  onChanged: (LinkType? value) {
-                                    setState(() {
-                                      _selectedLinkTypeFilter = value;
-                                    });
-                                  },
-                                ),
-                                const Text('ファイル', style: TextStyle(fontSize: 12)),
-                                const SizedBox(width: 8),
-                                Radio<LinkType?>(
-                                  value: LinkType.folder,
-                                  groupValue: _selectedLinkTypeFilter,
-                                  onChanged: (LinkType? value) {
-                                    setState(() {
-                                      _selectedLinkTypeFilter = value;
-                                    });
-                                  },
-                                ),
-                                const Text('フォルダ', style: TextStyle(fontSize: 12)),
-                                const SizedBox(width: 8),
-                                Radio<LinkType?>(
-                                  value: LinkType.url,
-                                  groupValue: _selectedLinkTypeFilter,
-                                  onChanged: (LinkType? value) {
-                                    setState(() {
-                                      _selectedLinkTypeFilter = value;
-                                    });
-                                  },
-                                ),
-                                const Text('URL', style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  // 表示モード切り替えボタン
+                  IconButton(
+                    icon: Icon(_isListViewMode ? Icons.grid_view : Icons.view_list, size: iconSize),
+                    tooltip: _isListViewMode ? 'グリッド表示 (Ctrl+G)' : 'リスト表示 (Ctrl+G)',
+                    onPressed: () {
+                      setState(() {
+                        _isListViewMode = !_isListViewMode;
+                      });
+                    },
                   ),
-                ),
-              )
-            : null,
-      ),
-          body: Builder(
-            builder: (bodyContext) {
-              _scaffoldBodyContext = bodyContext;
-              return Stack(
-                children: [
-                  _showFavoriteLinks
-                    ? _buildFavoriteLinksList(favoriteLinks)
-                    : isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : error != null
-              ? Center(child: Text('Error: $error'))
-              : groups.isEmpty
-                  ? _buildEmptyState()
-                  : _buildContent(displayGroups, recentLinks, recentGroups),
-                  // 右下ジャンプボタン（アクセントカラー連動）
-                  Positioned(
-                    right: 24,
-                    bottom: 32,
-                    child: Column(
-                      children: [
-                        FloatingActionButton(
-                          mini: true,
-                          heroTag: 'jumpToTop',
-                          backgroundColor: Color(accentColor).withValues(alpha: 0.85),
-                          foregroundColor: Colors.white,
-                          onPressed: () {
-                            if (_scrollController.hasClients) {
-                              _scrollController.animateTo(
-                                0,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
-                              );
-                            }
-                          },
-                          child: const Icon(Icons.vertical_align_top, size: 20),
+                  // ハンバーガーメニュー（その他のアクション）
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, size: iconSize),
+                    tooltip: 'その他のオプション',
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'shortcut_help':
+                          _showShortcutHelp(context);
+                          break;
+                        case 'memo_bulk_edit':
+                          _showMemoBulkEditDialog(context);
+                          break;
+                        case 'recent_links':
+                          setState(() {
+                            _showRecent = !_showRecent;
+                          });
+                          break;
+                        case 'dark_mode':
+                          ref.read(darkModeProvider.notifier).state = !isDarkMode;
+                          break;
+                        case 'accent_color':
+                          _showAccentColorDialog(context);
+                          break;
+                        case 'export':
+                          _exportData(context);
+                          break;
+                        case 'import':
+                          _importData(context);
+                          break;
+                        case 'layout_settings':
+                          _showLayoutSettingsDialog(context);
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'shortcut_help',
+                        child: Row(
+                          children: [
+                            Icon(Icons.keyboard, size: 20),
+                            SizedBox(width: 8),
+                            Text('ショートカットキー (F1)'),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-                        FloatingActionButton(
-                          mini: true,
-                          heroTag: 'jumpToBottom',
-                          backgroundColor: Color(accentColor).withValues(alpha: 0.85),
-                          foregroundColor: Colors.white,
-                              onPressed: () {
-                            if (_scrollController.hasClients) {
-                              _scrollController.animateTo(
-                                _scrollController.position.maxScrollExtent,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
-                              );
-                            }
-                          },
-                          child: const Icon(Icons.vertical_align_bottom, size: 20),
-                          ),
-                        ],
                       ),
-                    ),
+                      PopupMenuItem(
+                        value: 'memo_bulk_edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.notes, size: 20),
+                            SizedBox(width: 8),
+                            Text('メモ一括編集'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'recent_links',
+                        child: Row(
+                          children: [
+                            Icon(Icons.push_pin, 
+                              color: _showRecent ? Colors.amber : Colors.grey, 
+                              size: 20
+                            ),
+                            SizedBox(width: 8),
+                            Text(_showRecent ? '最近使った非表示' : '最近使ったリンクを表示'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'dark_mode',
+                        child: Row(
+                          children: [
+                            Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: 20),
+                            SizedBox(width: 8),
+                            Text(isDarkMode ? 'ライトモード' : 'ダークモード'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'accent_color',
+                        child: Row(
+                          children: [
+                            Icon(Icons.palette, size: 20),
+                            SizedBox(width: 8),
+                            Text('アクセントカラー変更'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'export',
+                        child: Row(
+                          children: [
+                            Icon(Icons.upload, size: 20),
+                            SizedBox(width: 8),
+                            Text('設定をエクスポート'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'import',
+                        child: Row(
+                          children: [
+                            Icon(Icons.download, size: 20),
+                            SizedBox(width: 8),
+                            Text('設定をインポート'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'layout_settings',
+                        child: Row(
+                          children: [
+                            Icon(Icons.settings, size: 20),
+                            SizedBox(width: 8),
+                            Text('レイアウト設定'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
-              );
-            },
+                bottom: _showSearchBar
+                    ? PreferredSize(
+                        preferredSize: Size.fromHeight(_availableTags.isNotEmpty ? 116.0 : 88.0),
+                        child: Container(
+                          height: _availableTags.isNotEmpty ? 116.0 : 88.0,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Column(
+                            children: [
+                              // 検索テキストフィールド
+                              TextField(
+                                focusNode: _searchFocusNode,
+                                keyboardType: TextInputType.text,
+                                textInputAction: TextInputAction.search,
+                                decoration: InputDecoration(
+                                  hintText: '検索（ファイル名・フォルダ名・URL・タグ）',
+                                  prefixIcon: const Icon(Icons.search),
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () {
+                                      setState(() {
+                                        _searchQuery = '';
+                                        _selectedLinkTypeFilter = null;
+                                        _showSearchBar = false;
+                                      });
+                                    },
+                                  ),
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                                ),
+                                onChanged: (v) {
+                                  setState(() {
+                                    _searchQuery = v;
+                                  });
+                                },
+                                onSubmitted: (v) {
+                                  _updateAvailableTags();
+                                },
+                              ),
+                              // タグ候補表示
+                              if (_availableTags.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  height: 24,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: _availableTags.length,
+                                    itemBuilder: (context, index) {
+                                      final tag = _availableTags[index];
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 4),
+                                        child: InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              _searchQuery = tag;
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: Colors.blue.withValues(alpha: 0.3),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              tag,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 8),
+                              // リンクタイプフィルターラジオボタン
+                              Row(
+                                children: [
+                                  const Text('タイプ: ', style: TextStyle(fontSize: 12)),
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Radio<LinkType?>(
+                                          value: null,
+                                          groupValue: _selectedLinkTypeFilter,
+                                          onChanged: (LinkType? value) {
+                                            setState(() {
+                                              _selectedLinkTypeFilter = value;
+                                            });
+                                          },
+                                        ),
+                                        const Text('すべて', style: TextStyle(fontSize: 12)),
+                                        const SizedBox(width: 8),
+                                        Radio<LinkType?>(
+                                          value: LinkType.file,
+                                          groupValue: _selectedLinkTypeFilter,
+                                          onChanged: (LinkType? value) {
+                                            setState(() {
+                                              _selectedLinkTypeFilter = value;
+                                            });
+                                          },
+                                        ),
+                                        const Text('ファイル', style: TextStyle(fontSize: 12)),
+                                        const SizedBox(width: 8),
+                                        Radio<LinkType?>(
+                                          value: LinkType.folder,
+                                          groupValue: _selectedLinkTypeFilter,
+                                          onChanged: (LinkType? value) {
+                                            setState(() {
+                                              _selectedLinkTypeFilter = value;
+                                            });
+                                          },
+                                        ),
+                                        const Text('フォルダ', style: TextStyle(fontSize: 12)),
+                                        const SizedBox(width: 8),
+                                        Radio<LinkType?>(
+                                          value: LinkType.url,
+                                          groupValue: _selectedLinkTypeFilter,
+                                          onChanged: (LinkType? value) {
+                                            setState(() {
+                                              _selectedLinkTypeFilter = value;
+                                            });
+                                          },
+                                        ),
+                                        const Text('URL', style: TextStyle(fontSize: 12)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+              body: Builder(
+                builder: (bodyContext) {
+                  _scaffoldBodyContext = bodyContext;
+                  return RepaintBoundary(
+                    child: Stack(
+                      children: [
+                        _showFavoriteLinks
+                          ? _buildFavoriteLinksList(favoriteLinks)
+                          : isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : error != null
+                                  ? Center(child: Text('Error: $error'))
+                                  : groups.isEmpty
+                                      ? _buildEmptyState()
+                                      : _buildContent(displayGroups, recentLinks, recentGroups),
+                        // 右下ジャンプボタン（アクセントカラー連動）
+                        Positioned(
+                          right: 24,
+                          bottom: 32,
+                          child: Column(
+                            children: [
+                              FloatingActionButton(
+                                mini: true,
+                                heroTag: 'jumpToTop',
+                                backgroundColor: Color(accentColor).withValues(alpha: 0.85),
+                                foregroundColor: Colors.white,
+                                onPressed: () {
+                                  if (_scrollController.hasClients) {
+                                    _scrollController.animateTo(
+                                      0,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeOut,
+                                    );
+                                  }
+                                },
+                                child: const Icon(Icons.vertical_align_top, size: 20),
+                              ),
+                              const SizedBox(height: 12),
+                              FloatingActionButton(
+                                mini: true,
+                                heroTag: 'jumpToBottom',
+                                backgroundColor: Color(accentColor).withValues(alpha: 0.85),
+                                foregroundColor: Colors.white,
+                                onPressed: () {
+                                  if (_scrollController.hasClients) {
+                                    _scrollController.animateTo(
+                                      _scrollController.position.maxScrollExtent,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeOut,
+                                    );
+                                  }
+                                },
+                                child: const Icon(Icons.vertical_align_bottom, size: 20),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -803,7 +829,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final showRecent = _showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty);
     final layoutSettings = ref.watch(layoutSettingsProvider);
     
-    return LayoutBuilder(
+    return RepaintBoundary(
+      child: LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         int crossAxisCount;
@@ -1136,6 +1163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ],
         );
       },
+     ),
     );
   }
 
@@ -1614,7 +1642,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final now = DateTime.now();
     final formatted = DateFormat('yyMMddHHmm').format(now);
     final memoText = includeMemos ? 'メモあり' : 'メモなし';
-    final file = File('linker_f_export_${memoText}_$formatted.json');
+    final fileName = 'linker_f_export_${memoText}_$formatted.json';
+    final currentDir = Directory.current;
+    final file = File('${currentDir.path}/$fileName');
     await file.writeAsString(jsonStr);
     
     // 画面中央にエクスポート完了メッセージを表示
@@ -1635,7 +1665,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Text('エクスポートしました:'),
             SizedBox(height: 8),
             Text(
-              file.absolute.path,
+              'ファイル名: $fileName',
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'monospace',
+                backgroundColor: Colors.grey[100],
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '保存場所: ${currentDir.path}',
               style: TextStyle(
                 fontSize: 12,
                 fontFamily: 'monospace',
@@ -1652,9 +1691,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ElevatedButton.icon(
             onPressed: () async {
               try {
-                await Process.run('explorer', ['/select,', file.absolute.path]);
+                final directory = file.parent;
+                await Process.run('explorer', [directory.path]);
               } catch (e) {
                 print('フォルダを開くエラー: $e');
+                // エラーが発生した場合は、ファイルの場所を表示するダイアログを表示
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('フォルダを開けませんでした'),
+                    content: Text('ファイルの場所: ${file.parent.path}'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('OK'),
+                      ),
+                    ],
+                  ),
+                );
               }
               Navigator.pop(context);
             },
@@ -2554,6 +2608,7 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       });
       return;
     }
+
     // テキストファイル判定
     if (ext.endsWith('.txt') || ext.endsWith('.md') || ext.endsWith('.csv') || ext.endsWith('.log')) {
       try {
@@ -2580,23 +2635,29 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
     });
   }
 
+
+
   void _showPreviewOverlay(Widget child, {double width = 480, double height = 400}) {
     _removePreviewOverlay();
     final overlay = Overlay.of(context);
     _previewOverlay = OverlayEntry(
       builder: (context) => Positioned.fill(
-        child: IgnorePointer(
-          child: Container(
-            alignment: Alignment.center,
-            color: Colors.black.withValues(alpha: 0.25),
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                width: width,
-                height: height,
-                padding: const EdgeInsets.all(16),
-                child: child,
+        child: Container(
+          alignment: Alignment.center,
+          color: Colors.black.withValues(alpha: 0.3),
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: width,
+              height: height,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300, width: 1),
               ),
+              child: child,
             ),
           ),
         ),
@@ -2617,31 +2678,162 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
     }
     if (_isImage) {
       return MouseRegion(
-        onEnter: (_) => _showPreviewOverlay(
-          InteractiveViewer(child: Image.file(File(widget.path))),
-          width: 480, height: 400,
-        ),
+        onEnter: (_) async {
+          try {
+            final file = File(widget.path);
+            final fileSize = await file.length();
+            final fileName = file.path.split(Platform.pathSeparator).last;
+            _showPreviewOverlay(
+              Container(
+                color: Colors.white,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.image, color: Colors.green, size: 24),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            fileName,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '画像ファイル',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'ファイルサイズ: ${(fileSize / 1024).toStringAsFixed(1)} KB',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        '画像を表示するには外部アプリで開いてください',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              width: 400, height: 200,
+            );
+          } catch (e) {
+            print('画像ファイル情報取得エラー: $e');
+          }
+        },
         onExit: (_) => _removePreviewOverlay(),
-        child: Image.file(File(widget.path), width: 32, height: 32, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 24)),
+        child: GestureDetector(
+          onTap: () async {
+            try {
+              final file = File(widget.path);
+              final absolutePath = file.absolute.path;
+              await Process.run('cmd', ['/c', 'start', absolutePath], runInShell: true);
+            } catch (e) {
+              print('画像外部起動エラー: $e');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('外部アプリで開けませんでした')),
+                );
+              }
+            }
+          },
+          child: Image.file(
+            File(widget.path), 
+            width: 32, 
+            height: 32, 
+            fit: BoxFit.cover, 
+            errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 24)
+          ),
+        ),
       );
     }
     if (_isPdf) {
-      return GestureDetector(
-        onTap: () async {
+      return MouseRegion(
+        onEnter: (_) async {
           try {
             final file = File(widget.path);
-            final absolutePath = file.absolute.path;
-            await Process.run('cmd', ['/c', 'start', absolutePath], runInShell: true);
+            final fileSize = await file.length();
+            final fileName = file.path.split(Platform.pathSeparator).last;
+            _showPreviewOverlay(
+              Container(
+                color: Colors.white,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            fileName,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'PDFファイル',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'ファイルサイズ: ${(fileSize / 1024).toStringAsFixed(1)} KB',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        '内容を表示するには外部アプリで開いてください',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              width: 400, height: 200,
+            );
           } catch (e) {
-            print('PDF外部起動エラー: $e');
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('外部アプリで開けませんでした')),
-              );
-            }
+            print('PDFファイル情報取得エラー: $e');
           }
         },
-        child: Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
+        onExit: (_) => _removePreviewOverlay(),
+        child: GestureDetector(
+          onTap: () async {
+            try {
+              final file = File(widget.path);
+              final absolutePath = file.absolute.path;
+              await Process.run('cmd', ['/c', 'start', absolutePath], runInShell: true);
+            } catch (e) {
+              print('PDF外部起動エラー: $e');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('外部アプリで開けませんでした')),
+                );
+              }
+            }
+          },
+          child: Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
+        ),
       );
     }
     if (_textPreview != null) {
@@ -2649,15 +2841,35 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       return MouseRegion(
         onEnter: (_) => _showPreviewOverlay(
           Container(
-            color: Colors.black.withValues(alpha: 0.95),
-            child: isEmpty
-              ? const Center(child: Text('内容がありません', style: TextStyle(color: Colors.white, fontSize: 18)))
-              : SingleChildScrollView(
-                  child: SelectableText(
-                    _textFull?.join('\n') ?? '',
-                    style: const TextStyle(fontSize: 15, color: Colors.white, fontFamily: 'monospace'),
-                  ),
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 24),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'テキストファイル',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: isEmpty
+                    ? const Center(child: Text('内容がありません', style: TextStyle(fontSize: 18, color: Colors.grey)))
+                    : SingleChildScrollView(
+                        child: SelectableText(
+                          _textFull?.join('\n') ?? '',
+                          style: const TextStyle(fontSize: 15, color: Colors.black87, fontFamily: 'monospace'),
+                        ),
+                      ),
+                ),
+              ],
+            ),
           ),
           width: 520, height: 420,
         ),
@@ -2668,20 +2880,22 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
         ),
       );
     }
-    // Office系ファイルのアイコン表示（FontAwesome使用）
-    final ext = widget.path.toLowerCase();
-    if (ext.endsWith('.xlsx') || ext.endsWith('.xls')) {
+    // Office系ファイルのアイコン表示（ホバー機能なし）
+    final fileExt = widget.path.toLowerCase();
+    if (fileExt.endsWith('.xlsx') || fileExt.endsWith('.xls')) {
       return FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green[700], size: 24); // Excel
     }
-    if (ext.endsWith('.docx') || ext.endsWith('.doc')) {
+    if (fileExt.endsWith('.docx') || fileExt.endsWith('.doc')) {
       return FaIcon(FontAwesomeIcons.fileWord, color: Colors.blue[700], size: 24); // Word
     }
-    if (ext.endsWith('.pptx') || ext.endsWith('.ppt')) {
+    if (fileExt.endsWith('.pptx') || fileExt.endsWith('.ppt')) {
       return FaIcon(FontAwesomeIcons.filePowerpoint, color: Colors.orange[700], size: 24); // PowerPoint
     }
-    if (ext.endsWith('.msg') || ext.endsWith('.eml')) {
-      return FaIcon(FontAwesomeIcons.envelope, color: Colors.blue[800], size: 24);
+    if (fileExt.endsWith('.msg') || fileExt.endsWith('.eml')) {
+      return FaIcon(FontAwesomeIcons.envelope, color: Colors.blue[800], size: 24); // メール
     }
+    
+
     // その他
     return Icon(Icons.insert_drive_file, color: widget.isDark ? Colors.white70 : Colors.grey, size: 24);
   }

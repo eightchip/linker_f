@@ -10,6 +10,7 @@ import 'package:collection/collection.dart';
 import '../utils/windows_icon_extractor.dart';
 import 'dart:ffi' as ffi;
 import 'package:win32/win32.dart';
+import 'package:flutter/foundation.dart';
 
 final linkRepositoryProvider = Provider<LinkRepository>((ref) {
   return LinkRepository();
@@ -113,19 +114,74 @@ class LinkViewModel extends StateNotifier<LinkState> {
     } else {
       sortedGroups = groups;
     }
-    // デバッグ情報
-    print('=== _loadGroups ===');
-    print('読み込まれたグループ数: ${sortedGroups.length}');
-    for (final group in sortedGroups) {
-      print('グループ "${group.title}": ${group.items.length}個のリンク');
-      for (final link in group.items) {
-        if (link.lastUsed != null) {
-          print('  - ${link.label}: lastUsed = ${link.lastUsed}');
+    
+    // デバッグ情報（開発時のみ）
+    if (kDebugMode) {
+      print('=== _loadGroups ===');
+      print('読み込まれたグループ数: ${sortedGroups.length}');
+      print('現在の状態のグループ数: ${state.groups.length}');
+      print('状態が等しいかチェック中...');
+      
+      final areEqual = _areGroupsEqual(state.groups, sortedGroups);
+      print('状態が等しい: $areEqual');
+      
+      if (!areEqual) {
+        print('状態が変更されたため、更新を実行します');
+        for (final group in sortedGroups) {
+          print('グループ "${group.title}": ${group.items.length}個のリンク');
+          for (final link in group.items) {
+            if (link.lastUsed != null) {
+              print('  - ${link.label}: lastUsed = ${link.lastUsed}');
+            }
+          }
+        }
+      } else {
+        print('状態が変更されていないため、更新をスキップします');
+      }
+      print('==================');
+    }
+    
+    // 状態が実際に変更された場合のみ更新
+    if (!_areGroupsEqual(state.groups, sortedGroups)) {
+      state = state.copyWith(groups: sortedGroups);
+    }
+  }
+
+  // グループの等価性をチェックするヘルパーメソッド
+  bool _areGroupsEqual(List<Group> groups1, List<Group> groups2) {
+    if (groups1.length != groups2.length) return false;
+    
+    for (int i = 0; i < groups1.length; i++) {
+      final group1 = groups1[i];
+      final group2 = groups2[i];
+      
+      if (group1.id != group2.id ||
+          group1.title != group2.title ||
+          group1.isFavorite != group2.isFavorite ||
+          group1.collapsed != group2.collapsed ||
+          group1.color != group2.color ||
+          group1.order != group2.order) {
+        return false;
+      }
+      
+      if (group1.items.length != group2.items.length) return false;
+      
+      for (int j = 0; j < group1.items.length; j++) {
+        final item1 = group1.items[j];
+        final item2 = group2.items[j];
+        
+        if (item1.id != item2.id ||
+            item1.label != item2.label ||
+            item1.path != item2.path ||
+            item1.type != item2.type ||
+            item1.isFavorite != item2.isFavorite ||
+            item1.lastUsed != item2.lastUsed) {
+          return false;
         }
       }
     }
-    print('==================');
-    state = state.copyWith(groups: sortedGroups);
+    
+    return true;
   }
 
   // Group operations
@@ -288,6 +344,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
     
     // グループ内のリンクも更新
     final groups = state.groups;
+    bool hasChanges = false;
     for (final group in groups) {
       final linkIndex = group.items.indexWhere((item) => item.id == link.id);
       if (linkIndex != -1) {
@@ -296,6 +353,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
         updatedItems[linkIndex] = updatedLink;
         final updatedGroup = group.copyWith(items: updatedItems);
         await _repository.saveGroup(updatedGroup);
+        hasChanges = true;
         break;
       }
     }
@@ -303,8 +361,10 @@ class LinkViewModel extends StateNotifier<LinkState> {
     // 個別のリンクボックスも更新
     await _repository.updateLinkLastUsed(link.id);
     
-    // 状態を再読み込み
-    await _loadGroups();
+    // 変更があった場合のみ状態を再読み込み
+    if (hasChanges) {
+      await _loadGroups();
+    }
     print('=== launchLink 完了 ===');
     
     // 実際にリンクを起動
