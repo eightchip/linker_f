@@ -27,6 +27,63 @@ enum TaskStatus {
   cancelled,
 }
 
+// 繰り返しリマインダーパターン
+class RecurringReminderPattern {
+  static const String fiveMinutes = '5min';
+  static const String fifteenMinutes = '15min';
+  static const String thirtyMinutes = '30min';
+  static const String oneHour = '1hour';
+  static const String oneDay = '1day';
+  static const String oneWeek = '1week';
+  
+  static const List<String> allPatterns = [
+    fiveMinutes,
+    fifteenMinutes,
+    thirtyMinutes,
+    oneHour,
+    oneDay,
+    oneWeek,
+  ];
+  
+  static String getDisplayName(String pattern) {
+    switch (pattern) {
+      case fiveMinutes:
+        return '5分後';
+      case fifteenMinutes:
+        return '15分後';
+      case thirtyMinutes:
+        return '30分後';
+      case oneHour:
+        return '1時間後';
+      case oneDay:
+        return '1日後';
+      case oneWeek:
+        return '1週間後';
+      default:
+        return pattern;
+    }
+  }
+  
+  static Duration getDuration(String pattern) {
+    switch (pattern) {
+      case fiveMinutes:
+        return const Duration(minutes: 5);
+      case fifteenMinutes:
+        return const Duration(minutes: 15);
+      case thirtyMinutes:
+        return const Duration(minutes: 30);
+      case oneHour:
+        return const Duration(hours: 1);
+      case oneDay:
+        return const Duration(days: 1);
+      case oneWeek:
+        return const Duration(days: 7);
+      default:
+        return const Duration(minutes: 5);
+    }
+  }
+}
+
 @HiveType(typeId: 8)
 class TaskItem extends HiveObject {
   @HiveField(0)
@@ -74,6 +131,18 @@ class TaskItem extends HiveObject {
   @HiveField(14)
   String? recurringPattern; // 繰り返しパターン (daily, weekly, monthly)
 
+  @HiveField(15)
+  bool isRecurringReminder; // 繰り返しリマインダー
+
+  @HiveField(16)
+  String? recurringReminderPattern; // 繰り返しリマインダーパターン
+
+  @HiveField(17)
+  DateTime? nextReminderTime; // 次のリマインダー時刻
+
+  @HiveField(18)
+  int reminderCount; // リマインダー回数
+
   TaskItem({
     required this.id,
     required this.title,
@@ -90,6 +159,10 @@ class TaskItem extends HiveObject {
     this.notes,
     this.isRecurring = false,
     this.recurringPattern,
+    this.isRecurringReminder = false,
+    this.recurringReminderPattern,
+    this.nextReminderTime,
+    this.reminderCount = 0,
   });
 
   Map<String, dynamic> toJson() {
@@ -109,6 +182,10 @@ class TaskItem extends HiveObject {
       'notes': notes,
       'isRecurring': isRecurring,
       'recurringPattern': recurringPattern,
+      'isRecurringReminder': isRecurringReminder,
+      'recurringReminderPattern': recurringReminderPattern,
+      'nextReminderTime': nextReminderTime?.toIso8601String(),
+      'reminderCount': reminderCount,
     };
   }
 
@@ -129,6 +206,10 @@ class TaskItem extends HiveObject {
       notes: json['notes'],
       isRecurring: json['isRecurring'] ?? false,
       recurringPattern: json['recurringPattern'],
+      isRecurringReminder: json['isRecurringReminder'] ?? false,
+      recurringReminderPattern: json['recurringReminderPattern'],
+      nextReminderTime: json['nextReminderTime'] != null ? DateTime.parse(json['nextReminderTime']) : null,
+      reminderCount: json['reminderCount'] ?? 0,
     );
   }
 
@@ -148,6 +229,10 @@ class TaskItem extends HiveObject {
     String? notes,
     bool? isRecurring,
     String? recurringPattern,
+    bool? isRecurringReminder,
+    String? recurringReminderPattern,
+    DateTime? nextReminderTime,
+    int? reminderCount,
   }) {
     return TaskItem(
       id: id ?? this.id,
@@ -165,6 +250,10 @@ class TaskItem extends HiveObject {
       notes: notes ?? this.notes,
       isRecurring: isRecurring ?? this.isRecurring,
       recurringPattern: recurringPattern ?? this.recurringPattern,
+      isRecurringReminder: isRecurringReminder ?? this.isRecurringReminder,
+      recurringReminderPattern: recurringReminderPattern ?? this.recurringReminderPattern,
+      nextReminderTime: nextReminderTime ?? this.nextReminderTime,
+      reminderCount: reminderCount ?? this.reminderCount,
     );
   }
 

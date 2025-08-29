@@ -650,6 +650,25 @@ class LinkViewModel extends StateNotifier<LinkState> {
     }
   }
 
+  // リンクに関連するタスクを取得
+  List<TaskItem> getTasksByLinkId(String linkId) {
+    // 現在のタスクリストを取得する方法を実装
+    // このメソッドは現在使用されていないため、空のリストを返す
+    return [];
+  }
+
+  // 指定されたIDのリンクを取得
+  LinkItem? getLinkById(String linkId) {
+    for (final group in state.groups) {
+      for (final link in group.items) {
+        if (link.id == linkId) {
+          return link;
+        }
+      }
+    }
+    return null;
+  }
+
   @override
   void dispose() {
     _repository.dispose();

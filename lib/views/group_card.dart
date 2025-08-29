@@ -10,6 +10,7 @@ import '../models/task_item.dart';
 import '../viewmodels/layout_settings_provider.dart';
 import '../viewmodels/task_viewmodel.dart';
 import 'home_screen.dart';
+import 'task_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -1740,73 +1741,11 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
 
   // リンクからタスクを作成するメソッド
   void _createTaskFromLink(BuildContext context, LinkItem link) {
-    final taskViewModel = ref.read(taskViewModelProvider.notifier);
-    
-    // リンクの情報を基にタスクを作成
-    final task = TaskItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: '${link.label}の作業',
-      description: 'リンク: ${link.path}',
-      relatedLinkId: link.id,
-      createdAt: DateTime.now(),
-      tags: [link.label, 'リンク関連'],
-    );
-
-    // タスク作成ダイアログを表示
+    // 新しいTaskDialogを使用してタスクを作成
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('タスクを作成'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('リンク: ${link.label}'),
-            const SizedBox(height: 8),
-            Text('パス: ${link.path}'),
-            const SizedBox(height: 16),
-            const Text('タスクの詳細を入力してください:'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: TextEditingController(text: task.title),
-              decoration: const InputDecoration(
-                labelText: 'タスクタイトル',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) => task.title = value,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: TextEditingController(text: task.description ?? ''),
-              decoration: const InputDecoration(
-                labelText: '説明',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              onChanged: (value) => task.description = value,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              taskViewModel.addTask(task);
-              Navigator.pop(context);
-              // 成功メッセージを表示
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('タスク「${task.title}」を作成しました'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('作成'),
-          ),
-        ],
+      builder: (context) => TaskDialog(
+        relatedLinkId: link.id,
       ),
     );
   }

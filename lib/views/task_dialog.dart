@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
+import '../viewmodels/link_viewmodel.dart'; // Added import for linkViewModelProvider
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
@@ -32,6 +33,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   List<String> _tags = [];
   bool _isRecurring = false;
   String _recurringPattern = 'daily';
+  bool _isRecurringReminder = false;
+  String _recurringReminderPattern = RecurringReminderPattern.fiveMinutes;
 
   @override
   void initState() {
@@ -47,8 +50,30 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       _tags = List.from(widget.task!.tags);
       _isRecurring = widget.task!.isRecurring;
       _recurringPattern = widget.task!.recurringPattern ?? 'daily';
+      _isRecurringReminder = widget.task!.isRecurringReminder;
+      _recurringReminderPattern = widget.task!.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
+    } else if (widget.relatedLinkId != null) {
+      // リンクから作成された場合、リンク情報を取得して設定
+      _initializeFromLink();
     }
     _tagsController.text = _tags.join(', ');
+  }
+
+  // リンク情報から初期値を設定
+  void _initializeFromLink() {
+    try {
+      final linkViewModel = ref.read(linkViewModelProvider.notifier);
+      final link = linkViewModel.getLinkById(widget.relatedLinkId!);
+      if (link != null) {
+        _titleController.text = '${link.label}の作業';
+        _descriptionController.text = 'リンク: ${link.path}';
+        _tags = [link.label, 'リンク関連'];
+        _tagsController.text = _tags.join(', ');
+        print('リンク情報から初期化: ${link.label}');
+      }
+    } catch (e) {
+      print('リンク情報の取得エラー: $e');
+    }
   }
 
   @override
@@ -72,6 +97,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           .where((tag) => tag.isNotEmpty)
           .toList();
 
+      print('=== タスク作成ダイアログ ===');
+      print('タイトル: ${_titleController.text.trim()}');
+      print('リマインダー時間: $_reminderTime');
+      print('期限日: $_dueDate');
+      print('現在時刻: ${DateTime.now()}');
+
       final task = taskViewModel.createTask(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim().isEmpty 
@@ -90,7 +121,15 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             : _notesController.text.trim(),
         isRecurring: _isRecurring,
         recurringPattern: _isRecurring ? _recurringPattern : null,
+        isRecurringReminder: _isRecurringReminder,
+        recurringReminderPattern: _isRecurringReminder ? _recurringReminderPattern : null,
       );
+
+      print('=== 作成されたタスク ===');
+      print('タスクID: ${task.id}');
+      print('タスクタイトル: ${task.title}');
+      print('タスクリマインダー時間: ${task.reminderTime}');
+      print('=== タスク作成ダイアログ完了 ===');
 
       if (widget.task != null) {
         // 既存タスクの更新
@@ -105,6 +144,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           notes: task.notes,
           isRecurring: task.isRecurring,
           recurringPattern: task.recurringPattern,
+          isRecurringReminder: task.isRecurringReminder,
+          recurringReminderPattern: task.recurringReminderPattern,
         );
         taskViewModel.updateTask(updatedTask);
       } else {
@@ -127,8 +168,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       setState(() {
         if (isDueDate) {
           _dueDate = picked;
+          print('期限日設定: $_dueDate');
         } else {
           _reminderTime = picked;
+          print('リマインダー日設定: $_reminderTime');
         }
       });
     }
@@ -150,6 +193,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           picked.hour,
           picked.minute,
         );
+        print('リマインダー時刻設定: $_reminderTime');
       });
     }
   }
@@ -360,6 +404,37 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       onChanged: (value) {
                         if (value != null) {
                           setState(() => _recurringPattern = value);
+                        }
+                      },
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // 繰り返しリマインダー設定
+              Row(
+                children: [
+                  Checkbox(
+                    value: _isRecurringReminder,
+                    onChanged: (value) {
+                      setState(() => _isRecurringReminder = value ?? false);
+                    },
+                  ),
+                  const Text('繰り返しリマインダー'),
+                  if (_isRecurringReminder) ...[
+                    const SizedBox(width: 16),
+                    DropdownButton<String>(
+                      value: _recurringReminderPattern,
+                      items: RecurringReminderPattern.allPatterns.map((pattern) {
+                        return DropdownMenuItem(
+                          value: pattern,
+                          child: Text(RecurringReminderPattern.getDisplayName(pattern)),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _recurringReminderPattern = value);
                         }
                       },
                     ),

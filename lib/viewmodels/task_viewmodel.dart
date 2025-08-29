@@ -29,6 +29,12 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       print('=== TaskViewModel初期化開始 ===');
       _taskBox = await Hive.openBox<TaskItem>(_boxName);
       print('_taskBox初期化完了');
+      
+      // WindowsNotificationServiceのコールバックを設定
+      WindowsNotificationService.setTaskViewModelUpdateCallback((updatedTask) {
+        updateTask(updatedTask);
+      });
+      
       await _loadTasks();
     } catch (e) {
       print('TaskViewModel初期化エラー: $e');
@@ -38,12 +44,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
 
   Future<void> _loadTasks() async {
     try {
-      print('=== タスク読み込み開始 ===');
-      
       if (_taskBox == null || !_taskBox!.isOpen) {
-        print('_taskBoxが初期化されていないため、初期化します');
         _taskBox = await Hive.openBox<TaskItem>(_boxName);
-        print('_taskBox初期化完了');
       }
       
       final tasks = _taskBox!.values.toList();
@@ -57,7 +59,6 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     } catch (e) {
       if (kDebugMode) {
         print('タスク読み込みエラー: $e');
-        print('エラーの詳細: ${e.toString()}');
       }
       state = [];
     }
@@ -76,16 +77,25 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       // リマインダー通知をスケジュール（エラーが発生しても続行）
       try {
         if (task.reminderTime != null) {
+          print('=== タスク作成時のリマインダー設定 ===');
+          print('タスク: ${task.title}');
+          print('リマインダー時間: ${task.reminderTime}');
+          print('現在時刻: ${DateTime.now()}');
+          
           if (Platform.isWindows) {
             await WindowsNotificationService.scheduleTaskReminder(task);
           } else {
             await NotificationService.scheduleTaskReminder(task);
           }
+          
+          print('=== タスク作成時のリマインダー設定完了 ===');
+        } else {
+          print('=== タスク作成時のリマインダーなし ===');
+          print('タスク: ${task.title}');
+          print('リマインダー時間: null');
         }
       } catch (notificationError) {
-        if (kDebugMode) {
-          print('通知設定エラー（無視）: $notificationError');
-        }
+        print('通知設定エラー（無視）: $notificationError');
       }
       
       // リンクのタスク状態を更新
@@ -117,22 +127,31 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       // リマインダー通知を更新（エラーが発生しても続行）
       try {
         if (task.reminderTime != null) {
+          print('=== タスク更新時のリマインダー設定 ===');
+          print('タスク: ${task.title}');
+          print('リマインダー時間: ${task.reminderTime}');
+          
           if (Platform.isWindows) {
             await WindowsNotificationService.scheduleTaskReminder(task);
           } else {
             await NotificationService.scheduleTaskReminder(task);
           }
+          
+          print('=== タスク更新時のリマインダー設定完了 ===');
         } else {
+          print('=== タスク更新時のリマインダー削除 ===');
+          print('タスク: ${task.title}');
+          
           if (Platform.isWindows) {
             await WindowsNotificationService.cancelNotification(task.id);
           } else {
             await NotificationService.cancelNotification(task.id);
           }
+          
+          print('=== タスク更新時のリマインダー削除完了 ===');
         }
       } catch (notificationError) {
-        if (kDebugMode) {
-          print('通知更新エラー（無視）: $notificationError');
-        }
+        print('通知更新エラー（無視）: $notificationError');
       }
       
       // リンクのタスク状態を更新
@@ -158,15 +177,18 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       // 通知をキャンセル（エラーが発生しても続行）
       try {
+        print('=== タスク削除時のリマインダー削除 ===');
+        print('タスクID: $taskId');
+        
         if (Platform.isWindows) {
           await WindowsNotificationService.cancelNotification(taskId);
         } else {
           await NotificationService.cancelNotification(taskId);
         }
+        
+        print('=== タスク削除時のリマインダー削除完了 ===');
       } catch (notificationError) {
-        if (kDebugMode) {
-          print('通知キャンセルエラー（無視）: $notificationError');
-        }
+        print('通知キャンセルエラー（無視）: $notificationError');
       }
       
       // リンクのタスク状態を更新
@@ -248,6 +270,10 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     String? notes,
     bool isRecurring = false,
     String? recurringPattern,
+    bool isRecurringReminder = false,
+    String? recurringReminderPattern,
+    DateTime? nextReminderTime,
+    int reminderCount = 0,
   }) {
     return TaskItem(
       id: _uuid.v4(),
@@ -263,7 +289,45 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       notes: notes,
       isRecurring: isRecurring,
       recurringPattern: recurringPattern,
+      isRecurringReminder: isRecurringReminder,
+      recurringReminderPattern: recurringReminderPattern,
+      nextReminderTime: nextReminderTime,
+      reminderCount: reminderCount,
     );
+  }
+
+  // 繰り返しリマインダーの次の通知をスケジュール
+  Future<void> scheduleNextRecurringReminder(TaskItem task) async {
+    try {
+      print('=== 繰り返しリマインダー次回設定開始 ===');
+      print('タスク: ${task.title}');
+      print('現在のリマインダー回数: ${task.reminderCount}');
+      
+      if (!task.isRecurringReminder || task.recurringReminderPattern == null) {
+        print('繰り返しリマインダーが設定されていません');
+        return;
+      }
+      
+      // 次のリマインダー時間を計算
+      final now = DateTime.now();
+      final duration = RecurringReminderPattern.getDuration(task.recurringReminderPattern!);
+      final nextReminderTime = now.add(duration);
+      
+      // タスクを更新
+      final updatedTask = task.copyWith(
+        reminderTime: nextReminderTime,
+        nextReminderTime: nextReminderTime,
+        reminderCount: task.reminderCount + 1,
+      );
+      
+      // タスクを更新
+      await updateTask(updatedTask);
+      
+      print('次のリマインダー設定完了: ${nextReminderTime}');
+      print('=== 繰り返しリマインダー次回設定完了 ===');
+    } catch (e) {
+      print('繰り返しリマインダー次回設定エラー: $e');
+    }
   }
 
   // タスクの統計情報を取得
@@ -391,4 +455,6 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       }
     }
   }
+
+
 }
