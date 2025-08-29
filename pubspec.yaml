@@ -75,6 +75,9 @@ dependencies:
   win32: ^5.4.0
   ffi: ^2.1.2
   
+  # Windows-specific notifications and system tray
+  tray_manager: ^0.2.0
+  
   # Task management and notifications
   flutter_local_notifications: ^17.2.2
   table_calendar: ^3.0.9

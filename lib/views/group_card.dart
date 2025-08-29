@@ -41,17 +41,33 @@ class HighlightedText extends StatelessWidget {
       );
     }
 
-    final highlightLower = highlight!.toLowerCase();
+    // 複数キーワードに対応
+    final keywords = highlight!.toLowerCase().split(' ').where((k) => k.isNotEmpty).toList();
+    if (keywords.isEmpty) {
+      return Text(
+        text,
+        style: style,
+        overflow: overflow,
+        maxLines: maxLines,
+      );
+    }
+
     final textLower = text.toLowerCase();
     final matches = <_TextMatch>[];
 
-    int start = 0;
-    while (start < textLower.length) {
-      final index = textLower.indexOf(highlightLower, start);
-      if (index == -1) break;
-      matches.add(_TextMatch(index, index + highlightLower.length));
-      start = index + 1;
+    // 各キーワードのマッチを検索
+    for (final keyword in keywords) {
+      int start = 0;
+      while (start < textLower.length) {
+        final index = textLower.indexOf(keyword, start);
+        if (index == -1) break;
+        matches.add(_TextMatch(index, index + keyword.length));
+        start = index + 1;
+      }
     }
+
+    // マッチを開始位置でソート
+    matches.sort((a, b) => a.start.compareTo(b.start));
 
     if (matches.isEmpty) {
       return Text(

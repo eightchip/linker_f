@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart';
 import '../services/notification_service.dart';
+import '../services/windows_notification_service.dart';
 import 'task_dialog.dart';
 import 'calendar_screen.dart';
 
@@ -47,10 +49,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
       // 検索フィルター
       if (_searchQuery.isNotEmpty) {
-        final query = _searchQuery.toLowerCase();
-        return task.title.toLowerCase().contains(query) ||
-               (task.description?.toLowerCase().contains(query) ?? false) ||
-               task.tags.any((tag) => tag.toLowerCase().contains(query));
+        final keywords = _searchQuery.toLowerCase().split(' ').where((k) => k.isNotEmpty).toList();
+        return _matchesKeywords(task.title.toLowerCase(), keywords) ||
+               (task.description != null && _matchesKeywords(task.description!.toLowerCase(), keywords)) ||
+               task.tags.any((tag) => _matchesKeywords(tag.toLowerCase(), keywords));
       }
 
       return true;
@@ -74,6 +76,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             onPressed: () => _showTestReminderNotification(),
             icon: const Icon(Icons.schedule),
             tooltip: 'リマインダーテスト',
+          ),
+          IconButton(
+            onPressed: () => _showTestReminderInOneMinute(),
+            icon: const Icon(Icons.timer),
+            tooltip: '1分後リマインダーテスト',
           ),
           IconButton(
             onPressed: () => _showTaskDialog(),
@@ -509,14 +516,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   // 通知テストメソッド
   void _showTestNotification() async {
     try {
-      // Windowsではflutter_local_notificationsが制限されているため、
-      // アプリ内通知のみを使用
-      NotificationService.showInAppNotification(
-        context,
-        'テスト通知',
-        '通知機能が正常に動作しています',
-        backgroundColor: Colors.green,
-      );
+      // Windows環境ではWindows固有の通知サービスを使用
+      if (Platform.isWindows) {
+        await WindowsNotificationService.showTestNotification();
+      } else {
+        // その他のプラットフォームではアプリ内通知を使用
+        NotificationService.showInAppNotification(
+          context,
+          'テスト通知',
+          '通知機能が正常に動作しています',
+          backgroundColor: Colors.green,
+        );
+      }
     } catch (e) {
       NotificationService.showInAppNotification(
         context,
@@ -530,14 +541,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   // リマインダーテストメソッド
   void _showTestReminderNotification() async {
     try {
-      // Windowsではflutter_local_notificationsが制限されているため、
-      // アプリ内通知のみを使用
-      NotificationService.showInAppNotification(
-        context,
-        'リマインダーテスト',
-        'リマインダー通知が正常に動作しています',
-        backgroundColor: Colors.blue,
-      );
+      // Windows環境ではWindows固有の通知サービスを使用
+      if (Platform.isWindows) {
+        await WindowsNotificationService.showTestReminderNotification();
+      } else {
+        // その他のプラットフォームではアプリ内通知を使用
+        NotificationService.showInAppNotification(
+          context,
+          'リマインダーテスト',
+          'リマインダー通知が正常に動作しています',
+          backgroundColor: Colors.blue,
+        );
+      }
     } catch (e) {
       NotificationService.showInAppNotification(
         context,
@@ -546,5 +561,44 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         backgroundColor: Colors.orange,
       );
     }
+  }
+
+  // 1分後リマインダーテストメソッド
+  void _showTestReminderInOneMinute() async {
+    try {
+      // Windows環境ではWindows固有の通知サービスを使用
+      if (Platform.isWindows) {
+        await WindowsNotificationService.showTestReminderInOneMinute();
+        
+        // 成功メッセージを表示
+        NotificationService.showInAppNotification(
+          context,
+          '1分後リマインダー設定',
+          '1分後にリマインダーが表示されます。アプリを閉じても通知が表示されるはずです。',
+          backgroundColor: Colors.green,
+        );
+      } else {
+        // その他のプラットフォームではアプリ内通知を使用
+        NotificationService.showInAppNotification(
+          context,
+          '1分後リマインダーテスト',
+          '1分後にリマインダーが表示されます',
+          backgroundColor: Colors.blue,
+        );
+      }
+    } catch (e) {
+      NotificationService.showInAppNotification(
+        context,
+        '1分後リマインダーテストエラー',
+        '1分後リマインダーテストに失敗しました: $e',
+        backgroundColor: Colors.orange,
+      );
+    }
+  }
+
+  // 複数キーワードがすべて含まれているかチェックするヘルパーメソッド
+  bool _matchesKeywords(String text, List<String> keywords) {
+    if (keywords.isEmpty) return true;
+    return keywords.every((keyword) => text.contains(keyword));
   }
 }

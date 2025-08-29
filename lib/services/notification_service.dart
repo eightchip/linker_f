@@ -3,6 +3,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../models/task_item.dart';
+import 'dart:io';
+import 'windows_notification_service.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -85,8 +87,17 @@ class NotificationService {
   // 期限切れタスクの通知
   static Future<void> showOverdueNotification(TaskItem task) async {
     try {
-      // Windowsでは通知機能が制限されているため、
-      // 基本的な通知設定を使用
+      // Windows環境ではWindows固有の通知サービスを使用
+      if (Platform.isWindows) {
+        await WindowsNotificationService.showToastNotification(
+          '期限切れタスク',
+          '${task.title}の期限が過ぎています',
+          taskId: task.id,
+        );
+        return;
+      }
+
+      // その他のプラットフォームではflutter_local_notificationsを使用
       const NotificationDetails notificationDetails = NotificationDetails();
 
       await _notifications.show(
@@ -118,8 +129,13 @@ class NotificationService {
   // テスト用の即座通知
   static Future<void> showTestNotification() async {
     try {
-      // Windowsでは通知機能が制限されている可能性があるため、
-      // 基本的な通知設定を使用
+      // Windows環境ではWindows固有の通知サービスを使用
+      if (Platform.isWindows) {
+        await WindowsNotificationService.showTestNotification();
+        return;
+      }
+
+      // その他のプラットフォームではflutter_local_notificationsを使用
       const NotificationDetails notificationDetails = NotificationDetails();
 
       await _notifications.show(
@@ -140,6 +156,13 @@ class NotificationService {
   // リマインダー通知のテスト
   static Future<void> showTestReminderNotification() async {
     try {
+      // Windows環境ではWindows固有の通知サービスを使用
+      if (Platform.isWindows) {
+        await WindowsNotificationService.showTestReminderNotification();
+        return;
+      }
+
+      // その他のプラットフォームではflutter_local_notificationsを使用
       const NotificationDetails notificationDetails = NotificationDetails();
 
       await _notifications.show(

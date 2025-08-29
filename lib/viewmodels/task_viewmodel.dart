@@ -4,6 +4,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/task_item.dart';
 import '../services/notification_service.dart';
+import 'dart:io';
+import '../services/windows_notification_service.dart';
 import 'link_viewmodel.dart';
 
 final taskViewModelProvider = StateNotifierProvider<TaskViewModel, List<TaskItem>>((ref) {
@@ -74,7 +76,11 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       // リマインダー通知をスケジュール（エラーが発生しても続行）
       try {
         if (task.reminderTime != null) {
-          await NotificationService.scheduleTaskReminder(task);
+          if (Platform.isWindows) {
+            await WindowsNotificationService.scheduleTaskReminder(task);
+          } else {
+            await NotificationService.scheduleTaskReminder(task);
+          }
         }
       } catch (notificationError) {
         if (kDebugMode) {
@@ -111,9 +117,17 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       // リマインダー通知を更新（エラーが発生しても続行）
       try {
         if (task.reminderTime != null) {
-          await NotificationService.scheduleTaskReminder(task);
+          if (Platform.isWindows) {
+            await WindowsNotificationService.scheduleTaskReminder(task);
+          } else {
+            await NotificationService.scheduleTaskReminder(task);
+          }
         } else {
-          await NotificationService.cancelNotification(task.id);
+          if (Platform.isWindows) {
+            await WindowsNotificationService.cancelNotification(task.id);
+          } else {
+            await NotificationService.cancelNotification(task.id);
+          }
         }
       } catch (notificationError) {
         if (kDebugMode) {
@@ -144,7 +158,11 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       // 通知をキャンセル（エラーが発生しても続行）
       try {
-        await NotificationService.cancelNotification(taskId);
+        if (Platform.isWindows) {
+          await WindowsNotificationService.cancelNotification(taskId);
+        } else {
+          await NotificationService.cancelNotification(taskId);
+        }
       } catch (notificationError) {
         if (kDebugMode) {
           print('通知キャンセルエラー（無視）: $notificationError');

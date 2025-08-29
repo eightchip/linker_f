@@ -11,7 +11,7 @@ import '../models/group.dart';
 import '../models/link_item.dart';
 import '../models/task_item.dart';
 import 'group_card.dart';
-import 'layout_settings_dialog.dart';
+import 'layout_settings_screen.dart';
 import 'task_screen.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -55,17 +55,33 @@ class HighlightedText extends StatelessWidget {
       );
     }
 
-    final highlightLower = highlight!.toLowerCase();
+    // 複数キーワードに対応
+    final keywords = highlight!.toLowerCase().split(' ').where((k) => k.isNotEmpty).toList();
+    if (keywords.isEmpty) {
+      return Text(
+        text,
+        style: style,
+        overflow: overflow,
+        maxLines: maxLines,
+      );
+    }
+
     final textLower = text.toLowerCase();
     final matches = <_TextMatch>[];
 
-    int start = 0;
-    while (start < textLower.length) {
-      final index = textLower.indexOf(highlightLower, start);
-      if (index == -1) break;
-      matches.add(_TextMatch(index, index + highlightLower.length));
-      start = index + 1;
+    // 各キーワードのマッチを検索
+    for (final keyword in keywords) {
+      int start = 0;
+      while (start < textLower.length) {
+        final index = textLower.indexOf(keyword, start);
+        if (index == -1) break;
+        matches.add(_TextMatch(index, index + keyword.length));
+        start = index + 1;
+      }
     }
+
+    // マッチを開始位置でソート
+    matches.sort((a, b) => a.start.compareTo(b.start));
 
     if (matches.isEmpty) {
       return Text(
@@ -317,11 +333,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 
 
-  // レイアウト設定ダイアログ
+  // レイアウト設定画面
   void _showLayoutSettingsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const LayoutSettingsDialog(),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const LayoutSettingsScreen(),
+      ),
     );
   }
 
@@ -399,22 +416,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     // テキスト検索フィルター適用
     if (_searchQuery.isNotEmpty) {
+      final keywords = _searchQuery.toLowerCase().split(' ').where((k) => k.isNotEmpty).toList();
       displayGroups = displayGroups
-        .where((g) => g.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        .where((g) => _matchesKeywords(g.title.toLowerCase(), keywords) ||
           g.items.any((l) {
             // ラベルでの検索
-            if (l.label.toLowerCase().contains(_searchQuery.toLowerCase())) {
+            if (_matchesKeywords(l.label.toLowerCase(), keywords)) {
               return true;
             }
             // URLリンクの場合、ドメイン名でも検索
             if (l.type == LinkType.url) {
               final domain = _extractDomain(l.path);
-              if (domain.toLowerCase().contains(_searchQuery.toLowerCase())) {
+              if (_matchesKeywords(domain.toLowerCase(), keywords)) {
                 return true;
               }
             }
             // タグでの検索
-            if (l.tags.any((tag) => tag.toLowerCase().contains(_searchQuery.toLowerCase()))) {
+            if (l.tags.any((tag) => _matchesKeywords(tag.toLowerCase(), keywords))) {
               return true;
             }
             return false;
@@ -1318,9 +1336,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildListGroupCard(Group group, bool isDragging) {
     final accentColor = ref.watch(accentColorProvider);
     final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final keywords = _searchQuery.toLowerCase().split(' ').where((k) => k.isNotEmpty).toList();
     final linkItems = group.items.where((link) => 
-      link.label.toLowerCase().contains(_searchQuery.toLowerCase()) || 
-      link.path.toLowerCase().contains(_searchQuery.toLowerCase())
+      _matchesKeywords(link.label.toLowerCase(), keywords) || 
+      _matchesKeywords(link.path.toLowerCase(), keywords)
     ).toList();
 
     return Card(
@@ -2972,6 +2991,12 @@ class _BottomRightWithMarginFabLocation extends FloatingActionButtonLocation {
     final double fabY = scaffoldGeometry.scaffoldSize.height - scaffoldGeometry.floatingActionButtonSize.height - bottomMargin;
     return Offset(fabX, fabY);
   }
+}
+
+// 複数キーワードがすべて含まれているかチェックするヘルパーメソッド
+bool _matchesKeywords(String text, List<String> keywords) {
+  if (keywords.isEmpty) return true;
+  return keywords.every((keyword) => text.contains(keyword));
 }
 
 // URLからドメイン名を抽出するヘルパーメソッド

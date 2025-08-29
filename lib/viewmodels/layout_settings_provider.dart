@@ -172,6 +172,45 @@ class LayoutSettingsNotifier extends StateNotifier<LayoutSettings> {
     state = LayoutSettings();
     _saveSettings();
   }
+
+  // カスタムプリセットの保存
+  Future<void> saveCustomPreset(String presetName, LayoutSettings preset) async {
+    try {
+      final box = await Hive.openBox('layoutSettings');
+      final customPresets = Map<String, dynamic>.from(box.get('customPresets') ?? {});
+      customPresets[presetName] = preset.toJson();
+      await box.put('customPresets', customPresets);
+    } catch (e) {
+      // エラーハンドリング
+    }
+  }
+
+  // カスタムプリセットの取得
+  Future<Map<String, LayoutSettings>> getCustomPresets() async {
+    try {
+      final box = await Hive.openBox('layoutSettings');
+      final customPresetsJson = box.get('customPresets');
+      if (customPresetsJson != null) {
+        final Map<String, dynamic> customPresets = Map<String, dynamic>.from(customPresetsJson);
+        return customPresets.map((key, value) => MapEntry(key, LayoutSettings.fromJson(Map<String, dynamic>.from(value))));
+      }
+    } catch (e) {
+      // エラーハンドリング
+    }
+    return {};
+  }
+
+  // カスタムプリセットの削除
+  Future<void> deleteCustomPreset(String presetName) async {
+    try {
+      final box = await Hive.openBox('layoutSettings');
+      final customPresets = Map<String, dynamic>.from(box.get('customPresets') ?? {});
+      customPresets.remove(presetName);
+      await box.put('customPresets', customPresets);
+    } catch (e) {
+      // エラーハンドリング
+    }
+  }
 }
 
 final layoutSettingsProvider = StateNotifierProvider<LayoutSettingsNotifier, LayoutSettings>(

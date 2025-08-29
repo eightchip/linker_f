@@ -10,6 +10,8 @@ import 'views/link_launcher_app.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'services/notification_service.dart';
+import 'services/windows_notification_service.dart';
+import 'services/system_tray_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +65,12 @@ void main() async {
   
   // 通知機能の初期化
   await NotificationService.initialize();
+  
+  // Windows固有の通知機能の初期化
+  await WindowsNotificationService.initialize();
+  
+  // システムトレイ機能の初期化
+  await SystemTrayService.initialize();
   
   // Desktop window configuration
   await windowManager.ensureInitialized();
