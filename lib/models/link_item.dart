@@ -95,7 +95,7 @@ class LinkItem extends HiveObject {
       memo: json['memo'],
       iconData: json['iconData'],
       iconColor: json['iconColor'],
-      tags: List<String>.from(json['tags'] ?? []),
+      tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
       hasActiveTasks: json['hasActiveTasks'] ?? false,
     );
   }

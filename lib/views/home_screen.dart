@@ -1796,6 +1796,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // データの永続化を確実にするため、少し待機
         await Future.delayed(const Duration(milliseconds: 500));
         
+        // リンクのタスク状態を更新（タスクデータが存在しない場合でも実行）
+        print('リンクのタスク状態を更新中...');
+        await ref.read(taskViewModelProvider.notifier).refreshLinkTaskStatus();
+        print('リンクのタスク状態更新完了');
+        
         // SnackBarで通知
         final hasTasks = data.containsKey('tasks');
         ScaffoldMessenger.of(context).showSnackBar(

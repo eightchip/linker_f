@@ -276,7 +276,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   }
 
   // リンクのタスク状態を更新
-  Future<void> _updateLinkTaskStatus() async {
+  Future<void> refreshLinkTaskStatus() async {
     try {
       print('=== リンクのタスク状態更新開始 ===');
       print('現在のタスク数: ${state.length}');
@@ -294,6 +294,11 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         print('エラーの詳細: ${e.toString()}');
       }
     }
+  }
+
+  // 内部用のリンクのタスク状態を更新
+  Future<void> _updateLinkTaskStatus() async {
+    await refreshLinkTaskStatus();
   }
 
   // データをインポート
