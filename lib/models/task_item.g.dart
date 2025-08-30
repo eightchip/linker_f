@@ -30,19 +30,22 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       completedAt: fields[10] as DateTime?,
       estimatedMinutes: fields[11] as int?,
       notes: fields[12] as String?,
-      isRecurring: fields[13] as bool? ?? false,
+      isRecurring: fields[13] as bool,
       recurringPattern: fields[14] as String?,
       isRecurringReminder: fields[15] as bool? ?? false,
       recurringReminderPattern: fields[16] as String?,
       nextReminderTime: fields[17] as DateTime?,
       reminderCount: fields[18] as int? ?? 0,
+      hasSubTasks: fields[19] as bool? ?? false,
+      completedSubTasksCount: fields[20] as int? ?? 0,
+      totalSubTasksCount: fields[21] as int? ?? 0,
     );
   }
 
   @override
   void write(BinaryWriter writer, TaskItem obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(22)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -80,7 +83,13 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       ..writeByte(17)
       ..write(obj.nextReminderTime)
       ..writeByte(18)
-      ..write(obj.reminderCount);
+      ..write(obj.reminderCount)
+      ..writeByte(19)
+      ..write(obj.hasSubTasks)
+      ..writeByte(20)
+      ..write(obj.completedSubTasksCount)
+      ..writeByte(21)
+      ..write(obj.totalSubTasksCount);
   }
 
   @override

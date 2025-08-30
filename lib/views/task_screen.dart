@@ -10,6 +10,7 @@ import '../services/notification_service.dart';
 import '../services/windows_notification_service.dart';
 import 'task_dialog.dart';
 import 'calendar_screen.dart';
+import 'sub_task_dialog.dart';
 
 class TaskScreen extends ConsumerStatefulWidget {
   const TaskScreen({super.key});
@@ -293,6 +294,41 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // サブタスクボタン
+            IconButton(
+              icon: Stack(
+                children: [
+                  const Icon(Icons.subdirectory_arrow_right, size: 16),
+                  if (task.hasSubTasks)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 12,
+                          minHeight: 12,
+                        ),
+                        child: Text(
+                          '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              onPressed: () => _showSubTaskDialog(task),
+              tooltip: 'サブタスク管理',
+            ),
             // 関連リンクへのアクセスボタン
             if (task.relatedLinkId != null)
               IconButton(
@@ -415,6 +451,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     showDialog(
       context: context,
       builder: (context) => TaskDialog(task: task),
+    );
+  }
+
+  void _showSubTaskDialog(TaskItem task) {
+    showDialog(
+      context: context,
+      builder: (context) => SubTaskDialog(
+        parentTaskId: task.id,
+        parentTaskTitle: task.title,
+      ),
     );
   }
 

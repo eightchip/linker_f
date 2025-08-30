@@ -178,23 +178,36 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   }
 
   Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
+    final now = DateTime.now();
+    final initialTime = _reminderTime ?? now;
+    
+    // カスタム時間選択ダイアログを表示
+    final result = await showDialog<TimeOfDay>(
       context: context,
-      initialTime: _reminderTime != null 
-          ? TimeOfDay.fromDateTime(_reminderTime!)
-          : TimeOfDay.now(),
+      builder: (context) => CustomTimePickerDialog(
+        initialTime: TimeOfDay.fromDateTime(initialTime),
+      ),
     );
-    if (picked != null) {
-      setState(() {
-        _reminderTime = DateTime(
-          _reminderTime?.year ?? DateTime.now().year,
-          _reminderTime?.month ?? DateTime.now().month,
-          _reminderTime?.day ?? DateTime.now().day,
-          picked.hour,
-          picked.minute,
-        );
-        print('リマインダー時刻設定: $_reminderTime');
-      });
+    
+    if (result != null) {
+      final now = DateTime.now();
+      final selectedDateTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        result.hour,
+        result.minute,
+      );
+      
+      // 過去の時間の場合は翌日に設定
+      if (selectedDateTime.isBefore(now)) {
+        _reminderTime = selectedDateTime.add(const Duration(days: 1));
+      } else {
+        _reminderTime = selectedDateTime;
+      }
+      
+      setState(() {});
+      print('リマインダー時刻設定: $_reminderTime');
     }
   }
 
@@ -500,5 +513,179 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       case TaskPriority.urgent:
         return '緊急';
     }
+  }
+}
+
+// カスタム時間選択ダイアログ
+class CustomTimePickerDialog extends StatefulWidget {
+  final TimeOfDay initialTime;
+
+  const CustomTimePickerDialog({
+    Key? key,
+    required this.initialTime,
+  }) : super(key: key);
+
+  @override
+  State<CustomTimePickerDialog> createState() => _CustomTimePickerDialogState();
+}
+
+class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
+  late int _hour;
+  late int _minute;
+
+  @override
+  void initState() {
+    super.initState();
+    _hour = widget.initialTime.hour;
+    _minute = widget.initialTime.minute;
+  }
+
+  void _incrementHour() {
+    setState(() {
+      _hour = (_hour + 1) % 24;
+    });
+  }
+
+  void _decrementHour() {
+    setState(() {
+      _hour = (_hour - 1 + 24) % 24;
+    });
+  }
+
+  void _incrementMinute() {
+    setState(() {
+      _minute = (_minute + 1) % 60;
+    });
+  }
+
+  void _decrementMinute() {
+    setState(() {
+      _minute = (_minute - 1 + 60) % 60;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('時間を選択'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 時間のスピンボタン
+              Column(
+                children: [
+                  IconButton(
+                    onPressed: _incrementHour,
+                    icon: const Icon(Icons.keyboard_arrow_up),
+                    tooltip: '時間を増やす',
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _hour.toString().padLeft(2, '0'),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _decrementHour,
+                    icon: const Icon(Icons.keyboard_arrow_down),
+                    tooltip: '時間を減らす',
+                  ),
+                ],
+              ),
+              
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  ':',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              
+              // 分のスピンボタン
+              Column(
+                children: [
+                  IconButton(
+                    onPressed: _incrementMinute,
+                    icon: const Icon(Icons.keyboard_arrow_up),
+                    tooltip: '分を増やす',
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _minute.toString().padLeft(2, '0'),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _decrementMinute,
+                    icon: const Icon(Icons.keyboard_arrow_down),
+                    tooltip: '分を減らす',
+                  ),
+                ],
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // キーボード入力ボタン
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: () async {
+                  final result = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay(hour: _hour, minute: _minute),
+                  );
+                  if (result != null) {
+                    setState(() {
+                      _hour = result.hour;
+                      _minute = result.minute;
+                    });
+                  }
+                },
+                icon: const Icon(Icons.keyboard),
+                tooltip: 'キーボード入力',
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('キャンセル'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(
+            TimeOfDay(hour: _hour, minute: _minute),
+          ),
+          child: const Text('OK'),
+        ),
+      ],
+    );
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'models/link_item.dart';
 import 'models/group.dart';
 import 'models/task_item.dart';
+import 'models/sub_task.dart';
 import 'views/link_launcher_app.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screen_retriever/screen_retriever.dart';
@@ -53,6 +54,11 @@ void main() async {
   }
   try {
     Hive.registerAdapter(TaskItemAdapter());
+  } catch (e) {
+    // Already registered
+  }
+  try {
+    Hive.registerAdapter(SubTaskAdapter());
   } catch (e) {
     // Already registered
   }

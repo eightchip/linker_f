@@ -1,0 +1,317 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../models/sub_task.dart';
+import '../viewmodels/sub_task_viewmodel.dart';
+import '../viewmodels/task_viewmodel.dart';
+
+class SubTaskDialog extends ConsumerStatefulWidget {
+  final String parentTaskId;
+  final String parentTaskTitle;
+
+  const SubTaskDialog({
+    Key? key,
+    required this.parentTaskId,
+    required this.parentTaskTitle,
+  }) : super(key: key);
+
+  @override
+  ConsumerState<SubTaskDialog> createState() => _SubTaskDialogState();
+}
+
+class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _estimatedMinutesController = TextEditingController();
+  final _notesController = TextEditingController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _estimatedMinutesController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  void _addSubTask() async {
+    if (_formKey.currentState!.validate()) {
+      final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+
+      final subTask = subTaskViewModel.createSubTask(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty 
+            ? null 
+            : _descriptionController.text.trim(),
+        parentTaskId: widget.parentTaskId,
+        estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
+            ? int.tryParse(_estimatedMinutesController.text)
+            : null,
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+      );
+
+      await subTaskViewModel.addSubTask(subTask);
+      
+      // フォームをクリア
+      _titleController.clear();
+      _descriptionController.clear();
+      _estimatedMinutesController.clear();
+      _notesController.clear();
+
+      // UIを強制的に更新
+      ref.refresh(subTaskViewModelProvider);
+      
+      // 少し待機してから統計更新を実行
+      await Future.delayed(const Duration(milliseconds: 200));
+      await taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
+      
+      // 統計更新後に再度UIを更新
+      ref.refresh(taskViewModelProvider);
+    }
+  }
+
+  void _deleteSubTask(String subTaskId) async {
+    final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+
+    await subTaskViewModel.deleteSubTask(subTaskId);
+
+    // UIを強制的に更新
+    ref.refresh(subTaskViewModelProvider);
+    
+    // 少し待機してから統計更新を実行
+    await Future.delayed(const Duration(milliseconds: 200));
+    await taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
+    
+    // 統計更新後に再度UIを更新
+    ref.refresh(taskViewModelProvider);
+  }
+
+  void _toggleSubTaskCompletion(String subTaskId, bool isCompleted) {
+    final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+
+    if (isCompleted) {
+      subTaskViewModel.uncompleteSubTask(subTaskId);
+    } else {
+      subTaskViewModel.completeSubTask(subTaskId);
+    }
+    
+    taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
+    
+    // UIを強制的に更新
+    ref.refresh(subTaskViewModelProvider);
+    ref.refresh(taskViewModelProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final subTasks = ref.watch(subTaskViewModelProvider)
+        .where((subTask) => subTask.parentTaskId == widget.parentTaskId)
+        .toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
+
+    final completedCount = subTasks.where((subTask) => subTask.isCompleted).length;
+    final totalCount = subTasks.length;
+
+    return Dialog(
+      child: Container(
+        width: 600,
+        height: 500,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.subdirectory_arrow_right,
+                  color: Theme.of(context).primaryColor,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'サブタスク: ${widget.parentTaskTitle}',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+                Text(
+                  '$completedCount/$totalCount 完了',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // 進捗バー
+            if (totalCount > 0) ...[
+              LinearProgressIndicator(
+                value: totalCount > 0 ? completedCount / totalCount : 0,
+                backgroundColor: Colors.grey[300],
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  completedCount == totalCount ? Colors.green : Colors.blue,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // サブタスク追加フォーム
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'サブタスクタイトル *',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'タイトルを入力してください';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _estimatedMinutesController,
+                          decoration: const InputDecoration(
+                            labelText: '推定時間 (分)',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: '説明',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _addSubTask,
+                        child: const Text('追加'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // サブタスクリスト
+            Expanded(
+              child: subTasks.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'サブタスクがありません',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: subTasks.length,
+                      itemBuilder: (context, index) {
+                        final subTask = subTasks[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: Checkbox(
+                              value: subTask.isCompleted,
+                              onChanged: (value) {
+                                _toggleSubTaskCompletion(subTask.id, subTask.isCompleted);
+                              },
+                            ),
+                            title: Text(
+                              subTask.title,
+                              style: TextStyle(
+                                decoration: subTask.isCompleted 
+                                    ? TextDecoration.lineThrough 
+                                    : null,
+                                color: subTask.isCompleted 
+                                    ? Colors.grey 
+                                    : null,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (subTask.description != null)
+                                  Text(subTask.description!),
+                                if (subTask.estimatedMinutes != null)
+                                  Text(
+                                    '推定時間: ${subTask.estimatedMinutes}分',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                Text(
+                                  '作成日: ${DateFormat('yyyy/MM/dd HH:mm').format(subTask.createdAt)}',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                if (subTask.completedAt != null)
+                                  Text(
+                                    '完了日: ${DateFormat('yyyy/MM/dd HH:mm').format(subTask.completedAt!)}',
+                                    style: TextStyle(
+                                      color: Colors.green[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            trailing: IconButton(
+                              onPressed: () => _deleteSubTask(subTask.id),
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              tooltip: '削除',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // ボタン
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('閉じる'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

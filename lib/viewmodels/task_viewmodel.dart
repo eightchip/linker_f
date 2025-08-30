@@ -7,6 +7,7 @@ import '../services/notification_service.dart';
 import 'dart:io';
 import '../services/windows_notification_service.dart';
 import 'link_viewmodel.dart';
+import 'sub_task_viewmodel.dart';
 
 final taskViewModelProvider = StateNotifierProvider<TaskViewModel, List<TaskItem>>((ref) {
   return TaskViewModel(ref);
@@ -52,6 +53,9 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       state = tasks;
       
+      // 全タスクのサブタスク統計を更新
+      await _updateAllSubTaskStatistics();
+      
       if (kDebugMode) {
         print('=== タスク読み込み完了 ===');
         print('読み込まれたタスク数: ${tasks.length}');
@@ -64,16 +68,32 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
+  // 全タスクのサブタスク統計を更新
+  Future<void> _updateAllSubTaskStatistics() async {
+    try {
+      for (final task in state) {
+        await updateSubTaskStatistics(task.id);
+      }
+      if (kDebugMode) {
+        print('全タスクのサブタスク統計を更新しました');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('全タスクのサブタスク統計更新エラー: $e');
+      }
+    }
+  }
+
   Future<void> addTask(TaskItem task) async {
     try {
       if (_taskBox == null || !_taskBox!.isOpen) {
         await _loadTasks();
       }
       await _taskBox!.put(task.id, task);
-      final newTasks = [...state, task];
+      final newTasks = [task, ...state];
       newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       state = newTasks;
-      
+
       // リマインダー通知をスケジュール（エラーが発生しても続行）
       try {
         if (task.reminderTime != null) {
@@ -97,10 +117,16 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       } catch (notificationError) {
         print('通知設定エラー（無視）: $notificationError');
       }
-      
+
       // リンクのタスク状態を更新
       await _updateLinkTaskStatus();
       
+      // 新規タスクのサブタスク統計を初期化
+      print('=== 新規タスク作成時のサブタスク統計初期化 ===');
+      print('タスク: ${task.title} (ID: ${task.id})');
+      await updateSubTaskStatistics(task.id);
+      print('=== 新規タスク作成時のサブタスク統計初期化完了 ===');
+
       if (kDebugMode) {
         print('タスク追加: ${task.title}');
         if (task.reminderTime != null) {
@@ -375,6 +401,47 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         print('リンクのタスク状態更新エラー: $e');
         print('エラーの詳細: ${e.toString()}');
       }
+    }
+  }
+
+  // サブタスク統計を更新
+  Future<void> updateSubTaskStatistics(String taskId) async {
+    try {
+      print('=== サブタスク統計更新開始 ===');
+      print('対象タスクID: $taskId');
+      
+      final subTaskViewModel = _ref.read(subTaskViewModelProvider.notifier);
+      
+      // SubTaskViewModelの初期化完了を待つ
+      await subTaskViewModel.waitForInitialization();
+      
+      final subTasks = subTaskViewModel.getSubTasksByParentId(taskId);
+      
+      print('取得されたサブタスク数: ${subTasks.length}');
+      for (final subTask in subTasks) {
+        print('サブタスク: ${subTask.title} (ID: ${subTask.id}, 親ID: ${subTask.parentTaskId})');
+      }
+      
+      final totalSubTasksCount = subTasks.length;
+      final completedSubTasksCount = subTasks.where((subTask) => subTask.isCompleted).length;
+      final hasSubTasks = totalSubTasksCount > 0;
+      
+      print('計算結果 - 総数: $totalSubTasksCount, 完了: $completedSubTasksCount, サブタスクあり: $hasSubTasks');
+      
+      final task = state.firstWhere((t) => t.id == taskId);
+      final updatedTask = task.copyWith(
+        hasSubTasks: hasSubTasks,
+        totalSubTasksCount: totalSubTasksCount,
+        completedSubTasksCount: completedSubTasksCount,
+      );
+      
+      await updateTask(updatedTask);
+      
+      print('サブタスク統計更新完了: ${task.title}');
+      print('更新後のタスク - サブタスクあり: ${updatedTask.hasSubTasks}, 総数: ${updatedTask.totalSubTasksCount}, 完了: ${updatedTask.completedSubTasksCount}');
+    } catch (e) {
+      print('サブタスク統計更新エラー: $e');
+      print('エラーの詳細: ${e.toString()}');
     }
   }
 

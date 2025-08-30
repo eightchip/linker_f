@@ -143,6 +143,15 @@ class TaskItem extends HiveObject {
   @HiveField(18)
   int reminderCount; // リマインダー回数
 
+  @HiveField(19)
+  bool hasSubTasks; // サブタスクを持つかどうか
+
+  @HiveField(20)
+  int completedSubTasksCount; // 完了したサブタスクの数
+
+  @HiveField(21)
+  int totalSubTasksCount; // 総サブタスクの数
+
   TaskItem({
     required this.id,
     required this.title,
@@ -163,6 +172,9 @@ class TaskItem extends HiveObject {
     this.recurringReminderPattern,
     this.nextReminderTime,
     this.reminderCount = 0,
+    this.hasSubTasks = false,
+    this.completedSubTasksCount = 0,
+    this.totalSubTasksCount = 0,
   });
 
   Map<String, dynamic> toJson() {
@@ -186,6 +198,9 @@ class TaskItem extends HiveObject {
       'recurringReminderPattern': recurringReminderPattern,
       'nextReminderTime': nextReminderTime?.toIso8601String(),
       'reminderCount': reminderCount,
+      'hasSubTasks': hasSubTasks,
+      'completedSubTasksCount': completedSubTasksCount,
+      'totalSubTasksCount': totalSubTasksCount,
     };
   }
 
@@ -210,6 +225,9 @@ class TaskItem extends HiveObject {
       recurringReminderPattern: json['recurringReminderPattern'],
       nextReminderTime: json['nextReminderTime'] != null ? DateTime.parse(json['nextReminderTime']) : null,
       reminderCount: json['reminderCount'] ?? 0,
+      hasSubTasks: json['hasSubTasks'] ?? false,
+      completedSubTasksCount: json['completedSubTasksCount'] ?? 0,
+      totalSubTasksCount: json['totalSubTasksCount'] ?? 0,
     );
   }
 
@@ -233,6 +251,9 @@ class TaskItem extends HiveObject {
     String? recurringReminderPattern,
     DateTime? nextReminderTime,
     int? reminderCount,
+    bool? hasSubTasks,
+    int? completedSubTasksCount,
+    int? totalSubTasksCount,
   }) {
     return TaskItem(
       id: id ?? this.id,
@@ -254,6 +275,9 @@ class TaskItem extends HiveObject {
       recurringReminderPattern: recurringReminderPattern ?? this.recurringReminderPattern,
       nextReminderTime: nextReminderTime ?? this.nextReminderTime,
       reminderCount: reminderCount ?? this.reminderCount,
+      hasSubTasks: hasSubTasks ?? this.hasSubTasks,
+      completedSubTasksCount: completedSubTasksCount ?? this.completedSubTasksCount,
+      totalSubTasksCount: totalSubTasksCount ?? this.totalSubTasksCount,
     );
   }
 
