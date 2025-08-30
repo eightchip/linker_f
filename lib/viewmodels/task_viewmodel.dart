@@ -233,11 +233,36 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   Future<void> completeTask(String taskId) async {
     try {
       final task = state.firstWhere((t) => t.id == taskId);
+      
+      // リマインダーをクリア
       final updatedTask = task.copyWith(
         status: TaskStatus.completed,
         completedAt: DateTime.now(),
+        reminderTime: null, // リマインダーをクリア
+        isRecurringReminder: false, // 繰り返しリマインダーもクリア
+        recurringReminderPattern: '', // 繰り返しパターンもクリア
+        nextReminderTime: null, // 次のリマインダー時間もクリア
+        reminderCount: 0, // リマインダーカウントもリセット
       );
+      
       await updateTask(updatedTask);
+      
+      // 通知をキャンセル
+      try {
+        print('=== タスク完了時のリマインダー削除 ===');
+        print('タスク: ${task.title}');
+        
+        if (Platform.isWindows) {
+          await WindowsNotificationService.cancelNotification(taskId);
+        } else {
+          await NotificationService.cancelNotification(taskId);
+        }
+        
+        print('=== タスク完了時のリマインダー削除完了 ===');
+      } catch (notificationError) {
+        print('通知キャンセルエラー（無視）: $notificationError');
+      }
+      
       if (kDebugMode) {
         print('タスク完了: ${task.title}');
       }
@@ -442,6 +467,28 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     } catch (e) {
       print('サブタスク統計更新エラー: $e');
       print('エラーの詳細: ${e.toString()}');
+    }
+  }
+
+  // タスクの並び替えを処理
+  Future<void> updateTasks(List<TaskItem> newTasks) async {
+    try {
+      // 新しい順序でタスクを保存
+      for (int i = 0; i < newTasks.length; i++) {
+        final task = newTasks[i];
+        await _taskBox!.put(task.id, task);
+      }
+      
+      // 状態を更新
+      state = newTasks;
+      
+      if (kDebugMode) {
+        print('タスクの並び替えが完了しました');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('タスクの並び替えエラー: $e');
+      }
     }
   }
 

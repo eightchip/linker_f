@@ -32,13 +32,13 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       notes: fields[12] as String?,
       isRecurring: fields[13] as bool,
       recurringPattern: fields[14] as String?,
-      isRecurringReminder: fields[15] as bool? ?? false,
+      isRecurringReminder: fields[15] as bool,
       recurringReminderPattern: fields[16] as String?,
       nextReminderTime: fields[17] as DateTime?,
-      reminderCount: fields[18] as int? ?? 0,
-      hasSubTasks: fields[19] as bool? ?? false,
-      completedSubTasksCount: fields[20] as int? ?? 0,
-      totalSubTasksCount: fields[21] as int? ?? 0,
+      reminderCount: fields[18] as int,
+      hasSubTasks: fields[19] as bool,
+      completedSubTasksCount: fields[20] as int,
+      totalSubTasksCount: fields[21] as int,
     );
   }
 

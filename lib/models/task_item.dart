@@ -255,12 +255,17 @@ class TaskItem extends HiveObject {
     int? completedSubTasksCount,
     int? totalSubTasksCount,
   }) {
-    return TaskItem(
+    print('=== copyWith呼び出し ===');
+    print('元のreminderTime: ${this.reminderTime}');
+    print('新しいreminderTime: $reminderTime');
+    print('reminderTime == null: ${reminderTime == null}');
+    
+    final result = TaskItem(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
       dueDate: dueDate ?? this.dueDate,
-      reminderTime: reminderTime ?? this.reminderTime,
+      reminderTime: reminderTime, // nullを明示的に設定できるように修正
       priority: priority ?? this.priority,
       status: status ?? this.status,
       tags: tags ?? this.tags,
@@ -279,6 +284,11 @@ class TaskItem extends HiveObject {
       completedSubTasksCount: completedSubTasksCount ?? this.completedSubTasksCount,
       totalSubTasksCount: totalSubTasksCount ?? this.totalSubTasksCount,
     );
+    
+    print('copyWith結果のreminderTime: ${result.reminderTime}');
+    print('=== copyWith完了 ===');
+    
+    return result;
   }
 
   // タスクが期限切れかどうかを判定

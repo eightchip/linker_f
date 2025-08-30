@@ -102,54 +102,76 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       print('リマインダー時間: $_reminderTime');
       print('期限日: $_dueDate');
       print('現在時刻: ${DateTime.now()}');
-
-      final task = taskViewModel.createTask(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty 
-            ? null 
-            : _descriptionController.text.trim(),
-        dueDate: _dueDate,
-        reminderTime: _reminderTime,
-        priority: _priority,
-        tags: tags,
-        relatedLinkId: widget.relatedLinkId,
-        estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
-            ? int.tryParse(_estimatedMinutesController.text)
-            : null,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-        isRecurring: _isRecurring,
-        recurringPattern: _isRecurring ? _recurringPattern : null,
-        isRecurringReminder: _isRecurringReminder,
-        recurringReminderPattern: _isRecurringReminder ? _recurringReminderPattern : null,
-      );
-
-      print('=== 作成されたタスク ===');
-      print('タスクID: ${task.id}');
-      print('タスクタイトル: ${task.title}');
-      print('タスクリマインダー時間: ${task.reminderTime}');
-      print('=== タスク作成ダイアログ完了 ===');
+      print('繰り返しリマインダー: $_isRecurringReminder');
+      print('繰り返しパターン: $_recurringReminderPattern');
 
       if (widget.task != null) {
         // 既存タスクの更新
+        print('=== タスク更新 ===');
+        print('元のリマインダー時間: ${widget.task!.reminderTime}');
+        print('ダイアログのリマインダー時間: $_reminderTime');
+        print('_reminderTimeの型: ${_reminderTime.runtimeType}');
+        print('_reminderTime == null: ${_reminderTime == null}');
+        
         final updatedTask = widget.task!.copyWith(
-          title: task.title,
-          description: task.description,
-          dueDate: task.dueDate,
-          reminderTime: task.reminderTime,
-          priority: task.priority,
-          tags: task.tags,
-          estimatedMinutes: task.estimatedMinutes,
-          notes: task.notes,
-          isRecurring: task.isRecurring,
-          recurringPattern: task.recurringPattern,
-          isRecurringReminder: task.isRecurringReminder,
-          recurringReminderPattern: task.recurringReminderPattern,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty 
+              ? null 
+              : _descriptionController.text.trim(),
+          dueDate: _dueDate,
+          reminderTime: _reminderTime,
+          priority: _priority,
+          tags: tags,
+          estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
+              ? int.tryParse(_estimatedMinutesController.text)
+              : null,
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+          isRecurring: _isRecurring,
+          recurringPattern: _isRecurring ? _recurringPattern : null,
+          isRecurringReminder: _isRecurringReminder,
+          recurringReminderPattern: _isRecurringReminder ? _recurringReminderPattern : null,
+          // リマインダーがクリアされた場合、関連フィールドもクリア
+          nextReminderTime: _reminderTime == null ? null : widget.task!.nextReminderTime,
+          reminderCount: _reminderTime == null ? 0 : widget.task!.reminderCount,
         );
+        
+        print('copyWith後のリマインダー時間: ${updatedTask.reminderTime}');
+        print('新しいリマインダー時間: ${updatedTask.reminderTime}');
+        print('リマインダーがクリアされた: ${widget.task!.reminderTime != null && updatedTask.reminderTime == null}');
+        
         taskViewModel.updateTask(updatedTask);
       } else {
         // 新規タスクの追加
+        final task = taskViewModel.createTask(
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty 
+              ? null 
+              : _descriptionController.text.trim(),
+          dueDate: _dueDate,
+          reminderTime: _reminderTime,
+          priority: _priority,
+          tags: tags,
+          relatedLinkId: widget.relatedLinkId,
+          estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
+              ? int.tryParse(_estimatedMinutesController.text)
+              : null,
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+          isRecurring: _isRecurring,
+          recurringPattern: _isRecurring ? _recurringPattern : null,
+          isRecurringReminder: _isRecurringReminder,
+          recurringReminderPattern: _isRecurringReminder ? _recurringReminderPattern : null,
+        );
+
+        print('=== 作成されたタスク ===');
+        print('タスクID: ${task.id}');
+        print('タスクタイトル: ${task.title}');
+        print('タスクリマインダー時間: ${task.reminderTime}');
+        print('=== タスク作成ダイアログ完了 ===');
+        
         taskViewModel.addTask(task);
       }
 
@@ -333,8 +355,25 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   const SizedBox(width: 8),
                   if (_reminderTime != null)
                     IconButton(
-                      onPressed: () => setState(() => _reminderTime = null),
+                      onPressed: () {
+                        print('=== リマインダークリアボタンクリック ===');
+                        print('クリア前のリマインダー時間: $_reminderTime');
+                        print('クリア前の繰り返しリマインダー: $_isRecurringReminder');
+                        print('クリア前の繰り返しパターン: $_recurringReminderPattern');
+                        
+                        setState(() {
+                          _reminderTime = null;
+                          _isRecurringReminder = false;
+                          _recurringReminderPattern = '';
+                        });
+                        
+                        print('クリア後のリマインダー時間: $_reminderTime');
+                        print('クリア後の繰り返しリマインダー: $_isRecurringReminder');
+                        print('クリア後の繰り返しパターン: $_recurringReminderPattern');
+                        print('リマインダーをクリアしました');
+                      },
                       icon: const Icon(Icons.clear),
+                      tooltip: 'リマインダーをクリア',
                     ),
                 ],
               ),

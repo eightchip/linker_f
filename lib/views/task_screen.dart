@@ -31,33 +31,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     final statistics = taskViewModel.getTaskStatistics();
 
     // フィルタリング
-    List<TaskItem> filteredTasks = tasks.where((task) {
-      // ステータスフィルター
-      if (_filterStatus != 'all') {
-        final status = TaskStatus.values.firstWhere(
-          (s) => s.toString().split('.').last == _filterStatus,
-        );
-        if (task.status != status) return false;
-      }
-
-      // 優先度フィルター
-      if (_filterPriority != 'all') {
-        final priority = TaskPriority.values.firstWhere(
-          (p) => p.toString().split('.').last == _filterPriority,
-        );
-        if (task.priority != priority) return false;
-      }
-
-      // 検索フィルター
-      if (_searchQuery.isNotEmpty) {
-        final keywords = _searchQuery.toLowerCase().split(' ').where((k) => k.isNotEmpty).toList();
-        return _matchesKeywords(task.title.toLowerCase(), keywords) ||
-               (task.description != null && _matchesKeywords(task.description!.toLowerCase(), keywords)) ||
-               task.tags.any((tag) => _matchesKeywords(tag.toLowerCase(), keywords));
-      }
-
-      return true;
-    }).toList();
+    final filteredTasks = _getFilteredTasks(tasks);
 
     return Scaffold(
       appBar: AppBar(
@@ -104,11 +78,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 ? const Center(
                     child: Text('タスクがありません'),
                   )
-                : ListView.builder(
+                : ReorderableListView.builder(
                     itemCount: filteredTasks.length,
                     itemBuilder: (context, index) {
                       return _buildTaskCard(filteredTasks[index]);
                     },
+                    onReorder: (oldIndex, newIndex) {
+                      _handleTaskReorder(oldIndex, newIndex);
+                    },
+                    buildDefaultDragHandles: true,
                   ),
           ),
         ],
@@ -228,6 +206,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
   Widget _buildTaskCard(TaskItem task) {
     return Card(
+      key: ValueKey(task.id), // キーを追加
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: ListTile(
         leading: _buildPriorityIndicator(task.priority),
@@ -646,5 +625,86 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   bool _matchesKeywords(String text, List<String> keywords) {
     if (keywords.isEmpty) return true;
     return keywords.every((keyword) => text.contains(keyword));
+  }
+
+  // ReorderableListViewの並び替えを処理するメソッド
+  void _handleTaskReorder(int oldIndex, int newIndex) {
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    final List<TaskItem> allTasks = List.from(ref.read(taskViewModelProvider));
+    
+    // フィルタリングされたタスクのインデックスを元のタスクリストのインデックスに変換
+    final filteredTasks = _getFilteredTasks(allTasks);
+    final oldTask = filteredTasks[oldIndex];
+    final newTask = filteredTasks[newIndex];
+    
+    final oldOriginalIndex = allTasks.indexWhere((task) => task.id == oldTask.id);
+    final newOriginalIndex = allTasks.indexWhere((task) => task.id == newTask.id);
+    
+    if (oldOriginalIndex != -1 && newOriginalIndex != -1) {
+      // 元のリストで並び替えを実行
+      final task = allTasks.removeAt(oldOriginalIndex);
+      allTasks.insert(newOriginalIndex, task);
+      
+      // 並び替えを保存
+      taskViewModel.updateTasks(allTasks);
+    }
+  }
+  
+  // フィルタリング処理を別メソッドに分離
+  List<TaskItem> _getFilteredTasks(List<TaskItem> tasks) {
+    return tasks.where((task) {
+      // ステータスフィルター
+      if (_filterStatus != 'all') {
+        TaskStatus? status;
+        switch (_filterStatus) {
+          case 'pending':
+            status = TaskStatus.pending;
+            break;
+          case 'inProgress':
+            status = TaskStatus.inProgress;
+            break;
+          case 'completed':
+            status = TaskStatus.completed;
+            break;
+        }
+        if (task.status != status) return false;
+      }
+
+      // 優先度フィルター
+      if (_filterPriority != 'all') {
+        TaskPriority? priority;
+        switch (_filterPriority) {
+          case 'low':
+            priority = TaskPriority.low;
+            break;
+          case 'medium':
+            priority = TaskPriority.medium;
+            break;
+          case 'high':
+            priority = TaskPriority.high;
+            break;
+          case 'urgent':
+            priority = TaskPriority.urgent;
+            break;
+        }
+        if (task.priority != priority) return false;
+      }
+
+      // 検索フィルター
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final title = task.title.toLowerCase();
+        final description = task.description?.toLowerCase() ?? '';
+        final tags = task.tags.map((tag) => tag.toLowerCase()).join(' ');
+        
+        if (!title.contains(query) && 
+            !description.contains(query) && 
+            !tags.contains(query)) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
   }
 }

@@ -193,6 +193,30 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
     }
   }
 
+  // サブタスクの並び替えを処理
+  Future<void> updateSubTaskOrders(List<SubTask> reorderedSubTasks) async {
+    try {
+      // 新しい順序でサブタスクを保存
+      for (int i = 0; i < reorderedSubTasks.length; i++) {
+        final subTask = reorderedSubTasks[i].copyWith(order: i);
+        await _subTaskBox!.put(subTask.id, subTask);
+      }
+      
+      // 状態を更新
+      final allSubTasks = _subTaskBox!.values.toList();
+      allSubTasks.sort((a, b) => a.order.compareTo(b.order));
+      state = allSubTasks;
+      
+      if (kDebugMode) {
+        print('サブタスクの並び替えが完了しました');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('サブタスクの並び替えエラー: $e');
+      }
+    }
+  }
+
   // 新しいサブタスクを作成
   SubTask createSubTask({
     required String title,
