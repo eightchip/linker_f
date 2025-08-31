@@ -1076,17 +1076,43 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
   }
 
   Widget _buildContent(BuildContext context, double scale, List<LinkItem> items) {
-    if (items.isEmpty) {
+    // 検索クエリに基づいてリンクをフィルタリング
+    List<LinkItem> filteredItems = items;
+    if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
+      final keywords = widget.searchQuery!.toLowerCase().split(' ').where((k) => k.isNotEmpty).toList();
+      filteredItems = items.where((item) {
+        // ラベルでの検索
+        if (_matchesKeywords(item.label.toLowerCase(), keywords)) {
+          return true;
+        }
+        // URLリンクの場合、ドメイン名でも検索
+        if (item.type == LinkType.url) {
+          final domain = _extractDomain(item.path);
+          if (_matchesKeywords(domain.toLowerCase(), keywords)) {
+            return true;
+          }
+        }
+        // タグでの検索
+        if (item.tags.any((tag) => _matchesKeywords(tag.toLowerCase(), keywords))) {
+          return true;
+        }
+        return false;
+      }).toList();
+    }
+    
+    if (filteredItems.isEmpty) {
       return SizedBox(
         height: 119 * scale,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.link_off, size: 55 * scale, color: Colors.grey),
+              Icon(Icons.search_off, size: 55 * scale, color: Colors.grey),
               SizedBox(height: 11 * scale),
               Text(
-                'No links yet',
+                widget.searchQuery != null && widget.searchQuery!.isNotEmpty 
+                  ? '検索結果なし'
+                  : 'No links yet',
                 style: TextStyle(color: Colors.grey, fontSize: 19 * scale, fontWeight: FontWeight.w500),
               ),
             ],
@@ -1094,8 +1120,9 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
         ),
       );
     }
+    
     // お気に入り→通常の順で並べる
-    final filtered = showOnlyFavorites ? items.where((l) => l.isFavorite).toList() : items;
+    final filtered = showOnlyFavorites ? filteredItems.where((l) => l.isFavorite).toList() : filteredItems;
     final sortedItems = [
       ...filtered.where((l) => l.isFavorite),
       ...filtered.where((l) => !l.isFavorite),
@@ -1762,5 +1789,22 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
         relatedLinkId: link.id,
       ),
     );
+  }
+
+  // 複数キーワードがすべて含まれているかチェックするヘルパーメソッド
+  bool _matchesKeywords(String text, List<String> keywords) {
+    if (keywords.isEmpty) return true;
+    return keywords.every((keyword) => text.contains(keyword));
+  }
+
+  // URLからドメイン名を抽出するヘルパーメソッド
+  String _extractDomain(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.host;
+    } catch (e) {
+      // URLの形式が不正な場合、元のパスを返す
+      return url;
+    }
   }
 } 

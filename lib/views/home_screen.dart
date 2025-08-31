@@ -419,8 +419,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (_searchQuery.isNotEmpty) {
       final keywords = _searchQuery.toLowerCase().split(' ').where((k) => k.isNotEmpty).toList();
       displayGroups = displayGroups
-        .where((g) => _matchesKeywords(g.title.toLowerCase(), keywords) ||
-          g.items.any((l) {
+        .map((g) {
+          // グループタイトルがマッチする場合、すべてのリンクを表示
+          if (_matchesKeywords(g.title.toLowerCase(), keywords)) {
+            return g;
+          }
+          
+          // グループタイトルがマッチしない場合、マッチするリンクのみを表示
+          final matchingItems = g.items.where((l) {
             // ラベルでの検索
             if (_matchesKeywords(l.label.toLowerCase(), keywords)) {
               return true;
@@ -437,7 +443,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               return true;
             }
             return false;
-          }))
+          }).toList();
+          
+          // マッチするリンクがある場合のみ、フィルタリングされたグループを返す
+          return matchingItems.isNotEmpty ? g.copyWith(items: matchingItems) : null;
+        })
+        .where((g) => g != null)
+        .cast<Group>()
         .toList();
     }
     // 最近使ったグループ・リンク
@@ -652,10 +664,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
                 bottom: _showSearchBar
                     ? PreferredSize(
-                        preferredSize: Size.fromHeight(_availableTags.isNotEmpty ? 116.0 : 88.0),
+                        preferredSize: Size.fromHeight(_availableTags.isNotEmpty ? 90.0 : 62.0),
                         child: Container(
-                          height: _availableTags.isNotEmpty ? 116.0 : 88.0,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          height: _availableTags.isNotEmpty ? 90.0 : 62.0,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                           child: Column(
                             children: [
                               // 検索テキストフィールド
@@ -677,7 +689,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     },
                                   ),
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
                                 ),
                                 onChanged: (v) {
@@ -691,9 +703,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                               // タグ候補表示
                               if (_availableTags.isNotEmpty) ...[
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 1),
                                 Container(
-                                  height: 24,
+                                  height: 16,
                                   child: ListView.builder(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: _availableTags.length,
@@ -720,7 +732,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             child: Text(
                                               tag,
                                               style: const TextStyle(
-                                                fontSize: 10,
+                                                fontSize: 7,
                                                 color: Colors.blue,
                                               ),
                                             ),
@@ -731,11 +743,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                 ),
                               ],
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 1),
                               // リンクタイプフィルターラジオボタン
                               Row(
                                 children: [
-                                  const Text('タイプ: ', style: TextStyle(fontSize: 12)),
+                                  const Text('タイプ: ', style: TextStyle(fontSize: 9)),
                                   Expanded(
                                     child: Row(
                                       children: [
@@ -1338,10 +1350,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final accentColor = ref.watch(accentColorProvider);
     final textColor = Theme.of(context).textTheme.bodyLarge?.color;
     final keywords = _searchQuery.toLowerCase().split(' ').where((k) => k.isNotEmpty).toList();
-    final linkItems = group.items.where((link) => 
-      _matchesKeywords(link.label.toLowerCase(), keywords) || 
-      _matchesKeywords(link.path.toLowerCase(), keywords)
-    ).toList();
+    
+    // グループタイトルがマッチする場合、すべてのリンクを表示
+    List<LinkItem> linkItems;
+    if (_matchesKeywords(group.title.toLowerCase(), keywords)) {
+      linkItems = group.items;
+    } else {
+      // グループタイトルがマッチしない場合、マッチするリンクのみを表示
+      linkItems = group.items.where((link) => 
+        _matchesKeywords(link.label.toLowerCase(), keywords) || 
+        _matchesKeywords(link.path.toLowerCase(), keywords) ||
+        (link.type == LinkType.url && _matchesKeywords(_extractDomain(link.path).toLowerCase(), keywords)) ||
+        link.tags.any((tag) => _matchesKeywords(tag.toLowerCase(), keywords))
+      ).toList();
+    }
 
     return Card(
       elevation: isDragging ? 0 : 2,
@@ -1380,7 +1402,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${group.items.length} アイテム',
+                    _searchQuery.isNotEmpty 
+                      ? '${linkItems.length}/${group.items.length} アイテム'
+                      : '${group.items.length} アイテム',
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
@@ -1393,19 +1417,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: group.collapsed
                     ? Center(
                         child: Text(
-                          '${group.items.length} 個のリンク',
+                          _searchQuery.isNotEmpty 
+                            ? '${linkItems.length}/${group.items.length} 個のリンク'
+                            : '${group.items.length} 個のリンク',
                           style: TextStyle(color: textColor?.withValues(alpha: 0.6)),
                         ),
                       )
-                    : Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: linkItems.map((link) => ActionChip(
-                          label: Text(link.label, overflow: TextOverflow.ellipsis),
-                          avatar: Icon(_iconForType(link.type), size: 18),
-                          onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                        )).toList(),
-                      ),
+                    : linkItems.isEmpty
+                        ? Center(
+                            child: Text(
+                              _searchQuery.isNotEmpty ? '検索結果なし' : 'リンクがありません',
+                              style: TextStyle(color: textColor?.withValues(alpha: 0.6)),
+                            ),
+                          )
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: linkItems.map((link) => ActionChip(
+                              label: Text(link.label, overflow: TextOverflow.ellipsis),
+                              avatar: Icon(_iconForType(link.type), size: 18),
+                              onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
+                            )).toList(),
+                          ),
               ),
             ),
             // 右側: アクションボタン

@@ -65,9 +65,11 @@ void main() async {
   
   // データベースファイルの永続化を確実にする
   // 注意: スキーマ変更時のみ以下の行を有効にする
-  // await Hive.deleteBoxFromDisk('groups');
-  // await Hive.deleteBoxFromDisk('links');
-  // await Hive.deleteBoxFromDisk('tasks');
+  print('Hiveデータベースを完全にリセットします...');
+  await Hive.deleteBoxFromDisk('groups');
+  await Hive.deleteBoxFromDisk('links');
+  await Hive.deleteBoxFromDisk('tasks');
+  print('Hiveデータベースのリセットが完了しました');
   
   // 通知機能の初期化
   await NotificationService.initialize();

@@ -21,14 +21,14 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
       label: fields[1] as String,
       path: fields[2] as String,
       type: fields[3] as LinkType,
-      createdAt: fields[4] as DateTime,
+      createdAt: fields[4] as DateTime? ?? DateTime.now(),
       lastUsed: fields[5] as DateTime?,
-      isFavorite: fields[6] as bool,
+      isFavorite: fields[6] as bool? ?? false,
       memo: fields[7] as String?,
       iconData: fields[8] as int?,
       iconColor: fields[9] as int?,
-      tags: (fields[10] as List).cast<String>(),
-      hasActiveTasks: fields[11] as bool,
+      tags: (fields[10] as List?)?.cast<String>() ?? [],
+      hasActiveTasks: fields[11] as bool? ?? false,
       faviconFallbackDomain: fields[12] as String?,
     );
   }
