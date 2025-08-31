@@ -10,3 +10,7 @@ windows/runner/Debug/
 windows/runner/Release/
 x64/
 x86/
+.exe
+.json
+.hive
+

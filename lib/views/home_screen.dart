@@ -11,13 +11,12 @@ import '../models/group.dart';
 import '../models/link_item.dart';
 import '../models/task_item.dart';
 import 'group_card.dart';
-import 'layout_settings_screen.dart';
+import 'settings_screen.dart';
 import 'task_screen.dart';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:intl/intl.dart';
+
 import 'package:hive/hive.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pdf/pdf.dart';
@@ -272,15 +271,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _searchFocusNode.requestFocus();
         });
       }
-      // Ctrl+Shift+E: データをエクスポート
-      else if (key == LogicalKeyboardKey.keyE && isControlPressed && isShiftPressed) {
-        print('✅ Ctrl+Shift+E 検出: データエクスポート');
-        _exportData(context);
-      }
-      // Ctrl+Shift+I: データをインポート
-      else if (key == LogicalKeyboardKey.keyI && isControlPressed && isShiftPressed) {
-        print('✅ Ctrl+Shift+I 検出: データインポート');
-        _importData(context);
+      // Ctrl+Shift+S: 設定画面を開く
+      else if (key == LogicalKeyboardKey.keyS && isControlPressed && isShiftPressed) {
+        print('✅ Ctrl+Shift+S 検出: 設定画面を開く');
+        _showSettingsScreen(context);
       }
       // Ctrl+G: グリッド/リスト表示切り替え
       else if (key == LogicalKeyboardKey.keyG && isControlPressed) {
@@ -334,11 +328,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 
 
-  // レイアウト設定画面
-  void _showLayoutSettingsDialog(BuildContext context) {
+  // 設定画面
+  void _showSettingsScreen(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const LayoutSettingsScreen(),
+        builder: (context) => const SettingsScreen(),
       ),
     );
   }
@@ -369,8 +363,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _ShortcutItem('Ctrl+G', 'グリッド/リスト表示切り替え'),
               _ShortcutItem('Escape', '検索バーを閉じる'),
               _ShortcutItem('Tab', 'タグ選択を切り替え（すべて→ファイル→フォルダ→URL）'),
-              _ShortcutItem('Ctrl+Shift+E', 'データをエクスポート'),
-              _ShortcutItem('Ctrl+Shift+I', 'データをインポート'),
+              _ShortcutItem('Ctrl+Shift+S', '設定画面を開く'),
               _ShortcutItem('F1', 'このヘルプを表示'),
             ],
           ),
@@ -561,17 +554,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         case 'dark_mode':
                           ref.read(darkModeProvider.notifier).state = !isDarkMode;
                           break;
-                        case 'accent_color':
-                          _showAccentColorDialog(context);
-                          break;
-                        case 'export':
-                          _exportData(context);
-                          break;
-                        case 'import':
-                          _importData(context);
-                          break;
-                        case 'layout_settings':
-                          _showLayoutSettingsDialog(context);
+
+
+
+                        case 'settings':
+                          _showSettingsScreen(context);
                           break;
                       }
                     },
@@ -610,52 +597,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       PopupMenuItem(
-                        value: 'dark_mode',
-                        child: Row(
-                          children: [
-                            Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: 20),
-                            SizedBox(width: 8),
-                            Text(isDarkMode ? 'ライトモード' : 'ダークモード'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'accent_color',
-                        child: Row(
-                          children: [
-                            Icon(Icons.palette, size: 20),
-                            SizedBox(width: 8),
-                            Text('アクセントカラー変更'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'export',
-                        child: Row(
-                          children: [
-                            Icon(Icons.upload, size: 20),
-                            SizedBox(width: 8),
-                            Text('設定をエクスポート'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'import',
-                        child: Row(
-                          children: [
-                            Icon(Icons.download, size: 20),
-                            SizedBox(width: 8),
-                            Text('設定をインポート'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'layout_settings',
+                        value: 'settings',
                         child: Row(
                           children: [
                             Icon(Icons.settings, size: 20),
                             SizedBox(width: 8),
-                            Text('レイアウト設定'),
+                            Text('設定'),
                           ],
                         ),
                       ),
@@ -1689,209 +1636,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Future.delayed(const Duration(seconds: 2), () => entry.remove());
   }
 
-  void _exportData(BuildContext context) async {
-    // メモを含めるかどうかの選択ダイアログ
-    final includeMemos = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('エクスポート設定'),
-        content: const Text('メモを含めてエクスポートしますか？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('含めない'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('含める'),
-          ),
-        ],
-      ),
-    );
-    
-    if (includeMemos == null) return; // キャンセルされた場合
-    
-    final darkMode = ref.read(darkModeProvider);
-    final fontSize = ref.read(fontSizeProvider);
-    final accentColor = ref.read(accentColorProvider);
-    
-    // リンクデータとタスクデータを取得
-    final linkData = ref.read(linkViewModelProvider.notifier).exportDataWithSettings(
-      darkMode, 
-      fontSize, 
-      accentColor,
-      excludeMemos: !includeMemos,
-    );
-    
-    final taskData = ref.read(taskViewModelProvider.notifier).exportData();
-    
-    // 統合データを作成
-    final data = {
-      ...linkData,
-      'tasks': taskData['tasks'],
-      'tasksExportedAt': taskData['exportedAt'],
-    };
-    
-    final jsonStr = jsonEncode(data);
-    final now = DateTime.now();
-    final formatted = DateFormat('yyMMddHHmm').format(now);
-    final memoText = includeMemos ? 'メモあり' : 'メモなし';
-    final fileName = 'linker_f_export_${memoText}_$formatted.json';
-    final currentDir = Directory.current;
-    final file = File('${currentDir.path}/$fileName');
-    await file.writeAsString(jsonStr);
-    
-    // 画面中央にエクスポート完了メッセージを表示
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 24),
-            SizedBox(width: 8),
-            Text('エクスポート完了'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('エクスポートしました:'),
-            SizedBox(height: 8),
-            Text(
-              'ファイル名: $fileName',
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'monospace',
-                backgroundColor: Colors.grey[100],
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              '保存場所: ${currentDir.path}',
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'monospace',
-                backgroundColor: Colors.grey[100],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              try {
-                final directory = file.parent;
-                await Process.run('explorer', [directory.path]);
-              } catch (e) {
-                print('フォルダを開くエラー: $e');
-                // エラーが発生した場合は、ファイルの場所を表示するダイアログを表示
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text('フォルダを開けませんでした'),
-                    content: Text('ファイルの場所: ${file.parent.path}'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('OK'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              Navigator.pop(context);
-            },
-            icon: Icon(Icons.folder_open),
-            label: Text('フォルダを開く'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _importData(BuildContext context) async {
-    try {
-      // デフォルトのエクスポートフォルダを初期位置に設定
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        initialDirectory: Directory.current.path, // 現在のディレクトリを初期位置に
-      );
-      
-      if (result != null && result.files.isNotEmpty) {
-        final file = File(result.files.first.path!);
-        final jsonStr = await file.readAsString();
-        final data = jsonDecode(jsonStr) as Map<String, dynamic>;
-        
-        print('=== インポート処理開始 ===');
-        print('データのキー: ${data.keys.toList()}');
-        
-        // リンクデータをインポート
-        print('リンクデータをインポート中...');
-        await ref.read(linkViewModelProvider.notifier).importDataWithSettings(
-          data,
-          (bool darkMode, double fontSize, int accentColor) {
-            ref.read(darkModeProvider.notifier).state = darkMode;
-            ref.read(fontSizeProvider.notifier).state = fontSize;
-            ref.read(accentColorProvider.notifier).state = accentColor;
-          },
-        );
-        print('リンクデータのインポート完了');
-        
-        // タスクデータをインポート（存在する場合）
-        if (data.containsKey('tasks')) {
-          print('タスクデータが見つかりました');
-          final taskData = {
-            'tasks': data['tasks'],
-          };
-          print('タスクデータ構造: $taskData');
-          await ref.read(taskViewModelProvider.notifier).importData(taskData);
-          print('タスクデータのインポート完了');
-        } else {
-          print('タスクデータが見つかりません');
-        }
-        
-        // データの永続化を確実にするため、少し待機
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        // リンクのタスク状態を更新（タスクデータが存在しない場合でも実行）
-        print('リンクのタスク状態を更新中...');
-        await ref.read(taskViewModelProvider.notifier).refreshLinkTaskStatus();
-        print('リンクのタスク状態更新完了');
-        
-        // SnackBarで通知
-        final hasTasks = data.containsKey('tasks');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(hasTasks 
-              ? 'リンクとタスクをインポートしました: ${file.path}'
-              : 'リンクをインポートしました: ${file.path}'),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        
-        print('=== インポート処理完了 ===');
-      }
-    } catch (e) {
-      print('インポートエラー: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('インポートエラー: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
-    }
-  }
+
+
 
   Widget _buildEmptyState() {
     return Center(
@@ -2175,59 +1922,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  // アクセントカラー選択ダイアログを表示するメソッド
-  void _showAccentColorDialog(BuildContext context) async {
-    final currentColor = ref.read(accentColorProvider);
-    final colorOptions = [
-      0xFF3B82F6, // 青（現在のデフォルト）
-      0xFFEF4444, // 赤
-      0xFF22C55E, // 緑
-      0xFFF59E42, // オレンジ
-      0xFF8B5CF6, // 紫
-      0xFFEC4899, // ピンク
-      0xFFEAB308, // 黄
-      0xFF06B6D4, // 水色
-      0xFF92400E, // 茶色
-      0xFF64748B, // グレー
-      0xFF84CC16, // ライム
-      0xFF6366F1, // インディゴ
-      0xFF14B8A6, // ティール
-      0xFFFB923C, // ディープオレンジ
-      0xFF7C3AED, // ディープパープル
-      0xFFFBBF24, // アンバー
-      0xFF0EA5E9, // シアン
-      0xFFB45309, // ブラウン
-      0xFFB91C1C, // レッドブラウン
-      0xFF166534, // ダークグリーン
-    ];
-    final colorNames = [
-      'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'イエロー', 'シアン', 'ブラウン', 'グレー', 'ライム', 'インディゴ', 'ティール', 'ディープオレンジ', 'ディープパープル', 'アンバー', 'シアン', 'ブラウン', 'レッドブラウン', 'ダークグリーン'
-    ];
-    final selected = await showDialog<int>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('アクセントカラーを選択'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: colorOptions.map((color) {
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Color(color),
-                  child: currentColor == color ? const Icon(Icons.check, color: Colors.white) : null,
-                ),
-                title: Text(colorNames[colorOptions.indexOf(color)]),
-                onTap: () => Navigator.pop(context, color),
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-    if (selected != null && selected != currentColor) {
-      ref.read(accentColorProvider.notifier).state = selected;
-    }
-  }
+
 
   // メモ一括編集ダイアログを表示するメソッド
   void _showMemoBulkEditDialog(BuildContext context) {

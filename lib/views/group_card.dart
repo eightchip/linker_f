@@ -1629,6 +1629,14 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                     tags: tagsController.text.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList(),
                     faviconFallbackDomain: selectedType == LinkType.url ? fallbackDomainController.text.trim().isEmpty ? null : fallbackDomainController.text.trim() : null,
                   );
+                  
+                  // タグ保存のデバッグログを追加
+                  print('=== タグ保存デバッグ ===');
+                  print('元のタグ: ${item.tags}');
+                  print('タグコントローラーの値: "${tagsController.text}"');
+                  print('パース後のタグ: ${tagsController.text.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList()}');
+                  print('更新後のタグ: ${updated.tags}');
+                  
                   print('リンク更新: iconData=${updated.iconData}, iconColor=${updated.iconColor}');
                   print('選択されたアイコン: codePoint=${selectedIcon.codePoint}, fontFamily=${selectedIcon.fontFamily}');
                   print('Icons.public.codePoint=${Icons.public.codePoint}');

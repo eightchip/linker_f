@@ -177,7 +177,8 @@ class LinkViewModel extends StateNotifier<LinkState> {
             item1.type != item2.type ||
             item1.isFavorite != item2.isFavorite ||
             item1.lastUsed != item2.lastUsed ||
-            item1.hasActiveTasks != item2.hasActiveTasks) {
+            item1.hasActiveTasks != item2.hasActiveTasks ||
+            !_areTagsEqual(item1.tags, item2.tags)) {
           
           // デバッグ情報を出力
           if (kDebugMode) {
@@ -191,6 +192,9 @@ class LinkViewModel extends StateNotifier<LinkState> {
             print('お気に入り: ${item1.isFavorite == item2.isFavorite}');
             print('最終使用: ${item1.lastUsed == item2.lastUsed}');
             print('アクティブタスク: ${item1.hasActiveTasks == item2.hasActiveTasks}');
+            print('タグ: ${_areTagsEqual(item1.tags, item2.tags)}');
+            print('item1.tags: ${item1.tags}');
+            print('item2.tags: ${item2.tags}');
             print('item1.hasActiveTasks: ${item1.hasActiveTasks}');
             print('item2.hasActiveTasks: ${item2.hasActiveTasks}');
             print('==========================================');
@@ -201,6 +205,15 @@ class LinkViewModel extends StateNotifier<LinkState> {
       }
     }
     
+    return true;
+  }
+
+  // タグの等価性をチェックするヘルパーメソッド
+  bool _areTagsEqual(List<String> tags1, List<String> tags2) {
+    if (tags1.length != tags2.length) return false;
+    for (int i = 0; i < tags1.length; i++) {
+      if (tags1[i] != tags2[i]) return false;
+    }
     return true;
   }
 
@@ -446,10 +459,19 @@ class LinkViewModel extends StateNotifier<LinkState> {
     final groupIndex = groups.indexWhere((g) => g.id == groupId);
     if (groupIndex != -1) {
       final group = groups[groupIndex];
-      final updatedItems = group.items.map((e) => e.id == updated.id ? updated : e).toList();
-      final updatedGroup = group.copyWith(items: updatedItems);
-      
-      // フォールバックドメインのデバッグログ
+              final updatedItems = group.items.map((e) => e.id == updated.id ? updated : e).toList();
+        final updatedGroup = group.copyWith(items: updatedItems);
+        
+        // タグ保存のデバッグログを追加
+        if (kDebugMode) {
+          print('=== updateLinkInGroup デバッグ ===');
+          print('更新されるリンクのタグ: ${updated.tags}');
+          print('グループ内の更新後のアイテム数: ${updatedItems.length}');
+          final updatedItem = updatedItems.firstWhere((item) => item.id == updated.id);
+          print('実際に保存されるアイテムのタグ: ${updatedItem.tags}');
+        }
+        
+        // フォールバックドメインのデバッグログ
       if (kDebugMode && updated.faviconFallbackDomain != null && updated.faviconFallbackDomain!.isNotEmpty) {
         print('リンク更新: フォールバックドメイン設定 = ${updated.faviconFallbackDomain}');
       }
