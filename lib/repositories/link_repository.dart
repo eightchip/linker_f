@@ -1,4 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/foundation.dart';
 import '../models/link_item.dart';
 import '../models/group.dart';
 
@@ -83,37 +84,37 @@ class LinkRepository {
 
       // Export/Import
   Map<String, dynamic> exportData({Map<String, dynamic>? settings, bool excludeMemos = false}) {
-    print('=== exportData 呼び出し ===');
-    print('excludeMemos: $excludeMemos');
+    if (kDebugMode) {
+      print('=== exportData 呼び出し ===');
+      print('excludeMemos: $excludeMemos');
+    }
     
     if (excludeMemos) {
-      print('=== メモ除外エクスポート開始 ===');
+      if (kDebugMode) {
+        print('=== メモ除外エクスポート開始 ===');
+      }
       
       _ensureInitialized();
       // 元のデータを確認
-      print('=== 元のデータ確認 ===');
-      for (final group in _groupsBox!.values) {
-        for (final item in group.items) {
-          if (item.memo != null) {
-            print('元データ: グループ "${group.title}" のリンク "${item.label}": memo="${item.memo}"');
+      if (kDebugMode) {
+        print('=== 元のデータ確認 ===');
+        for (final group in _groupsBox!.values) {
+          for (final item in group.items) {
+            if (item.memo != null) {
+              print('元データ: グループ "${group.title}" のリンク "${item.label}": memo="${item.memo}"');
+            }
           }
         }
-      }
-      for (final link in _linksBox!.values) {
-        if (link.memo != null) {
-          print('元データ: 個別リンク "${link.label}": memo="${link.memo}"');
+        for (final link in _linksBox!.values) {
+          if (link.memo != null) {
+            print('元データ: 個別リンク "${link.label}": memo="${link.memo}"');
+          }
         }
       }
       
       // メモを除外したデータを作成（より確実な方法）
       final groupsWithoutMemos = _groupsBox!.values.map((group) {
         final itemsWithoutMemos = group.items.map((item) {
-          // メモがnullでない場合（空文字列も含む）のみ除外処理をログ出力
-          if (item.memo != null && item.memo!.isNotEmpty) {
-            print('グループ "${group.title}" のリンク "${item.label}": メモを除外 (元: "${item.memo}" -> null)');
-          } else if (item.memo != null) {
-            print('グループ "${group.title}" のリンク "${item.label}": 空メモを除外 (元: "" -> null)');
-          }
           // 新しいLinkItemオブジェクトを作成してメモを確実にnullにする
           final itemWithoutMemo = LinkItem(
             id: item.id,
@@ -130,7 +131,6 @@ class LinkRepository {
             hasActiveTasks: item.hasActiveTasks,
             faviconFallbackDomain: item.faviconFallbackDomain,
           );
-          print('除外後: グループ "${group.title}" のリンク "${item.label}": memo="${itemWithoutMemo.memo}"');
           return itemWithoutMemo;
         }).toList();
         return group.copyWith(items: itemsWithoutMemos);
@@ -138,10 +138,12 @@ class LinkRepository {
       
       final linksWithoutMemos = _linksBox!.values.map((link) {
         // メモがnullでない場合（空文字列も含む）のみ除外処理をログ出力
-        if (link.memo != null && link.memo!.isNotEmpty) {
-          print('個別リンク "${link.label}": メモを除外 (元: "${link.memo}" -> null)');
-        } else if (link.memo != null) {
-          print('個別リンク "${link.label}": 空メモを除外 (元: "" -> null)');
+        if (kDebugMode) {
+          if (link.memo != null && link.memo!.isNotEmpty) {
+            print('個別リンク "${link.label}": メモを除外 (元: "${link.memo}" -> null)');
+          } else if (link.memo != null) {
+            print('個別リンク "${link.label}": 空メモを除外 (元: "" -> null)');
+          }
         }
         // 新しいLinkItemオブジェクトを作成してメモを確実にnullに設定
         final linkWithoutMemo = LinkItem(
@@ -159,43 +161,24 @@ class LinkRepository {
           hasActiveTasks: link.hasActiveTasks,
           faviconFallbackDomain: link.faviconFallbackDomain,
         );
-        print('除外後: 個別リンク "${link.label}": memo="${linkWithoutMemo.memo}"');
         return linkWithoutMemo;
       }).toList();
       
-      print('=== メモ除外エクスポート完了 ===');
+      if (kDebugMode) {
+        print('=== メモ除外エクスポート完了 ===');
+      }
       
-      // 最終的なJSONデータを確認
-      final result = {
+      return {
         'groups': groupsWithoutMemos.map((g) => g.toJson()).toList(),
         'links': linksWithoutMemos.map((l) => l.toJson()).toList(),
         'groupsOrder': getGroupsOrder(),
         if (settings != null) 'settings': settings,
       };
-      
-      // デバッグ: 結果を確認
-      print('=== エクスポート結果確認 ===');
-      final groups = result['groups'] as List;
-      for (final group in groups) {
-        final items = group['items'] as List;
-        for (final item in items) {
-          if (item['memo'] != null) {
-            print('警告: グループ "${group['title']}" のリンク "${item['label']}" にメモが残っています: "${item['memo']}"');
-          }
-        }
-      }
-      final links = result['links'] as List;
-      for (final link in links) {
-        if (link['memo'] != null) {
-          print('警告: 個別リンク "${link['label']}" にメモが残っています: "${link['memo']}"');
-        }
-      }
-      print('=== エクスポート結果確認完了 ===');
-      
-      return result;
     } else {
       _ensureInitialized();
-      print('=== メモを含むエクスポート ===');
+      if (kDebugMode) {
+        print('=== メモを含むエクスポート ===');
+      }
       return {
         'groups': _groupsBox!.values.map((g) => g.toJson()).toList(),
         'links': _linksBox!.values.map((l) => l.toJson()).toList(),
@@ -208,41 +191,53 @@ class LinkRepository {
   Future<void> importData(Map<String, dynamic> data) async {
     _ensureInitialized();
     try {
-      print('=== LinkRepository インポート開始 ===');
-      print('受信データのキー: ${data.keys.toList()}');
+      if (kDebugMode) {
+        print('=== LinkRepository インポート開始 ===');
+        print('受信データのキー: ${data.keys.toList()}');
+      }
       
       // 既存データをクリア
       await _groupsBox!.clear();
       await _linksBox!.clear();
-      print('既存データのクリア完了');
+      if (kDebugMode) {
+        print('既存データのクリア完了');
+      }
       
       // グループデータをインポート
       final groupsData = data['groups'] ?? [];
-      print('グループデータ数: ${groupsData.length}');
+      if (kDebugMode) {
+        print('グループデータ数: ${groupsData.length}');
+      }
       for (final groupData in groupsData) {
         final group = Group.fromJson(groupData);
         final fixedGroup = group.color == null
           ? group.copyWith(color: 0xFF3B82F6) // デフォルト青
           : group;
         await _groupsBox!.put(fixedGroup.id, fixedGroup);
-        print('グループ保存: ${fixedGroup.title} (ID: ${fixedGroup.id})');
-        // グループ内のリンクのフォールバックドメインを確認
-        for (final item in fixedGroup.items) {
-          if (item.faviconFallbackDomain != null) {
-            print('  - リンク "${item.label}": フォールバックドメイン = ${item.faviconFallbackDomain}');
+        if (kDebugMode) {
+          print('グループ保存: ${fixedGroup.title} (ID: ${fixedGroup.id})');
+          // グループ内のリンクのフォールバックドメインを確認
+          for (final item in fixedGroup.items) {
+            if (item.faviconFallbackDomain != null) {
+              print('  - リンク "${item.label}": フォールバックドメイン = ${item.faviconFallbackDomain}');
+            }
           }
         }
       }
       
       // リンクデータをインポート
       final linksData = data['links'] ?? [];
-      print('リンクデータ数: ${linksData.length}');
+      if (kDebugMode) {
+        print('リンクデータ数: ${linksData.length}');
+      }
       for (final linkData in linksData) {
         final link = LinkItem.fromJson(linkData);
         await _linksBox!.put(link.id, link);
-        print('リンク保存: ${link.label} (ID: ${link.id})');
-        if (link.faviconFallbackDomain != null) {
-          print('  - フォールバックドメイン: ${link.faviconFallbackDomain}');
+        if (kDebugMode) {
+          print('リンク保存: ${link.label} (ID: ${link.id})');
+          if (link.faviconFallbackDomain != null) {
+            print('  - フォールバックドメイン: ${link.faviconFallbackDomain}');
+          }
         }
       }
       
@@ -250,15 +245,21 @@ class LinkRepository {
       if (data['groupsOrder'] is List) {
         final order = List<String>.from(data['groupsOrder']);
         await saveGroupsOrder(order);
-        print('グループ順序を復元: $order');
+        if (kDebugMode) {
+          print('グループ順序を復元: $order');
+        }
       }
       
       // データの永続化を確実にするため、少し待機
       await Future.delayed(const Duration(milliseconds: 100));
       
-      print('=== LinkRepository インポート完了 ===');
+      if (kDebugMode) {
+        print('=== LinkRepository インポート完了 ===');
+      }
     } catch (e) {
-      print('LinkRepository インポートエラー: $e');
+      if (kDebugMode) {
+        print('LinkRepository インポートエラー: $e');
+      }
       rethrow;
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -13,6 +14,7 @@ import 'package:screen_retriever/screen_retriever.dart';
 import 'services/notification_service.dart';
 import 'services/windows_notification_service.dart';
 import 'services/system_tray_service.dart';
+import 'services/migration_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,13 +65,15 @@ void main() async {
     // Already registered
   }
   
-  // データベースファイルの永続化を確実にする
-  // 注意: スキーマ変更時のみ以下の行を有効にする
-  print('Hiveデータベースを完全にリセットします...');
-  await Hive.deleteBoxFromDisk('groups');
-  await Hive.deleteBoxFromDisk('links');
-  await Hive.deleteBoxFromDisk('tasks');
-  print('Hiveデータベースのリセットが完了しました');
+  // データマイグレーションを実行
+  await MigrationService.migrateData();
+  
+  // データの整合性チェックと修復
+  final isDataValid = await MigrationService.validateDataIntegrity();
+  if (!isDataValid) {
+    print('データ整合性エラーを検出しました。修復を開始します...');
+    await MigrationService.repairCorruptedData();
+  }
   
   // 通知機能の初期化
   await NotificationService.initialize();
@@ -104,10 +108,13 @@ void main() async {
       : (displaySize.width - windowWidth);  // 単一ディスプレイの場合は右半分
   final windowY = 0;
 
-  print('ディスプレイ数: ${displays.length}');
-  print('選択したディスプレイサイズ: ${targetDisplay.size}');
-  print('ウィンドウサイズ: ${windowWidth}x${windowHeight}');
-  print('ウィンドウ位置: ($windowX, $windowY)');
+  // デバッグ情報（開発時のみ）
+  if (kDebugMode) {
+    print('ディスプレイ数: ${displays.length}');
+    print('選択したディスプレイサイズ: ${targetDisplay.size}');
+    print('ウィンドウサイズ: ${windowWidth}x${windowHeight}');
+    print('ウィンドウ位置: ($windowX, $windowY)');
+  }
 
   WindowOptions windowOptions = WindowOptions(
     size: Size(windowWidth.toDouble(), windowHeight.toDouble()),
