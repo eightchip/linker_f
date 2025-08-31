@@ -25,6 +25,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdfx/pdfx.dart' as pdfx;
+import '../utils/favicon_service.dart';
 
 
 // ハイライト用のウィジェット
@@ -1439,6 +1440,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final labelController = TextEditingController();
     final pathController = TextEditingController();
     final tagsController = TextEditingController();
+    final fallbackDomainController = TextEditingController();
     LinkType selectedType = LinkType.file;
 
     // リンクタイプが変更されたときにデフォルトタグを更新
@@ -1513,6 +1515,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   hintText: 'カンマ区切りでタグを入力（例: 仕事, 重要, プロジェクト）',
                 ),
               ),
+              const SizedBox(height: 16),
+              // フォールバックドメイン設定（URLタイプの場合のみ表示）
+              if (selectedType == LinkType.url) ...[
+                TextField(
+                  controller: fallbackDomainController,
+                  decoration: const InputDecoration(
+                    labelText: 'Faviconフォールバックドメイン',
+                    hintText: '例: https://www.resonabank.co.jp/',
+                    helperText: 'favicon取得失敗時に使用するドメインを設定',
+                  ),
+                ),
+              ],
             ],
           ),
           actions: [
@@ -1537,6 +1551,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     path: pathController.text,
                     type: selectedType,
                     tags: tags,
+                    faviconFallbackDomain: selectedType == LinkType.url ? fallbackDomainController.text.trim().isEmpty ? null : fallbackDomainController.text.trim() : null,
                   );
                   Navigator.pop(context);
                 }
@@ -2563,7 +2578,14 @@ class UrlPreviewWidget extends StatefulWidget {
   final String url;
   final bool isDark;
   final String? searchQuery;
-  const UrlPreviewWidget({super.key, required this.url, required this.isDark, this.searchQuery});
+  final String? fallbackDomain; // フォールバックドメインを追加
+  const UrlPreviewWidget({
+    super.key, 
+    required this.url, 
+    required this.isDark, 
+    this.searchQuery,
+    this.fallbackDomain, // 追加
+  });
   @override
   State<UrlPreviewWidget> createState() => _UrlPreviewWidgetState();
 }
@@ -2580,8 +2602,10 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
 
   Future<void> _fetchPreview() async {
     final url = widget.url;
-    // favicon取得（Googleのサービス利用）
-    final favicon = 'https://www.google.com/s2/favicons?sz=32&domain_url=$url';
+    
+    // 新しいFaviconServiceを使用
+    final favicon = await FaviconService.getFaviconUrl(url, fallbackDomain: widget.fallbackDomain);
+    
     String? title;
     try {
       final uri = Uri.parse(url);
@@ -2614,8 +2638,8 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
               _faviconUrl!,
               width: 20,
               height: 20,
-              errorBuilder: (_, __, ___) => _getFallbackIconForUrl(widget.url))
-          : _getFallbackIconForUrl(widget.url),
+              errorBuilder: (_, __, ___) => FaviconService.getFallbackIcon(widget.url))
+          : FaviconService.getFallbackIcon(widget.url),
         const SizedBox(width: 4),
         Flexible(
           child: HighlightedText(
@@ -2627,20 +2651,6 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
         ),
       ],
     );
-  }
-
-  Widget _getFallbackIconForUrl(String url) {
-    if (url.contains('sharepoint.com')) {
-      return FaIcon(FontAwesomeIcons.microsoft, color: Colors.blue, size: 20);
-    }
-    if (url.contains('resonabank.co.jp')) {
-      return Icon(Icons.account_balance, color: Colors.green, size: 20);
-    }
-    if (url.contains('u-next.jp') || url.contains('unext.jp')) {
-      return Icon(Icons.play_circle_filled, color: Colors.red, size: 20);
-    }
-    // その他はデフォルト
-    return Icon(Icons.link, size: 20);
   }
 }
 

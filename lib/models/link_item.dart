@@ -51,6 +51,9 @@ class LinkItem extends HiveObject {
   @HiveField(11)
   bool hasActiveTasks;
 
+  @HiveField(12)
+  String? faviconFallbackDomain;
+
   LinkItem({
     required this.id,
     required this.label,
@@ -64,6 +67,7 @@ class LinkItem extends HiveObject {
     this.iconColor,
     this.tags = const [],
     this.hasActiveTasks = false,
+    this.faviconFallbackDomain,
   });
 
   Map<String, dynamic> toJson() {
@@ -80,23 +84,25 @@ class LinkItem extends HiveObject {
       'iconColor': iconColor,
       'tags': tags,
       'hasActiveTasks': hasActiveTasks,
+      'faviconFallbackDomain': faviconFallbackDomain,
     };
   }
 
   factory LinkItem.fromJson(Map<String, dynamic> json) {
     return LinkItem(
-      id: json['id'],
-      label: json['label'],
-      path: json['path'],
-      type: LinkType.values[json['type']],
-      createdAt: DateTime.parse(json['createdAt']),
-      lastUsed: json['lastUsed'] != null ? DateTime.parse(json['lastUsed']) : null,
-      isFavorite: json['isFavorite'] ?? false,
-      memo: json['memo'],
-      iconData: json['iconData'],
-      iconColor: json['iconColor'],
-      tags: json['tags'] != null ? List<String>.from(json['tags']) : [],
-      hasActiveTasks: json['hasActiveTasks'] ?? false,
+      id: json['id'] as String,
+      label: json['label'] as String,
+      path: json['path'] as String,
+      type: LinkType.values[json['type'] as int],
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      lastUsed: json['lastUsed'] != null ? DateTime.parse(json['lastUsed'] as String) : null,
+      isFavorite: json['isFavorite'] as bool? ?? false,
+      memo: json['memo'] as String?,
+      iconData: json['iconData'] as int?,
+      iconColor: json['iconColor'] as int?,
+      tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+      hasActiveTasks: json['hasActiveTasks'] as bool? ?? false,
+      faviconFallbackDomain: json['faviconFallbackDomain'] as String?,
     );
   }
 
@@ -113,6 +119,7 @@ class LinkItem extends HiveObject {
     int? iconColor,
     List<String>? tags,
     bool? hasActiveTasks,
+    String? faviconFallbackDomain,
   }) {
     return LinkItem(
       id: id ?? this.id,
@@ -127,6 +134,7 @@ class LinkItem extends HiveObject {
       iconColor: iconColor ?? this.iconColor,
       tags: tags ?? this.tags,
       hasActiveTasks: hasActiveTasks ?? this.hasActiveTasks,
+      faviconFallbackDomain: faviconFallbackDomain ?? this.faviconFallbackDomain,
     );
   }
 }

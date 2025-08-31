@@ -268,6 +268,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
     int? iconData,
     int? iconColor,
     List<String>? tags,
+    String? faviconFallbackDomain,
   }) async {
     // フォルダの場合、Windows APIを使ってカスタムアイコンを自動取得
     if (type == LinkType.folder) {
@@ -320,7 +321,13 @@ class LinkViewModel extends StateNotifier<LinkState> {
       iconData: iconData,
       iconColor: iconColor,
       tags: tags ?? [],
+      faviconFallbackDomain: faviconFallbackDomain,
     );
+    
+    // フォールバックドメインのデバッグログ
+    if (faviconFallbackDomain != null && faviconFallbackDomain.isNotEmpty) {
+      print('リンク追加: フォールバックドメイン設定 = $faviconFallbackDomain');
+    }
 
     await _repository.saveLink(link);
     
@@ -441,6 +448,12 @@ class LinkViewModel extends StateNotifier<LinkState> {
       final group = groups[groupIndex];
       final updatedItems = group.items.map((e) => e.id == updated.id ? updated : e).toList();
       final updatedGroup = group.copyWith(items: updatedItems);
+      
+      // フォールバックドメインのデバッグログ
+      if (updated.faviconFallbackDomain != null && updated.faviconFallbackDomain!.isNotEmpty) {
+        print('リンク更新: フォールバックドメイン設定 = ${updated.faviconFallbackDomain}');
+      }
+      
       await _repository.saveGroup(updatedGroup);
       await _loadGroups();
     }

@@ -100,6 +100,9 @@ class LinkRepository {
             memo: null, // 確実にnullに設定
             iconData: item.iconData,
             iconColor: item.iconColor,
+            tags: item.tags,
+            hasActiveTasks: item.hasActiveTasks,
+            faviconFallbackDomain: item.faviconFallbackDomain,
           );
           print('除外後: グループ "${group.title}" のリンク "${item.label}": memo="${itemWithoutMemo.memo}"');
           return itemWithoutMemo;
@@ -114,7 +117,7 @@ class LinkRepository {
         } else if (link.memo != null) {
           print('個別リンク "${link.label}": 空メモを除外 (元: "" -> null)');
         }
-        // 新しいLinkItemオブジェクトを作成してメモを確実にnullにする
+        // 新しいLinkItemオブジェクトを作成してメモを確実にnullに設定
         final linkWithoutMemo = LinkItem(
           id: link.id,
           label: link.label,
@@ -126,6 +129,9 @@ class LinkRepository {
           memo: null, // 確実にnullに設定
           iconData: link.iconData,
           iconColor: link.iconColor,
+          tags: link.tags,
+          hasActiveTasks: link.hasActiveTasks,
+          faviconFallbackDomain: link.faviconFallbackDomain,
         );
         print('除外後: 個別リンク "${link.label}": memo="${linkWithoutMemo.memo}"');
         return linkWithoutMemo;
@@ -192,6 +198,12 @@ class LinkRepository {
           : group;
         await _groupsBox.put(fixedGroup.id, fixedGroup);
         print('グループ保存: ${fixedGroup.title} (ID: ${fixedGroup.id})');
+        // グループ内のリンクのフォールバックドメインを確認
+        for (final item in fixedGroup.items) {
+          if (item.faviconFallbackDomain != null) {
+            print('  - リンク "${item.label}": フォールバックドメイン = ${item.faviconFallbackDomain}');
+          }
+        }
       }
       
       // リンクデータをインポート
@@ -201,6 +213,9 @@ class LinkRepository {
         final link = LinkItem.fromJson(linkData);
         await _linksBox.put(link.id, link);
         print('リンク保存: ${link.label} (ID: ${link.id})');
+        if (link.faviconFallbackDomain != null) {
+          print('  - フォールバックドメイン: ${link.faviconFallbackDomain}');
+        }
       }
       
       // グループ順序も復元

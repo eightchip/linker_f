@@ -1261,7 +1261,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                        ),
                      ),
                      child: item.type == LinkType.url
-                       ? UrlPreviewWidget(url: item.path, isDark: isDark, searchQuery: widget.searchQuery)
+                       ? UrlPreviewWidget(url: item.path, isDark: isDark, searchQuery: widget.searchQuery, fallbackDomain: item.faviconFallbackDomain)
                        : item.type == LinkType.file
                          ? FilePreviewWidget(path: item.path, isDark: isDark)
                          : buildIconWidget(restoreIconData(item.iconData) ?? Icons.folder, Color(item.iconColor ?? 0xFF000000), size: layoutSettings.linkItemIconSize * scale),
@@ -1455,6 +1455,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
     final labelController = TextEditingController(text: item.label);
     final pathController = TextEditingController(text: item.path);
     final tagsController = TextEditingController(text: item.tags.join(', '));
+    final fallbackDomainController = TextEditingController(text: item.faviconFallbackDomain ?? '');
     LinkType selectedType = item.type;
     IconData selectedIcon;
     if (item.iconData != null) {
@@ -1505,6 +1506,18 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                 ),
               ),
               const SizedBox(height: 16),
+              // フォールバックドメイン設定（URLタイプの場合のみ表示）
+              if (selectedType == LinkType.url) ...[
+                TextField(
+                  controller: fallbackDomainController,
+                  decoration: const InputDecoration(
+                    labelText: 'Faviconフォールバックドメイン',
+                    hintText: '例: https://www.resonabank.co.jp/',
+                    helperText: 'favicon取得失敗時に使用するドメインを設定',
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               DropdownButtonFormField<LinkType>(
                 value: selectedType,
                 decoration: const InputDecoration(
@@ -1587,6 +1600,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                     iconData: iconDataToSave,
                     iconColor: selectedType == LinkType.folder ? selectedIconColor.value : null,
                     tags: tagsController.text.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList(),
+                    faviconFallbackDomain: selectedType == LinkType.url ? fallbackDomainController.text.trim().isEmpty ? null : fallbackDomainController.text.trim() : null,
                   );
                   print('リンク更新: iconData=${updated.iconData}, iconColor=${updated.iconColor}');
                   print('選択されたアイコン: codePoint=${selectedIcon.codePoint}, fontFamily=${selectedIcon.fontFamily}');

@@ -29,13 +29,14 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
       iconColor: fields[9] as int?,
       tags: (fields[10] as List).cast<String>(),
       hasActiveTasks: fields[11] as bool,
+      faviconFallbackDomain: fields[12] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, LinkItem obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -59,7 +60,9 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
       ..writeByte(10)
       ..write(obj.tags)
       ..writeByte(11)
-      ..write(obj.hasActiveTasks);
+      ..write(obj.hasActiveTasks)
+      ..writeByte(12)
+      ..write(obj.faviconFallbackDomain);
   }
 
   @override
