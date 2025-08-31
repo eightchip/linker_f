@@ -617,42 +617,112 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                           child: Column(
                             children: [
-                              // 検索テキストフィールド
-                              TextField(
-                                focusNode: _searchFocusNode,
-                                keyboardType: TextInputType.text,
-                                textInputAction: TextInputAction.search,
-                                decoration: InputDecoration(
-                                  hintText: '検索（ファイル名・フォルダ名・URL・タグ）',
-                                  prefixIcon: const Icon(Icons.search),
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(Icons.close),
-                                    onPressed: () {
-                                      setState(() {
-                                        _searchQuery = '';
-                                        _selectedLinkTypeFilter = null;
-                                        _showSearchBar = false;
-                                      });
-                                    },
+                              // 検索テキストフィールドとラジオボタンを横並びに配置
+                              Row(
+                                children: [
+                                  // 検索テキストフィールド（左側）
+                                  Expanded(
+                                    child: TextField(
+                                      focusNode: _searchFocusNode,
+                                      keyboardType: TextInputType.text,
+                                      textInputAction: TextInputAction.search,
+                                      decoration: InputDecoration(
+                                        hintText: '検索（ファイル名・フォルダ名・URL・タグ）',
+                                        prefixIcon: const Icon(Icons.search),
+                                        suffixIcon: IconButton(
+                                          icon: const Icon(Icons.close),
+                                          onPressed: () {
+                                            setState(() {
+                                              _searchQuery = '';
+                                              _selectedLinkTypeFilter = null;
+                                              _showSearchBar = false;
+                                            });
+                                          },
+                                        ),
+                                        isDense: true,
+                                        contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                                      ),
+                                      onChanged: (v) {
+                                        setState(() {
+                                          _searchQuery = v;
+                                        });
+                                      },
+                                      onSubmitted: (v) {
+                                        _updateAvailableTags();
+                                      },
+                                    ),
                                   ),
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                                ),
-                                onChanged: (v) {
-                                  setState(() {
-                                    _searchQuery = v;
-                                  });
-                                },
-                                onSubmitted: (v) {
-                                  _updateAvailableTags();
-                                },
+                                  const SizedBox(width: 12),
+                                  // リンクタイプフィルターラジオボタン（右側）
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).cardColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Theme.of(context).dividerColor,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text('タイプ: ', style: TextStyle(fontSize: 10)),
+                                        Radio<LinkType?>(
+                                          value: null,
+                                          groupValue: _selectedLinkTypeFilter,
+                                          onChanged: (LinkType? value) {
+                                            setState(() {
+                                              _selectedLinkTypeFilter = value;
+                                            });
+                                          },
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        const Text('すべて', style: TextStyle(fontSize: 10)),
+                                        Radio<LinkType?>(
+                                          value: LinkType.file,
+                                          groupValue: _selectedLinkTypeFilter,
+                                          onChanged: (LinkType? value) {
+                                            setState(() {
+                                              _selectedLinkTypeFilter = value;
+                                            });
+                                          },
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        const Text('ファイル', style: TextStyle(fontSize: 10)),
+                                        Radio<LinkType?>(
+                                          value: LinkType.folder,
+                                          groupValue: _selectedLinkTypeFilter,
+                                          onChanged: (LinkType? value) {
+                                            setState(() {
+                                              _selectedLinkTypeFilter = value;
+                                            });
+                                          },
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        const Text('フォルダ', style: TextStyle(fontSize: 10)),
+                                        Radio<LinkType?>(
+                                          value: LinkType.url,
+                                          groupValue: _selectedLinkTypeFilter,
+                                          onChanged: (LinkType? value) {
+                                            setState(() {
+                                              _selectedLinkTypeFilter = value;
+                                            });
+                                          },
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        const Text('URL', style: TextStyle(fontSize: 10)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // タグ候補表示
+                              // タグ候補表示（検索フィールドの下に配置）
                               if (_availableTags.isNotEmpty) ...[
-                                const SizedBox(height: 1),
+                                const SizedBox(height: 4),
                                 Container(
-                                  height: 16,
+                                  height: 20,
                                   child: ListView.builder(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: _availableTags.length,
@@ -679,7 +749,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             child: Text(
                                               tag,
                                               style: const TextStyle(
-                                                fontSize: 7,
+                                                fontSize: 8,
                                                 color: Colors.blue,
                                               ),
                                             ),
@@ -690,62 +760,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                 ),
                               ],
-                              const SizedBox(height: 1),
-                              // リンクタイプフィルターラジオボタン
-                              Row(
-                                children: [
-                                  const Text('タイプ: ', style: TextStyle(fontSize: 9)),
-                                  Expanded(
-                                    child: Row(
-                                      children: [
-                                        Radio<LinkType?>(
-                                          value: null,
-                                          groupValue: _selectedLinkTypeFilter,
-                                          onChanged: (LinkType? value) {
-                                            setState(() {
-                                              _selectedLinkTypeFilter = value;
-                                            });
-                                          },
-                                        ),
-                                        const Text('すべて', style: TextStyle(fontSize: 12)),
-                                        const SizedBox(width: 8),
-                                        Radio<LinkType?>(
-                                          value: LinkType.file,
-                                          groupValue: _selectedLinkTypeFilter,
-                                          onChanged: (LinkType? value) {
-                                            setState(() {
-                                              _selectedLinkTypeFilter = value;
-                                            });
-                                          },
-                                        ),
-                                        const Text('ファイル', style: TextStyle(fontSize: 12)),
-                                        const SizedBox(width: 8),
-                                        Radio<LinkType?>(
-                                          value: LinkType.folder,
-                                          groupValue: _selectedLinkTypeFilter,
-                                          onChanged: (LinkType? value) {
-                                            setState(() {
-                                              _selectedLinkTypeFilter = value;
-                                            });
-                                          },
-                                        ),
-                                        const Text('フォルダ', style: TextStyle(fontSize: 12)),
-                                        const SizedBox(width: 8),
-                                        Radio<LinkType?>(
-                                          value: LinkType.url,
-                                          groupValue: _selectedLinkTypeFilter,
-                                          onChanged: (LinkType? value) {
-                                            setState(() {
-                                              _selectedLinkTypeFilter = value;
-                                            });
-                                          },
-                                        ),
-                                        const Text('URL', style: TextStyle(fontSize: 12)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ],
                           ),
                         ),
