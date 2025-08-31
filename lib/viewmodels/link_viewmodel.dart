@@ -325,7 +325,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
     );
     
     // フォールバックドメインのデバッグログ
-    if (faviconFallbackDomain != null && faviconFallbackDomain.isNotEmpty) {
+    if (kDebugMode && faviconFallbackDomain != null && faviconFallbackDomain.isNotEmpty) {
       print('リンク追加: フォールバックドメイン設定 = $faviconFallbackDomain');
     }
 
@@ -450,7 +450,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
       final updatedGroup = group.copyWith(items: updatedItems);
       
       // フォールバックドメインのデバッグログ
-      if (updated.faviconFallbackDomain != null && updated.faviconFallbackDomain!.isNotEmpty) {
+      if (kDebugMode && updated.faviconFallbackDomain != null && updated.faviconFallbackDomain!.isNotEmpty) {
         print('リンク更新: フォールバックドメイン設定 = ${updated.faviconFallbackDomain}');
       }
       
@@ -523,9 +523,13 @@ class LinkViewModel extends StateNotifier<LinkState> {
   }
 
   Future<void> toggleLinkFavorite(Group group, LinkItem link) async {
-    print('Toggle link favorite: ${link.label}, current: ${link.isFavorite}');
+    if (kDebugMode) {
+      print('Toggle link favorite: ${link.label}, current: ${link.isFavorite}');
+    }
     final updatedLink = link.copyWith(isFavorite: !link.isFavorite);
-    print('New link favorite state: ${updatedLink.isFavorite}');
+    if (kDebugMode) {
+      print('New link favorite state: ${updatedLink.isFavorite}');
+    }
     final updatedItems = group.items.map((item) => item.id == link.id ? updatedLink : item).toList();
     // グループのお気に入り状態を自動制御
     bool newGroupFavorite;
