@@ -503,12 +503,12 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       print('=== タスクインポート開始 ===');
       print('受信データのキー: ${data.keys.toList()}');
       
-      if (!data.containsKey('tasks')) {
-        print('タスクデータが見つかりません');
+      if (!data.containsKey('tasks') || data['tasks'] == null) {
+        print('タスクデータが見つからないか、nullです');
         return;
       }
       
-      final tasksData = data['tasks'] as List<dynamic>;
+      final tasksData = data['tasks'] as List<dynamic>? ?? [];
       print('タスクデータ数: ${tasksData.length}');
       
       final tasks = tasksData.map((json) {

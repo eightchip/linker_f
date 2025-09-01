@@ -15,6 +15,7 @@ import 'services/notification_service.dart';
 import 'services/windows_notification_service.dart';
 import 'services/system_tray_service.dart';
 import 'services/migration_service.dart';
+import 'services/settings_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -83,6 +84,10 @@ void main() async {
   
   // システムトレイ機能の初期化
   await SystemTrayService.initialize();
+  
+  // 設定サービスの初期化
+  final settingsService = SettingsService();
+  await settingsService.initialize();
   
   // Desktop window configuration
   await windowManager.ensureInitialized();

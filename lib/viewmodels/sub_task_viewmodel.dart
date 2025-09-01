@@ -255,12 +255,12 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
     try {
       print('=== サブタスクインポート開始 ===');
       
-      if (!data.containsKey('subTasks')) {
-        print('サブタスクデータが見つかりません');
+      if (!data.containsKey('subTasks') || data['subTasks'] == null) {
+        print('サブタスクデータが見つからないか、nullです');
         return;
       }
       
-      final subTasksData = data['subTasks'] as List<dynamic>;
+      final subTasksData = data['subTasks'] as List<dynamic>? ?? [];
       print('サブタスクデータ数: ${subTasksData.length}');
       
       final subTasks = subTasksData.map((json) {
