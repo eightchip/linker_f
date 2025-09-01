@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:path/path.dart' as p;
@@ -1366,27 +1367,58 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: const Text('メモ編集'),
-                                  content: TextField(
-                                    controller: controller,
-                                    maxLines: 5,
-                                    decoration: const InputDecoration(hintText: 'メモを入力...'),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextField(
+                                        controller: controller,
+                                        maxLines: 5,
+                                        decoration: const InputDecoration(
+                                          hintText: 'メモを入力...',
+                                          helperText: '空の場合はメモを削除します',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '現在のメモ: ${item.memo?.isNotEmpty == true ? item.memo : "なし"}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
                                       child: const Text('キャンセル'),
                                     ),
+                                    if (item.memo?.isNotEmpty == true)
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, ''), // 空文字列でメモ削除
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.red,
+                                        ),
+                                        child: const Text('削除'),
+                                      ),
                                     ElevatedButton(
-                                      onPressed: () => Navigator.pop(context, controller.text),
+                                      onPressed: () => Navigator.pop(context, controller.text.trim()),
                                       child: const Text('保存'),
                                     ),
                                   ],
                                 ),
                               );
                               if (result != null) {
-                                final updated = item.copyWith(memo: result);
-                                widget.onEditLink(updated);
-                                setState(() {});
+                                // 空文字列の場合はセンチネル値を使用（メモ削除）
+                                final memoValue = result.trim().isEmpty ? LinkItem.nullSentinel : result.trim();
+                                
+                                final updated = item.copyWith(memo: memoValue);
+                                await widget.onEditLink(updated);
+                                // 親の状態を更新してUIを再描画
+                                if (mounted) {
+                                  setState(() {});
+                                }
                               }
                             },
                             constraints: BoxConstraints(

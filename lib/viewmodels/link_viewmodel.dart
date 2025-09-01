@@ -102,7 +102,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
     }
   }
 
-  Future<void> _loadGroups() async {
+  Future<void> _loadGroups({bool forceUpdate = false}) async {
     final groups = _repository.getAllGroups();
     final order = _repository.getGroupsOrder();
     List<Group> sortedGroups;
@@ -121,12 +121,13 @@ class LinkViewModel extends StateNotifier<LinkState> {
       print('=== _loadGroups ===');
       print('読み込まれたグループ数: ${sortedGroups.length}');
       print('現在の状態のグループ数: ${state.groups.length}');
+      print('強制更新: $forceUpdate');
       print('状態が等しいかチェック中...');
       
       final areEqual = _areGroupsEqual(state.groups, sortedGroups);
       print('状態が等しい: $areEqual');
       
-      if (!areEqual) {
+      if (!areEqual || forceUpdate) {
         print('状態が変更されたため、更新を実行します');
         for (final group in sortedGroups) {
           print('グループ "${group.title}": ${group.items.length}個のリンク');
@@ -142,8 +143,8 @@ class LinkViewModel extends StateNotifier<LinkState> {
       print('==================');
     }
     
-    // 状態が実際に変更された場合のみ更新
-    if (!_areGroupsEqual(state.groups, sortedGroups)) {
+    // 状態が実際に変更された場合、または強制更新の場合に更新
+    if (!_areGroupsEqual(state.groups, sortedGroups) || forceUpdate) {
       state = state.copyWith(groups: sortedGroups);
     }
   }
@@ -178,28 +179,8 @@ class LinkViewModel extends StateNotifier<LinkState> {
             item1.isFavorite != item2.isFavorite ||
             item1.lastUsed != item2.lastUsed ||
             item1.hasActiveTasks != item2.hasActiveTasks ||
+            item1.memo != item2.memo ||
             !_areTagsEqual(item1.tags, item2.tags)) {
-          
-          // デバッグ情報を出力
-          if (kDebugMode) {
-            print('=== グループ等価性チェックで不一致を検出 ===');
-            print('グループ: ${group1.title}');
-            print('リンク: ${item1.label}');
-            print('ID: ${item1.id == item2.id}');
-            print('ラベル: ${item1.label == item2.label}');
-            print('パス: ${item1.path == item2.path}');
-            print('タイプ: ${item1.type == item2.type}');
-            print('お気に入り: ${item1.isFavorite == item2.isFavorite}');
-            print('最終使用: ${item1.lastUsed == item2.lastUsed}');
-            print('アクティブタスク: ${item1.hasActiveTasks == item2.hasActiveTasks}');
-            print('タグ: ${_areTagsEqual(item1.tags, item2.tags)}');
-            print('item1.tags: ${item1.tags}');
-            print('item2.tags: ${item2.tags}');
-            print('item1.hasActiveTasks: ${item1.hasActiveTasks}');
-            print('item2.hasActiveTasks: ${item2.hasActiveTasks}');
-            print('==========================================');
-          }
-          
           return false;
         }
       }
@@ -459,25 +440,12 @@ class LinkViewModel extends StateNotifier<LinkState> {
     final groupIndex = groups.indexWhere((g) => g.id == groupId);
     if (groupIndex != -1) {
       final group = groups[groupIndex];
-              final updatedItems = group.items.map((e) => e.id == updated.id ? updated : e).toList();
-        final updatedGroup = group.copyWith(items: updatedItems);
-        
-        // タグ保存のデバッグログを追加
-        if (kDebugMode) {
-          print('=== updateLinkInGroup デバッグ ===');
-          print('更新されるリンクのタグ: ${updated.tags}');
-          print('グループ内の更新後のアイテム数: ${updatedItems.length}');
-          final updatedItem = updatedItems.firstWhere((item) => item.id == updated.id);
-          print('実際に保存されるアイテムのタグ: ${updatedItem.tags}');
-        }
-        
-        // フォールバックドメインのデバッグログ
-      if (kDebugMode && updated.faviconFallbackDomain != null && updated.faviconFallbackDomain!.isNotEmpty) {
-        print('リンク更新: フォールバックドメイン設定 = ${updated.faviconFallbackDomain}');
-      }
+      final originalItem = group.items.firstWhere((e) => e.id == updated.id);
+      final updatedItems = group.items.map((e) => e.id == updated.id ? updated : e).toList();
+      final updatedGroup = group.copyWith(items: updatedItems);
       
       await _repository.saveGroup(updatedGroup);
-      await _loadGroups();
+      await _loadGroups(forceUpdate: true);
     }
   }
 

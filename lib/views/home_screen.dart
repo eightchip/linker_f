@@ -2040,14 +2040,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: const Text('閉じる'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 for (final entry in memoLinks) {
                   final link = entry.value;
                   final group = entry.key;
                   final newMemo = memoControllers[link.id]!.text;
-                  if (newMemo != link.memo) {
-                    final updated = link.copyWith(memo: newMemo);
-                    ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
+                  // 空文字列の場合はセンチネル値を使用（メモ削除）
+                  final memoValue = newMemo.trim().isEmpty ? LinkItem.nullSentinel : newMemo.trim();
+                  if (memoValue != link.memo) {
+                    final updated = link.copyWith(memo: memoValue);
+                    await ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
                       groupId: group.id,
                       updated: updated,
                     );
@@ -2249,26 +2251,54 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
                             context: context,
                             builder: (context) => AlertDialog(
                               title: const Text('メモ編集'),
-                              content: TextField(
-                                controller: controller,
-                                maxLines: 5,
-                                decoration: const InputDecoration(hintText: 'メモを入力...'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextField(
+                                    controller: controller,
+                                    maxLines: 5,
+                                    decoration: const InputDecoration(
+                                      hintText: 'メモを入力...',
+                                      helperText: '空の場合はメモを削除します',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '現在のメモ: ${widget.link.memo?.isNotEmpty == true ? widget.link.memo : "なし"}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
                                   child: const Text('キャンセル'),
                                 ),
-          ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, controller.text),
+                                if (widget.link.memo?.isNotEmpty == true)
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, ''), // 空文字列でメモ削除
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                    ),
+                                    child: const Text('削除'),
+                                  ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, controller.text.trim()),
                                   child: const Text('保存'),
-          ),
-        ],
-      ),
+                                ),
+                              ],
+                            ),
                           );
                           if (result != null) {
-                            final updated = widget.link.copyWith(memo: result);
-                            widget.ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
+                            // 空文字列の場合はセンチネル値を使用（メモ削除）
+                            final memoValue = result.trim().isEmpty ? LinkItem.nullSentinel : result.trim();
+                            
+                            final updated = widget.link.copyWith(memo: memoValue);
+                            await widget.ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
                               groupId: widget.group.id,
                               updated: updated,
                             );

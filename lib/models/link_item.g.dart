@@ -16,6 +16,7 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    
     return LinkItem(
       id: fields[0] as String,
       label: fields[1] as String,

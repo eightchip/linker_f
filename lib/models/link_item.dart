@@ -106,6 +106,9 @@ class LinkItem extends HiveObject {
     );
   }
 
+  // センチネル値：明示的にnullを設定することを示す
+  static const String nullSentinel = '__NULL_SENTINEL__';
+  
   LinkItem copyWith({
     String? id,
     String? label,
@@ -121,6 +124,14 @@ class LinkItem extends HiveObject {
     bool? hasActiveTasks,
     String? faviconFallbackDomain,
   }) {
+    // memoの特別な処理：センチネル値が渡された場合はnullに設定
+    String? finalMemo;
+    if (memo == nullSentinel) {
+      finalMemo = null;
+    } else {
+      finalMemo = memo ?? this.memo;
+    }
+    
     return LinkItem(
       id: id ?? this.id,
       label: label ?? this.label,
@@ -129,7 +140,7 @@ class LinkItem extends HiveObject {
       createdAt: createdAt ?? this.createdAt,
       lastUsed: lastUsed ?? this.lastUsed,
       isFavorite: isFavorite ?? this.isFavorite,
-      memo: memo ?? this.memo,
+      memo: finalMemo,
       iconData: iconData ?? this.iconData,
       iconColor: iconColor ?? this.iconColor,
       tags: tags ?? this.tags,
