@@ -1,7 +1,9 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
@@ -2390,11 +2392,13 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
     } catch (_) {
       title = url;
     }
-    setState(() {
-      _faviconUrl = favicon;
-      _title = title;
-      _loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _faviconUrl = favicon;
+        _title = title;
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -2441,9 +2445,13 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
   bool _isPdf = false;
   bool _loading = true;
   OverlayEntry? _previewOverlay;
+  Timer? _overlayShowTimer;
+  Timer? _overlayHideTimer;
 
   @override
   void dispose() {
+    _overlayShowTimer?.cancel();
+    _overlayHideTimer?.cancel();
     _removePreviewOverlay();
     super.dispose();
   }
@@ -2457,17 +2465,21 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
   Future<void> _detectAndLoad() async {
     final ext = widget.path.toLowerCase();
     if (ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.gif') || ext.endsWith('.bmp') || ext.endsWith('.webp')) {
-      setState(() {
-        _isImage = true;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isImage = true;
+          _loading = false;
+        });
+      }
       return;
     }
     if (ext.endsWith('.pdf')) {
-      setState(() {
-        _isPdf = true;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isPdf = true;
+          _loading = false;
+        });
+      }
       return;
     }
 
@@ -2476,61 +2488,87 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       try {
         final file = File(widget.path);
         final lines = await file.readAsLines();
-        setState(() {
-          _textPreview = lines.take(3).join('\n');
-          _textFull = lines;
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _textPreview = lines.take(3).join('\n');
+            _textFull = lines;
+            _loading = false;
+          });
+        }
       } catch (e, st) {
         print('テキストファイル読み込みエラー: $e\n$st');
-        setState(() {
-          _textPreview = null;
-          _textFull = null;
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _textPreview = null;
+            _textFull = null;
+            _loading = false;
+          });
+        }
       }
       return;
     }
     // その他
-    setState(() {
-      _loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
 
 
   void _showPreviewOverlay(Widget child, {double width = 480, double height = 400}) {
-    _removePreviewOverlay();
-    final overlay = Overlay.of(context);
-    _previewOverlay = OverlayEntry(
-      builder: (context) => Positioned.fill(
-        child: Container(
-          alignment: Alignment.center,
-          color: Colors.black.withValues(alpha: 0.3),
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(8),
+    // 既にオーバーレイが表示されている場合は何もしない
+    if (_previewOverlay != null) return;
+    
+    // 既存のタイマーをキャンセル
+    _overlayShowTimer?.cancel();
+    _overlayHideTimer?.cancel();
+    
+    // 少し遅延を入れてオーバーレイを表示（ちらつき防止）
+    _overlayShowTimer = Timer(const Duration(milliseconds: 1350), () {
+      if (mounted && _previewOverlay == null) {
+        final overlay = Overlay.of(context);
+        _previewOverlay = OverlayEntry(
+          builder: (context) => Positioned.fill(
             child: Container(
-              width: width,
-              height: height,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
+              alignment: Alignment.center,
+              color: Colors.black.withValues(alpha: 0.3),
+              child: Material(
+                elevation: 8,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300, width: 1),
+                child: Container(
+                  width: width,
+                  height: height,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                  ),
+                  child: child,
+                ),
               ),
-              child: child,
             ),
           ),
-        ),
-      ),
-    );
-    overlay.insert(_previewOverlay!);
+        );
+        overlay.insert(_previewOverlay!);
+      }
+    });
   }
 
   void _removePreviewOverlay() {
-    _previewOverlay?.remove();
-    _previewOverlay = null;
+    // 既存のタイマーをキャンセル
+    _overlayShowTimer?.cancel();
+    _overlayHideTimer?.cancel();
+    
+    // 少し遅延を入れてオーバーレイを削除（ちらつき防止）
+    _overlayHideTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted && _previewOverlay != null) {
+        _previewOverlay!.remove();
+        _previewOverlay = null;
+      }
+    });
   }
 
   @override
@@ -2575,16 +2613,9 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        '画像を表示するには外部アプリで開いてください',
-                        style: TextStyle(fontSize: 14),
-                      ),
+                    Text(
+                      '画像ファイルを開くにはクリックしてください',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -2595,7 +2626,9 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
             print('画像ファイル情報取得エラー: $e');
           }
         },
-        onExit: (_) => _removePreviewOverlay(),
+        onExit: (_) {
+          _removePreviewOverlay();
+        },
         child: GestureDetector(
           onTap: () async {
             try {
@@ -2658,16 +2691,9 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        '内容を表示するには外部アプリで開いてください',
-                        style: TextStyle(fontSize: 14),
-                      ),
+                    Text(
+                      'PDFファイルを開くにはクリックしてください',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -2678,7 +2704,9 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
             print('PDFファイル情報取得エラー: $e');
           }
         },
-        onExit: (_) => _removePreviewOverlay(),
+        onExit: (_) {
+          _removePreviewOverlay();
+        },
         child: GestureDetector(
           onTap: () async {
             try {
@@ -2701,41 +2729,45 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
     if (_textPreview != null) {
       final isEmpty = (_textFull == null || _textFull!.isEmpty || (_textFull!.length == 1 && _textFull![0].trim().isEmpty));
       return MouseRegion(
-        onEnter: (_) => _showPreviewOverlay(
-          Container(
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 24),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'テキストファイル',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: isEmpty
-                    ? const Center(child: Text('内容がありません', style: TextStyle(fontSize: 18, color: Colors.grey)))
-                    : SingleChildScrollView(
-                        child: SelectableText(
-                          _textFull?.join('\n') ?? '',
-                          style: const TextStyle(fontSize: 15, color: Colors.black87, fontFamily: 'monospace'),
+        onEnter: (_) {
+          _showPreviewOverlay(
+            Container(
+              color: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 24),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'テキストファイル',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: isEmpty
+                      ? const Center(child: Text('内容がありません', style: TextStyle(fontSize: 18, color: Colors.grey)))
+                      : SingleChildScrollView(
+                          child: SelectableText(
+                            _textFull?.join('\n') ?? '',
+                            style: const TextStyle(fontSize: 15, color: Colors.black87, fontFamily: 'monospace'),
+                          ),
+                        ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          width: 520, height: 420,
-        ),
-        onExit: (_) => _removePreviewOverlay(),
+            width: 520, height: 420,
+          );
+        },
+        onExit: (_) {
+          _removePreviewOverlay();
+        },
         child: Tooltip(
           message: isEmpty ? '内容がありません' : _textPreview!,
           child: Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 24),
