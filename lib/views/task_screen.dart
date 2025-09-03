@@ -198,6 +198,32 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            
+            // 並び替え順序の説明
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.blue.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '並び替え順序: 期限昇順 → 緊急度高い順（ドラッグ&ドロップで手動調整可能）',
+                      style: TextStyle(
+                        color: Colors.blue.shade700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -330,7 +356,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     ],
                   ),
                 ),
-                if (task.status != TaskStatus.completed)
+                if (task.status == TaskStatus.pending)
+                  const PopupMenuItem(
+                    value: 'start',
+                    child: Row(
+                      children: [
+                        Icon(Icons.play_arrow, color: Colors.blue),
+                        SizedBox(width: 8),
+                        Text('進行中', style: TextStyle(color: Colors.blue)),
+                      ],
+                    ),
+                  ),
+                if (task.status == TaskStatus.inProgress)
                   const PopupMenuItem(
                     value: 'complete',
                     child: Row(
@@ -341,16 +378,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       ],
                     ),
                   ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('削除', style: TextStyle(color: Colors.red)),
-                    ],
+                if (task.status == TaskStatus.pending || task.status == TaskStatus.inProgress)
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('削除', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ],
@@ -449,6 +487,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     switch (action) {
       case 'edit':
         _showTaskDialog(task: task);
+        break;
+      case 'start':
+        taskViewModel.startTask(task.id);
         break;
       case 'complete':
         taskViewModel.completeTask(task.id);
@@ -652,7 +693,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   
   // フィルタリング処理を別メソッドに分離
   List<TaskItem> _getFilteredTasks(List<TaskItem> tasks) {
-    return tasks.where((task) {
+    final filteredTasks = tasks.where((task) {
       // ステータスフィルター
       if (_filterStatus != 'all') {
         TaskStatus? status;
@@ -706,5 +747,41 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
       return true;
     }).toList();
+
+          // デフォルト並び替え: 第一順位：期限昇順、第二順位：緊急度高い順
+      filteredTasks.sort((a, b) {
+        // 期限の比較（nullの場合は最後に配置）
+        if (a.dueDate == null && b.dueDate == null) {
+          // 両方とも期限なしの場合は緊急度で比較
+          return _comparePriority(a.priority, b.priority);
+        } else if (a.dueDate == null) {
+          return 1; // aの期限なしは後ろ
+        } else if (b.dueDate == null) {
+          return -1; // bの期限なしは後ろ
+        } else {
+          // 期限がある場合は期限で比較
+          final dateComparison = a.dueDate!.compareTo(b.dueDate!);
+          if (dateComparison != 0) {
+            return dateComparison; // 期限が異なる場合は期限順
+          } else {
+            // 期限が同じ場合は緊急度で比較
+            return _comparePriority(a.priority, b.priority);
+          }
+        }
+      });
+
+    return filteredTasks;
+  }
+
+  // 優先度の比較（緊急度高い順）
+  int _comparePriority(TaskPriority a, TaskPriority b) {
+    final priorityOrder = {
+      TaskPriority.urgent: 4,
+      TaskPriority.high: 3,
+      TaskPriority.medium: 2,
+      TaskPriority.low: 1,
+    };
+    
+    return (priorityOrder[b] ?? 0).compareTo(priorityOrder[a] ?? 0);
   }
 }

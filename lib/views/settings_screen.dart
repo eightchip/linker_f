@@ -430,14 +430,18 @@ class SettingsScreen extends ConsumerWidget {
                 
                 const SizedBox(height: 16),
                 
-                Text('最近使用したアイテム数: ${settingsState.recentItemsCount}個'),
-                Slider(
-                  value: settingsState.recentItemsCount.toDouble(),
-                  min: 5,
-                  max: 50,
-                  divisions: 9,
-                  label: '${settingsState.recentItemsCount}個',
-                  onChanged: (value) => settingsNotifier.setRecentItemsCount(value.round()),
+                _buildSettingItemWithDescription(
+                  title: '最近使用したアイテム数',
+                  value: '${settingsState.recentItemsCount}個',
+                  description: 'ホーム画面に表示される「最近使ったリンク」の数を設定します。多くすると便利ですが、画面が混雑する可能性があります。',
+                  slider: Slider(
+                    value: settingsState.recentItemsCount.toDouble(),
+                    min: 5,
+                    max: 50,
+                    divisions: 9,
+                    label: '${settingsState.recentItemsCount}個',
+                    onChanged: (value) => settingsNotifier.setRecentItemsCount(value.round()),
+                  ),
                 ),
               ],
             ),
@@ -558,58 +562,87 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('アイテム間マージン: ${layoutSettings.linkItemMargin}px'),
-                Slider(
-                  value: layoutSettings.linkItemMargin,
-                  min: 0,
-                  max: 5,
-                  divisions: 10,
-                  label: '${layoutSettings.linkItemMargin}px',
-                  onChanged: (value) => notifier.updateLinkItemMargin(value),
+                // アイテム間マージン
+                _buildSettingItemWithDescription(
+                  title: 'アイテム間マージン',
+                  value: '${layoutSettings.linkItemMargin}px',
+                  description: 'リンクアイテム間の空白スペースを調整します。値を大きくすると、アイテム同士の間隔が広がり、見やすくなります。',
+                  slider: Slider(
+                    value: layoutSettings.linkItemMargin,
+                    min: 0,
+                    max: 5,
+                    divisions: 10,
+                    label: '${layoutSettings.linkItemMargin}px',
+                    onChanged: (value) => notifier.updateLinkItemMargin(value),
+                  ),
                 ),
                 
                 const SizedBox(height: 16),
-                Text('アイテム内パディング: ${layoutSettings.linkItemPadding}px'),
-                Slider(
-                  value: layoutSettings.linkItemPadding,
-                  min: 0,
-                  max: 10,
-                  divisions: 20,
-                  label: '${layoutSettings.linkItemPadding}px',
-                  onChanged: (value) => notifier.updateLinkItemPadding(value),
+                
+                // アイテム内パディング
+                _buildSettingItemWithDescription(
+                  title: 'アイテム内パディング',
+                  value: '${layoutSettings.linkItemPadding}px',
+                  description: 'リンクアイテム内の文字やアイコンと枠線の間の空白を調整します。値を大きくすると、アイテム内がゆとりを持って見やすくなります。',
+                  slider: Slider(
+                    value: layoutSettings.linkItemPadding,
+                    min: 0,
+                    max: 10,
+                    divisions: 20,
+                    label: '${layoutSettings.linkItemPadding}px',
+                    onChanged: (value) => notifier.updateLinkItemPadding(value),
+                  ),
                 ),
                 
                 const SizedBox(height: 16),
-                Text('フォントサイズ: ${layoutSettings.linkItemFontSize}px'),
-                Slider(
-                  value: layoutSettings.linkItemFontSize,
-                  min: 6,
-                  max: 20,
-                  divisions: 28,
-                  label: '${layoutSettings.linkItemFontSize}px',
-                  onChanged: (value) => notifier.updateLinkItemFontSize(value),
+                
+                // フォントサイズ
+                _buildSettingItemWithDescription(
+                  title: 'フォントサイズ',
+                  value: '${layoutSettings.linkItemFontSize}px',
+                  description: 'リンクアイテムの文字サイズを調整します。小さくすると多くのアイテムを表示できますが、読みにくくなる場合があります。',
+                  slider: Slider(
+                    value: layoutSettings.linkItemFontSize,
+                    min: 6,
+                    max: 20,
+                    divisions: 28,
+                    label: '${layoutSettings.linkItemFontSize}px',
+                    onChanged: (value) => notifier.updateLinkItemFontSize(value),
+                  ),
                 ),
                 
                 const SizedBox(height: 16),
-                Text('アイコンサイズ: ${layoutSettings.linkItemIconSize}px'),
-                Slider(
-                  value: layoutSettings.linkItemIconSize,
-                  min: 12,
-                  max: 30,
-                  divisions: 18,
-                  label: '${layoutSettings.linkItemIconSize}px',
-                  onChanged: (value) => notifier.updateLinkItemIconSize(value),
+                
+                // アイコンサイズ
+                _buildSettingItemWithDescription(
+                  title: 'アイコンサイズ',
+                  value: '${layoutSettings.linkItemIconSize}px',
+                  description: 'リンクアイテムのアイコンサイズを調整します。大きくすると視認性が向上しますが、アイテム全体のサイズも大きくなります。',
+                  slider: Slider(
+                    value: layoutSettings.linkItemIconSize,
+                    min: 12,
+                    max: 30,
+                    divisions: 18,
+                    label: '${layoutSettings.linkItemIconSize}px',
+                    onChanged: (value) => notifier.updateLinkItemIconSize(value),
+                  ),
                 ),
                 
                 const SizedBox(height: 16),
-                Text('ボタンサイズ: ${layoutSettings.buttonSize}px'),
-                Slider(
-                  value: layoutSettings.buttonSize,
-                  min: 16,
-                  max: 40,
-                  divisions: 24,
-                  label: '${layoutSettings.buttonSize}px',
-                  onChanged: (value) => notifier.updateButtonSize(value),
+                
+                // ボタンサイズ
+                _buildSettingItemWithDescription(
+                  title: 'ボタンサイズ',
+                  value: '${layoutSettings.buttonSize}px',
+                  description: '編集・削除などのボタンのサイズを調整します。大きくすると操作しやすくなりますが、画面のスペースを多く使用します。',
+                  slider: Slider(
+                    value: layoutSettings.buttonSize,
+                    min: 16,
+                    max: 40,
+                    divisions: 24,
+                    label: '${layoutSettings.buttonSize}px',
+                    onChanged: (value) => notifier.updateButtonSize(value),
+                  ),
                 ),
               ],
             ),
@@ -632,23 +665,28 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SwitchListTile(
-                  title: const Text('自動バックアップ'),
-                  subtitle: const Text('定期的にデータをバックアップ'),
+                // 自動バックアップ設定
+                _buildSwitchWithDescription(
+                  title: '自動バックアップ',
+                  description: '定期的にアプリのデータを自動的にバックアップします。データの損失を防ぎ、他のPCでも同じ設定を利用できます。',
                   value: state.autoBackup,
                   onChanged: notifier.setAutoBackup,
                 ),
                 
                 if (state.autoBackup) ...[
                   const SizedBox(height: 16),
-                  Text('バックアップ間隔: ${state.backupInterval}日'),
-                  Slider(
-                    value: state.backupInterval.toDouble(),
-                    min: 1,
-                    max: 30,
-                    divisions: 29,
-                    label: '${state.backupInterval}日',
-                    onChanged: (value) => notifier.setBackupInterval(value.round()),
+                  _buildSettingItemWithDescription(
+                    title: 'バックアップ間隔',
+                    value: '${state.backupInterval}日',
+                    description: 'バックアップを実行する間隔を設定します。頻繁にバックアップすると安全性が向上しますが、ストレージ容量を多く使用します。',
+                    slider: Slider(
+                      value: state.backupInterval.toDouble(),
+                      min: 1,
+                      max: 30,
+                      divisions: 29,
+                      label: '${state.backupInterval}日',
+                      onChanged: (value) => notifier.setBackupInterval(value.round()),
+                    ),
                   ),
                 ],
               ],
@@ -897,16 +935,18 @@ class SettingsScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                SwitchListTile(
-                  title: const Text('通知を表示'),
-                  subtitle: const Text('タスクのリマインダーを表示'),
+                _buildSwitchWithDescription(
+                  title: '通知を表示',
+                  description: 'タスクの期限やリマインダーが設定されている場合、デスクトップ通知を表示します。重要なタスクを見逃すことを防げます。',
                   value: state.showNotifications,
                   onChanged: notifier.setShowNotifications,
                 ),
                 
-                SwitchListTile(
-                  title: const Text('通知音'),
-                  subtitle: const Text('通知時に音を再生'),
+                const SizedBox(height: 16),
+                
+                _buildSwitchWithDescription(
+                  title: '通知音',
+                  description: '通知が表示される際に音を再生します。作業中でも通知を見逃すことがありません。',
                   value: state.notificationSound,
                   onChanged: notifier.setNotificationSound,
                 ),
@@ -1047,6 +1087,140 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // スイッチ付きの設定項目を説明付きで表示するウィジェット
+  Widget _buildSwitchWithDescription({
+    required String title,
+    required String description,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: Colors.blue,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.blue.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  description,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 設定項目を説明付きで表示するウィジェット
+  Widget _buildSettingItemWithDescription({
+    required String title,
+    required String value,
+    required String description,
+    required Widget slider,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade300),
+              ),
+              child: Text(
+                value,
+                style: TextStyle(
+                  color: Colors.blue.shade800,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.blue.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  description,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        slider,
+      ],
     );
   }
 }

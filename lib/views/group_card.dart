@@ -1351,16 +1351,13 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                        mainAxisSize: MainAxisSize.min,
                        children: [
                                                  // メモボタン（常時表示）
-                         MouseRegion(
-                           onEnter: item.memo?.isNotEmpty == true ? (_) => _handleMemoHoverEnter(item.memo!) : null,
-                           onExit: item.memo?.isNotEmpty == true ? (_) => _handleMemoHoverExit() : null,
-                          child: IconButton(
+                         IconButton(
                             icon: Icon(
                               Icons.note_alt_outlined, 
                               color: item.memo?.isNotEmpty == true ? Colors.orange.shade600 : Colors.grey.shade600, 
                               size: layoutSettings.linkItemIconSize * 0.9 * scale
                             ),
-                            tooltip: item.memo?.isNotEmpty == true ? 'メモを編集' : 'メモ追加',
+                            tooltip: item.memo?.isNotEmpty == true ? item.memo! : 'メモ追加',
                             onPressed: () async {
                               final controller = TextEditingController(text: item.memo ?? '');
                               final result = await showDialog<String>(
@@ -1433,7 +1430,6 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                               foregroundColor: item.memo?.isNotEmpty == true ? Colors.orange.shade600 : Colors.grey.shade600,
                             ),
                           ),
-                        ),
                         SizedBox(width: 2 * scale),
                         
                         // タスク作成ボタン

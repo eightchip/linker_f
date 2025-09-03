@@ -887,7 +887,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           Wrap(
                             spacing: 8,
                             runSpacing: 4,
-                      children: recentLinks.take(10).map((link) => ActionChip(
+                      children: recentLinks.take(ref.watch(settingsProvider).recentItemsCount).map((link) => ActionChip(
                               label: Text(link.label, overflow: TextOverflow.ellipsis),
                               avatar: Icon(_iconForType(link.type), size: 18),
                               onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
@@ -2240,7 +2240,7 @@ class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
                   alignment: Alignment.center,
                   children: [
                     Tooltip(
-                      message: widget.link.memo?.isNotEmpty == true ? widget.link.memo! : '',
+                      message: widget.link.memo?.isNotEmpty == true ? widget.link.memo! : 'メモ追加',
                       child: IconButton(
                         icon: Icon(
                           Icons.note_alt_outlined,

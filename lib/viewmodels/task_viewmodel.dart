@@ -230,6 +230,29 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
+  Future<void> startTask(String taskId) async {
+    try {
+      final task = state.firstWhere((t) => t.id == taskId);
+      
+      final updatedTask = task.copyWith(
+        status: TaskStatus.inProgress,
+      );
+      
+      await updateTask(updatedTask);
+      
+      // リンクのタスク状態を更新
+      await _updateLinkTaskStatus();
+      
+      if (kDebugMode) {
+        print('タスク開始: ${task.title}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('タスク開始エラー: $e');
+      }
+    }
+  }
+
   Future<void> completeTask(String taskId) async {
     try {
       final task = state.firstWhere((t) => t.id == taskId);
