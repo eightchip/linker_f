@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/settings_service.dart';
 import '../services/notification_service.dart';
@@ -126,11 +127,16 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 }
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
     final settingsNotifier = ref.read(settingsProvider.notifier);
     final layoutSettings = ref.watch(layoutSettingsProvider);
@@ -140,51 +146,66 @@ class SettingsScreen extends ConsumerWidget {
     final currentAccentColor = ref.watch(accentColorProvider);
     final currentFontSize = ref.watch(fontSizeProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('設定'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => settingsNotifier._loadSettings(),
-            tooltip: '設定を再読み込み',
-          ),
-        ],
-      ),
-      body: settingsState.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Row(
-              children: [
-                // 左側: 設定メニュー
-                Container(
-                  width: 250,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      right: BorderSide(color: Colors.grey.shade300),
-                    ),
-                  ),
-                  child: _buildSettingsMenu(context, ref),
-                ),
-                
-                // 右側: 設定内容
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: _buildSettingsContent(
-                      context, 
-                      ref, 
-                      settingsState, 
-                      settingsNotifier, 
-                      layoutSettings,
-                      currentDarkMode,
-                      currentAccentColor,
-                      currentFontSize,
-                    ),
-                  ),
-                ),
-              ],
+    return RawKeyboardListener(
+      focusNode: FocusNode(),
+      autofocus: true,
+      onKey: _handleKeyEvent,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('設定'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => settingsNotifier._loadSettings(),
+              tooltip: '設定を再読み込み',
             ),
+          ],
+        ),
+        body: settingsState.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Row(
+                children: [
+                  // 左側: 設定メニュー
+                  Container(
+                    width: 250,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    child: _buildSettingsMenu(context, ref),
+                  ),
+                  
+                  // 右側: 設定内容
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: _buildSettingsContent(
+                        context, 
+                        ref, 
+                        settingsState, 
+                        settingsNotifier, 
+                        layoutSettings,
+                        currentDarkMode,
+                        currentAccentColor,
+                        currentFontSize,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
+  }
+
+  // キーボードショートカットを処理
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        // 左矢印キーが押されたらリンク画面に戻る
+        Navigator.of(context).pop();
+      }
+    }
   }
 
   Widget _buildSettingsMenu(BuildContext context, WidgetRef ref) {
