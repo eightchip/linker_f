@@ -54,6 +54,9 @@ class LinkItem extends HiveObject {
   @HiveField(12)
   String? faviconFallbackDomain;
 
+  @HiveField(13)
+  int useCount;
+
   LinkItem({
     required this.id,
     required this.label,
@@ -68,6 +71,7 @@ class LinkItem extends HiveObject {
     this.tags = const [],
     this.hasActiveTasks = false,
     this.faviconFallbackDomain,
+    this.useCount = 0,
   });
 
   Map<String, dynamic> toJson() {
@@ -85,6 +89,7 @@ class LinkItem extends HiveObject {
       'tags': tags,
       'hasActiveTasks': hasActiveTasks,
       'faviconFallbackDomain': faviconFallbackDomain,
+      'useCount': useCount,
     };
   }
 
@@ -103,6 +108,7 @@ class LinkItem extends HiveObject {
       tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
       hasActiveTasks: json['hasActiveTasks'] as bool? ?? false,
       faviconFallbackDomain: json['faviconFallbackDomain'] as String?,
+      useCount: json['useCount'] as int? ?? 0,
     );
   }
 
@@ -123,6 +129,7 @@ class LinkItem extends HiveObject {
     List<String>? tags,
     bool? hasActiveTasks,
     String? faviconFallbackDomain,
+    int? useCount,
   }) {
     // memoの特別な処理：センチネル値が渡された場合はnullに設定
     String? finalMemo;
@@ -146,6 +153,7 @@ class LinkItem extends HiveObject {
       tags: tags ?? this.tags,
       hasActiveTasks: hasActiveTasks ?? this.hasActiveTasks,
       faviconFallbackDomain: faviconFallbackDomain ?? this.faviconFallbackDomain,
+      useCount: useCount ?? this.useCount,
     );
   }
 }

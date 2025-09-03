@@ -358,10 +358,15 @@ class LinkViewModel extends StateNotifier<LinkState> {
     print('=== launchLink 開始 ===');
     print('リンク: ${link.label} (${link.path})');
     print('現在のlastUsed: ${link.lastUsed}');
+    print('現在の使用回数: ${link.useCount}');
     
-    // リンクのlastUsedを更新
-    final updatedLink = link.copyWith(lastUsed: DateTime.now());
+    // リンクのlastUsedとuseCountを更新
+    final updatedLink = link.copyWith(
+      lastUsed: DateTime.now(),
+      useCount: link.useCount + 1,
+    );
     print('更新後のlastUsed: ${updatedLink.lastUsed}');
+    print('更新後の使用回数: ${updatedLink.useCount}');
     
     // グループ内のリンクも更新
     final groups = state.groups;

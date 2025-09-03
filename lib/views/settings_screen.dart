@@ -433,7 +433,7 @@ class SettingsScreen extends ConsumerWidget {
                 _buildSettingItemWithDescription(
                   title: '最近使用したアイテム数',
                   value: '${settingsState.recentItemsCount}個',
-                  description: 'ホーム画面に表示される「最近使ったリンク」の数を設定します。多くすると便利ですが、画面が混雑する可能性があります。',
+                  description: 'ホーム画面に表示される「最近使ったリンク」の数を設定します。使用頻度の高いリンクが優先表示され、色分けで視認性が向上します。',
                   slider: Slider(
                     value: settingsState.recentItemsCount.toDouble(),
                     min: 5,
@@ -441,6 +441,49 @@ class SettingsScreen extends ConsumerWidget {
                     divisions: 9,
                     label: '${settingsState.recentItemsCount}個',
                     onChanged: (value) => settingsNotifier.setRecentItemsCount(value.round()),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 使用頻度統計の説明
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.analytics, color: Colors.green.shade600, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            '使用頻度統計機能',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '• 🔥 高頻度使用: 緑色でハイライト\n'
+                        '• ⭐ 中頻度使用: オレンジ色で表示\n'
+                        '• 📌 低頻度使用: 青色で表示\n'
+                        '• 📌 使用頻度低: グレー色で表示\n'
+                        '• 使用回数と最終使用日時を基に自動計算',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green.shade700,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

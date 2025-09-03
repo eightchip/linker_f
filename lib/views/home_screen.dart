@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -27,6 +26,7 @@ import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdfx/pdfx.dart' as pdfx;
 import '../utils/favicon_service.dart';
+import '../utils/usage_statistics.dart';
 
 
 // ハイライト用のウィジェット
@@ -907,14 +907,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         children: [
                           const Text('最近使ったリンク', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
-                          Wrap(
+                                                    Wrap(
                             spacing: 8,
                             runSpacing: 4,
-                      children: recentLinks.take(ref.watch(settingsProvider).recentItemsCount).map((link) => ActionChip(
-                              label: Text(link.label, overflow: TextOverflow.ellipsis),
-                              avatar: Icon(_iconForType(link.type), size: 18),
-                              onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
-                            )).toList(),
+                            children: _getSortedRecentLinks(recentLinks, ref.watch(settingsProvider).recentItemsCount)
+                                .map((link) => _buildUsageBasedChip(link, ref))
+                                .toList(),
                           ),
                         ],
                       ),
@@ -4247,6 +4245,77 @@ class _ShortcutItem extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// 使用頻度統計機能のメソッド
+extension UsageStatisticsExtension on _HomeScreenState {
+  /// 使用頻度に基づいて最近使ったリンクをソート
+  List<LinkItem> _getSortedRecentLinks(List<LinkItem> links, int count) {
+    // 使用頻度スコアでソート（高い順）
+    final sortedLinks = List<LinkItem>.from(links);
+    sortedLinks.sort((a, b) {
+      final scoreA = UsageStatistics.calculateUsageScore(a);
+      final scoreB = UsageStatistics.calculateUsageScore(b);
+      return scoreB.compareTo(scoreA); // 降順（高い順）
+    });
+    
+    return sortedLinks.take(count).toList();
+  }
+  
+  /// 使用頻度に基づいたチップウィジェットを構築
+  Widget _buildUsageBasedChip(LinkItem link, WidgetRef ref) {
+    final usageLevel = UsageStatistics.getUsageLevel(link);
+    final usageColor = UsageStatistics.getUsageColor(link);
+    final usageBackgroundColor = UsageStatistics.getUsageBackgroundColor(link);
+    final usageIcon = UsageStatistics.getUsageIcon(link);
+    final usageDescription = UsageStatistics.getUsageDescription(link);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(usageBackgroundColor),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Color(usageColor),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(usageColor).withValues(alpha: 0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ActionChip(
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              link.label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Color(usageColor),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              usageIcon,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        avatar: Icon(
+          _iconForType(link.type),
+          size: 18,
+          color: Color(usageColor),
+        ),
+        backgroundColor: Colors.transparent,
+        onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
+        tooltip: '${link.label}\n$usageDescription\n使用回数: ${link.useCount}回',
       ),
     );
   }
