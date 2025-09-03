@@ -24,6 +24,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   String _filterStatus = 'all'; // all, pending, inProgress, completed
   String _filterPriority = 'all'; // all, low, medium, high, urgent
   String _searchQuery = '';
+  String _sortOrder = 'dueDate'; // dueDate, priority, title, createdAt, status
 
   @override
   Widget build(BuildContext context) {
@@ -161,46 +162,106 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             ),
             const SizedBox(height: 16),
             
-            // フィルター
+            // フィルターと並び替え
             Row(
               children: [
-                const Text('ステータス: '),
-                const SizedBox(width: 8),
-                DropdownButton<String>(
-                  value: _filterStatus,
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('すべて')),
-                    DropdownMenuItem(value: 'pending', child: Text('未着手')),
-                    DropdownMenuItem(value: 'inProgress', child: Text('進行中')),
-                    DropdownMenuItem(value: 'completed', child: Text('完了')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _filterStatus = value;
-                      });
-                    }
-                  },
+                // ステータスフィルター
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('ステータス:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        ),
+                        value: _filterStatus,
+                        items: const [
+                          DropdownMenuItem(value: 'all', child: Text('すべて')),
+                          DropdownMenuItem(value: 'pending', child: Text('未着手')),
+                          DropdownMenuItem(value: 'inProgress', child: Text('進行中')),
+                          DropdownMenuItem(value: 'completed', child: Text('完了')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _filterStatus = value;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 24),
-                const Text('優先度: '),
-                const SizedBox(width: 8),
-                DropdownButton<String>(
-                  value: _filterPriority,
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('すべて')),
-                    DropdownMenuItem(value: 'low', child: Text('低')),
-                    DropdownMenuItem(value: 'medium', child: Text('中')),
-                    DropdownMenuItem(value: 'high', child: Text('高')),
-                    DropdownMenuItem(value: 'urgent', child: Text('緊急')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _filterPriority = value;
-                      });
-                    }
-                  },
+                
+                const SizedBox(width: 16),
+                
+                // 優先度フィルター
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('優先度:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        ),
+                        value: _filterPriority,
+                        items: const [
+                          DropdownMenuItem(value: 'all', child: Text('すべて')),
+                          DropdownMenuItem(value: 'low', child: Text('低')),
+                          DropdownMenuItem(value: 'medium', child: Text('中')),
+                          DropdownMenuItem(value: 'high', child: Text('高')),
+                          DropdownMenuItem(value: 'urgent', child: Text('緊急')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _filterPriority = value;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // 並び替えオプション
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('並び替え:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        ),
+                        value: _sortOrder,
+                        items: const [
+                          DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
+                          DropdownMenuItem(value: 'priority', child: Text('優先度順')),
+                          DropdownMenuItem(value: 'title', child: Text('タイトル順')),
+                          DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
+                          DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _sortOrder = value;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -220,7 +281,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '並び替え順序: 期限昇順 → 緊急度高い順（ドラッグ&ドロップで手動調整可能）',
+                      '並び替え順序: 選択した並び替え方法で表示（ドラッグ&ドロップで手動調整可能）',
                       style: TextStyle(
                         color: Colors.blue.shade700,
                         fontSize: 12,
@@ -645,7 +706,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         NotificationService.showInAppNotification(
           context,
           '1分後リマインダー設定',
-          '1分後にリマインダーが表示されます。アプリを閉じても通知が表示されるはずです。',
+          '1分後にリマインダーが表示されます。アプリを閉じている場合は通知が表示されません。',
           backgroundColor: Colors.green,
         );
       } else {
@@ -753,29 +814,61 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       return true;
     }).toList();
 
-          // デフォルト並び替え: 第一順位：期限昇順、第二順位：緊急度高い順
-      filteredTasks.sort((a, b) {
-        // 期限の比較（nullの場合は最後に配置）
-        if (a.dueDate == null && b.dueDate == null) {
-          // 両方とも期限なしの場合は緊急度で比較
-          return _comparePriority(a.priority, b.priority);
-        } else if (a.dueDate == null) {
-          return 1; // aの期限なしは後ろ
-        } else if (b.dueDate == null) {
-          return -1; // bの期限なしは後ろ
-        } else {
-          // 期限がある場合は期限で比較
-          final dateComparison = a.dueDate!.compareTo(b.dueDate!);
-          if (dateComparison != 0) {
-            return dateComparison; // 期限が異なる場合は期限順
-          } else {
-            // 期限が同じ場合は緊急度で比較
-            return _comparePriority(a.priority, b.priority);
-          }
-        }
-      });
+                    // 選択された並び替え方法に基づいてソート
+          filteredTasks.sort((a, b) {
+            switch (_sortOrder) {
+              case 'dueDate':
+                // 期限順（期限なしは最後）
+                if (a.dueDate == null && b.dueDate == null) {
+                  return _comparePriority(a.priority, b.priority);
+                } else if (a.dueDate == null) {
+                  return 1;
+                } else if (b.dueDate == null) {
+                  return -1;
+                } else {
+                  final dateComparison = a.dueDate!.compareTo(b.dueDate!);
+                  if (dateComparison != 0) {
+                    return dateComparison;
+                  } else {
+                    return _comparePriority(a.priority, b.priority);
+                  }
+                }
+              case 'priority':
+                // 優先度順（緊急度高い順）
+                final priorityComparison = _comparePriority(a.priority, b.priority);
+                if (priorityComparison != 0) {
+                  return priorityComparison;
+                } else {
+                  // 優先度が同じ場合は期限順
+                  return _compareDueDate(a.dueDate, b.dueDate);
+                }
+              case 'title':
+                // タイトル順（アルファベット順）
+                return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+              case 'createdAt':
+                // 作成日順（新しい順）
+                return b.createdAt.compareTo(a.createdAt);
+              case 'status':
+                // ステータス順（未着手→進行中→完了）
+                final statusOrder = {
+                  TaskStatus.pending: 1,
+                  TaskStatus.inProgress: 2,
+                  TaskStatus.completed: 3,
+                };
+                final statusComparison = (statusOrder[a.status] ?? 0).compareTo(statusOrder[b.status] ?? 0);
+                if (statusComparison != 0) {
+                  return statusComparison;
+                } else {
+                  // ステータスが同じ場合は期限順
+                  return _compareDueDate(a.dueDate, b.dueDate);
+                }
+              default:
+                // デフォルトは期限順
+                return _compareDueDate(a.dueDate, b.dueDate);
+            }
+          });
 
-    return filteredTasks;
+      return filteredTasks;
   }
 
   // 優先度の比較（緊急度高い順）
@@ -788,6 +881,19 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     };
     
     return (priorityOrder[b] ?? 0).compareTo(priorityOrder[a] ?? 0);
+  }
+
+  // 期限の比較（期限なしは最後）
+  int _compareDueDate(DateTime? a, DateTime? b) {
+    if (a == null && b == null) {
+      return 0;
+    } else if (a == null) {
+      return 1; // aの期限なしは後ろ
+    } else if (b == null) {
+      return -1; // bの期限なしは後ろ
+    } else {
+      return a.compareTo(b); // 期限昇順
+    }
   }
 
   // キーボードショートカット処理

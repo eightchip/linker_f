@@ -16,6 +16,8 @@ import 'services/windows_notification_service.dart';
 import 'services/system_tray_service.dart';
 import 'services/migration_service.dart';
 import 'services/settings_service.dart';
+import 'services/backup_service.dart';
+import 'repositories/link_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,6 +90,22 @@ void main() async {
   // 設定サービスの初期化
   final settingsService = SettingsService();
   await settingsService.initialize();
+  
+  // 自動バックアップのチェックと実行
+  try {
+    final backupService = BackupService(
+      linkRepository: LinkRepository(),
+      settingsService: settingsService,
+    );
+    await backupService.checkAndPerformAutoBackup();
+    if (kDebugMode) {
+      print('自動バックアップチェック完了');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('自動バックアップエラー: $e');
+    }
+  }
   
   // Desktop window configuration
   await windowManager.ensureInitialized();

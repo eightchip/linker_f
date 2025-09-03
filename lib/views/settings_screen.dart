@@ -14,6 +14,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
+import '../services/backup_service.dart';
+import '../repositories/link_repository.dart';
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService();
@@ -758,6 +760,89 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 const SizedBox(height: 16),
                 
+                // 手動バックアップとフォルダを開くボタン
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.backup),
+                        label: const Text('手動バックアップ実行'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () async {
+                          try {
+                            // 手動バックアップを実行
+                            final linkRepository = LinkRepository();
+                            await linkRepository.initialize(); // 初期化を追加
+                            
+                            final backupService = BackupService(
+                              linkRepository: linkRepository,
+                              settingsService: ref.read(settingsServiceProvider),
+                            );
+                            final backupFile = await backupService.performManualBackup();
+                            
+                            if (backupFile != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('手動バックアップが完了しました: ${backupFile.path}'),
+                                  backgroundColor: Colors.green,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('バックアップエラー: $e'),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 5),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.folder_open),
+                        label: const Text('バックアップフォルダを開く'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () async {
+                          try {
+                            final appDocDir = await getApplicationDocumentsDirectory();
+                            final backupDir = Directory('${appDocDir.path}/backups');
+                            
+                            if (await backupDir.exists()) {
+                              // Windowsでエクスプローラーを開く
+                              await Process.run('explorer', [backupDir.path]);
+                            } else {
+                              // フォルダが存在しない場合は作成してから開く
+                              await backupDir.create(recursive: true);
+                              await Process.run('explorer', [backupDir.path]);
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('フォルダを開けませんでした: $e'),
+                                backgroundColor: Colors.orange,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
                 // バックアップの詳細説明
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -788,6 +873,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         '• 保存場所: %APPDATA%/linker_f/backups/\n'
                         '• ファイル形式: JSON（リンク、タスク、設定を含む）\n'
                         '• 最大保存数: 10個（古いものは自動削除）\n'
+                        '• 手動バックアップ: 上記の「手動バックアップ実行」ボタンで実行可能\n'
                         '• 手動エクスポート: 設定画面から「データをエクスポート」で実行可能',
                         style: TextStyle(
                           fontSize: 12,
@@ -1036,51 +1122,102 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('通知設定', Icons.notifications),
-        const SizedBox(height: 16),
-        
-        Card(
+                 _buildSectionHeader('通知設定', Icons.notifications),
+         const SizedBox(height: 16),
+         
+         // 通知の制限に関する注意事項
+         Container(
+           padding: const EdgeInsets.all(12),
+           decoration: BoxDecoration(
+             color: Colors.orange.shade50,
+             borderRadius: BorderRadius.circular(8),
+             border: Border.all(color: Colors.orange.shade200),
+           ),
+           child: Row(
+             children: [
+               Icon(
+                 Icons.info_outline,
+                 color: Colors.orange.shade600,
+                 size: 20,
+               ),
+               const SizedBox(width: 8),
+               Expanded(
+                 child: Text(
+                   '注意: 通知はアプリが起動中の場合のみ表示されます。アプリを閉じている場合は通知が表示されません。',
+                   style: TextStyle(
+                     color: Colors.orange.shade800,
+                     fontSize: 13,
+                     height: 1.4,
+                   ),
+                 ),
+               ),
+             ],
+           ),
+         ),
+         
+         const SizedBox(height: 16),
+         
+         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _buildSwitchWithDescription(
-                  title: '通知を表示',
-                  description: 'タスクの期限やリマインダーが設定されている場合、デスクトップ通知を表示します。重要なタスクを見逃すことを防げます。',
-                  value: state.showNotifications,
-                  onChanged: notifier.setShowNotifications,
-                ),
+                                 _buildSwitchWithDescription(
+                   title: '通知を表示',
+                   description: 'タスクの期限やリマインダーが設定されている場合、デスクトップ通知を表示します。アプリが起動中の場合のみ通知が表示されます。',
+                   value: state.showNotifications,
+                   onChanged: notifier.setShowNotifications,
+                 ),
                 
                 const SizedBox(height: 16),
                 
-                _buildSwitchWithDescription(
-                  title: '通知音',
-                  description: '通知が表示される際に音を再生します。作業中でも通知を見逃すことがありません。',
-                  value: state.notificationSound,
-                  onChanged: notifier.setNotificationSound,
-                ),
+                                 _buildSwitchWithDescription(
+                   title: '通知音',
+                   description: '通知が表示される際に音を再生します。アプリが起動中の場合のみ音が再生されます。',
+                   value: state.notificationSound,
+                   onChanged: notifier.setNotificationSound,
+                 ),
                 
                 const SizedBox(height: 8),
                 
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.volume_up),
-                  label: const Text('通知音をテスト'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    try {
-                      if (Platform.isWindows) {
-                        await WindowsNotificationService.showTestNotification();
-                      } else {
-                        await NotificationService.showTestNotification();
-                      }
-                    } catch (e) {
-                      print('通知音テストエラー: $e');
-                    }
-                  },
-                ),
+                                 ElevatedButton.icon(
+                   icon: const Icon(Icons.volume_up),
+                   label: const Text('通知音をテスト'),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: Colors.green,
+                     foregroundColor: Colors.white,
+                   ),
+                   onPressed: () async {
+                     try {
+                       if (Platform.isWindows) {
+                         await WindowsNotificationService.showTestNotification();
+                       } else {
+                         await NotificationService.showTestNotification();
+                       }
+                     } catch (e) {
+                       print('通知音テストエラー: $e');
+                     }
+                   },
+                 ),
+                 
+                 const SizedBox(height: 8),
+                 
+                 Container(
+                   padding: const EdgeInsets.all(8),
+                   decoration: BoxDecoration(
+                     color: Colors.grey.shade50,
+                     borderRadius: BorderRadius.circular(6),
+                     border: Border.all(color: Colors.grey.shade200),
+                   ),
+                   child: Text(
+                     'このボタンで通知音をテストできます。アプリが起動中の場合のみ音が再生されます。',
+                     style: TextStyle(
+                       fontSize: 11,
+                       color: Colors.grey.shade600,
+                       fontStyle: FontStyle.italic,
+                     ),
+                   ),
+                 ),
               ],
             ),
           ),

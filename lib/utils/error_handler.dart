@@ -116,27 +116,27 @@ class Result<T> {
     required this.isSuccess,
   });
 
-  factory Result.success(T data) => Result._(data: data, isSuccess: true);
-  factory Result.failure(String error) => Result._(error: error, isSuccess: false);
+  factory Result.success(T? data) => Result._(data: data, isSuccess: true);
+  factory Result.failure(String? error) => Result._(error: error, isSuccess: false);
 
   bool get isFailure => !isSuccess;
 
   /// 成功時の処理を実行
-  void onSuccess(void Function(T data) callback) {
-    if (isSuccess && data != null) {
+  void onSuccess(void Function(T? data) callback) {
+    if (isSuccess) {
       callback(data);
     }
   }
 
   /// 失敗時の処理を実行
-  void onFailure(void Function(String error) callback) {
-    if (isFailure && error != null) {
+  void onFailure(void Function(String? error) callback) {
+    if (isFailure) {
       callback(error);
     }
   }
 
   /// 成功時はデータを返し、失敗時はデフォルト値を返す
-  T orElse(T defaultValue) => isSuccess && data != null ? data! : defaultValue;
+  T? orElse(T? defaultValue) => isSuccess ? data : defaultValue;
 }
 
 /// Result型を使用したエラーハンドリング
