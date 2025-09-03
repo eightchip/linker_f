@@ -5,11 +5,14 @@ import 'dart:ffi';
 import 'dart:async';
 import 'dart:io';
 import '../models/task_item.dart';
+import '../services/settings_service.dart';
 
 class WindowsNotificationService {
   static bool _isInitialized = false;
   static late final DynamicLibrary _user32;
+  static late final DynamicLibrary _winmm;
   static late final int Function(int, Pointer<Utf16>, Pointer<Utf16>, int, Pointer<Utf16>, int, int) _messageBoxW;
+  static late final int Function(int, int) _playSound;
   
   // シンプルなタイマー管理
   static final Map<String, Timer> _scheduledTimers = {};
@@ -23,6 +26,12 @@ class WindowsNotificationService {
       _messageBoxW = _user32.lookupFunction<
           Int32 Function(IntPtr, Pointer<Utf16>, Pointer<Utf16>, Uint32, Pointer<Utf16>, IntPtr, IntPtr),
           int Function(int, Pointer<Utf16>, Pointer<Utf16>, int, Pointer<Utf16>, int, int)>('MessageBoxW');
+
+      // 音声再生用のAPIを初期化
+      _winmm = DynamicLibrary.open('winmm.dll');
+      _playSound = _winmm.lookupFunction<
+          Int32 Function(Uint32, IntPtr),
+          int Function(int, int)>('PlaySoundW');
 
       _isInitialized = true;
       print('Windows通知サービス初期化完了');
@@ -59,9 +68,37 @@ class WindowsNotificationService {
     }
   }
 
+  // システムサウンドを再生
+  static Future<void> _playNotificationSound() async {
+    try {
+      // 設定で通知音が有効になっているかチェック
+      final settingsService = SettingsService();
+      final shouldPlaySound = settingsService.notificationSound;
+      
+      if (!shouldPlaySound) {
+        print('通知音が無効になっているため、音を再生しません');
+        return;
+      }
+
+      // システムサウンドを再生（アスタリスク音）
+      final result = _playSound(SND_ALIAS | SND_ASYNC, 0);
+      
+      if (result == 0) {
+        print('通知音再生成功');
+      } else {
+        print('通知音再生失敗: エラーコード $result');
+      }
+    } catch (e) {
+      print('通知音再生エラー: $e');
+    }
+  }
+
   // シンプルな通知表示
   static Future<void> _showNotification(String title, String message) async {
     try {
+      // 通知音を再生
+      await _playNotificationSound();
+      
       await _showMessageBox(title, message);
     } catch (e) {
       print('通知表示エラー: $e');
@@ -187,18 +224,32 @@ class WindowsNotificationService {
 
   // テスト通知
   static Future<void> showTestNotification() async {
-    await _showNotification(
-      'テスト通知',
-      'Windows通知機能が正常に動作しています',
-    );
+    try {
+      // 通知音を再生
+      await _playNotificationSound();
+      
+      await _showNotification(
+        'テスト通知',
+        'Windows通知機能が正常に動作しています',
+      );
+    } catch (e) {
+      print('テスト通知エラー: $e');
+    }
   }
 
   // リマインダーテスト通知
   static Future<void> showTestReminderNotification() async {
-    await _showNotification(
-      'リマインダーテスト',
-      'Windowsリマインダー機能が正常に動作しています',
-    );
+    try {
+      // 通知音を再生
+      await _playNotificationSound();
+      
+      await _showNotification(
+        'リマインダーテスト',
+        'Windowsリマインダー機能が正常に動作しています',
+        );
+    } catch (e) {
+      print('リマインダーテスト通知エラー: $e');
+    }
   }
 
   // 1分後のテストリマインダー（確実に動作するテスト）

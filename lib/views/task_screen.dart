@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
@@ -33,7 +34,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     // フィルタリング
     final filteredTasks = _getFilteredTasks(tasks);
 
-    return Scaffold(
+    return RawKeyboardListener(
+      focusNode: FocusNode(),
+      autofocus: true,
+      onKey: _handleKeyEvent,
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('タスク管理'),
         actions: [
@@ -90,6 +95,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -378,17 +384,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       ],
                     ),
                   ),
-                if (task.status == TaskStatus.pending || task.status == TaskStatus.inProgress)
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('削除', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('削除', style: TextStyle(color: Colors.red)),
+                    ],
                   ),
+                ),
               ],
             ),
           ],
@@ -783,5 +788,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     };
     
     return (priorityOrder[b] ?? 0).compareTo(priorityOrder[a] ?? 0);
+  }
+
+  // キーボードショートカット処理
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        // 左矢印キーが押されたらホーム画面に戻る
+        Navigator.of(context).pop();
+      }
+    }
   }
 }

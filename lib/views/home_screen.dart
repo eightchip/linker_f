@@ -295,6 +295,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         print('✅ Ctrl+Shift+S 検出: 設定画面を開く');
         _showSettingsScreen(context);
       }
+      // ⑧3点ドットメニュー (Ctrl+M): メニューを表示
+      else if (key == LogicalKeyboardKey.keyM && isControlPressed) {
+        print('✅ Ctrl+M 検出: 3点ドットメニューを表示');
+        _showPopupMenu(context);
+      }
 
       // F1: ヘルプを表示
       else if (key == LogicalKeyboardKey.f1) {
@@ -327,6 +332,135 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         print('❌ ショートカットに一致しませんでした');
       }
     }
+  }
+
+  // 3点ドットメニューを表示
+  void _showPopupMenu(BuildContext context) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final Offset offset = button.localToGlobal(Offset.zero);
+    
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy + button.size.height,
+        offset.dx + button.size.width,
+        offset.dy + button.size.height,
+      ),
+      items: [
+        // ①追加
+        PopupMenuItem(
+          value: 'add_group',
+          child: Row(
+            children: [
+              Icon(Icons.add, size: 20),
+              SizedBox(width: 8),
+              Text('グループを追加 (Ctrl+N)'),
+            ],
+          ),
+        ),
+        // ②検索
+        PopupMenuItem(
+          value: 'search',
+          child: Row(
+            children: [
+              Icon(Icons.search, size: 20),
+              SizedBox(width: 8),
+              Text('検索 (Ctrl+F)'),
+            ],
+          ),
+        ),
+        // ③タスク
+        PopupMenuItem(
+          value: 'task',
+          child: Row(
+            children: [
+              Icon(Icons.task_alt, size: 20),
+              SizedBox(width: 8),
+              Text('タスク管理 (Ctrl+T）'),
+            ],
+          ),
+        ),
+        // ④最近使ったリンク
+        PopupMenuItem(
+          value: 'recent_links',
+          child: Row(
+            children: [
+              Icon(Icons.push_pin, 
+                color: _showRecent ? Colors.amber : Colors.grey, 
+                size: 20
+              ),
+              SizedBox(width: 8),
+              Text(_showRecent ? '最近使った非表示' : '最近使ったリンクを表示 (Ctrl+R)'),
+            ],
+          ),
+        ),
+        // ⑤メモ一括編集
+        PopupMenuItem(
+          value: 'memo_bulk_edit',
+          child: Row(
+            children: [
+              Icon(Icons.notes, size: 20),
+              SizedBox(width: 8),
+              Text('メモ一括編集 (Ctrl+E)'),
+            ],
+          ),
+        ),
+        // ⑥ショートカット
+        PopupMenuItem(
+          value: 'shortcut_help',
+          child: Row(
+            children: [
+              Icon(Icons.keyboard, size: 20),
+              SizedBox(width: 8),
+              Text('ショートカットキー (F1)'),
+            ],
+          ),
+        ),
+        // ⑦設定
+        PopupMenuItem(
+          value: 'settings',
+          child: Row(
+            children: [
+              Icon(Icons.settings, size: 20),
+              SizedBox(width: 8),
+              Text('設定 (Ctrl+Shift+S)'),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value != null) {
+        switch (value) {
+          case 'add_group':
+            _showAddGroupDialog(context);
+            break;
+          case 'search':
+            setState(() {
+              _showSearchBar = !_showSearchBar;
+              if (!_showSearchBar) _searchQuery = '';
+            });
+            break;
+          case 'task':
+            _showTaskScreen(context);
+            break;
+          case 'recent_links':
+            setState(() {
+              _showRecent = !_showRecent;
+            });
+            break;
+          case 'memo_bulk_edit':
+            _showMemoBulkEditDialog(context);
+            break;
+          case 'shortcut_help':
+            _showShortcutHelp(context);
+            break;
+          case 'settings':
+            _showSettingsScreen(context);
+            break;
+        }
+      }
+    });
   }
 
   // ショートカットアクション実装
@@ -375,6 +509,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _ShortcutItem('Ctrl+T', 'タスク管理'),
               _ShortcutItem('Ctrl+R', '最近使ったリンク'),
               _ShortcutItem('Ctrl+E', 'メモ一括編集'),
+              _ShortcutItem('Ctrl+M', '3点ドットメニュー'),
               _ShortcutItem('F1', 'ショートカットキー'),
               _ShortcutItem('Ctrl+Shift+S', '設定画面'),
               _ShortcutItem('Escape', '検索バーを閉じる'),
@@ -580,7 +715,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           children: [
                             Icon(Icons.task_alt, size: 20),
                             SizedBox(width: 8),
-                            Text('タスク管理 (Ctrl+T'),
+                            Text('タスク管理 (Ctrl+T）'),
                           ],
                         ),
                       ),

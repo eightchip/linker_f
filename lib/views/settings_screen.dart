@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/settings_service.dart';
+import '../services/notification_service.dart';
+import '../services/windows_notification_service.dart';
 import '../utils/performance_cache.dart';
 import '../viewmodels/layout_settings_provider.dart';
 import '../viewmodels/font_size_provider.dart';
@@ -1035,6 +1037,28 @@ class SettingsScreen extends ConsumerWidget {
                   description: '通知が表示される際に音を再生します。作業中でも通知を見逃すことがありません。',
                   value: state.notificationSound,
                   onChanged: notifier.setNotificationSound,
+                ),
+                
+                const SizedBox(height: 8),
+                
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.volume_up),
+                  label: const Text('通知音をテスト'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    try {
+                      if (Platform.isWindows) {
+                        await WindowsNotificationService.showTestNotification();
+                      } else {
+                        await NotificationService.showTestNotification();
+                      }
+                    } catch (e) {
+                      print('通知音テストエラー: $e');
+                    }
+                  },
                 ),
               ],
             ),
