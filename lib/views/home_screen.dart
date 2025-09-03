@@ -580,7 +580,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           children: [
                             Icon(Icons.task_alt, size: 20),
                             SizedBox(width: 8),
-                            Text('タスク管理'),
+                            Text('タスク管理 (Ctrl+T'),
                           ],
                         ),
                       ),
@@ -594,7 +594,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               size: 20
                             ),
                             SizedBox(width: 8),
-                            Text(_showRecent ? '最近使った非表示' : '最近使ったリンクを表示'),
+                            Text(_showRecent ? '最近使った非表示' : '最近使ったリンクを表示 (Ctrl+R)'),
                           ],
                         ),
                       ),
@@ -605,7 +605,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           children: [
                             Icon(Icons.notes, size: 20),
                             SizedBox(width: 8),
-                            Text('メモ一括編集'),
+                            Text('メモ一括編集 (Ctrl+E)'),
                           ],
                         ),
                       ),
@@ -627,7 +627,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           children: [
                             Icon(Icons.settings, size: 20),
                             SizedBox(width: 8),
-                            Text('設定'),
+                            Text('設定 (Ctrl+Shift+S)'),
                           ],
                         ),
                       ),

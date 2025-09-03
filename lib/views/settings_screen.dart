@@ -689,6 +689,49 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+                
+                const SizedBox(height: 16),
+                
+                // バックアップの詳細説明
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue.shade600, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'バックアップの詳細',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '• 自動バックアップ: アプリ起動時にチェックし、設定された間隔で実行\n'
+                        '• 保存場所: %APPDATA%/linker_f/backups/\n'
+                        '• ファイル形式: JSON（リンク、タスク、設定を含む）\n'
+                        '• 最大保存数: 10個（古いものは自動削除）\n'
+                        '• 手動エクスポート: 設定画面から「データをエクスポート」で実行可能',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue.shade700,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

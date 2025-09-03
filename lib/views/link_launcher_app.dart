@@ -10,12 +10,22 @@ class LinkLauncherApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(darkModeProvider);
     final accentColor = ref.watch(accentColorProvider);
+    final fontSize = ref.watch(fontSizeProvider);
     
     return MaterialApp(
       title: 'Link Navigator',
       debugShowCheckedModeBanner: false,
       // ちらつきを防ぐための設定
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      // フォントサイズをアプリ全体に適用
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaleFactor: fontSize,
+          ),
+          child: child!,
+        );
+      },
 
       theme: ThemeData(
         useMaterial3: true,
