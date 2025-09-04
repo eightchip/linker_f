@@ -642,5 +642,109 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     print('=== リマインダー復元コールバック完了 ===');
   }
 
+  // タスクをコピーして新しいタスクを作成
+  Future<TaskItem?> copyTask(TaskItem originalTask, {
+    DateTime? newDueDate,
+    DateTime? newReminderTime,
+    String? newTitle,
+    bool keepRecurringReminder = true,
+  }) async {
+    try {
+      print('=== タスクコピー開始 ===');
+      print('元タスク: ${originalTask.title}');
+      print('元の期限日: ${originalTask.dueDate}');
+      print('元のリマインダー時間: ${originalTask.reminderTime}');
+      
+      // 新しいタスクIDを生成
+      final newTaskId = _uuid.v4();
+      
+      // 新しいタスクを作成
+      final newTask = TaskItem(
+        id: newTaskId,
+        title: newTitle ?? '${originalTask.title} (コピー)',
+        description: originalTask.description,
+        dueDate: newDueDate ?? _calculateNextDueDate(originalTask.dueDate),
+        reminderTime: newReminderTime ?? _calculateNextReminderTime(originalTask.reminderTime),
+        priority: originalTask.priority,
+        status: TaskStatus.pending,
+        tags: List<String>.from(originalTask.tags),
+        relatedLinkId: originalTask.relatedLinkId,
+        createdAt: DateTime.now(),
+        estimatedMinutes: originalTask.estimatedMinutes,
+        recurringReminderPattern: keepRecurringReminder ? originalTask.recurringReminderPattern : null,
+        reminderCount: 0,
+        nextReminderTime: null,
+        hasSubTasks: false,
+        totalSubTasksCount: 0,
+        completedSubTasksCount: 0,
+      );
+      
+      // 新しいタスクを保存
+      await _taskBox!.put(newTaskId, newTask);
+      
+      // 状態を更新
+      final updatedTasks = [...state, newTask];
+      updatedTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      state = updatedTasks;
+      
+      // リマインダーを設定
+      if (newTask.reminderTime != null) {
+        if (Platform.isWindows) {
+          await WindowsNotificationService.scheduleTaskReminder(newTask);
+        } else {
+          await NotificationService.scheduleTaskReminder(newTask);
+        }
+      }
+      
+      print('=== タスクコピー完了 ===');
+      print('新しいタスク: ${newTask.title}');
+      print('新しい期限日: ${newTask.dueDate}');
+      print('新しいリマインダー時間: ${newTask.reminderTime}');
+      
+      return newTask;
+    } catch (e) {
+      print('タスクコピーエラー: $e');
+      return null;
+    }
+  }
+
+  // 次の期限日を計算
+  DateTime? _calculateNextDueDate(DateTime? originalDueDate) {
+    if (originalDueDate == null) return null;
+    
+    // 現在時刻が元の期限日を過ぎている場合は、翌月の同日を設定
+    final now = DateTime.now();
+    if (originalDueDate.isBefore(now)) {
+      return DateTime(
+        now.year,
+        now.month + 1,
+        originalDueDate.day,
+        originalDueDate.hour,
+        originalDueDate.minute,
+      );
+    }
+    
+    return originalDueDate;
+  }
+
+  // 次のリマインダー時間を計算
+  DateTime? _calculateNextReminderTime(DateTime? originalReminderTime) {
+    if (originalReminderTime == null) return null;
+    
+    // 現在時刻が元のリマインダー時間を過ぎている場合は、翌月の同日を設定
+    final now = DateTime.now();
+    if (originalReminderTime.isBefore(now)) {
+      return DateTime(
+        now.year,
+        now.month + 1,
+        originalReminderTime.day,
+        originalReminderTime.hour,
+        originalReminderTime.minute,
+      );
+    }
+    
+    return originalReminderTime;
+  }
+
 
 }
