@@ -606,6 +606,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     ],
                   ),
                 ),
+                const PopupMenuItem(
+                  value: 'copy',
+                  child: Row(
+                    children: [
+                      Icon(Icons.copy, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('コピー', style: TextStyle(color: Colors.blue)),
+                    ],
+                  ),
+                ),
                 if (task.status == TaskStatus.pending)
                   const PopupMenuItem(
                     value: 'start',
@@ -736,6 +746,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     switch (action) {
       case 'edit':
         _showTaskDialog(task: task);
+        break;
+      case 'copy':
+        _showCopyTaskDialog(task);
         break;
       case 'start':
         taskViewModel.startTask(task.id);
