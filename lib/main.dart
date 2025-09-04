@@ -18,6 +18,8 @@ import 'services/migration_service.dart';
 import 'services/settings_service.dart';
 import 'services/backup_service.dart';
 import 'repositories/link_repository.dart';
+import 'models/task_item.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -104,6 +106,28 @@ void main() async {
   } catch (e) {
     if (kDebugMode) {
       print('自動バックアップエラー: $e');
+    }
+  }
+  
+  // リマインダー復元のためのTaskViewModel初期化
+  try {
+    // TaskViewModelの初期化を確実に行う
+    final taskBox = await Hive.openBox<TaskItem>('tasks');
+    
+    // 既存のタスクを読み込んでリマインダーを復元
+    final tasks = taskBox.values.toList();
+    if (tasks.isNotEmpty) {
+      print('既存タスク数: ${tasks.length}');
+      // リマインダー復元を実行
+      await WindowsNotificationService.restoreReminders(tasks);
+    }
+    
+    if (kDebugMode) {
+      print('TaskViewModel初期化完了');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('TaskViewModel初期化エラー: $e');
     }
   }
   

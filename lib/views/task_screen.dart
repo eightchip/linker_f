@@ -7,8 +7,10 @@ import '../models/task_item.dart';
 import '../models/link_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart';
+import '../viewmodels/sub_task_viewmodel.dart';
 import '../services/notification_service.dart';
 import '../services/windows_notification_service.dart';
+import '../utils/csv_export.dart';
 import 'task_dialog.dart';
 import 'calendar_screen.dart';
 import 'sub_task_dialog.dart';
@@ -21,10 +23,11 @@ class TaskScreen extends ConsumerStatefulWidget {
 }
 
 class _TaskScreenState extends ConsumerState<TaskScreen> {
-  String _filterStatus = 'all'; // all, pending, inProgress, completed
+  Set<String> _filterStatuses = {'all'}; // 複数選択可能
   String _filterPriority = 'all'; // all, low, medium, high, urgent
   String _searchQuery = '';
-  String _sortOrder = 'dueDate'; // dueDate, priority, title, createdAt, status
+  List<String> _sortOrders = ['dueDate']; // 第3順位まで設定可能
+  bool _showFilters = false; // フィルター表示/非表示の切り替え
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +71,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             icon: const Icon(Icons.add),
             tooltip: '新しいタスク',
           ),
+          IconButton(
+            onPressed: () => _exportTasksToCsv(),
+            icon: const Icon(Icons.download),
+            tooltip: 'CSV出力',
+          ),
         ],
       ),
       body: Column(
@@ -75,10 +83,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           // 統計情報
           _buildStatisticsCard(statistics),
           
-          // フィルターと検索
-          _buildFilterSection(),
+          // フィルターと検索（折りたたみ可能）
+          _buildCollapsibleFilterSection(),
           
-          // タスク一覧
+          // タスク一覧（全画面表示）
           Expanded(
             child: filteredTasks.isEmpty
                 ? const Center(
@@ -140,160 +148,312 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     );
   }
 
-  Widget _buildFilterSection() {
+  Widget _buildCollapsibleFilterSection() {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // 検索バー
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'タスクを検索...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) {
+      child: Column(
+        children: [
+          // フィルター表示/非表示の切り替えボタン
+          ListTile(
+            leading: Icon(_showFilters ? Icons.expand_less : Icons.expand_more),
+            title: Text(_showFilters ? 'フィルターを隠す' : 'フィルターを表示'),
+            trailing: IconButton(
+              icon: const Icon(Icons.filter_list),
+              onPressed: () {
                 setState(() {
-                  _searchQuery = value;
+                  _showFilters = !_showFilters;
                 });
               },
             ),
-            const SizedBox(height: 16),
-            
-            // フィルターと並び替え
-            Row(
-              children: [
-                // ステータスフィルター
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('ステータス:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        ),
-                        value: _filterStatus,
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('すべて')),
-                          DropdownMenuItem(value: 'pending', child: Text('未着手')),
-                          DropdownMenuItem(value: 'inProgress', child: Text('進行中')),
-                          DropdownMenuItem(value: 'completed', child: Text('完了')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _filterStatus = value;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(width: 16),
-                
-                // 優先度フィルター
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('優先度:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        ),
-                        value: _filterPriority,
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('すべて')),
-                          DropdownMenuItem(value: 'low', child: Text('低')),
-                          DropdownMenuItem(value: 'medium', child: Text('中')),
-                          DropdownMenuItem(value: 'high', child: Text('高')),
-                          DropdownMenuItem(value: 'urgent', child: Text('緊急')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _filterPriority = value;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(width: 16),
-                
-                // 並び替えオプション
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('並び替え:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        ),
-                        value: _sortOrder,
-                        items: const [
-                          DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
-                          DropdownMenuItem(value: 'priority', child: Text('優先度順')),
-                          DropdownMenuItem(value: 'title', child: Text('タイトル順')),
-                          DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
-                          DropdownMenuItem(value: 'status', child: Text('ステータス順')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _sortOrder = value;
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            // 並び替え順序の説明
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: Row(
+            onTap: () {
+              setState(() {
+                _showFilters = !_showFilters;
+              });
+            },
+          ),
+          
+          // 折りたたみ可能なフィルター内容
+          if (_showFilters)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info, color: Colors.blue.shade700, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '並び替え順序: 選択した並び替え方法で表示（ドラッグ&ドロップで手動調整可能）',
-                      style: TextStyle(
-                        color: Colors.blue.shade700,
-                        fontSize: 12,
+                  // 検索バー
+                  TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'タスクを検索...',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  Row(
+                    children: [
+                      // ステータスフィルター（複数選択）
+                      Expanded(
+                        child: _buildStatusFilterChips(),
                       ),
+                      
+                      const SizedBox(width: 16),
+                      
+                      // 優先度フィルター
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('優先度:', style: TextStyle(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              ),
+                              value: _filterPriority,
+                              items: const [
+                                DropdownMenuItem(value: 'all', child: Text('すべて')),
+                                DropdownMenuItem(value: 'low', child: Text('低')),
+                                DropdownMenuItem(value: 'medium', child: Text('中')),
+                                DropdownMenuItem(value: 'high', child: Text('高')),
+                                DropdownMenuItem(value: 'urgent', child: Text('緊急')),
+                              ],
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _filterPriority = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // 並び替え（第3順位まで）
+                  _buildSortingSection(),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // 並び替えの説明
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info, color: Colors.blue.shade700, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '並び替え順序: 最大3段階まで設定可能（ドラッグ&ドロップで手動調整可能）',
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  // ステータスフィルター（複数選択）
+  Widget _buildStatusFilterChips() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('ステータス:', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: [
+            FilterChip(
+              label: const Text('すべて'),
+              selected: _filterStatuses.contains('all'),
+              onSelected: (selected) {
+                setState(() {
+                  if (selected) {
+                    _filterStatuses = {'all'};
+                  } else {
+                    _filterStatuses.remove('all');
+                  }
+                });
+              },
+            ),
+            FilterChip(
+              label: const Text('未着手'),
+              selected: _filterStatuses.contains('pending'),
+              onSelected: (selected) {
+                setState(() {
+                  _filterStatuses.remove('all');
+                  if (selected) {
+                    _filterStatuses.add('pending');
+                  } else {
+                    _filterStatuses.remove('pending');
+                  }
+                });
+              },
+            ),
+            FilterChip(
+              label: const Text('進行中'),
+              selected: _filterStatuses.contains('inProgress'),
+              onSelected: (selected) {
+                setState(() {
+                  _filterStatuses.remove('all');
+                  if (selected) {
+                    _filterStatuses.add('inProgress');
+                  } else {
+                    _filterStatuses.remove('inProgress');
+                  }
+                });
+              },
+            ),
+            FilterChip(
+              label: const Text('完了'),
+              selected: _filterStatuses.contains('completed'),
+              onSelected: (selected) {
+                setState(() {
+                  _filterStatuses.remove('all');
+                  if (selected) {
+                    _filterStatuses.add('completed');
+                  } else {
+                    _filterStatuses.remove('completed');
+                  }
+                });
+              },
+            ),
           ],
         ),
-      ),
+      ],
+    );
+  }
+
+  // 並び替えセクション（第3順位まで）
+  Widget _buildSortingSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('並び替え順序:', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: '第1順位',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+                value: _sortOrders.isNotEmpty ? _sortOrders[0] : 'dueDate',
+                items: [
+                  const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
+                  const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
+                  const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
+                  const DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
+                  const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    if (_sortOrders.isEmpty) {
+                      _sortOrders = [value!];
+                    } else {
+                      _sortOrders[0] = value!;
+                    }
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: '第2順位',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+                value: _sortOrders.length > 1 ? _sortOrders[1] : null,
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('なし')),
+                  const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
+                  const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
+                  const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
+                  const DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
+                  const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    if (value == null) {
+                      if (_sortOrders.length > 1) {
+                        _sortOrders.removeAt(1);
+                      }
+                    } else {
+                      if (_sortOrders.length > 1) {
+                        _sortOrders[1] = value;
+                      } else {
+                        _sortOrders.add(value);
+                      }
+                    }
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: '第3順位',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+                value: _sortOrders.length > 2 ? _sortOrders[2] : null,
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('なし')),
+                  const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
+                  const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
+                  const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
+                  const DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
+                  const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    if (value == null) {
+                      if (_sortOrders.length > 2) {
+                        _sortOrders.removeAt(2);
+                      }
+                    } else {
+                      if (_sortOrders.length > 2) {
+                        _sortOrders.add(value);
+                      } else {
+                        _sortOrders[2] = value;
+                      }
+                    }
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -327,10 +487,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             if (task.description != null)
               Text(
                 task.description!,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
+            // 期限とリマインダー情報を1行に表示
             Row(
               children: [
                 if (task.dueDate != null)
@@ -338,28 +499,50 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     '期限: ${DateFormat('MM/dd').format(task.dueDate!)}',
                     style: TextStyle(
                       color: task.isOverdue ? Colors.red : Colors.grey[600],
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
+                if (task.reminderTime != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    'リマ: ${DateFormat('MM/dd HH:mm').format(task.reminderTime!)}',
+                    style: TextStyle(
+                      color: Colors.orange[600],
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
                 if (task.estimatedMinutes != null) ...[
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
                   Text(
                     '${task.estimatedMinutes}分',
                     style: TextStyle(
                       color: Colors.grey[600],
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ],
               ],
             ),
+            // タグを1行に表示（空白を削減）
             if (task.tags.isNotEmpty)
-              Wrap(
-                spacing: 4,
-                children: task.tags.map((tag) => Chip(
-                  label: Text(tag, style: const TextStyle(fontSize: 10)),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                )).toList(),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Wrap(
+                  spacing: 2,
+                  runSpacing: 0,
+                  children: task.tags.map((tag) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      tag,
+                      style: const TextStyle(fontSize: 9, color: Colors.grey),
+                    ),
+                  )).toList(),
+                ),
               ),
           ],
         ),
@@ -760,21 +943,19 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   // フィルタリング処理を別メソッドに分離
   List<TaskItem> _getFilteredTasks(List<TaskItem> tasks) {
     final filteredTasks = tasks.where((task) {
-      // ステータスフィルター
-      if (_filterStatus != 'all') {
-        TaskStatus? status;
-        switch (_filterStatus) {
-          case 'pending':
-            status = TaskStatus.pending;
-            break;
-          case 'inProgress':
-            status = TaskStatus.inProgress;
-            break;
-          case 'completed':
-            status = TaskStatus.completed;
-            break;
+      // ステータスフィルター（複数選択対応）
+      if (!_filterStatuses.contains('all')) {
+        bool statusMatch = false;
+        if (_filterStatuses.contains('pending') && task.status == TaskStatus.pending) {
+          statusMatch = true;
         }
-        if (task.status != status) return false;
+        if (_filterStatuses.contains('inProgress') && task.status == TaskStatus.inProgress) {
+          statusMatch = true;
+        }
+        if (_filterStatuses.contains('completed') && task.status == TaskStatus.completed) {
+          statusMatch = true;
+        }
+        if (!statusMatch) return false;
       }
 
       // 優先度フィルター
@@ -814,58 +995,44 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       return true;
     }).toList();
 
-                    // 選択された並び替え方法に基づいてソート
+                    // 選択された並び替え方法に基づいてソート（第3順位まで対応）
           filteredTasks.sort((a, b) {
-            switch (_sortOrder) {
-              case 'dueDate':
-                // 期限順（期限なしは最後）
-                if (a.dueDate == null && b.dueDate == null) {
-                  return _comparePriority(a.priority, b.priority);
-                } else if (a.dueDate == null) {
-                  return 1;
-                } else if (b.dueDate == null) {
-                  return -1;
-                } else {
-                  final dateComparison = a.dueDate!.compareTo(b.dueDate!);
-                  if (dateComparison != 0) {
-                    return dateComparison;
-                  } else {
-                    return _comparePriority(a.priority, b.priority);
-                  }
-                }
-              case 'priority':
-                // 優先度順（緊急度高い順）
-                final priorityComparison = _comparePriority(a.priority, b.priority);
-                if (priorityComparison != 0) {
-                  return priorityComparison;
-                } else {
-                  // 優先度が同じ場合は期限順
-                  return _compareDueDate(a.dueDate, b.dueDate);
-                }
-              case 'title':
-                // タイトル順（アルファベット順）
-                return a.title.toLowerCase().compareTo(b.title.toLowerCase());
-              case 'createdAt':
-                // 作成日順（新しい順）
-                return b.createdAt.compareTo(a.createdAt);
-              case 'status':
-                // ステータス順（未着手→進行中→完了）
-                final statusOrder = {
-                  TaskStatus.pending: 1,
-                  TaskStatus.inProgress: 2,
-                  TaskStatus.completed: 3,
-                };
-                final statusComparison = (statusOrder[a.status] ?? 0).compareTo(statusOrder[b.status] ?? 0);
-                if (statusComparison != 0) {
-                  return statusComparison;
-                } else {
-                  // ステータスが同じ場合は期限順
-                  return _compareDueDate(a.dueDate, b.dueDate);
-                }
-              default:
-                // デフォルトは期限順
-                return _compareDueDate(a.dueDate, b.dueDate);
+            for (int i = 0; i < _sortOrders.length; i++) {
+              final sortOrder = _sortOrders[i];
+              int comparison = 0;
+              
+              switch (sortOrder) {
+                case 'dueDate':
+                  comparison = _compareDueDate(a.dueDate, b.dueDate);
+                  break;
+                case 'priority':
+                  comparison = _comparePriority(a.priority, b.priority);
+                  break;
+                case 'title':
+                  comparison = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+                  break;
+                case 'createdAt':
+                  comparison = b.createdAt.compareTo(a.createdAt);
+                  break;
+                case 'status':
+                  final statusOrder = {
+                    TaskStatus.pending: 1,
+                    TaskStatus.inProgress: 2,
+                    TaskStatus.completed: 3,
+                  };
+                  comparison = (statusOrder[a.status] ?? 0).compareTo(statusOrder[b.status] ?? 0);
+                  break;
+                default:
+                  comparison = 0;
+              }
+              
+              if (comparison != 0) {
+                return comparison;
+              }
             }
+            
+            // すべての並び替え条件が同じ場合は期限順で決定
+            return _compareDueDate(a.dueDate, b.dueDate);
           });
 
       return filteredTasks;
@@ -893,6 +1060,44 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       return -1; // bの期限なしは後ろ
     } else {
       return a.compareTo(b); // 期限昇順
+    }
+  }
+
+  // CSV出力処理
+  void _exportTasksToCsv() async {
+    try {
+      final tasks = ref.read(taskViewModelProvider);
+      final subTasks = ref.read(subTaskViewModelProvider);
+      
+      // 現在のディレクトリにCSVファイルを保存
+      final now = DateTime.now();
+      final formatted = DateFormat('yyMMdd_HHmm').format(now);
+      final fileName = 'tasks_export_$formatted.csv';
+      final currentDir = Directory.current;
+      final filePath = '${currentDir.path}/$fileName';
+      
+      await CsvExport.exportTasksToCsv(tasks, subTasks, filePath);
+      
+      // 成功メッセージを表示
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('CSV出力が完了しました: $fileName'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('CSV出力エラー: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 

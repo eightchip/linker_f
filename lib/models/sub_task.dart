@@ -59,13 +59,25 @@ class SubTask extends HiveObject {
     int? estimatedMinutes,
     String? notes,
   }) {
+    // 完了状態が変更された場合の完了日管理
+    DateTime? newCompletedAt = completedAt;
+    if (isCompleted != null && isCompleted != this.isCompleted) {
+      if (isCompleted) {
+        // 完了に変更された場合、完了日を設定
+        newCompletedAt = DateTime.now();
+      } else {
+        // 未完了に変更された場合、完了日をクリア
+        newCompletedAt = null;
+      }
+    }
+    
     return SubTask(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
       isCompleted: isCompleted ?? this.isCompleted,
       createdAt: createdAt ?? this.createdAt,
-      completedAt: completedAt ?? this.completedAt,
+      completedAt: newCompletedAt,
       order: order ?? this.order,
       parentTaskId: parentTaskId ?? this.parentTaskId,
       estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,

@@ -17,6 +17,21 @@ class WindowsNotificationService {
   // シンプルなタイマー管理
   static final Map<String, Timer> _scheduledTimers = {};
 
+  // リマインダー復元用のコールバック
+  static Function(List<TaskItem>)? _restoreRemindersCallback;
+  
+  // タスク取得用のコールバック
+  static List<TaskItem> Function()? _getTasksCallback;
+  
+  // 定期的なリマインダーチェック用のタイマー
+  static Timer? _reminderCheckTimer;
+  
+  // リマインダーチェック間隔（1分）
+  static const Duration _reminderCheckInterval = Duration(minutes: 1);
+  
+  // 復元済みリマインダーの管理
+  static final Set<String> _restoredReminders = {};
+
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -34,6 +49,10 @@ class WindowsNotificationService {
           int Function(int, int)>('PlaySoundW');
 
       _isInitialized = true;
+      
+      // 定期的なリマインダーチェックを開始
+      _startReminderCheck();
+      
       print('Windows通知サービス初期化完了');
     } catch (e) {
       print('Windows通知サービス初期化エラー: $e');
@@ -336,6 +355,21 @@ class WindowsNotificationService {
     final now = DateTime.now();
     final pattern = task.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
     final duration = RecurringReminderPattern.getDuration(pattern);
+    
+    // 元のリマインダー時間を基準にする
+    if (task.reminderTime != null) {
+      // 元の設定時間から次の時間を計算
+      DateTime baseTime = task.reminderTime!;
+      
+      // 現在時刻が元の設定時間を過ぎている場合は、次の周期を計算
+      while (baseTime.isBefore(now)) {
+        baseTime = baseTime.add(duration);
+      }
+      
+      return baseTime;
+    }
+    
+    // フォールバック: 現在時刻から計算
     return now.add(duration);
   }
 
@@ -378,5 +412,170 @@ class WindowsNotificationService {
   // TaskViewModelの更新コールバックを設定
   static void setTaskViewModelUpdateCallback(Function(TaskItem) callback) {
     _taskViewModelUpdateCallback = callback;
+  }
+
+  // 定期的なリマインダーチェックを開始
+  static void _startReminderCheck() {
+    if (_reminderCheckTimer != null) {
+      _reminderCheckTimer!.cancel();
+    }
+    _reminderCheckTimer = Timer.periodic(_reminderCheckInterval, _checkReminders);
+    print('定期的なリマインダーチェックを開始しました');
+  }
+
+  // 定期的なリマインダーチェックを停止
+  static void _stopReminderCheck() {
+    _reminderCheckTimer?.cancel();
+    _reminderCheckTimer = null;
+    print('定期的なリマインダーチェックを停止しました');
+  }
+
+  // リマインダーチェックのメインループ
+  static void _checkReminders(Timer timer) {
+    if (_getTasksCallback == null) {
+      print('タスク取得コールバックが設定されていません。リマインダーチェックをスキップします。');
+      return;
+    }
+
+    final tasks = _getTasksCallback!();
+    final now = DateTime.now();
+
+    for (final task in tasks) {
+      if (task.reminderTime == null) continue;
+
+      final reminderTime = task.reminderTime!;
+
+      if (reminderTime.isBefore(now)) {
+        print('期限切れタスクのため即座に通知: ${task.title}');
+        if (task.recurringReminderPattern != null) {
+          // 繰り返しリマインダーの場合、次の時間を計算して通知
+          _showRecurringReminderNotification(task);
+        } else {
+          // 単発リマインダーの場合、即座に通知
+          _showNotification(
+            'タスクリマインダー',
+            '${task.title}の期限が近づいています',
+          );
+        }
+      } else if (task.recurringReminderPattern != null) {
+        // 繰り返しリマインダーの場合、設定時間まで待つ
+        // 既にタイマーが設定されている場合はスキップ
+        if (!_scheduledTimers.containsKey(task.id)) {
+          final timer = Timer(reminderTime.difference(now), () async {
+            _showRecurringReminderNotification(task);
+          });
+          _scheduledTimers[task.id] = timer;
+        }
+      } else {
+        // 単発リマインダーの場合
+        final timer = Timer(reminderTime.difference(now), () async {
+          try {
+            print('=== 単発リマインダー実行 ===');
+            print('タスク: ${task.title}');
+            print('実行時刻: ${DateTime.now()}');
+            
+            await _showNotification(
+              'タスクリマインダー',
+              '${task.title}の期限が近づいています',
+            );
+            
+            // タイマーをクリーンアップ
+            _scheduledTimers.remove(task.id);
+            
+            print('=== 単発リマインダー完了 ===');
+          } catch (e) {
+            print('単発リマインダー実行エラー: $e');
+          }
+        });
+        _scheduledTimers[task.id] = timer;
+      }
+    }
+  }
+
+  // リマインダー復元用のコールバックを設定
+  static void setRestoreRemindersCallback(Function(List<TaskItem>) callback) {
+    _restoreRemindersCallback = callback;
+  }
+
+  // タスク取得用のコールバックを設定
+  static void setGetTasksCallback(List<TaskItem> Function() callback) {
+    _getTasksCallback = callback;
+  }
+  
+  // リマインダー復元を実行（確実な方法）
+  static Future<void> restoreReminders(List<TaskItem> tasks) async {
+    try {
+      print('=== Windows通知サービス: リマインダー復元開始 ===');
+      print('復元対象タスク数: ${tasks.length}');
+      print('現在時刻: ${DateTime.now()}');
+      
+      final now = DateTime.now();
+      int restoredCount = 0;
+      int skippedCount = 0;
+      
+      for (final task in tasks) {
+        print('--- タスクチェック: ${task.title} ---');
+        print('  ID: ${task.id}');
+        print('  reminderTime: ${task.reminderTime}');
+        print('  status: ${task.status}');
+        print('  isRestored: ${_restoredReminders.contains(task.id)}');
+        
+        if (task.reminderTime == null) {
+          print('  → リマインダー時間なし、スキップ');
+          skippedCount++;
+          continue;
+        }
+        
+        if (task.reminderTime!.isBefore(now)) {
+          print('  → 期限切れ、スキップ');
+          skippedCount++;
+          continue;
+        }
+        
+        if (task.status == TaskStatus.completed) {
+          print('  → 完了済み、スキップ');
+          skippedCount++;
+          continue;
+        }
+        
+        if (_restoredReminders.contains(task.id)) {
+          print('  → 既に復元済み、スキップ');
+          skippedCount++;
+          continue;
+        }
+        
+        print('  → リマインダー復元実行');
+        
+        try {
+          // リマインダーをスケジュール
+          await scheduleTaskReminder(task);
+          
+          // 復元済みとしてマーク
+          _restoredReminders.add(task.id);
+          restoredCount++;
+          
+          print('  → リマインダー復元成功');
+        } catch (e) {
+          print('  → リマインダー復元エラー: $e');
+        }
+      }
+      
+      print('=== Windows通知サービス: リマインダー復元完了 ===');
+      print('復元されたリマインダー数: $restoredCount');
+      print('スキップされたタスク数: $skippedCount');
+      print('復元済みリマインダーID: ${_restoredReminders.toList()}');
+      
+      // リマインダー復元コールバックを実行
+      if (_restoreRemindersCallback != null) {
+        print('リマインダー復元コールバックを実行');
+        _restoreRemindersCallback!(tasks);
+      } else {
+        print('リマインダー復元コールバックが設定されていません');
+      }
+    } catch (e) {
+      print('Windows通知サービス: リマインダー復元エラー: $e');
+      print('エラーの詳細: ${e.toString()}');
+      print('スタックトレース: ${StackTrace.current}');
+    }
   }
 }

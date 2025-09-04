@@ -25,6 +25,10 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
   final _descriptionController = TextEditingController();
   final _estimatedMinutesController = TextEditingController();
   final _notesController = TextEditingController();
+  
+  // 編集用の状態管理
+  SubTask? _editingSubTask;
+  bool _isEditing = false;
 
   @override
   void dispose() {
@@ -40,27 +44,44 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
       final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
       final taskViewModel = ref.read(taskViewModelProvider.notifier);
 
-      final subTask = subTaskViewModel.createSubTask(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty 
-            ? null 
-            : _descriptionController.text.trim(),
-        parentTaskId: widget.parentTaskId,
-        estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
-            ? int.tryParse(_estimatedMinutesController.text)
-            : null,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
+      if (_isEditing && _editingSubTask != null) {
+        // 編集モード：既存のサブタスクを更新
+        final updatedSubTask = _editingSubTask!.copyWith(
+          title: _titleController.text.trim(),
+          description: _titleController.text.trim().isEmpty 
+              ? null 
+              : _titleController.text.trim(),
+          estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
+              ? int.tryParse(_estimatedMinutesController.text)
+              : null,
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+        );
+        
+        await subTaskViewModel.updateSubTask(updatedSubTask);
+        _cancelEdit();
+      } else {
+        // 新規追加モード
+        final subTask = subTaskViewModel.createSubTask(
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty 
+              ? null 
+              : _descriptionController.text.trim(),
+          parentTaskId: widget.parentTaskId,
+          estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
+              ? int.tryParse(_estimatedMinutesController.text)
+              : null,
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+        );
 
-      await subTaskViewModel.addSubTask(subTask);
+        await subTaskViewModel.addSubTask(subTask);
+      }
       
       // フォームをクリア
-      _titleController.clear();
-      _descriptionController.clear();
-      _estimatedMinutesController.clear();
-      _notesController.clear();
+      _clearForm();
 
       // UIを強制的に更新
       ref.refresh(subTaskViewModelProvider);
@@ -72,6 +93,35 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
       // 統計更新後に再度UIを更新
       ref.refresh(taskViewModelProvider);
     }
+  }
+
+  // 編集を開始
+  void _startEdit(SubTask subTask) {
+    setState(() {
+      _editingSubTask = subTask;
+      _isEditing = true;
+      _titleController.text = subTask.title;
+      _descriptionController.text = subTask.description ?? '';
+      _estimatedMinutesController.text = subTask.estimatedMinutes?.toString() ?? '';
+      _notesController.text = subTask.notes ?? '';
+    });
+  }
+
+  // 編集をキャンセル
+  void _cancelEdit() {
+    setState(() {
+      _editingSubTask = null;
+      _isEditing = false;
+      _clearForm();
+    });
+  }
+
+  // フォームをクリア
+  void _clearForm() {
+    _titleController.clear();
+    _descriptionController.clear();
+    _estimatedMinutesController.clear();
+    _notesController.clear();
   }
 
   void _deleteSubTask(String subTaskId) async {
@@ -233,8 +283,15 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: _addSubTask,
-                        child: const Text('追加'),
+                        child: Text(_isEditing ? '更新' : '追加'),
                       ),
+                      if (_isEditing) ...[
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: _cancelEdit,
+                          child: const Text('キャンセル'),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -309,10 +366,20 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                                   ),
                               ],
                             ),
-                            trailing: IconButton(
-                              onPressed: () => _deleteSubTask(subTask.id),
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              tooltip: '削除',
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: () => _startEdit(subTask),
+                                  icon: const Icon(Icons.edit, color: Colors.blue),
+                                  tooltip: '編集',
+                                ),
+                                IconButton(
+                                  onPressed: () => _deleteSubTask(subTask.id),
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  tooltip: '削除',
+                                ),
+                              ],
                             ),
                           ),
                         );

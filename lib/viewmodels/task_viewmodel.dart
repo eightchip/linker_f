@@ -36,6 +36,21 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         updateTask(updatedTask);
       });
       
+      // WindowsNotificationServiceのリマインダー復元コールバックを設定
+      WindowsNotificationService.setRestoreRemindersCallback((tasks) {
+        _restoreRemindersFromCallback(tasks);
+      });
+      
+      // WindowsNotificationServiceのタスク取得コールバックを設定
+      WindowsNotificationService.setGetTasksCallback(() {
+        return state;
+      });
+      
+      // WindowsNotificationServiceのTaskViewModel更新コールバックを設定
+      WindowsNotificationService.setTaskViewModelUpdateCallback((updatedTask) {
+        updateTask(updatedTask);
+      });
+      
       await _loadTasks();
     } catch (e) {
       print('TaskViewModel初期化エラー: $e');
@@ -145,39 +160,52 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       if (_taskBox == null || !_taskBox!.isOpen) {
         await _loadTasks();
       }
+      
+      // 既存のタスクを取得してリマインダー時間の変更をチェック
+      final existingTask = state.firstWhere((t) => t.id == task.id);
+      final reminderTimeChanged = existingTask.reminderTime != task.reminderTime;
+      
       await _taskBox!.put(task.id, task);
       final newTasks = state.map((t) => t.id == task.id ? task : t).toList();
       newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       state = newTasks;
       
-      // リマインダー通知を更新（エラーが発生しても続行）
-      try {
-        if (task.reminderTime != null) {
-          print('=== タスク更新時のリマインダー設定 ===');
-          print('タスク: ${task.title}');
-          print('リマインダー時間: ${task.reminderTime}');
-          
-          if (Platform.isWindows) {
-            await WindowsNotificationService.scheduleTaskReminder(task);
+      // リマインダー時間が変更された場合のみ通知を更新
+      if (reminderTimeChanged) {
+        try {
+          if (task.reminderTime != null) {
+            print('=== タスク更新時のリマインダー設定 ===');
+            print('タスク: ${task.title}');
+            print('リマインダー時間: ${task.reminderTime}');
+            print('変更前のリマインダー時間: ${existingTask.reminderTime}');
+            
+            if (Platform.isWindows) {
+              await WindowsNotificationService.scheduleTaskReminder(task);
+            } else {
+              await NotificationService.scheduleTaskReminder(task);
+            }
+            
+            print('=== タスク更新時のリマインダー設定完了 ===');
           } else {
-            await NotificationService.scheduleTaskReminder(task);
+            print('=== タスク更新時のリマインダー削除 ===');
+            print('タスク: ${task.title}');
+            print('変更前のリマインダー時間: ${existingTask.reminderTime}');
+            
+            if (Platform.isWindows) {
+              await WindowsNotificationService.cancelNotification(task.id);
+            } else {
+              await NotificationService.cancelNotification(task.id);
+            }
+            
+            print('=== タスク更新時のリマインダー削除完了 ===');
           }
-          
-          print('=== タスク更新時のリマインダー設定完了 ===');
-        } else {
-          print('=== タスク更新時のリマインダー削除 ===');
-          print('タスク: ${task.title}');
-          
-          if (Platform.isWindows) {
-            await WindowsNotificationService.cancelNotification(task.id);
-          } else {
-            await NotificationService.cancelNotification(task.id);
-          }
-          
-          print('=== タスク更新時のリマインダー削除完了 ===');
+        } catch (notificationError) {
+          print('通知更新エラー（無視）: $notificationError');
         }
-      } catch (notificationError) {
-        print('通知更新エラー（無視）: $notificationError');
+      } else {
+        print('=== タスク更新時のリマインダー変更なし ===');
+        print('タスク: ${task.title}');
+        print('リマインダー時間変更なし: ${task.reminderTime}');
       }
       
       // リンクのタスク状態を更新
@@ -481,6 +509,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         hasSubTasks: hasSubTasks,
         totalSubTasksCount: totalSubTasksCount,
         completedSubTasksCount: completedSubTasksCount,
+        // 既存のリマインダー時間を保持
+        reminderTime: task.reminderTime,
       );
       
       await updateTask(updatedTask);
@@ -591,6 +621,25 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         print('_taskBox状態確認エラー: $boxError');
       }
     }
+  }
+
+  // リマインダーを復元するためのコールバック関数
+  void _restoreRemindersFromCallback(List<TaskItem> tasks) {
+    print('=== リマインダー復元コールバック開始 ===');
+    print('復元するタスク数: ${tasks.length}');
+    for (final task in tasks) {
+      print('復元タスク: ${task.title} (ID: ${task.id})');
+      // リマインダーを再スケジュール
+      if (task.reminderTime != null) {
+        print('リマインダー時間: ${task.reminderTime}');
+        if (Platform.isWindows) {
+          WindowsNotificationService.scheduleTaskReminder(task);
+        } else {
+          NotificationService.scheduleTaskReminder(task);
+        }
+      }
+    }
+    print('=== リマインダー復元コールバック完了 ===');
   }
 
 
