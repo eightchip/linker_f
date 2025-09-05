@@ -152,6 +152,9 @@ class TaskItem extends HiveObject {
   @HiveField(21)
   int totalSubTasksCount; // 総サブタスクの数
 
+  @HiveField(22)
+  String? assignedTo; // 依頼先（部下の名前）
+
   TaskItem({
     required this.id,
     required this.title,
@@ -175,6 +178,7 @@ class TaskItem extends HiveObject {
     this.hasSubTasks = false,
     this.completedSubTasksCount = 0,
     this.totalSubTasksCount = 0,
+    this.assignedTo,
   });
 
   Map<String, dynamic> toJson() {
@@ -201,6 +205,7 @@ class TaskItem extends HiveObject {
       'hasSubTasks': hasSubTasks,
       'completedSubTasksCount': completedSubTasksCount,
       'totalSubTasksCount': totalSubTasksCount,
+      'assignedTo': assignedTo,
     };
   }
 
@@ -228,6 +233,7 @@ class TaskItem extends HiveObject {
       hasSubTasks: json['hasSubTasks'] ?? false,
       completedSubTasksCount: json['completedSubTasksCount'] ?? 0,
       totalSubTasksCount: json['totalSubTasksCount'] ?? 0,
+      assignedTo: json['assignedTo'],
     );
   }
 
@@ -254,6 +260,7 @@ class TaskItem extends HiveObject {
     bool? hasSubTasks,
     int? completedSubTasksCount,
     int? totalSubTasksCount,
+    String? assignedTo,
   }) {
     print('=== copyWith呼び出し ===');
     print('元のreminderTime: ${this.reminderTime}');
@@ -283,6 +290,7 @@ class TaskItem extends HiveObject {
       hasSubTasks: hasSubTasks ?? this.hasSubTasks,
       completedSubTasksCount: completedSubTasksCount ?? this.completedSubTasksCount,
       totalSubTasksCount: totalSubTasksCount ?? this.totalSubTasksCount,
+      assignedTo: assignedTo ?? this.assignedTo,
     );
     
     print('copyWith結果のreminderTime: ${result.reminderTime}');

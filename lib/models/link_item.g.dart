@@ -16,28 +16,28 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    
     return LinkItem(
       id: fields[0] as String,
       label: fields[1] as String,
       path: fields[2] as String,
       type: fields[3] as LinkType,
-      createdAt: fields[4] as DateTime? ?? DateTime.now(),
+      createdAt: fields[4] as DateTime,
       lastUsed: fields[5] as DateTime?,
-      isFavorite: fields[6] as bool? ?? false,
+      isFavorite: fields[6] as bool,
       memo: fields[7] as String?,
       iconData: fields[8] as int?,
       iconColor: fields[9] as int?,
-      tags: (fields[10] as List?)?.cast<String>() ?? [],
-      hasActiveTasks: fields[11] as bool? ?? false,
+      tags: (fields[10] as List).cast<String>(),
+      hasActiveTasks: fields[11] as bool,
       faviconFallbackDomain: fields[12] as String?,
+      useCount: fields[13] as int? ?? 0,
     );
   }
 
   @override
   void write(BinaryWriter writer, LinkItem obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -63,7 +63,9 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
       ..writeByte(11)
       ..write(obj.hasActiveTasks)
       ..writeByte(12)
-      ..write(obj.faviconFallbackDomain);
+      ..write(obj.faviconFallbackDomain)
+      ..writeByte(13)
+      ..write(obj.useCount);
   }
 
   @override

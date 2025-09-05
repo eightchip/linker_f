@@ -27,6 +27,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   final _notesController = TextEditingController();
   final _estimatedMinutesController = TextEditingController();
   final _tagsController = TextEditingController();
+  final _assignedToController = TextEditingController();
 
   DateTime? _dueDate;
   DateTime? _reminderTime;
@@ -45,6 +46,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       _descriptionController.text = widget.task!.description ?? '';
       _notesController.text = widget.task!.notes ?? '';
       _estimatedMinutesController.text = widget.task!.estimatedMinutes?.toString() ?? '';
+      _assignedToController.text = widget.task!.assignedTo ?? '';
       _dueDate = widget.task!.dueDate;
       _reminderTime = widget.task!.reminderTime;
       _priority = widget.task!.priority;
@@ -88,6 +90,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     _notesController.dispose();
     _estimatedMinutesController.dispose();
     _tagsController.dispose();
+    _assignedToController.dispose();
     super.dispose();
   }
 
@@ -133,6 +136,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
+          assignedTo: _assignedToController.text.trim().isEmpty
+              ? null
+              : _assignedToController.text.trim(),
           isRecurring: _isRecurring,
           recurringPattern: _isRecurring ? _recurringPattern : null,
           isRecurringReminder: _isRecurringReminder,
@@ -165,6 +171,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
+          assignedTo: _assignedToController.text.trim().isEmpty
+              ? null
+              : _assignedToController.text.trim(),
           isRecurring: _isRecurring,
           recurringPattern: _isRecurring ? _recurringPattern : null,
           isRecurringReminder: _isRecurringReminder,
@@ -499,6 +508,17 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+                
+                // 依頼先
+                TextFormField(
+                  controller: _assignedToController,
+                  decoration: const InputDecoration(
+                    labelText: '依頼先（部下の名前）',
+                    border: OutlineInputBorder(),
+                    hintText: '例: 田中さん、佐藤さん',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 

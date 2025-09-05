@@ -39,13 +39,14 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       hasSubTasks: fields[19] as bool,
       completedSubTasksCount: fields[20] as int,
       totalSubTasksCount: fields[21] as int,
+      assignedTo: fields[22] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TaskItem obj) {
     writer
-      ..writeByte(22)
+      ..writeByte(23)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -89,7 +90,9 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       ..writeByte(20)
       ..write(obj.completedSubTasksCount)
       ..writeByte(21)
-      ..write(obj.totalSubTasksCount);
+      ..write(obj.totalSubTasksCount)
+      ..writeByte(22)
+      ..write(obj.assignedTo);
   }
 
   @override

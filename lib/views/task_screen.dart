@@ -681,6 +681,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     ),
                   ),
                 ],
+                if (task.assignedTo != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '依頼先: ${task.assignedTo}',
+                    style: TextStyle(
+                      color: Colors.blue[600],
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ],
             ),
             // タグを1行に表示（空白を削減）
