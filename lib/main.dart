@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:io';
 import 'models/link_item.dart';
 import 'models/group.dart';
 import 'models/task_item.dart';
@@ -24,9 +25,14 @@ import 'models/task_item.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Hive with persistent directory
+  // Initialize Hive with local directory (OneDrive問題を回避)
   final appDocDir = await getApplicationDocumentsDirectory();
-  await Hive.initFlutter(appDocDir.path);
+  // OneDriveの同期問題を回避するため、ローカルディレクトリを使用
+  final localDataDir = Directory('${appDocDir.path}/linker_f_data');
+  if (!await localDataDir.exists()) {
+    await localDataDir.create(recursive: true);
+  }
+  await Hive.initFlutter(localDataDir.path);
   
   // Register adapters
   try {
@@ -90,7 +96,7 @@ void main() async {
   await SystemTrayService.initialize();
   
   // 設定サービスの初期化
-  final settingsService = SettingsService();
+  final settingsService = SettingsService.instance;
   await settingsService.initialize();
   
   // 自動バックアップのチェックと実行

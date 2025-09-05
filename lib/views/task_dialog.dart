@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/task_item.dart';
@@ -69,7 +70,11 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         _descriptionController.text = 'リンク: ${link.path}';
         _tags = [link.label, 'リンク関連'];
         _tagsController.text = _tags.join(', ');
+        
+        // デフォルトのリマインダー時間を設定（1時間後）
+        _reminderTime = DateTime.now().add(const Duration(hours: 1));
         print('リンク情報から初期化: ${link.label}');
+        print('デフォルトリマインダー時間設定: $_reminderTime');
       }
     } catch (e) {
       print('リンク情報の取得エラー: $e');
@@ -260,32 +265,43 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: Container(
-        width: 500,
-        constraints: const BoxConstraints(maxHeight: 800),
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      widget.task != null ? Icons.edit : Icons.add_task,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.task != null ? 'タスクを編集' : '新しいタスク',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
+    return KeyboardListener(
+      focusNode: FocusNode(),
+      autofocus: true,
+      onKeyEvent: (KeyEvent event) {
+        // 左矢印キーを無効化
+        if (event is KeyDownEvent && 
+            event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          // 何もしない（左矢印キーを無効化）
+          return;
+        }
+      },
+      child: Dialog(
+        child: Container(
+          width: 500,
+          constraints: const BoxConstraints(maxHeight: 800),
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        widget.task != null ? Icons.edit : Icons.add_task,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        widget.task != null ? 'タスクを編集' : '新しいタスク',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                 
                 // タイトル
                 TextFormField(
@@ -578,7 +594,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           ),
         ),
       ),
-    );
+    ),
+   );  
   }
 
   int _getPriorityColor(TaskPriority priority) {

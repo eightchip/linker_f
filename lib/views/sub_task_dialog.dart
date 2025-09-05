@@ -158,27 +158,6 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
     ref.refresh(taskViewModelProvider);
   }
 
-  void _handleSubTaskReorder(int oldIndex, int newIndex) {
-    final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
-    final subTasks = ref.read(subTaskViewModelProvider)
-        .where((subTask) => subTask.parentTaskId == widget.parentTaskId)
-        .toList();
-
-    if (oldIndex < newIndex) {
-      for (int i = oldIndex; i < newIndex; i++) {
-        subTasks[i].order = subTasks[i + 1].order;
-      }
-      subTasks[newIndex].order = subTasks[oldIndex].order;
-    } else {
-      for (int i = oldIndex; i > newIndex; i--) {
-        subTasks[i].order = subTasks[i - 1].order;
-      }
-      subTasks[newIndex].order = subTasks[oldIndex].order;
-    }
-
-    subTaskViewModel.updateSubTaskOrders(subTasks);
-    ref.refresh(subTaskViewModelProvider);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +290,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                         ),
                       ),
                     )
-                  : ReorderableListView.builder(
+                  : ListView.builder(
                       itemCount: subTasks.length,
                       itemBuilder: (context, index) {
                         final subTask = subTasks[index];
@@ -384,10 +363,6 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                           ),
                         );
                       },
-                      onReorder: (oldIndex, newIndex) {
-                        _handleSubTaskReorder(oldIndex, newIndex);
-                      },
-                      buildDefaultDragHandles: true,
                     ),
             ),
             

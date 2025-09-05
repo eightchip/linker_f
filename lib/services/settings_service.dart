@@ -9,6 +9,18 @@ class SettingsService {
   late Box _settingsBox;
   late Box _defaultSettingsBox;
   
+  // シングルトンインスタンス
+  static SettingsService? _instance;
+  
+  // プライベートコンストラクタ
+  SettingsService._();
+  
+  // シングルトンインスタンスを取得
+  static SettingsService get instance {
+    _instance ??= SettingsService._();
+    return _instance!;
+  }
+  
   // 設定キー
   static const String _darkModeKey = 'darkMode';
   static const String _fontSizeKey = 'fontSize';
@@ -26,6 +38,9 @@ class SettingsService {
   static const String _favoriteGroupsKey = 'favoriteGroups';
   static const String _lastBackupKey = 'lastBackup';
   static const String _versionKey = 'version';
+  static const String _taskFilterStatusesKey = 'taskFilterStatuses';
+  static const String _taskFilterPriorityKey = 'taskFilterPriority';
+  static const String _taskSortOrdersKey = 'taskSortOrders';
 
   // デフォルト値
   static const bool _defaultDarkMode = false;
@@ -41,6 +56,9 @@ class SettingsService {
   static const bool _defaultNotificationSound = true;
   static const int _defaultRecentItemsCount = 10;
   static const int _currentVersion = 1;
+  static const List<String> _defaultTaskFilterStatuses = ['all'];
+  static const String _defaultTaskFilterPriority = 'all';
+  static const List<Map<String, String>> _defaultTaskSortOrders = [{'field': 'dueDate', 'order': 'asc'}];
 
   /// 初期化
   Future<void> initialize() async {
@@ -52,6 +70,15 @@ class SettingsService {
     
     // バージョン管理
     await _handleVersionMigration();
+  }
+
+  /// 初期化状態をチェック
+  bool get isInitialized {
+    try {
+      return _settingsBox.isOpen && _defaultSettingsBox.isOpen;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// デフォルト設定の初期化
@@ -69,6 +96,9 @@ class SettingsService {
       await _defaultSettingsBox.put(_showNotificationsKey, _defaultShowNotifications);
       await _defaultSettingsBox.put(_notificationSoundKey, _defaultNotificationSound);
       await _defaultSettingsBox.put(_recentItemsCountKey, _defaultRecentItemsCount);
+      await _defaultSettingsBox.put(_taskFilterStatusesKey, _defaultTaskFilterStatuses);
+      await _defaultSettingsBox.put(_taskFilterPriorityKey, _defaultTaskFilterPriority);
+      await _defaultSettingsBox.put(_taskSortOrdersKey, _defaultTaskSortOrders);
       await _defaultSettingsBox.put(_versionKey, _currentVersion);
     }
   }
@@ -255,6 +285,39 @@ class SettingsService {
     final groups = favoriteGroups;
     groups.remove(groupId);
     await setFavoriteGroups(groups);
+  }
+
+  // ==================== タスクフィルター設定 ====================
+  
+  /// タスクフィルターステータス
+  List<String> get taskFilterStatuses {
+    final statuses = _settingsBox.get(_taskFilterStatusesKey);
+    return statuses != null ? List<String>.from(statuses as List) : _defaultTaskFilterStatuses;
+  }
+  Future<void> setTaskFilterStatuses(List<String> value) async {
+    await _settingsBox.put(_taskFilterStatusesKey, value);
+  }
+
+  /// タスクフィルタープライオリティ
+  String get taskFilterPriority => _settingsBox.get(_taskFilterPriorityKey, defaultValue: _defaultTaskFilterPriority) as String;
+  Future<void> setTaskFilterPriority(String value) async {
+    await _settingsBox.put(_taskFilterPriorityKey, value);
+  }
+
+  /// タスクソート順序
+  List<Map<String, String>> get taskSortOrders {
+    final orders = _settingsBox.get(_taskSortOrdersKey);
+    if (orders != null) {
+      return List<Map<String, String>>.from(
+        (orders as List).map((item) => Map<String, String>.from(item as Map))
+      );
+    }
+    return List<Map<String, String>>.from(
+      _defaultTaskSortOrders.map((item) => Map<String, String>.from(item))
+    );
+  }
+  Future<void> setTaskSortOrders(List<Map<String, String>> value) async {
+    await _settingsBox.put(_taskSortOrdersKey, value);
   }
 
   // ==================== ユーティリティ ====================

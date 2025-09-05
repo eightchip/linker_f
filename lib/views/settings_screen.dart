@@ -18,7 +18,7 @@ import '../services/backup_service.dart';
 import '../repositories/link_repository.dart';
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {
-  return SettingsService();
+  return SettingsService.instance;
 });
 
 final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {

@@ -91,8 +91,18 @@ class WindowsNotificationService {
   static Future<void> _playNotificationSound() async {
     try {
       // 設定で通知音が有効になっているかチェック
-      final settingsService = SettingsService();
-      final shouldPlaySound = settingsService.notificationSound;
+      // SettingsServiceが初期化されていない場合はデフォルトで音を再生
+      bool shouldPlaySound = true;
+      try {
+        final settingsService = SettingsService.instance;
+        // 初期化されている場合のみ設定を取得
+        if (settingsService.isInitialized) {
+          shouldPlaySound = settingsService.notificationSound;
+        }
+      } catch (e) {
+        print('設定サービスのアクセスエラー（デフォルト値を使用）: $e');
+        shouldPlaySound = true; // デフォルトで音を再生
+      }
       
       if (!shouldPlaySound) {
         print('通知音が無効になっているため、音を再生しません');

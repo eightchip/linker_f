@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
@@ -10,6 +11,7 @@ import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/sub_task_viewmodel.dart';
 import '../services/notification_service.dart';
 import '../services/windows_notification_service.dart';
+import '../services/settings_service.dart';
 import '../utils/csv_export.dart';
 import 'task_dialog.dart';
 import 'calendar_screen.dart';
@@ -23,11 +25,76 @@ class TaskScreen extends ConsumerStatefulWidget {
 }
 
 class _TaskScreenState extends ConsumerState<TaskScreen> {
+  late SettingsService _settingsService;
   Set<String> _filterStatuses = {'all'}; // 複数選択可能
   String _filterPriority = 'all'; // all, low, medium, high, urgent
   String _searchQuery = '';
-  List<String> _sortOrders = ['dueDate']; // 第3順位まで設定可能
+  List<Map<String, String>> _sortOrders = [{'field': 'dueDate', 'order': 'asc'}]; // 第3順位まで設定可能
   bool _showFilters = false; // フィルター表示/非表示の切り替え
+
+  @override
+  void initState() {
+    super.initState();
+    _settingsService = SettingsService.instance;
+    // 非同期で初期化を実行
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeSettings();
+    });
+  }
+
+  /// 設定サービスを初期化してからフィルター設定を読み込み
+  Future<void> _initializeSettings() async {
+    try {
+      if (!_settingsService.isInitialized) {
+        await _settingsService.initialize();
+      }
+      if (mounted) {
+        setState(() {
+          _loadFilterSettings();
+        });
+      }
+    } catch (e) {
+      print('設定サービスの初期化エラー: $e');
+      // 初期化に失敗した場合はデフォルト値を使用
+      if (mounted) {
+        setState(() {
+          _filterStatuses = {'all'};
+          _filterPriority = 'all';
+          _sortOrders = [{'field': 'dueDate', 'order': 'asc'}];
+        });
+      }
+    }
+  }
+
+  /// フィルター設定を読み込み
+  void _loadFilterSettings() {
+    try {
+      if (_settingsService.isInitialized) {
+        _filterStatuses = _settingsService.taskFilterStatuses.toSet();
+        _filterPriority = _settingsService.taskFilterPriority;
+        _sortOrders = _settingsService.taskSortOrders.map((item) => Map<String, String>.from(item)).toList();
+      }
+    } catch (e) {
+      print('フィルター設定の読み込みエラー: $e');
+      // エラーの場合はデフォルト値を使用
+      _filterStatuses = {'all'};
+      _filterPriority = 'all';
+      _sortOrders = [{'field': 'dueDate', 'order': 'asc'}];
+    }
+  }
+
+  /// フィルター設定を保存
+  Future<void> _saveFilterSettings() async {
+    try {
+      if (_settingsService.isInitialized) {
+        await _settingsService.setTaskFilterStatuses(_filterStatuses.toList());
+        await _settingsService.setTaskFilterPriority(_filterPriority);
+        await _settingsService.setTaskSortOrders(_sortOrders);
+      }
+    } catch (e) {
+      print('フィルター設定の保存エラー: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,15 +159,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 ? const Center(
                     child: Text('タスクがありません'),
                   )
-                : ReorderableListView.builder(
+                : ListView.builder(
                     itemCount: filteredTasks.length,
                     itemBuilder: (context, index) {
                       return _buildTaskCard(filteredTasks[index]);
                     },
-                    onReorder: (oldIndex, newIndex) {
-                      _handleTaskReorder(oldIndex, newIndex);
-                    },
-                    buildDefaultDragHandles: true,
                   ),
           ),
         ],
@@ -118,6 +181,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildStatItem('総タスク', statistics['total'] ?? 0, Icons.list),
+            _buildStatItem('未着手', statistics['pending'] ?? 0, Icons.radio_button_unchecked, Colors.grey),
             _buildStatItem('完了', statistics['completed'] ?? 0, Icons.check_circle, Colors.green),
             _buildStatItem('進行中', statistics['inProgress'] ?? 0, Icons.pending, Colors.blue),
             _buildStatItem('期限切れ', statistics['overdue'] ?? 0, Icons.warning, Colors.red),
@@ -181,6 +245,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 children: [
                   // 検索バー
                   TextField(
+                    controller: TextEditingController(text: _searchQuery),
                     decoration: const InputDecoration(
                       hintText: 'タスクを検索...',
                       prefixIcon: Icon(Icons.search),
@@ -229,6 +294,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                                   setState(() {
                                     _filterPriority = value;
                                   });
+                                  _saveFilterSettings();
                                 }
                               },
                             ),
@@ -298,6 +364,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     _filterStatuses.remove('all');
                   }
                 });
+                _saveFilterSettings();
               },
             ),
             FilterChip(
@@ -312,6 +379,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     _filterStatuses.remove('pending');
                   }
                 });
+                _saveFilterSettings();
               },
             ),
             FilterChip(
@@ -326,6 +394,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     _filterStatuses.remove('inProgress');
                   }
                 });
+                _saveFilterSettings();
               },
             ),
             FilterChip(
@@ -340,6 +409,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     _filterStatuses.remove('completed');
                   }
                 });
+                _saveFilterSettings();
               },
             ),
           ],
@@ -355,16 +425,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       children: [
         const Text('並び替え順序:', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
+        // 第1順位
         Row(
           children: [
             Expanded(
+              flex: 2,
               child: DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: '第1順位',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 ),
-                value: _sortOrders.isNotEmpty ? _sortOrders[0] : 'dueDate',
+                value: _sortOrders.isNotEmpty ? _sortOrders[0]['field'] : 'dueDate',
                 items: [
                   const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
                   const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
@@ -375,23 +447,54 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 onChanged: (value) {
                   setState(() {
                     if (_sortOrders.isEmpty) {
-                      _sortOrders = [value!];
+                      _sortOrders = [{'field': value!, 'order': 'asc'}];
                     } else {
-                      _sortOrders[0] = value!;
+                      _sortOrders[0] = {'field': value!, 'order': _sortOrders[0]['order']!};
                     }
                   });
+                  _saveFilterSettings();
                 },
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
+              flex: 1,
+              child: DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: '順序',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+                value: _sortOrders.isNotEmpty ? _sortOrders[0]['order'] : 'asc',
+                items: const [
+                  DropdownMenuItem(value: 'asc', child: Text('昇順')),
+                  DropdownMenuItem(value: 'desc', child: Text('降順')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    if (_sortOrders.isNotEmpty) {
+                      _sortOrders[0] = {'field': _sortOrders[0]['field']!, 'order': value!};
+                    }
+                  });
+                  _saveFilterSettings();
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // 第2順位
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
               child: DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: '第2順位',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 ),
-                value: _sortOrders.length > 1 ? _sortOrders[1] : null,
+                value: _sortOrders.length > 1 ? _sortOrders[1]['field'] : null,
                 items: [
                   const DropdownMenuItem(value: null, child: Text('なし')),
                   const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
@@ -408,24 +511,55 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       }
                     } else {
                       if (_sortOrders.length > 1) {
-                        _sortOrders[1] = value;
+                        _sortOrders[1] = {'field': value, 'order': _sortOrders[1]['order']!};
                       } else {
-                        _sortOrders.add(value);
+                        _sortOrders.add({'field': value, 'order': 'asc'});
                       }
                     }
                   });
+                  _saveFilterSettings();
                 },
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
+              flex: 1,
+              child: DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: '順序',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+                value: _sortOrders.length > 1 ? _sortOrders[1]['order'] : 'asc',
+                items: const [
+                  DropdownMenuItem(value: 'asc', child: Text('昇順')),
+                  DropdownMenuItem(value: 'desc', child: Text('降順')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    if (_sortOrders.length > 1) {
+                      _sortOrders[1] = {'field': _sortOrders[1]['field']!, 'order': value!};
+                    }
+                  });
+                  _saveFilterSettings();
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // 第3順位
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
               child: DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: '第3順位',
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 ),
-                value: _sortOrders.length > 2 ? _sortOrders[2] : null,
+                value: _sortOrders.length > 2 ? _sortOrders[2]['field'] : null,
                 items: [
                   const DropdownMenuItem(value: null, child: Text('なし')),
                   const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
@@ -442,12 +576,37 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       }
                     } else {
                       if (_sortOrders.length > 2) {
-                        _sortOrders.add(value);
+                        _sortOrders[2] = {'field': value, 'order': _sortOrders[2]['order']!};
                       } else {
-                        _sortOrders[2] = value;
+                        _sortOrders.add({'field': value, 'order': 'asc'});
                       }
                     }
                   });
+                  _saveFilterSettings();
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 1,
+              child: DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: '順序',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+                value: _sortOrders.length > 2 ? _sortOrders[2]['order'] : 'asc',
+                items: const [
+                  DropdownMenuItem(value: 'asc', child: Text('昇順')),
+                  DropdownMenuItem(value: 'desc', child: Text('降順')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    if (_sortOrders.length > 2) {
+                      _sortOrders[2] = {'field': _sortOrders[2]['field']!, 'order': value!};
+                    }
+                  });
+                  _saveFilterSettings();
                 },
               ),
             ),
@@ -930,28 +1089,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     return keywords.every((keyword) => text.contains(keyword));
   }
 
-  // ReorderableListViewの並び替えを処理するメソッド
-  void _handleTaskReorder(int oldIndex, int newIndex) {
-    final taskViewModel = ref.read(taskViewModelProvider.notifier);
-    final List<TaskItem> allTasks = List.from(ref.read(taskViewModelProvider));
-    
-    // フィルタリングされたタスクのインデックスを元のタスクリストのインデックスに変換
-    final filteredTasks = _getFilteredTasks(allTasks);
-    final oldTask = filteredTasks[oldIndex];
-    final newTask = filteredTasks[newIndex];
-    
-    final oldOriginalIndex = allTasks.indexWhere((task) => task.id == oldTask.id);
-    final newOriginalIndex = allTasks.indexWhere((task) => task.id == newTask.id);
-    
-    if (oldOriginalIndex != -1 && newOriginalIndex != -1) {
-      // 元のリストで並び替えを実行
-      final task = allTasks.removeAt(oldOriginalIndex);
-      allTasks.insert(newOriginalIndex, task);
-      
-      // 並び替えを保存
-      taskViewModel.updateTasks(allTasks);
-    }
-  }
   
   // フィルタリング処理を別メソッドに分離
   List<TaskItem> _getFilteredTasks(List<TaskItem> tasks) {
@@ -1011,10 +1148,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     // 選択された並び替え方法に基づいてソート（第3順位まで対応）
           filteredTasks.sort((a, b) {
             for (int i = 0; i < _sortOrders.length; i++) {
-              final sortOrder = _sortOrders[i];
+              final sortConfig = _sortOrders[i];
+              final sortField = sortConfig['field']!;
+              final sortOrder = sortConfig['order']!;
               int comparison = 0;
               
-              switch (sortOrder) {
+              switch (sortField) {
                 case 'dueDate':
                   comparison = _compareDueDate(a.dueDate, b.dueDate);
                   break;
@@ -1037,6 +1176,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   break;
                 default:
                   comparison = 0;
+              }
+              
+              // 降順の場合は比較結果を反転
+              if (sortOrder == 'desc') {
+                comparison = -comparison;
               }
               
               if (comparison != 0) {
@@ -1082,30 +1226,65 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       final tasks = ref.read(taskViewModelProvider);
       final subTasks = ref.read(subTaskViewModelProvider);
       
-      // 現在のディレクトリにCSVファイルを保存
+      // ファイルダイアログで保存場所を選択
       final now = DateTime.now();
       final formatted = DateFormat('yyMMdd_HHmm').format(now);
-      final fileName = 'tasks_export_$formatted.csv';
-      final currentDir = Directory.current;
-      final filePath = '${currentDir.path}/$fileName';
+      final defaultFileName = 'tasks_export_$formatted.csv';
       
-      await CsvExport.exportTasksToCsv(tasks, subTasks, filePath);
+      // デスクトップをデフォルトの保存場所に設定
+      final desktopPath = '${Platform.environment['USERPROFILE']}\\Desktop';
       
-      // 成功メッセージを表示
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('CSV出力が完了しました: $fileName'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'CSVファイルの保存場所を選択',
+        fileName: defaultFileName,
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        initialDirectory: desktopPath,
+      );
+      
+      if (outputFile == null) {
+        // ユーザーがキャンセルした場合
+        return;
+      }
+      
+      // OneDriveの問題を回避するため、一時ディレクトリで作成してから移動
+      final tempDir = Directory.systemTemp;
+      final tempFile = File('${tempDir.path}/temp_$defaultFileName');
+      
+      try {
+        // 一時ファイルにCSVを出力
+        await CsvExport.exportTasksToCsv(tasks, subTasks, tempFile.path);
+        
+        // 一時ファイルを目的の場所に移動
+        final targetFile = File(outputFile);
+        await tempFile.copy(targetFile.path);
+        
+        // 一時ファイルを削除
+        await tempFile.delete();
+        
+        // 成功メッセージを表示
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('CSV出力が完了しました: ${targetFile.path.split(Platform.pathSeparator).last}'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (copyError) {
+        // コピーに失敗した場合、一時ファイルを削除
+        try {
+          await tempFile.delete();
+        } catch (_) {}
+        rethrow;
       }
     } catch (e) {
+      print('CSV出力エラーの詳細: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('CSV出力エラー: $e'),
+            content: Text('CSV出力エラー: ${e.toString()}'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
