@@ -214,129 +214,93 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
   Widget _buildCollapsibleFilterSection() {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         children: [
-          // フィルター表示/非表示の切り替えボタン
-          ListTile(
-            leading: Icon(_showFilters ? Icons.expand_less : Icons.expand_more),
-            title: Text(_showFilters ? 'フィルターを隠す' : 'フィルターを表示'),
-            trailing: IconButton(
-              icon: const Icon(Icons.filter_list),
-              onPressed: () {
-                setState(() {
-                  _showFilters = !_showFilters;
-                });
-              },
+          // コンパクトな検索・フィルターバー
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                // 検索バーとフィルターを1行に
+                Row(
+                  children: [
+                    // 検索バー（コンパクト）
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: TextEditingController(text: _searchQuery),
+                        decoration: const InputDecoration(
+                          hintText: 'タスクを検索...',
+                          prefixIcon: Icon(Icons.search, size: 20),
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 8),
+                    
+                    // 優先度フィルター（コンパクト）
+                    Expanded(
+                      flex: 1,
+                      child: DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          labelText: '優先度',
+                        ),
+                        value: _filterPriority,
+                        items: const [
+                          DropdownMenuItem(value: 'all', child: Text('すべて')),
+                          DropdownMenuItem(value: 'low', child: Text('低')),
+                          DropdownMenuItem(value: 'medium', child: Text('中')),
+                          DropdownMenuItem(value: 'high', child: Text('高')),
+                          DropdownMenuItem(value: 'urgent', child: Text('緊急')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _filterPriority = value;
+                            });
+                            _saveFilterSettings();
+                          }
+                        },
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 8),
+                    
+                    // フィルター表示/非表示ボタン
+                    IconButton(
+                      icon: Icon(_showFilters ? Icons.expand_less : Icons.expand_more),
+                      onPressed: () {
+                        setState(() {
+                          _showFilters = !_showFilters;
+                        });
+                      },
+                      tooltip: _showFilters ? 'フィルターを隠す' : 'フィルターを表示',
+                    ),
+                  ],
+                ),
+                
+                // ステータスフィルター（常に表示、コンパクト）
+                const SizedBox(height: 8),
+                _buildStatusFilterChips(),
+              ],
             ),
-            onTap: () {
-              setState(() {
-                _showFilters = !_showFilters;
-              });
-            },
           ),
           
-          // 折りたたみ可能なフィルター内容
+          // 折りたたみ可能な並び替えセクション
           if (_showFilters)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 検索バー
-                  TextField(
-                    controller: TextEditingController(text: _searchQuery),
-                    decoration: const InputDecoration(
-                      hintText: 'タスクを検索...',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  Row(
-                    children: [
-                      // ステータスフィルター（複数選択）
-                      Expanded(
-                        child: _buildStatusFilterChips(),
-                      ),
-                      
-                      const SizedBox(width: 16),
-                      
-                      // 優先度フィルター
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('優先度:', style: TextStyle(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              ),
-                              value: _filterPriority,
-                              items: const [
-                                DropdownMenuItem(value: 'all', child: Text('すべて')),
-                                DropdownMenuItem(value: 'low', child: Text('低')),
-                                DropdownMenuItem(value: 'medium', child: Text('中')),
-                                DropdownMenuItem(value: 'high', child: Text('高')),
-                                DropdownMenuItem(value: 'urgent', child: Text('緊急')),
-                              ],
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _filterPriority = value;
-                                  });
-                                  _saveFilterSettings();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // 並び替え（第3順位まで）
-                  _buildSortingSection(),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // 並び替えの説明
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info, color: Colors.blue.shade700, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '並び替え順序: 最大3段階まで設定可能（ドラッグ&ドロップで手動調整可能）',
-                            style: TextStyle(
-                              color: Colors.blue.shade700,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildSortingSection(),
             ),
         ],
       ),
@@ -425,189 +389,215 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       children: [
         const Text('並び替え順序:', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        // 第1順位
+        // 3つの並び替え順位を横並びに
         Row(
           children: [
+            // 第1順位
             Expanded(
-              flex: 2,
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: '第1順位',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
-                value: _sortOrders.isNotEmpty ? _sortOrders[0]['field'] : 'dueDate',
-                items: [
-                  const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
-                  const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
-                  const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
-                  const DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
-                  const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('第1順位', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            isDense: true,
+                          ),
+                          value: _sortOrders.isNotEmpty ? _sortOrders[0]['field'] : 'dueDate',
+                          items: [
+                            const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
+                            const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
+                            const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
+                            const DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
+                            const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              if (_sortOrders.isEmpty) {
+                                _sortOrders = [{'field': value!, 'order': 'asc'}];
+                              } else {
+                                _sortOrders[0] = {'field': value!, 'order': _sortOrders[0]['order']!};
+                              }
+                            });
+                            _saveFilterSettings();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            isDense: true,
+                          ),
+                          value: _sortOrders.isNotEmpty ? _sortOrders[0]['order'] : 'asc',
+                          items: const [
+                            DropdownMenuItem(value: 'asc', child: Text('昇順')),
+                            DropdownMenuItem(value: 'desc', child: Text('降順')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              if (_sortOrders.isNotEmpty) {
+                                _sortOrders[0] = {'field': _sortOrders[0]['field']!, 'order': value!};
+                              }
+                            });
+                            _saveFilterSettings();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    if (_sortOrders.isEmpty) {
-                      _sortOrders = [{'field': value!, 'order': 'asc'}];
-                    } else {
-                      _sortOrders[0] = {'field': value!, 'order': _sortOrders[0]['order']!};
-                    }
-                  });
-                  _saveFilterSettings();
-                },
               ),
             ),
             const SizedBox(width: 8),
+            // 第2順位
             Expanded(
-              flex: 1,
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: '順序',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
-                value: _sortOrders.isNotEmpty ? _sortOrders[0]['order'] : 'asc',
-                items: const [
-                  DropdownMenuItem(value: 'asc', child: Text('昇順')),
-                  DropdownMenuItem(value: 'desc', child: Text('降順')),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('第2順位', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            isDense: true,
+                          ),
+                          value: _sortOrders.length > 1 ? _sortOrders[1]['field'] : null,
+                          items: [
+                            const DropdownMenuItem(value: null, child: Text('なし')),
+                            const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
+                            const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
+                            const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
+                            const DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
+                            const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              if (value == null) {
+                                if (_sortOrders.length > 1) {
+                                  _sortOrders.removeAt(1);
+                                }
+                              } else {
+                                if (_sortOrders.length > 1) {
+                                  _sortOrders[1] = {'field': value, 'order': _sortOrders[1]['order']!};
+                                } else {
+                                  _sortOrders.add({'field': value, 'order': 'asc'});
+                                }
+                              }
+                            });
+                            _saveFilterSettings();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            isDense: true,
+                          ),
+                          value: _sortOrders.length > 1 ? _sortOrders[1]['order'] : 'asc',
+                          items: const [
+                            DropdownMenuItem(value: 'asc', child: Text('昇順')),
+                            DropdownMenuItem(value: 'desc', child: Text('降順')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              if (_sortOrders.length > 1) {
+                                _sortOrders[1] = {'field': _sortOrders[1]['field']!, 'order': value!};
+                              }
+                            });
+                            _saveFilterSettings();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    if (_sortOrders.isNotEmpty) {
-                      _sortOrders[0] = {'field': _sortOrders[0]['field']!, 'order': value!};
-                    }
-                  });
-                  _saveFilterSettings();
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // 第2順位
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: '第2順位',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
-                value: _sortOrders.length > 1 ? _sortOrders[1]['field'] : null,
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('なし')),
-                  const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
-                  const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
-                  const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
-                  const DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
-                  const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    if (value == null) {
-                      if (_sortOrders.length > 1) {
-                        _sortOrders.removeAt(1);
-                      }
-                    } else {
-                      if (_sortOrders.length > 1) {
-                        _sortOrders[1] = {'field': value, 'order': _sortOrders[1]['order']!};
-                      } else {
-                        _sortOrders.add({'field': value, 'order': 'asc'});
-                      }
-                    }
-                  });
-                  _saveFilterSettings();
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 1,
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: '順序',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
-                value: _sortOrders.length > 1 ? _sortOrders[1]['order'] : 'asc',
-                items: const [
-                  DropdownMenuItem(value: 'asc', child: Text('昇順')),
-                  DropdownMenuItem(value: 'desc', child: Text('降順')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    if (_sortOrders.length > 1) {
-                      _sortOrders[1] = {'field': _sortOrders[1]['field']!, 'order': value!};
-                    }
-                  });
-                  _saveFilterSettings();
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // 第3順位
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: '第3順位',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
-                value: _sortOrders.length > 2 ? _sortOrders[2]['field'] : null,
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('なし')),
-                  const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
-                  const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
-                  const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
-                  const DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
-                  const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    if (value == null) {
-                      if (_sortOrders.length > 2) {
-                        _sortOrders.removeAt(2);
-                      }
-                    } else {
-                      if (_sortOrders.length > 2) {
-                        _sortOrders[2] = {'field': value, 'order': _sortOrders[2]['order']!};
-                      } else {
-                        _sortOrders.add({'field': value, 'order': 'asc'});
-                      }
-                    }
-                  });
-                  _saveFilterSettings();
-                },
               ),
             ),
             const SizedBox(width: 8),
+            // 第3順位
             Expanded(
-              flex: 1,
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: '順序',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
-                value: _sortOrders.length > 2 ? _sortOrders[2]['order'] : 'asc',
-                items: const [
-                  DropdownMenuItem(value: 'asc', child: Text('昇順')),
-                  DropdownMenuItem(value: 'desc', child: Text('降順')),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('第3順位', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            isDense: true,
+                          ),
+                          value: _sortOrders.length > 2 ? _sortOrders[2]['field'] : null,
+                          items: [
+                            const DropdownMenuItem(value: null, child: Text('なし')),
+                            const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
+                            const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
+                            const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
+                            const DropdownMenuItem(value: 'createdAt', child: Text('作成日順')),
+                            const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              if (value == null) {
+                                if (_sortOrders.length > 2) {
+                                  _sortOrders.removeAt(2);
+                                }
+                              } else {
+                                if (_sortOrders.length > 2) {
+                                  _sortOrders[2] = {'field': value, 'order': _sortOrders[2]['order']!};
+                                } else {
+                                  _sortOrders.add({'field': value, 'order': 'asc'});
+                                }
+                              }
+                            });
+                            _saveFilterSettings();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            isDense: true,
+                          ),
+                          value: _sortOrders.length > 2 ? _sortOrders[2]['order'] : 'asc',
+                          items: const [
+                            DropdownMenuItem(value: 'asc', child: Text('昇順')),
+                            DropdownMenuItem(value: 'desc', child: Text('降順')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              if (_sortOrders.length > 2) {
+                                _sortOrders[2] = {'field': _sortOrders[2]['field']!, 'order': value!};
+                              }
+                            });
+                            _saveFilterSettings();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    if (_sortOrders.length > 2) {
-                      _sortOrders[2] = {'field': _sortOrders[2]['field']!, 'order': value!};
-                    }
-                  });
-                  _saveFilterSettings();
-                },
               ),
             ),
           ],
