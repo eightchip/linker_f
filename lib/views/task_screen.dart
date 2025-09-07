@@ -147,11 +147,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       ),
       body: Column(
         children: [
-          // 統計情報
-          _buildStatisticsCard(statistics),
+          // 統計情報と検索・フィルターを1行に配置
+          _buildCompactHeaderSection(statistics),
           
-          // フィルターと検索（折りたたみ可能）
-          _buildCollapsibleFilterSection(),
+          // ステータスフィルター（折りたたみ可能）
+          if (_showFilters) _buildStatusFilterSection(),
           
           // タスク一覧（全画面表示）
           Expanded(
@@ -172,136 +172,150 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     );
   }
 
-  Widget _buildStatisticsCard(Map<String, int> statistics) {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildStatItem('総タスク', statistics['total'] ?? 0, Icons.list),
-            _buildStatItem('未着手', statistics['pending'] ?? 0, Icons.radio_button_unchecked, Colors.grey),
-            _buildStatItem('完了', statistics['completed'] ?? 0, Icons.check_circle, Colors.green),
-            _buildStatItem('進行中', statistics['inProgress'] ?? 0, Icons.pending, Colors.blue),
-            _buildStatItem('期限切れ', statistics['overdue'] ?? 0, Icons.warning, Colors.red),
-            _buildStatItem('今日', statistics['today'] ?? 0, Icons.today, Colors.orange),
-          ],
-        ),
+  Widget _buildCompactHeaderSection(Map<String, int> statistics) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          // 左半分: 統計情報（コンパクト）
+          Expanded(
+            flex: 3,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem('総タスク', statistics['total'] ?? 0, Icons.list),
+                _buildStatItem('未着手', statistics['pending'] ?? 0, Icons.radio_button_unchecked, Colors.grey),
+                _buildStatItem('完了', statistics['completed'] ?? 0, Icons.check_circle, Colors.green),
+                _buildStatItem('進行中', statistics['inProgress'] ?? 0, Icons.pending, Colors.blue),
+                _buildStatItem('期限切れ', statistics['overdue'] ?? 0, Icons.warning, Colors.red),
+                _buildStatItem('今日', statistics['today'] ?? 0, Icons.today, Colors.orange),
+              ],
+            ),
+          ),
+          
+          // 右半分: 検索とフィルター
+          Expanded(
+            flex: 2,
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                // 検索バー
+                Expanded(
+                  child: TextField(
+                    controller: TextEditingController(text: _searchQuery),
+                    decoration: const InputDecoration(
+                      hintText: 'タスクを検索...',
+                      prefixIcon: Icon(Icons.search, size: 18),
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      isDense: true,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+                
+                const SizedBox(width: 8),
+                
+                // 優先度フィルター
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                      labelText: '優先度',
+                      isDense: true,
+                    ),
+                    value: _filterPriority,
+                    items: const [
+                      DropdownMenuItem(value: 'all', child: Text('すべて')),
+                      DropdownMenuItem(value: 'low', child: Text('低')),
+                      DropdownMenuItem(value: 'medium', child: Text('中')),
+                      DropdownMenuItem(value: 'high', child: Text('高')),
+                      DropdownMenuItem(value: 'urgent', child: Text('緊急')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _filterPriority = value;
+                        });
+                        _saveFilterSettings();
+                      }
+                    },
+                  ),
+                ),
+                
+                const SizedBox(width: 8),
+                
+                // フィルター表示/非表示ボタン
+                IconButton(
+                  icon: Icon(_showFilters ? Icons.expand_less : Icons.expand_more, size: 20),
+                  onPressed: () {
+                    setState(() {
+                      _showFilters = !_showFilters;
+                    });
+                  },
+                  tooltip: _showFilters ? 'フィルターを隠す' : 'フィルターを表示',
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStatItem(String label, int count, IconData icon, [Color? color]) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 4),
+        Icon(icon, color: color, size: 18),
+        const SizedBox(height: 2),
         Text(
           count.toString(),
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
             color: color,
             fontWeight: FontWeight.bold,
           ),
         ),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
         ),
       ],
     );
   }
 
-  Widget _buildCollapsibleFilterSection() {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          children: [
-          // コンパクトな検索・フィルターバー
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                // 検索バーとフィルターを1行に
-                Row(
-                  children: [
-                    // 検索バー（コンパクト）
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: TextEditingController(text: _searchQuery),
-              decoration: const InputDecoration(
-                hintText: 'タスクを検索...',
-                          prefixIcon: Icon(Icons.search, size: 20),
-                border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
-                    ),
-            
-                const SizedBox(width: 8),
-                    
-                    // 優先度フィルター（コンパクト）
-                    Expanded(
-                      flex: 1,
-                      child: DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          labelText: '優先度',
-                        ),
-                        value: _filterPriority,
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('すべて')),
-                          DropdownMenuItem(value: 'low', child: Text('低')),
-                          DropdownMenuItem(value: 'medium', child: Text('中')),
-                          DropdownMenuItem(value: 'high', child: Text('高')),
-                          DropdownMenuItem(value: 'urgent', child: Text('緊急')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                              _filterPriority = value;
-                      });
-                            _saveFilterSettings();
-                    }
-                  },
-                ),
-                    ),
-                    
-                const SizedBox(width: 8),
-                    
-                    // フィルター表示/非表示ボタン
-                    IconButton(
-                      icon: Icon(_showFilters ? Icons.expand_less : Icons.expand_more),
-                      onPressed: () {
-                        setState(() {
-                          _showFilters = !_showFilters;
-                        });
-                      },
-                      tooltip: _showFilters ? 'フィルターを隠す' : 'フィルターを表示',
-                    ),
-                  ],
-                ),
-                
-                // ステータスフィルター（常に表示、コンパクト）
-                const SizedBox(height: 8),
-                _buildStatusFilterChips(),
-              ],
-            ),
-          ),
+  Widget _buildStatusFilterSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          // ステータスフィルター
+          _buildStatusFilterChips(),
           
           // 折りたたみ可能な並び替えセクション
-          if (_showFilters)
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: _buildSortingSection(),
-            ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: _buildSortingSection(),
+          ),
         ],
       ),
     );
@@ -309,74 +323,84 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
   // ステータスフィルター（複数選択）
   Widget _buildStatusFilterChips() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        const Text('ステータス:', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: [
-            FilterChip(
-              label: const Text('すべて'),
-              selected: _filterStatuses.contains('all'),
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _filterStatuses = {'all'};
-                  } else {
+        const Text('ステータス:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              FilterChip(
+                label: const Text('すべて', style: TextStyle(fontSize: 11)),
+                selected: _filterStatuses.contains('all'),
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _filterStatuses = {'all'};
+                    } else {
+                      _filterStatuses.remove('all');
+                    }
+                  });
+                  _saveFilterSettings();
+                },
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              ),
+              FilterChip(
+                label: const Text('未着手', style: TextStyle(fontSize: 11)),
+                selected: _filterStatuses.contains('pending'),
+                onSelected: (selected) {
+                  setState(() {
                     _filterStatuses.remove('all');
-                  }
-                });
-                _saveFilterSettings();
-              },
-            ),
-            FilterChip(
-              label: const Text('未着手'),
-              selected: _filterStatuses.contains('pending'),
-              onSelected: (selected) {
-                setState(() {
-                  _filterStatuses.remove('all');
-                  if (selected) {
-                    _filterStatuses.add('pending');
-                  } else {
-                    _filterStatuses.remove('pending');
-                  }
-                });
-                _saveFilterSettings();
-              },
-            ),
-            FilterChip(
-              label: const Text('進行中'),
-              selected: _filterStatuses.contains('inProgress'),
-              onSelected: (selected) {
-                setState(() {
-                  _filterStatuses.remove('all');
-                  if (selected) {
-                    _filterStatuses.add('inProgress');
-                  } else {
-                    _filterStatuses.remove('inProgress');
-                  }
-                });
-                _saveFilterSettings();
-              },
-            ),
-            FilterChip(
-              label: const Text('完了'),
-              selected: _filterStatuses.contains('completed'),
-              onSelected: (selected) {
-                setState(() {
-                  _filterStatuses.remove('all');
-                  if (selected) {
-                    _filterStatuses.add('completed');
-                  } else {
-                    _filterStatuses.remove('completed');
-                  }
-                });
-                _saveFilterSettings();
-              },
-            ),
-          ],
+                    if (selected) {
+                      _filterStatuses.add('pending');
+                    } else {
+                      _filterStatuses.remove('pending');
+                    }
+                  });
+                  _saveFilterSettings();
+                },
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              ),
+              FilterChip(
+                label: const Text('進行中', style: TextStyle(fontSize: 11)),
+                selected: _filterStatuses.contains('inProgress'),
+                onSelected: (selected) {
+                  setState(() {
+                    _filterStatuses.remove('all');
+                    if (selected) {
+                      _filterStatuses.add('inProgress');
+                    } else {
+                      _filterStatuses.remove('inProgress');
+                    }
+                  });
+                  _saveFilterSettings();
+                },
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              ),
+              FilterChip(
+                label: const Text('完了', style: TextStyle(fontSize: 11)),
+                selected: _filterStatuses.contains('completed'),
+                onSelected: (selected) {
+                  setState(() {
+                    _filterStatuses.remove('all');
+                    if (selected) {
+                      _filterStatuses.add('completed');
+                    } else {
+                      _filterStatuses.remove('completed');
+                    }
+                  });
+                  _saveFilterSettings();
+                },
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              ),
+            ],
+          ),
         ),
       ],
     );

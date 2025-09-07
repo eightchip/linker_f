@@ -105,6 +105,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         await _loadTasks();
       }
       await _taskBox!.put(task.id, task);
+      await _taskBox!.flush(); // データの永続化を確実にする
       final newTasks = [task, ...state];
       newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       state = newTasks;
@@ -166,6 +167,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       final reminderTimeChanged = existingTask.reminderTime != task.reminderTime;
       
       await _taskBox!.put(task.id, task);
+      await _taskBox!.flush(); // データの永続化を確実にする
       final newTasks = state.map((t) => t.id == task.id ? task : t).toList();
       newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       state = newTasks;
@@ -238,6 +240,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         await _loadTasks();
       }
       await _taskBox!.delete(taskId);
+      await _taskBox!.flush(); // データの永続化を確実にする
       state = state.where((task) => task.id != taskId).toList();
       
       // 通知をキャンセル（エラーが発生しても続行）
@@ -544,6 +547,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         final task = newTasks[i];
         await _taskBox!.put(task.id, task);
       }
+      await _taskBox!.flush(); // データの永続化を確実にする
       
       // 状態を更新
       state = newTasks;
@@ -607,6 +611,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         await _taskBox!.put(task.id, task);
         print('タスクを保存: ${task.title} (ID: ${task.id})');
       }
+      await _taskBox!.flush(); // データの永続化を確実にする
       
       // 状態を更新
       state = tasks;
@@ -694,6 +699,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       // 新しいタスクを保存
       await _taskBox!.put(newTaskId, newTask);
+      await _taskBox!.flush(); // データの永続化を確実にする
       
       // 状態を更新
       final updatedTasks = [...state, newTask];
