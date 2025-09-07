@@ -31,15 +31,23 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   String _searchQuery = '';
   List<Map<String, String>> _sortOrders = [{'field': 'dueDate', 'order': 'asc'}]; // 第3順位まで設定可能
   bool _showFilters = false; // フィルター表示/非表示の切り替え
+  late TextEditingController _searchController;
 
   @override
   void initState() {
     super.initState();
     _settingsService = SettingsService.instance;
+    _searchController = TextEditingController(text: _searchQuery);
     // 非同期で初期化を実行
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeSettings();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   /// 設定サービスを初期化してからフィルター設定を読み込み
@@ -73,6 +81,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         _filterStatuses = _settingsService.taskFilterStatuses.toSet();
         _filterPriority = _settingsService.taskFilterPriority;
         _sortOrders = _settingsService.taskSortOrders.map((item) => Map<String, String>.from(item)).toList();
+        _searchQuery = _settingsService.taskSearchQuery;
+        // 検索コントローラーのテキストも更新
+        _searchController.text = _searchQuery;
       }
     } catch (e) {
       print('フィルター設定の読み込みエラー: $e');
@@ -80,6 +91,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       _filterStatuses = {'all'};
       _filterPriority = 'all';
       _sortOrders = [{'field': 'dueDate', 'order': 'asc'}];
+      _searchQuery = '';
+      _searchController.text = _searchQuery;
     }
   }
 
@@ -90,6 +103,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         await _settingsService.setTaskFilterStatuses(_filterStatuses.toList());
         await _settingsService.setTaskFilterPriority(_filterPriority);
         await _settingsService.setTaskSortOrders(_sortOrders);
+        await _settingsService.setTaskSearchQuery(_searchQuery);
       }
     } catch (e) {
       print('フィルター設定の保存エラー: $e');
@@ -208,7 +222,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 // 検索バー
                 Expanded(
                   child: TextField(
-                    controller: TextEditingController(text: _searchQuery),
+                    controller: _searchController,
                     decoration: const InputDecoration(
                       hintText: 'タスクを検索...',
                       prefixIcon: Icon(Icons.search, size: 18),
@@ -220,6 +234,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       setState(() {
                         _searchQuery = value;
                       });
+                      _saveFilterSettings();
                     },
                   ),
                 ),

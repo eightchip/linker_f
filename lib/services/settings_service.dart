@@ -41,6 +41,7 @@ class SettingsService {
   static const String _taskFilterStatusesKey = 'taskFilterStatuses';
   static const String _taskFilterPriorityKey = 'taskFilterPriority';
   static const String _taskSortOrdersKey = 'taskSortOrders';
+  static const String _taskSearchQueryKey = 'taskSearchQuery';
 
   // デフォルト値
   static const bool _defaultDarkMode = false;
@@ -355,6 +356,13 @@ class SettingsService {
   }
   Future<void> setTaskFilterStatuses(List<String> value) async {
     await _settingsBox.put(_taskFilterStatusesKey, value);
+  }
+
+  String get taskSearchQuery {
+    return _settingsBox.get(_taskSearchQueryKey, defaultValue: '');
+  }
+  Future<void> setTaskSearchQuery(String value) async {
+    await _settingsBox.put(_taskSearchQueryKey, value);
   }
 
   /// タスクフィルタープライオリティ
