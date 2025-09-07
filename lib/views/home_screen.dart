@@ -2566,134 +2566,40 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
     }
     if (_isImage) {
       return MouseRegion(
-        onEnter: (_) async {
-          try {
-            final file = File(widget.path);
-            final fileSize = await file.length();
-            final fileName = file.path.split(Platform.pathSeparator).last;
-            _showPreviewOverlay(
-              Container(
-                color: Colors.white,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.image, color: Colors.green, size: 24),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            fileName,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '画像ファイル',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'ファイルサイズ: ${(fileSize / 1024).toStringAsFixed(1)} KB',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '画像ファイルを開くにはクリックしてください',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-              width: 400, height: 200,
-            );
-          } catch (e) {
-            print('画像ファイル情報取得エラー: $e');
-          }
+        // 画像プレビュー機能を無効化（フリーズ防止のため）
+        onEnter: (_) {
+          // プレビュー機能を無効化
         },
         onExit: (_) {
-          _removePreviewOverlay();
+          // プレビュー機能を無効化
         },
-        child: GestureDetector(
-          onTap: () async {
-            try {
-              final file = File(widget.path);
-              final absolutePath = file.absolute.path;
-              await Process.run('cmd', ['/c', 'start', absolutePath], runInShell: true);
-            } catch (e) {
-              print('画像外部起動エラー: $e');
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('外部アプリで開けませんでした')),
-                );
-              }
-            }
-          },
-          child: Image.file(
-            File(widget.path), 
-            width: 32, 
-            height: 32, 
-            fit: BoxFit.cover, 
-            errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 24)
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.file(
+              File(widget.path),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 24)
+            ),
           ),
         ),
       );
     }
+    
     if (_isPdf) {
       return MouseRegion(
-        onEnter: (_) async {
-          try {
-            final file = File(widget.path);
-            final fileSize = await file.length();
-            final fileName = file.path.split(Platform.pathSeparator).last;
-            _showPreviewOverlay(
-              Container(
-                color: Colors.white,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            fileName,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'PDFファイル',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'ファイルサイズ: ${(fileSize / 1024).toStringAsFixed(1)} KB',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'PDFファイルを開くにはクリックしてください',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-              width: 400, height: 200,
-            );
-          } catch (e) {
-            print('PDFファイル情報取得エラー: $e');
-          }
+        // PDFプレビュー機能を無効化（フリーズ防止のため）
+        onEnter: (_) {
+          // プレビュー機能を無効化
         },
         onExit: (_) {
-          _removePreviewOverlay();
+          // プレビュー機能を無効化
         },
         child: GestureDetector(
           onTap: () async {
@@ -2717,51 +2623,17 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
     if (_textPreview != null) {
       final isEmpty = (_textFull == null || _textFull!.isEmpty || (_textFull!.length == 1 && _textFull![0].trim().isEmpty));
       return MouseRegion(
+        // テキストプレビュー機能を無効化（フリーズ防止のため）
         onEnter: (_) {
-          _showPreviewOverlay(
-            Container(
-              color: Colors.white,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 24),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'テキストファイル',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: isEmpty
-                      ? const Center(child: Text('内容がありません', style: TextStyle(fontSize: 18, color: Colors.grey)))
-                      : SingleChildScrollView(
-                          child: SelectableText(
-                            _textFull?.join('\n') ?? '',
-                            style: const TextStyle(fontSize: 15, color: Colors.black87, fontFamily: 'monospace'),
-                          ),
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            width: 520, height: 420,
-          );
+          // プレビュー機能を無効化
         },
         onExit: (_) {
-          _removePreviewOverlay();
+          // プレビュー機能を無効化
         },
-        child: Tooltip(
-          message: isEmpty ? '内容がありません' : _textPreview!,
-          child: Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 24),
-        ),
+        child: Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 24),
       );
     }
+    
     // Office系ファイルのアイコン表示（ホバー機能なし）
     final fileExt = widget.path.toLowerCase();
     if (fileExt.endsWith('.xlsx') || fileExt.endsWith('.xls')) {
