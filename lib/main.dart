@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io';
 import 'models/link_item.dart';
 import 'models/group.dart';
@@ -19,174 +18,341 @@ import 'services/migration_service.dart';
 import 'services/settings_service.dart';
 import 'services/backup_service.dart';
 import 'repositories/link_repository.dart';
-import 'models/task_item.dart';
 
 
 void main() async {
+  try {
+    // 重複起動チェック
+    if (!await _checkSingleInstance()) {
+      print('アプリケーションが既に起動しています。終了します。');
+      return;
+    }
+    
+    // 段階的初期化でアプリケーションの安定性を向上
+    await _initializeApp();
+    await _initializeWindow();
+    
+    // 通知サービス初期化（既存サービスを直接使用）
+    try {
+      print('通知サービス初期化開始');
+      await NotificationService.initialize();
+      await WindowsNotificationService.initialize();
+      print('通知サービス初期化完了');
+    } catch (e) {
+      print('通知サービス初期化エラー: $e');
+    }
+    
+    runApp(const ProviderScope(child: LinkLauncherApp()));
+  } catch (e) {
+    print('アプリケーション初期化エラー: $e');
+    // エラーが発生してもアプリケーションを起動
+    runApp(const ProviderScope(child: LinkLauncherApp()));
+  }
+}
+
+// アプリケーションの基本初期化
+Future<void> _initializeApp() async {
+  print('アプリケーション初期化開始');
+  
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Hive with local directory (OneDrive問題を回避)
-  final appDocDir = await getApplicationDocumentsDirectory();
-  // OneDriveの同期問題を回避するため、ローカルディレクトリを使用
-  final localDataDir = Directory('${appDocDir.path}/linker_f_data');
-  if (!await localDataDir.exists()) {
-    await localDataDir.create(recursive: true);
-  }
-  await Hive.initFlutter(localDataDir.path);
+  // 段階1: Hive初期化
+  await _initializeHive();
   
-  // Register adapters
-  try {
-    Hive.registerAdapter(LinkTypeAdapter());
-  } catch (e) {
-    // Already registered
-  }
-  try {
-    Hive.registerAdapter(LinkItemAdapter());
-  } catch (e) {
-    // Already registered
-  }
-  try {
-    Hive.registerAdapter(GroupAdapter());
-  } catch (e) {
-    // Already registered
-  }
-  try {
-    Hive.registerAdapter(OffsetAdapter());
-  } catch (e) {
-    // Already registered
-  }
-  try {
-    Hive.registerAdapter(TaskPriorityAdapter());
-  } catch (e) {
-    // Already registered
-  }
-  try {
-    Hive.registerAdapter(TaskStatusAdapter());
-  } catch (e) {
-    // Already registered
-  }
-  try {
-    Hive.registerAdapter(TaskItemAdapter());
-  } catch (e) {
-    // Already registered
-  }
-  try {
-    Hive.registerAdapter(SubTaskAdapter());
-  } catch (e) {
-    // Already registered
-  }
+  // 段階2: データマイグレーション
+  await _initializeDataMigration();
   
-  // データマイグレーションを実行
-  await MigrationService.migrateData();
+  // 段階3: 基本サービスの初期化
+  await _initializeBasicServices();
   
-  // データの整合性チェックと修復
-  final isDataValid = await MigrationService.validateDataIntegrity();
-  if (!isDataValid) {
-    print('データ整合性エラーを検出しました。修復を開始します...');
-    await MigrationService.repairCorruptedData();
-  }
+  // 段階4: 高度な機能の初期化（非同期）
+  _initializeAdvancedFeatures();
   
-  // 通知機能の初期化
-  await NotificationService.initialize();
-  
-  // Windows固有の通知機能の初期化
-  await WindowsNotificationService.initialize();
-  
-  // システムトレイ機能の初期化
-  await SystemTrayService.initialize();
-  
-  // 設定サービスの初期化
-  final settingsService = SettingsService.instance;
-  await settingsService.initialize();
-  
-  // 自動バックアップのチェックと実行
+  print('アプリケーション初期化完了');
+}
+
+// Hive初期化
+Future<void> _initializeHive() async {
   try {
-    final backupService = BackupService(
-      linkRepository: LinkRepository(),
-      settingsService: settingsService,
-    );
-    await backupService.checkAndPerformAutoBackup();
-    if (kDebugMode) {
-      print('自動バックアップチェック完了');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      print('自動バックアップエラー: $e');
-    }
-  }
-  
-  // リマインダー復元のためのTaskViewModel初期化
-  try {
-    // TaskViewModelの初期化を確実に行う
-    final taskBox = await Hive.openBox<TaskItem>('tasks');
+    print('Hive初期化開始');
     
-    // 既存のタスクを読み込んでリマインダーを復元
-    final tasks = taskBox.values.toList();
-    if (tasks.isNotEmpty) {
-      print('既存タスク数: ${tasks.length}');
-      // リマインダー復元を実行
-      await WindowsNotificationService.restoreReminders(tasks);
+    // Initialize Hive with local directory (OneDrive問題を完全回避)
+    // アプリのローカルデータディレクトリを使用（OneDriveの影響を受けない）
+    final localAppData = Platform.environment['LOCALAPPDATA'] ?? 'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Local';
+    final localDataDir = Directory('$localAppData\\linker_f_data');
+    if (!await localDataDir.exists()) {
+      await localDataDir.create(recursive: true);
+    }
+    await Hive.initFlutter(localDataDir.path);
+    print('Hive初期化完了: ${localDataDir.path}');
+    
+    // 既存のOneDriveデータを新しい場所に移動
+    await _migrateFromOneDrive(localDataDir);
+    
+    // アダプター登録
+    try {
+      Hive.registerAdapter(LinkTypeAdapter());
+    } catch (e) {
+      print('LinkTypeAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(LinkItemAdapter());
+    } catch (e) {
+      print('LinkItemAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(GroupAdapter());
+    } catch (e) {
+      print('GroupAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(OffsetAdapter());
+    } catch (e) {
+      print('OffsetAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(TaskPriorityAdapter());
+    } catch (e) {
+      print('TaskPriorityAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(TaskStatusAdapter());
+    } catch (e) {
+      print('TaskStatusAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(TaskItemAdapter());
+    } catch (e) {
+      print('TaskItemAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(SubTaskAdapter());
+    } catch (e) {
+      print('SubTaskAdapter登録エラー: $e');
     }
     
-    if (kDebugMode) {
-      print('TaskViewModel初期化完了');
-    }
+    print('Hive初期化完了');
   } catch (e) {
-    if (kDebugMode) {
-      print('TaskViewModel初期化エラー: $e');
+    print('Hive初期化エラー: $e');
+    rethrow;
+  }
+}
+
+// データマイグレーション初期化
+Future<void> _initializeDataMigration() async {
+  try {
+    print('データマイグレーション開始');
+    
+    await MigrationService.migrateData();
+    
+    final isDataValid = await MigrationService.validateDataIntegrity();
+    if (!isDataValid) {
+      print('データ整合性エラーを検出しました。修復を開始します...');
+      await MigrationService.repairCorruptedData();
     }
+    
+    print('データマイグレーション完了');
+  } catch (e) {
+    print('データマイグレーションエラー: $e');
+    // データマイグレーションエラーは致命的でないため、継続
   }
-  
-  // Desktop window configuration
-  await windowManager.ensureInitialized();
+}
 
-  // ディスプレイの取得と設定
-  final displays = await ScreenRetriever.instance.getAllDisplays();
-  
-  // 複数ディスプレイがある場合は小さいディスプレイを選択
-  // 単一ディスプレイの場合はそのディスプレイを使用
-  final targetDisplay = displays.length > 1 
-      ? displays.reduce((a, b) => (a.size.width * a.size.height) < (b.size.width * b.size.height) ? a : b)
-      : displays[0];
-  
-  // 選択したディスプレイの半分のサイズでウィンドウを設定
-  final displaySize = targetDisplay.size;
-  final windowWidth = (displaySize.width / 2).round();
-  final windowHeight = displaySize.height.round();
-  
-  // ウィンドウの位置を設定（選択したディスプレイの右半分に配置）
-  // 複数ディスプレイの場合は2番目のディスプレイ（サブディスプレイ）の右半分に配置
-  final windowX = displays.length > 1 
-      ? displays[0].size.width + (displaySize.width - windowWidth)  // メインディスプレイの幅 + サブディスプレイの右半分
-      : (displaySize.width - windowWidth);  // 単一ディスプレイの場合は右半分
-  final windowY = 0;
-
-  // デバッグ情報（開発時のみ）
-  if (kDebugMode) {
-    print('ディスプレイ数: ${displays.length}');
-    print('選択したディスプレイサイズ: ${targetDisplay.size}');
-    print('ウィンドウサイズ: ${windowWidth}x${windowHeight}');
-    print('ウィンドウ位置: ($windowX, $windowY)');
+// 基本サービスの初期化
+Future<void> _initializeBasicServices() async {
+  try {
+    print('基本サービス初期化開始');
+    
+    // 設定サービスの初期化（最優先）
+    final settingsService = SettingsService.instance;
+    await settingsService.initialize();
+    
+    // 通知サービス初期化はmain()で実行済み
+    
+    print('基本サービス初期化完了');
+  } catch (e) {
+    print('基本サービス初期化エラー: $e');
+    // 通知機能のエラーは致命的でないため、継続
   }
+}
 
-  WindowOptions windowOptions = WindowOptions(
-    size: Size(windowWidth.toDouble(), windowHeight.toDouble()),
-    center: false,
-    backgroundColor: const Color(0xFFF4F5F7),
-    skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.normal,
-    title: 'Link Navigator',
-    // ちらつきを防ぐための設定
-    alwaysOnTop: false,
-  );
-
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-    await windowManager.setPosition(Offset(windowX.toDouble(), windowY.toDouble()));
-    await windowManager.setTitle('Link Navigator');
+// 高度な機能の初期化（非同期実行）
+void _initializeAdvancedFeatures() {
+  // 非同期で実行してUIの起動をブロックしない
+  Future.microtask(() async {
+    try {
+      print('高度な機能初期化開始');
+      
+      // システムトレイ機能の初期化
+      await SystemTrayService.initialize();
+      
+      // 自動バックアップのチェックと実行
+      try {
+        final settingsService = SettingsService.instance;
+        final linkRepository = LinkRepository();
+        await linkRepository.initialize();
+        final backupService = BackupService(
+          linkRepository: linkRepository,
+          settingsService: settingsService,
+        );
+        await backupService.checkAndPerformAutoBackup();
+        print('自動バックアップチェック完了');
+      } catch (e) {
+        print('自動バックアップチェックエラー: $e');
+        // バックアップエラーは致命的でないため、継続
+      }
+      
+      // リマインダー復元
+      final taskBox = await Hive.openBox<TaskItem>('tasks');
+      final tasks = taskBox.values.toList();
+      if (tasks.isNotEmpty) {
+        print('既存タスク数: ${tasks.length}');
+        await WindowsNotificationService.restoreReminders(tasks);
+      }
+      
+      print('高度な機能初期化完了');
+    } catch (e) {
+      print('高度な機能初期化エラー: $e');
+      // 高度な機能のエラーは致命的でないため、継続
+    }
   });
+}
 
-  runApp(const ProviderScope(child: LinkLauncherApp()));
+// ウィンドウ初期化
+Future<void> _initializeWindow() async {
+  try {
+    print('ウィンドウ初期化開始');
+    
+    await windowManager.ensureInitialized();
+
+    // ディスプレイの取得と設定
+    final displays = await ScreenRetriever.instance.getAllDisplays();
+    
+    // 複数ディスプレイがある場合は小さいディスプレイを選択
+    final targetDisplay = displays.length > 1 
+        ? displays.reduce((a, b) => (a.size.width * a.size.height) < (b.size.width * b.size.height) ? a : b)
+        : displays[0];
+    
+    // 選択したディスプレイの半分のサイズでウィンドウを設定
+    final displaySize = targetDisplay.size;
+    final windowWidth = (displaySize.width / 2).round();
+    final windowHeight = displaySize.height.round();
+    
+    // ウィンドウの位置を設定
+    final windowX = displays.length > 1 
+        ? displays[0].size.width + (displaySize.width - windowWidth)
+        : (displaySize.width - windowWidth);
+    final windowY = 0;
+
+    if (kDebugMode) {
+      print('ディスプレイ数: ${displays.length}');
+      print('選択したディスプレイサイズ: ${targetDisplay.size}');
+      print('ウィンドウサイズ: ${windowWidth}x${windowHeight}');
+      print('ウィンドウ位置: ($windowX, $windowY)');
+    }
+
+    WindowOptions windowOptions = WindowOptions(
+      size: Size(windowWidth.toDouble(), windowHeight.toDouble()),
+      center: false,
+      backgroundColor: const Color(0xFFF4F5F7),
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.normal,
+      title: 'Link Navigator',
+      alwaysOnTop: false,
+    );
+
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+      await windowManager.setPosition(Offset(windowX.toDouble(), windowY.toDouble()));
+      await windowManager.setTitle('Link Navigator');
+    });
+    
+    print('ウィンドウ初期化完了');
+  } catch (e) {
+    print('ウィンドウ初期化エラー: $e');
+    // ウィンドウ初期化エラーは致命的でないため、継続
+  }
+}
+
+// OneDriveからのデータ移行
+Future<void> _migrateFromOneDrive(Directory newDataDir) async {
+  try {
+    print('OneDriveデータ移行チェック開始');
+    
+    // OneDriveのDocumentsディレクトリをチェック
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final oneDriveDataDir = Directory('${appDocDir.path}/linker_f_data');
+    
+    if (await oneDriveDataDir.exists()) {
+      print('OneDriveデータが見つかりました: ${oneDriveDataDir.path}');
+      
+      // 新しいディレクトリにファイルをコピー
+      final files = await oneDriveDataDir.list().toList();
+      for (final file in files) {
+        if (file is File) {
+          final fileName = file.path.split(Platform.pathSeparator).last;
+          final newFile = File('${newDataDir.path}/$fileName');
+          
+          try {
+            await file.copy(newFile.path);
+            print('ファイル移行完了: $fileName');
+          } catch (e) {
+            print('ファイル移行エラー ($fileName): $e');
+          }
+        }
+      }
+      
+      print('OneDriveデータ移行完了');
+    } else {
+      print('OneDriveデータは見つかりませんでした');
+    }
+  } catch (e) {
+    print('OneDriveデータ移行エラー: $e');
+  }
+}
+
+// 重複起動チェック
+Future<bool> _checkSingleInstance() async {
+  try {
+    final localAppData = Platform.environment['LOCALAPPDATA'] ?? 'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Local';
+    final lockFile = File('$localAppData\\linker_f_data\\app.lock');
+    
+    if (await lockFile.exists()) {
+      // ロックファイルが存在する場合、プロセスが生きているかチェック
+      try {
+        final content = await lockFile.readAsString();
+        final pid = int.tryParse(content.trim());
+        if (pid != null) {
+          // Windowsでプロセスが存在するかチェック
+          final result = await Process.run('tasklist', ['/FI', 'PID eq $pid', '/FO', 'CSV']);
+          if (result.stdout.toString().contains('$pid')) {
+            print('既存のプロセスが実行中です (PID: $pid)');
+            return false;
+          }
+        }
+      } catch (e) {
+        print('ロックファイルチェックエラー: $e');
+      }
+    }
+    
+    // ロックファイルを作成
+    await lockFile.parent.create(recursive: true);
+    await lockFile.writeAsString(pid.toString());
+    
+    // アプリ終了時にロックファイルを削除
+    ProcessSignal.sigint.watch().listen((_) async {
+      try {
+        await lockFile.delete();
+      } catch (e) {
+        print('ロックファイル削除エラー: $e');
+      }
+    });
+    
+    return true;
+  } catch (e) {
+    print('重複起動チェックエラー: $e');
+    return true; // エラーの場合は起動を許可
+  }
 }
 

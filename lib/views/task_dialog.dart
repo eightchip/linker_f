@@ -42,6 +42,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   void initState() {
     super.initState();
     if (widget.task != null) {
+      print('=== タスクダイアログ初期化（既存タスク） ===');
+      print('タスクID: ${widget.task!.id}');
+      print('タスクタイトル: ${widget.task!.title}');
+      print('元の期限日: ${widget.task!.dueDate}');
+      print('元のリマインダー時間: ${widget.task!.reminderTime}');
+      
       _titleController.text = widget.task!.title;
       _descriptionController.text = widget.task!.description ?? '';
       _notesController.text = widget.task!.notes ?? '';
@@ -55,6 +61,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       _recurringPattern = widget.task!.recurringPattern ?? 'daily';
       _isRecurringReminder = widget.task!.isRecurringReminder;
       _recurringReminderPattern = widget.task!.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
+      
+      print('初期化後の期限日: $_dueDate');
+      print('初期化後のリマインダー時間: $_reminderTime');
+      print('=== タスクダイアログ初期化完了 ===');
     } else if (widget.relatedLinkId != null) {
       // リンクから作成された場合、リンク情報を取得して設定
       _initializeFromLink();
@@ -117,9 +127,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         // 既存タスクの更新
         print('=== タスク更新 ===');
         print('元のリマインダー時間: ${widget.task!.reminderTime}');
+        print('元の期限日: ${widget.task!.dueDate}');
         print('ダイアログのリマインダー時間: $_reminderTime');
+        print('ダイアログの期限日: $_dueDate');
         print('_reminderTimeの型: ${_reminderTime.runtimeType}');
         print('_reminderTime == null: ${_reminderTime == null}');
+        print('_dueDate == null: ${_dueDate == null}');
         
         final updatedTask = widget.task!.copyWith(
           title: _titleController.text.trim(),
@@ -149,8 +162,16 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         );
         
         print('copyWith後のリマインダー時間: ${updatedTask.reminderTime}');
+        print('copyWith後の期限日: ${updatedTask.dueDate}');
         print('新しいリマインダー時間: ${updatedTask.reminderTime}');
+        print('新しい期限日: ${updatedTask.dueDate}');
         print('リマインダーがクリアされた: ${widget.task!.reminderTime != null && updatedTask.reminderTime == null}');
+        print('期限日がクリアされた: ${widget.task!.dueDate != null && updatedTask.dueDate == null}');
+        
+        print('=== タスク更新時のリマインダー設定 ===');
+        print('タスク: ${updatedTask.title}');
+        print('リマインダー時間: ${updatedTask.reminderTime}');
+        print('変更前のリマインダー時間: ${widget.task!.reminderTime}');
         
         taskViewModel.updateTask(updatedTask);
       } else {
@@ -361,8 +382,19 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     const SizedBox(width: 8),
                     if (_dueDate != null)
                       IconButton(
-                        onPressed: () => setState(() => _dueDate = null),
+                        onPressed: () {
+                          print('=== 期限日クリアボタンクリック ===');
+                          print('クリア前の期限日: $_dueDate');
+                          
+                          setState(() {
+                            _dueDate = null;
+                          });
+                          
+                          print('クリア後の期限日: $_dueDate');
+                          print('期限日をクリアしました');
+                        },
                         icon: const Icon(Icons.clear),
+                        tooltip: '期限日をクリア',
                       ),
                   ],
                 ),
@@ -565,7 +597,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     if (_isRecurringReminder) ...[
                       const SizedBox(width: 16),
                       DropdownButton<String>(
-                        value: _recurringReminderPattern,
+                        value: RecurringReminderPattern.allPatterns.contains(_recurringReminderPattern) 
+                            ? _recurringReminderPattern 
+                            : RecurringReminderPattern.fiveMinutes,
                         items: RecurringReminderPattern.allPatterns.map((pattern) {
                           return DropdownMenuItem(
                             value: pattern,

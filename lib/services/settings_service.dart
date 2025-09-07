@@ -60,16 +60,47 @@ class SettingsService {
   static const String _defaultTaskFilterPriority = 'all';
   static const List<Map<String, String>> _defaultTaskSortOrders = [{'field': 'dueDate', 'order': 'asc'}];
 
-  /// 初期化
+  /// 初期化（リトライ機能付き）
   Future<void> initialize() async {
-    _settingsBox = await Hive.openBox(_settingsBoxName);
-    _defaultSettingsBox = await Hive.openBox(_defaultSettingsBoxName);
+    const maxRetries = 3;
+    const retryDelay = Duration(milliseconds: 500);
     
-    // 初回起動時のデフォルト設定を保存
-    await _initializeDefaultSettings();
-    
-    // バージョン管理
-    await _handleVersionMigration();
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        print('SettingsService初期化試行 $attempt/$maxRetries');
+        
+        _settingsBox = await Hive.openBox(_settingsBoxName);
+        _defaultSettingsBox = await Hive.openBox(_defaultSettingsBoxName);
+        
+        // 初回起動時のデフォルト設定を保存
+        await _initializeDefaultSettings();
+        
+        // バージョン管理
+        await _handleVersionMigration();
+        
+        print('SettingsService初期化成功');
+        return;
+      } catch (e) {
+        print('SettingsService初期化エラー (試行 $attempt/$maxRetries): $e');
+        
+        if (attempt == maxRetries) {
+          print('SettingsService初期化失敗: 最大リトライ回数に達しました');
+          // 最後の試行でも失敗した場合は、デフォルト値で継続
+          _initializeWithDefaults();
+          return;
+        }
+        
+        // リトライ前に少し待機
+        await Future.delayed(retryDelay * attempt);
+      }
+    }
+  }
+  
+  /// デフォルト値で初期化（フォールバック）
+  void _initializeWithDefaults() {
+    print('SettingsService: デフォルト値で初期化');
+    // デフォルト値を使用してアプリケーションを継続
+    // 実際のBoxは後で再試行される
   }
 
   /// 初期化状態をチェック
@@ -77,7 +108,35 @@ class SettingsService {
     try {
       return _settingsBox.isOpen && _defaultSettingsBox.isOpen;
     } catch (e) {
+      print('SettingsService初期化状態チェックエラー: $e');
       return false;
+    }
+  }
+  
+  /// 安全な設定値取得
+  T _getSetting<T>(String key, T defaultValue) {
+    try {
+      if (!isInitialized) {
+        print('SettingsService未初期化: デフォルト値を使用 ($key)');
+        return defaultValue;
+      }
+      return _settingsBox.get(key, defaultValue: defaultValue) as T;
+    } catch (e) {
+      print('設定値取得エラー ($key): $e');
+      return defaultValue;
+    }
+  }
+  
+  /// 安全な設定値保存
+  Future<void> _setSetting<T>(String key, T value) async {
+    try {
+      if (!isInitialized) {
+        print('SettingsService未初期化: 設定保存をスキップ ($key)');
+        return;
+      }
+      await _settingsBox.put(key, value);
+    } catch (e) {
+      print('設定値保存エラー ($key): $e');
     }
   }
 

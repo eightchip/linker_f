@@ -1,9 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:win32/win32.dart';
 import 'package:ffi/ffi.dart';
 import 'dart:ffi';
 import 'dart:async';
-import 'dart:io';
 import '../models/task_item.dart';
 import '../services/settings_service.dart';
 
@@ -31,40 +29,68 @@ class WindowsNotificationService {
   
   // 復元済みリマインダーの管理
   static final Set<String> _restoredReminders = {};
+  
+  // 通知済みタスクの管理（重複通知防止）
+  static final Set<String> _notifiedTasks = {};
 
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-    try {
-      // 基本的なWindows APIを初期化
-      _user32 = DynamicLibrary.open('user32.dll');
-      _messageBoxW = _user32.lookupFunction<
-          Int32 Function(IntPtr, Pointer<Utf16>, Pointer<Utf16>, Uint32, Pointer<Utf16>, IntPtr, IntPtr),
-          int Function(int, Pointer<Utf16>, Pointer<Utf16>, int, Pointer<Utf16>, int, int)>('MessageBoxW');
+    const maxRetries = 3;
+    const retryDelay = Duration(milliseconds: 500);
+    
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        print('WindowsNotificationService初期化試行 $attempt/$maxRetries');
+        
+        // 基本的なWindows APIを初期化
+        _user32 = DynamicLibrary.open('user32.dll');
+        _messageBoxW = _user32.lookupFunction<
+            Int32 Function(IntPtr, Pointer<Utf16>, Pointer<Utf16>, Uint32, Pointer<Utf16>, IntPtr, IntPtr),
+            int Function(int, Pointer<Utf16>, Pointer<Utf16>, int, Pointer<Utf16>, int, int)>('MessageBoxW');
 
-      // 音声再生用のAPIを初期化
-      _winmm = DynamicLibrary.open('winmm.dll');
-      _playSound = _winmm.lookupFunction<
-          Int32 Function(Uint32, IntPtr),
-          int Function(int, int)>('PlaySoundW');
+        // 音声再生用のAPIを初期化
+        _winmm = DynamicLibrary.open('winmm.dll');
+        _playSound = _winmm.lookupFunction<
+            Int32 Function(Uint32, IntPtr),
+            int Function(int, int)>('PlaySoundW');
 
-      _isInitialized = true;
-      
-      // 定期的なリマインダーチェックを開始
-      _startReminderCheck();
-      
-      print('Windows通知サービス初期化完了');
-    } catch (e) {
-      print('Windows通知サービス初期化エラー: $e');
+        _isInitialized = true;
+        
+        // 定期的なリマインダーチェックを開始
+        _startReminderCheck();
+        
+        print('WindowsNotificationService初期化成功');
+        return;
+      } catch (e) {
+        print('WindowsNotificationService初期化エラー (試行 $attempt/$maxRetries): $e');
+        
+        if (attempt == maxRetries) {
+          print('WindowsNotificationService初期化失敗: 最大リトライ回数に達しました');
+          // 通知機能を無効化してアプリケーションを継続
+          _isInitialized = false;
+          return;
+        }
+        
+        // リトライ前に少し待機
+        await Future.delayed(retryDelay * attempt);
+      }
     }
   }
 
-  // メッセージボックスを表示（最も確実な方法）
+  // メッセージボックスを表示（安全性向上）
   static Future<void> _showMessageBox(String title, String message) async {
+    Pointer<Utf16>? titlePtr;
+    Pointer<Utf16>? messagePtr;
+    
     try {
-      final titlePtr = title.toNativeUtf16();
-      final messagePtr = message.toNativeUtf16();
+      print('メッセージボックス表示開始: $title');
       
+      // 文字列をネイティブ形式に変換
+      titlePtr = title.toNativeUtf16();
+      messagePtr = message.toNativeUtf16();
+      
+      // メッセージボックスを表示
       final result = _messageBoxW(
         0, // hWnd
         messagePtr, // lpText
@@ -77,14 +103,33 @@ class WindowsNotificationService {
 
       if (result == IDOK) {
         print('メッセージボックス表示成功: $title');
+      } else {
+        print('メッセージボックス表示結果: $result');
       }
-
-      // メモリを解放
-      calloc.free(titlePtr);
-      calloc.free(messagePtr);
+      
     } catch (e) {
       print('メッセージボックス表示エラー: $e');
+      // エラーが発生してもアプリを継続
+    } finally {
+      // メモリを安全に解放
+      try {
+        if (titlePtr != null) {
+          calloc.free(titlePtr);
+        }
+        if (messagePtr != null) {
+          calloc.free(messagePtr);
+        }
+        print('メッセージボックスメモリ解放完了');
+      } catch (freeError) {
+        print('メッセージボックスメモリ解放エラー: $freeError');
+      }
     }
+  }
+
+  // システムサウンドを再生（非同期版 - UI通知をブロックしない）
+  static void _playNotificationSoundAsync() {
+    // 音声再生は無効化（クラッシュ防止のため）
+    print('音声再生は無効化されています（安定性のため）');
   }
 
   // システムサウンドを再生
@@ -109,33 +154,45 @@ class WindowsNotificationService {
         return;
       }
 
-      // システムサウンドを再生（アスタリスク音）
-      final result = _playSound(SND_ALIAS | SND_ASYNC, 0);
-      
-      if (result == 0) {
-        print('通知音再生成功');
-      } else {
-        print('通知音再生失敗: エラーコード $result');
+      // システムサウンドを再生（アスタリスク音）- 安全な実行
+      try {
+        final result = _playSound(SND_ALIAS | SND_ASYNC, 0);
+        
+        if (result == 0) {
+          print('通知音再生成功');
+        } else {
+          print('通知音再生失敗: エラーコード $result');
+        }
+      } catch (playError) {
+        print('PlaySound API呼び出しエラー: $playError');
+        // PlaySound API呼び出しに失敗しても例外を再スローしない
       }
     } catch (e) {
       print('通知音再生エラー: $e');
     }
   }
 
-  // シンプルな通知表示
+  // 通知表示（UI + 安全な音声再生）
   static Future<void> _showNotification(String title, String message) async {
     try {
-      // 通知音を再生
-      await _playNotificationSound();
-      
-      await _showMessageBox(title, message);
-    } catch (e) {
-      print('通知表示エラー: $e');
-      // 最終手段: コンソール出力
-      print('=== 通知 ===');
+      print('=== 通知表示開始 ===');
       print('タイトル: $title');
       print('メッセージ: $message');
-      print('==========');
+      
+      // 音声再生は無効化（クラッシュ防止のため）
+      print('音声再生は無効化されています（安定性のため）');
+      
+      // UI通知
+      await _showMessageBox(title, message);
+      
+      print('=== 通知表示完了 ===');
+      
+    } catch (e) {
+      print('通知表示エラー: $e');
+      // 最終フォールバック: コンソール出力のみ
+      print('=== 最終フォールバック通知 ===');
+      print('通知: $title - $message');
+      print('=== 最終フォールバック通知完了 ===');
     }
   }
 
@@ -170,12 +227,30 @@ class WindowsNotificationService {
       await cancelNotification(task.id);
       
       if (reminderTime.isBefore(now)) {
+        // 重複通知防止: 既に通知済みのタスクはスキップ
+        if (_notifiedTasks.contains(task.id)) {
+          print('既に通知済みのためスキップ: ${task.title}');
+          return;
+        }
+        
         // 期限切れの場合は即座に通知
         print('期限切れタスクのため即座に通知');
-        await _showNotification(
-          '期限切れタスク',
-          '${task.title}の期限が過ぎています',
-        );
+        
+        // 通知済みとしてマーク
+        _notifiedTasks.add(task.id);
+        
+        print('DEBUG: _showNotification呼び出し前');
+        try {
+          await _showNotification(
+            '期限切れタスク',
+            '${task.title}の期限が過ぎています',
+          );
+          print('DEBUG: _showNotification呼び出し完了');
+        } catch (e) {
+          print('DEBUG: _showNotification呼び出しエラー: $e');
+          rethrow;
+        }
+        print('DEBUG: 期限切れ通知処理完了');
         return;
       }
 
@@ -188,21 +263,34 @@ class WindowsNotificationService {
       // シンプルなタイマーを設定
       final timer = Timer(duration, () async {
         try {
-          print('=== タスクリマインダー実行 ===');
+          print('=== タスクリマインダー実行開始 ===');
           print('タスク: ${task.title}');
           print('実行時刻: ${DateTime.now()}');
           
-          await _showNotification(
-            'タスクリマインダー',
-            '${task.title}の期限が近づいています',
-          );
+          // 通知表示を安全に実行
+          try {
+            await _showNotification(
+              'タスクリマインダー',
+              '${task.title}の期限が近づいています',
+            );
+            print('リマインダー通知表示成功');
+          } catch (notificationError) {
+            print('リマインダー通知表示エラー: $notificationError');
+            // エラーが発生してもアプリを継続
+          }
           
           // タイマーをクリーンアップ
           _scheduledTimers.remove(task.id);
           
-          print('=== タスクリマインダー完了 ===');
+          print('=== タスクリマインダー実行完了 ===');
         } catch (e) {
-          print('タスクリマインダー実行エラー: $e');
+          print('タスクリマインダー実行全体エラー: $e');
+          // エラーが発生してもタイマーをクリーンアップ
+          try {
+            _scheduledTimers.remove(task.id);
+          } catch (cleanupError) {
+            print('タイマークリーンアップエラー: $cleanupError');
+          }
         }
       });
       
@@ -254,8 +342,7 @@ class WindowsNotificationService {
   // テスト通知
   static Future<void> showTestNotification() async {
     try {
-      // 通知音を再生
-      await _playNotificationSound();
+      print('DEBUG: テスト通知開始');
       
       await _showNotification(
         'テスト通知',
@@ -269,8 +356,7 @@ class WindowsNotificationService {
   // リマインダーテスト通知
   static Future<void> showTestReminderNotification() async {
     try {
-      // 通知音を再生
-      await _playNotificationSound();
+      print('DEBUG: テストリマインダー通知開始');
       
       await _showNotification(
         'リマインダーテスト',
@@ -296,15 +382,31 @@ class WindowsNotificationService {
       // 1分後のタイマーを設定
       final timer = Timer(const Duration(minutes: 1), () async {
         try {
-          print('=== 1分後リマインダーテスト実行 ===');
-          await _showNotification(
-            '1分後リマインダーテスト',
-            'この通知が表示されれば、リマインダー機能が正常に動作しています！',
-          );
+          print('=== 1分後リマインダーテスト実行開始 ===');
+          
+          // 通知表示を安全に実行
+          try {
+            await _showNotification(
+              '1分後リマインダーテスト',
+              'この通知が表示されれば、リマインダー機能が正常に動作しています！',
+            );
+            print('1分後リマインダーテスト通知表示成功');
+          } catch (notificationError) {
+            print('1分後リマインダーテスト通知表示エラー: $notificationError');
+            // エラーが発生してもアプリを継続
+          }
+          
+          // タイマーをクリーンアップ
           _scheduledTimers.remove('test_reminder');
-          print('=== 1分後リマインダーテスト完了 ===');
+          print('=== 1分後リマインダーテスト実行完了 ===');
         } catch (e) {
-          print('1分後リマインダーテスト実行エラー: $e');
+          print('1分後リマインダーテスト実行全体エラー: $e');
+          // エラーが発生してもタイマーをクリーンアップ
+          try {
+            _scheduledTimers.remove('test_reminder');
+          } catch (cleanupError) {
+            print('テストタイマークリーンアップエラー: $cleanupError');
+          }
         }
       });
       
@@ -322,16 +424,40 @@ class WindowsNotificationService {
     }
   }
 
-  // クリーンアップ
+  // クリーンアップ（メモリリーク防止強化）
   static void dispose() {
     try {
+      print('=== Windows通知サービスクリーンアップ開始 ===');
+      
+      // 定期的なリマインダーチェックを停止
+      _stopReminderCheck();
+      
       // すべてのタイマーをキャンセル
-      for (final timer in _scheduledTimers.values) {
-        timer.cancel();
+      for (final entry in _scheduledTimers.entries) {
+        try {
+          entry.value.cancel();
+          print('タイマーキャンセル成功: ${entry.key}');
+        } catch (timerError) {
+          print('タイマーキャンセルエラー (${entry.key}): $timerError');
+        }
       }
       _scheduledTimers.clear();
       
-      print('Windows通知サービスクリーンアップ');
+      // 復元済みリマインダーをクリア
+      _restoredReminders.clear();
+      
+      // 通知済みタスクをクリア
+      _notifiedTasks.clear();
+      
+      // コールバックをクリア
+      _restoreRemindersCallback = null;
+      _getTasksCallback = null;
+      _taskViewModelUpdateCallback = null;
+      
+      // 初期化フラグをリセット
+      _isInitialized = false;
+      
+      print('=== Windows通知サービスクリーンアップ完了 ===');
     } catch (e) {
       print('Windows通知サービスクリーンアップエラー: $e');
     }
@@ -440,7 +566,7 @@ class WindowsNotificationService {
     print('定期的なリマインダーチェックを停止しました');
   }
 
-  // リマインダーチェックのメインループ
+  // リマインダーチェックのメインループ（重複通知防止）
   static void _checkReminders(Timer timer) {
     if (_getTasksCallback == null) {
       print('タスク取得コールバックが設定されていません。リマインダーチェックをスキップします。');
@@ -456,11 +582,22 @@ class WindowsNotificationService {
       final reminderTime = task.reminderTime!;
 
       if (reminderTime.isBefore(now)) {
-        print('期限切れタスクのため即座に通知: ${task.title}');
         if (task.recurringReminderPattern != null) {
-          // 繰り返しリマインダーの場合、次の時間を計算して通知
+          // 繰り返しリマインダーの場合、スキップせずに通知
+          print('繰り返しリマインダー通知: ${task.title}');
           _showRecurringReminderNotification(task);
         } else {
+          // 単発リマインダーの場合、重複通知防止
+          if (_notifiedTasks.contains(task.id)) {
+            print('既に通知済みのためスキップ: ${task.title}');
+            continue;
+          }
+          
+          print('期限切れタスクのため即座に通知: ${task.title}');
+          
+          // 通知済みとしてマーク
+          _notifiedTasks.add(task.id);
+          
           // 単発リマインダーの場合、即座に通知
           _showNotification(
             'タスクリマインダー',
@@ -483,6 +620,16 @@ class WindowsNotificationService {
             print('=== 単発リマインダー実行 ===');
             print('タスク: ${task.title}');
             print('実行時刻: ${DateTime.now()}');
+            
+            // 重複通知防止: 既に通知済みのタスクはスキップ
+            if (_notifiedTasks.contains(task.id)) {
+              print('既に通知済みのためスキップ: ${task.title}');
+              _scheduledTimers.remove(task.id);
+              return;
+            }
+            
+            // 通知済みとしてマーク
+            _notifiedTasks.add(task.id);
             
             await _showNotification(
               'タスクリマインダー',

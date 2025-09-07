@@ -263,6 +263,9 @@ class TaskItem extends HiveObject {
     String? assignedTo,
   }) {
     print('=== copyWith呼び出し ===');
+    print('元のdueDate: ${this.dueDate}');
+    print('新しいdueDate: $dueDate');
+    print('dueDate == null: ${dueDate == null}');
     print('元のreminderTime: ${this.reminderTime}');
     print('新しいreminderTime: $reminderTime');
     print('reminderTime == null: ${reminderTime == null}');
@@ -271,7 +274,7 @@ class TaskItem extends HiveObject {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      dueDate: dueDate ?? this.dueDate,
+      dueDate: dueDate, // nullを明示的に設定できるように修正
       reminderTime: reminderTime, // nullを明示的に設定できるように修正
       priority: priority ?? this.priority,
       status: status ?? this.status,
@@ -293,6 +296,7 @@ class TaskItem extends HiveObject {
       assignedTo: assignedTo ?? this.assignedTo,
     );
     
+    print('copyWith結果のdueDate: ${result.dueDate}');
     print('copyWith結果のreminderTime: ${result.reminderTime}');
     print('=== copyWith完了 ===');
     

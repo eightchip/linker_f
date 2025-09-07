@@ -215,8 +215,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   Widget _buildCollapsibleFilterSection() {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        children: [
+        child: Column(
+          children: [
           // コンパクトな検索・フィルターバー
           Padding(
             padding: const EdgeInsets.all(12),
@@ -230,21 +230,21 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       flex: 2,
                       child: TextField(
                         controller: TextEditingController(text: _searchQuery),
-                        decoration: const InputDecoration(
-                          hintText: 'タスクを検索...',
+              decoration: const InputDecoration(
+                hintText: 'タスクを検索...',
                           prefixIcon: Icon(Icons.search, size: 20),
-                          border: OutlineInputBorder(),
+                border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            _searchQuery = value;
-                          });
-                        },
-                      ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
                     ),
-                    
-                    const SizedBox(width: 8),
+            
+                const SizedBox(width: 8),
                     
                     // 優先度フィルター（コンパクト）
                     Expanded(
@@ -256,25 +256,25 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                           labelText: '優先度',
                         ),
                         value: _filterPriority,
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('すべて')),
+                  items: const [
+                    DropdownMenuItem(value: 'all', child: Text('すべて')),
                           DropdownMenuItem(value: 'low', child: Text('低')),
                           DropdownMenuItem(value: 'medium', child: Text('中')),
                           DropdownMenuItem(value: 'high', child: Text('高')),
                           DropdownMenuItem(value: 'urgent', child: Text('緊急')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
                               _filterPriority = value;
-                            });
+                      });
                             _saveFilterSettings();
-                          }
-                        },
-                      ),
+                    }
+                  },
+                ),
                     ),
                     
-                    const SizedBox(width: 8),
+                const SizedBox(width: 8),
                     
                     // フィルター表示/非表示ボタン
                     IconButton(
@@ -437,12 +437,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                             isDense: true,
                           ),
                           value: _sortOrders.isNotEmpty ? _sortOrders[0]['order'] : 'asc',
-                          items: const [
+                  items: const [
                             DropdownMenuItem(value: 'asc', child: Text('昇順')),
                             DropdownMenuItem(value: 'desc', child: Text('降順')),
-                          ],
-                          onChanged: (value) {
-                            setState(() {
+                  ],
+                  onChanged: (value) {
+                      setState(() {
                               if (_sortOrders.isNotEmpty) {
                                 _sortOrders[0] = {'field': _sortOrders[0]['field']!, 'order': value!};
                               }
@@ -522,9 +522,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                             _saveFilterSettings();
                           },
                         ),
-                      ),
-                    ],
-                  ),
+            ),
+          ],
+        ),
                 ],
               ),
             ),
@@ -700,7 +700,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       tag,
                       style: const TextStyle(fontSize: 9, color: Colors.grey),
                     ),
-                  )).toList(),
+                )).toList(),
                 ),
               ),
           ],

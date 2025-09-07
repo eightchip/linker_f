@@ -170,34 +170,45 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       state = newTasks;
       
-      // リマインダー時間が変更された場合のみ通知を更新
-      if (reminderTimeChanged) {
+      // リマインダー時間または期限日が変更された場合のみ通知を更新
+      final dueDateChanged = existingTask.dueDate != task.dueDate;
+      if (reminderTimeChanged || dueDateChanged) {
         try {
-          if (task.reminderTime != null) {
-            print('=== タスク更新時のリマインダー設定 ===');
-            print('タスク: ${task.title}');
-            print('リマインダー時間: ${task.reminderTime}');
-            print('変更前のリマインダー時間: ${existingTask.reminderTime}');
-            
-            if (Platform.isWindows) {
-              await WindowsNotificationService.scheduleTaskReminder(task);
+          if (reminderTimeChanged) {
+            if (task.reminderTime != null) {
+              print('=== タスク更新時のリマインダー設定 ===');
+              print('タスク: ${task.title}');
+              print('リマインダー時間: ${task.reminderTime}');
+              print('変更前のリマインダー時間: ${existingTask.reminderTime}');
+              
+              if (Platform.isWindows) {
+                await WindowsNotificationService.scheduleTaskReminder(task);
+              } else {
+                await NotificationService.scheduleTaskReminder(task);
+              }
+              
+              print('=== タスク更新時のリマインダー設定完了 ===');
             } else {
-              await NotificationService.scheduleTaskReminder(task);
+              print('=== タスク更新時のリマインダー削除 ===');
+              print('タスク: ${task.title}');
+              print('変更前のリマインダー時間: ${existingTask.reminderTime}');
+              
+              if (Platform.isWindows) {
+                await WindowsNotificationService.cancelNotification(task.id);
+              } else {
+                await NotificationService.cancelNotification(task.id);
+              }
+              
+              print('=== タスク更新時のリマインダー削除完了 ===');
             }
-            
-            print('=== タスク更新時のリマインダー設定完了 ===');
-          } else {
-            print('=== タスク更新時のリマインダー削除 ===');
+          }
+          
+          if (dueDateChanged) {
+            print('=== タスク更新時の期限日変更 ===');
             print('タスク: ${task.title}');
-            print('変更前のリマインダー時間: ${existingTask.reminderTime}');
-            
-            if (Platform.isWindows) {
-              await WindowsNotificationService.cancelNotification(task.id);
-            } else {
-              await NotificationService.cancelNotification(task.id);
-            }
-            
-            print('=== タスク更新時のリマインダー削除完了 ===');
+            print('新しい期限日: ${task.dueDate}');
+            print('変更前の期限日: ${existingTask.dueDate}');
+            print('=== タスク更新時の期限日変更完了 ===');
           }
         } catch (notificationError) {
           print('通知更新エラー（無視）: $notificationError');
