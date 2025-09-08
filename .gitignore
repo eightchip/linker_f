@@ -45,3 +45,12 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 *.json
+*.csv
+*.xlsx
+*.xls
+*.docx
+*.doc
+*.txt
+*.pdf
+*.pptx
+*.ppt
