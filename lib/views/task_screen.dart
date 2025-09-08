@@ -32,6 +32,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   List<Map<String, String>> _sortOrders = [{'field': 'dueDate', 'order': 'asc'}]; // 第3順位まで設定可能
   bool _showFilters = false; // フィルター表示/非表示の切り替え
   late TextEditingController _searchController;
+  
+  // 一括選択機能の状態変数
+  bool _isSelectionMode = false; // 選択モードのオン/オフ
+  Set<String> _selectedTaskIds = {}; // 選択されたタスクのIDセット
 
   @override
   void initState() {
@@ -48,6 +52,88 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// 選択モードの切り替え
+  void _toggleSelectionMode() {
+    setState(() {
+      _isSelectionMode = !_isSelectionMode;
+      if (!_isSelectionMode) {
+        _selectedTaskIds.clear();
+      }
+    });
+  }
+
+  /// タスクの選択状態を切り替え
+  void _toggleTaskSelection(String taskId) {
+    setState(() {
+      if (_selectedTaskIds.contains(taskId)) {
+        _selectedTaskIds.remove(taskId);
+      } else {
+        _selectedTaskIds.add(taskId);
+      }
+    });
+  }
+
+  /// 全選択/全解除
+  void _toggleSelectAll(List<TaskItem> filteredTasks) {
+    setState(() {
+      if (_selectedTaskIds.length == filteredTasks.length) {
+        // 全選択されている場合は全解除
+        _selectedTaskIds.clear();
+      } else {
+        // 一部または未選択の場合は全選択
+        _selectedTaskIds = filteredTasks.map((task) => task.id).toSet();
+      }
+    });
+  }
+
+  /// 選択されたタスクを一括削除
+  Future<void> _deleteSelectedTasks() async {
+    if (_selectedTaskIds.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('確認'),
+        content: Text('選択した${_selectedTaskIds.length}件のタスクを削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      
+      // 選択されたタスクを削除
+      for (final taskId in _selectedTaskIds) {
+        taskViewModel.deleteTask(taskId);
+      }
+
+      // 選択モードを解除
+      setState(() {
+        _selectedTaskIds.clear();
+        _isSelectionMode = false;
+      });
+
+      // 削除完了のメッセージを表示
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_selectedTaskIds.length}件のタスクを削除しました'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   /// 設定サービスを初期化してからフィルター設定を読み込み
@@ -125,14 +211,47 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       onKey: _handleKeyEvent,
       child: Scaffold(
       appBar: AppBar(
-        title: const Text('タスク管理'),
+        title: _isSelectionMode 
+          ? Text('${_selectedTaskIds.length}件選択中')
+          : const Text('タスク管理'),
+        leading: _isSelectionMode 
+          ? IconButton(
+              onPressed: _toggleSelectionMode,
+              icon: const Icon(Icons.close),
+              tooltip: '選択モードを終了',
+            )
+          : null,
         actions: [
-          // 新しいタスク作成ボタンは常に表示
-          IconButton(
-            onPressed: () => _showTaskDialog(),
-            icon: const Icon(Icons.add),
-            tooltip: '新しいタスク',
-          ),
+          if (_isSelectionMode) ...[
+            // 全選択/全解除ボタン
+            IconButton(
+              onPressed: () => _toggleSelectAll(filteredTasks),
+              icon: Icon(_selectedTaskIds.length == filteredTasks.length 
+                ? Icons.deselect 
+                : Icons.select_all),
+              tooltip: _selectedTaskIds.length == filteredTasks.length 
+                ? '全解除' 
+                : '全選択',
+            ),
+            // 削除ボタン
+            IconButton(
+              onPressed: _selectedTaskIds.isEmpty ? null : _deleteSelectedTasks,
+              icon: const Icon(Icons.delete),
+              tooltip: '選択したタスクを削除',
+            ),
+          ] else ...[
+            // 選択モード開始ボタン
+            IconButton(
+              onPressed: _toggleSelectionMode,
+              icon: const Icon(Icons.checklist),
+              tooltip: '一括選択モード',
+            ),
+            // 新しいタスク作成ボタン
+            IconButton(
+              onPressed: () => _showTaskDialog(),
+              icon: const Icon(Icons.add),
+              tooltip: '新しいタスク',
+            ),
           // 3点ドットメニューに統合
           PopupMenuButton<String>(
             onSelected: (value) => _handleMenuAction(value),
@@ -190,6 +309,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               ),
             ],
           ),
+          ],
         ],
       ),
       body: Column(
@@ -679,11 +799,21 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   }
 
   Widget _buildTaskCard(TaskItem task) {
+    final isSelected = _selectedTaskIds.contains(task.id);
+    
     return Card(
       key: ValueKey(task.id), // キーを追加
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      color: _isSelectionMode && isSelected 
+        ? Theme.of(context).primaryColor.withOpacity(0.1) 
+        : null,
       child: ListTile(
-        leading: _buildPriorityIndicator(task.priority),
+        leading: _isSelectionMode 
+          ? Checkbox(
+              value: isSelected,
+              onChanged: (_) => _toggleTaskSelection(task.id),
+            )
+          : _buildPriorityIndicator(task.priority),
         title: Row(
           children: [
             // 期限日を左側に適度に目立つデザインで配置（固定幅でタイトル位置を統一）
@@ -884,7 +1014,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             ),
           ],
         ),
-        onTap: () => _showTaskDialog(task: task),
+        onTap: _isSelectionMode 
+          ? () => _toggleTaskSelection(task.id)
+          : () => _showTaskDialog(task: task),
+        onLongPress: _isSelectionMode 
+          ? null 
+          : () {
+              _toggleSelectionMode();
+              _toggleTaskSelection(task.id);
+            },
       ),
     );
   }
