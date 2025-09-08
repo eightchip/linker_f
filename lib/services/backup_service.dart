@@ -14,11 +14,19 @@ class BackupService {
   final LinkRepository _linkRepository;
   final SettingsService _settingsService;
   
+  // バックアップ完了時のコールバック
+  static Function(String backupPath)? _onBackupCompleted;
+  
   BackupService({
     required LinkRepository linkRepository,
     required SettingsService settingsService,
   }) : _linkRepository = linkRepository,
        _settingsService = settingsService;
+  
+  /// バックアップ完了コールバックを設定
+  static void setOnBackupCompleted(Function(String backupPath) callback) {
+    _onBackupCompleted = callback;
+  }
 
   /// 自動バックアップをチェックして実行
   Future<void> checkAndPerformAutoBackup() async {
@@ -72,6 +80,9 @@ class BackupService {
       if (kDebugMode) {
         print('バックアップが完了しました: ${backupFile.path}');
       }
+      
+      // バックアップ完了コールバックを呼び出し
+      _onBackupCompleted?.call(backupFile.path);
     } catch (e) {
       ErrorHandler.logError('バックアップ実行', e);
       rethrow;

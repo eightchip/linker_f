@@ -24,17 +24,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _notesController = TextEditingController();
   final _estimatedMinutesController = TextEditingController();
-  final _tagsController = TextEditingController();
   final _assignedToController = TextEditingController();
 
   DateTime? _dueDate;
   DateTime? _reminderTime;
   TaskPriority _priority = TaskPriority.medium;
-  List<String> _tags = [];
-  bool _isRecurring = false;
-  String _recurringPattern = 'daily';
   bool _isRecurringReminder = false;
   String _recurringReminderPattern = RecurringReminderPattern.fiveMinutes;
 
@@ -50,15 +45,11 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       
       _titleController.text = widget.task!.title;
       _descriptionController.text = widget.task!.description ?? '';
-      _notesController.text = widget.task!.notes ?? '';
       _estimatedMinutesController.text = widget.task!.estimatedMinutes?.toString() ?? '';
       _assignedToController.text = widget.task!.assignedTo ?? '';
       _dueDate = widget.task!.dueDate;
       _reminderTime = widget.task!.reminderTime;
       _priority = widget.task!.priority;
-      _tags = List.from(widget.task!.tags);
-      _isRecurring = widget.task!.isRecurring;
-      _recurringPattern = widget.task!.recurringPattern ?? 'daily';
       _isRecurringReminder = widget.task!.isRecurringReminder;
       _recurringReminderPattern = widget.task!.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
       
@@ -69,7 +60,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       // リンクから作成された場合、リンク情報を取得して設定
       _initializeFromLink();
     }
-    _tagsController.text = _tags.join(', ');
   }
 
   // リンク情報から初期値を設定
@@ -78,10 +68,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       final linkViewModel = ref.read(linkViewModelProvider.notifier);
       final link = linkViewModel.getLinkById(widget.relatedLinkId!);
       if (link != null) {
-        _titleController.text = '${link.label}の作業';
+        _titleController.text = link.label;
         _descriptionController.text = 'リンク: ${link.path}';
-        _tags = [link.label, 'リンク関連'];
-        _tagsController.text = _tags.join(', ');
         
         // デフォルトのリマインダー時間を設定（1時間後）
         _reminderTime = DateTime.now().add(const Duration(hours: 1));
@@ -97,9 +85,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _notesController.dispose();
     _estimatedMinutesController.dispose();
-    _tagsController.dispose();
     _assignedToController.dispose();
     super.dispose();
   }
@@ -108,12 +94,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     if (_formKey.currentState!.validate()) {
       final taskViewModel = ref.read(taskViewModelProvider.notifier);
       
-      // タグを解析
-      final tags = _tagsController.text
-          .split(',')
-          .map((tag) => tag.trim())
-          .where((tag) => tag.isNotEmpty)
-          .toList();
+      // タグは削除されたため、空のリストを使用
+      final tags = <String>[];
 
       print('=== タスク作成ダイアログ ===');
       print('タイトル: ${_titleController.text.trim()}');
@@ -146,19 +128,16 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
               ? int.tryParse(_estimatedMinutesController.text)
               : null,
-          notes: _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
           assignedTo: _assignedToController.text.trim().isEmpty
               ? null
               : _assignedToController.text.trim(),
-          isRecurring: _isRecurring,
-          recurringPattern: _isRecurring ? _recurringPattern : null,
           isRecurringReminder: _isRecurringReminder,
           recurringReminderPattern: _isRecurringReminder ? _recurringReminderPattern : null,
           // リマインダーがクリアされた場合、関連フィールドもクリア
           nextReminderTime: _reminderTime == null ? null : widget.task!.nextReminderTime,
           reminderCount: _reminderTime == null ? 0 : widget.task!.reminderCount,
+          clearDueDate: _dueDate == null && widget.task!.dueDate != null, // 期限日が削除された場合
+          clearReminderTime: _reminderTime == null && widget.task!.reminderTime != null, // リマインダーが削除された場合
         );
         
         print('copyWith後のリマインダー時間: ${updatedTask.reminderTime}');
@@ -189,14 +168,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
               ? int.tryParse(_estimatedMinutesController.text)
               : null,
-          notes: _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
           assignedTo: _assignedToController.text.trim().isEmpty
               ? null
               : _assignedToController.text.trim(),
-          isRecurring: _isRecurring,
-          recurringPattern: _isRecurring ? _recurringPattern : null,
           isRecurringReminder: _isRecurringReminder,
           recurringReminderPattern: _isRecurringReminder ? _recurringReminderPattern : null,
         );
@@ -347,17 +321,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                
-                // 説明
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: '説明',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                ),
+                // 説明フィールドは非表示（内部データとして保持）
                 const SizedBox(height: 16),
                 
                 // 期限日
@@ -520,16 +484,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     }
                   },
                 ),
-                const SizedBox(height: 16),
-                
-                // タグ
-                TextFormField(
-                  controller: _tagsController,
-                  decoration: const InputDecoration(
-                    labelText: 'タグ (カンマ区切り)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
+                // タグフィールドは削除
                 const SizedBox(height: 16),
                 
                 // 推定時間
@@ -555,34 +510,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 const SizedBox(height: 16),
                 
                 // 繰り返し設定
-                Row(
-                  children: [
-                    Checkbox(
-                      value: _isRecurring,
-                      onChanged: (value) {
-                        setState(() => _isRecurring = value ?? false);
-                      },
-                    ),
-                    const Text('繰り返しタスク'),
-                    if (_isRecurring) ...[
-                      const SizedBox(width: 16),
-                      DropdownButton<String>(
-                        value: _recurringPattern,
-                        items: const [
-                          DropdownMenuItem(value: 'daily', child: Text('毎日')),
-                          DropdownMenuItem(value: 'weekly', child: Text('毎週')),
-                          DropdownMenuItem(value: 'monthly', child: Text('毎月')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _recurringPattern = value);
-                          }
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 16),
+                // 繰り返しタスク機能は削除（手動コピー機能を使用）
                 
                 // 繰り返しリマインダー設定
                 Row(
@@ -615,17 +543,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     ],
                   ],
                 ),
-                const SizedBox(height: 16),
-                
-                // メモ
-                TextFormField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'メモ',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                ),
+                // メモフィールドは削除
                 const SizedBox(height: 24),
                 
                 // ボタン

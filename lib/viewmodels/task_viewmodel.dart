@@ -66,6 +66,16 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       final tasks = _taskBox!.values.toList();
       tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      // 期限日のデバッグログ
+      print('=== タスク読み込み時の期限日確認 ===');
+      for (final task in tasks) {
+        print('タスク: ${task.title}');
+        print('期限日: ${task.dueDate}');
+        print('リマインダー時間: ${task.reminderTime}');
+        print('---');
+      }
+      
       state = tasks;
       
       // 全タスクのサブタスク統計を更新
@@ -166,11 +176,27 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       final existingTask = state.firstWhere((t) => t.id == task.id);
       final reminderTimeChanged = existingTask.reminderTime != task.reminderTime;
       
+      print('=== タスク更新開始 ===');
+      print('タスクID: ${task.id}');
+      print('タスクタイトル: ${task.title}');
+      print('更新前の期限日: ${existingTask.dueDate}');
+      print('更新後の期限日: ${task.dueDate}');
+      print('更新前のリマインダー時間: ${existingTask.reminderTime}');
+      print('更新後のリマインダー時間: ${task.reminderTime}');
+      print('更新前のステータス: ${existingTask.status}');
+      print('更新後のステータス: ${task.status}');
+      
       await _taskBox!.put(task.id, task);
       await _taskBox!.flush(); // データの永続化を確実にする
+      
+      print('Hiveへの保存完了');
+      
       final newTasks = state.map((t) => t.id == task.id ? task : t).toList();
       newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       state = newTasks;
+      
+      print('状態更新完了');
+      print('=== タスク更新完了 ===');
       
       // リマインダー時間または期限日が変更された場合のみ通知を更新
       final dueDateChanged = existingTask.dueDate != task.dueDate;
@@ -278,6 +304,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       final updatedTask = task.copyWith(
         status: TaskStatus.inProgress,
+        dueDate: task.dueDate, // 期限日を保持
+        reminderTime: task.reminderTime, // リマインダー時間を保持
       );
       
       await updateTask(updatedTask);

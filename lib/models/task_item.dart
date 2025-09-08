@@ -261,6 +261,8 @@ class TaskItem extends HiveObject {
     int? completedSubTasksCount,
     int? totalSubTasksCount,
     String? assignedTo,
+    bool clearDueDate = false,
+    bool clearReminderTime = false,
   }) {
     print('=== copyWith呼び出し ===');
     print('元のdueDate: ${this.dueDate}');
@@ -274,8 +276,8 @@ class TaskItem extends HiveObject {
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      dueDate: dueDate, // nullを明示的に設定できるように修正
-      reminderTime: reminderTime, // nullを明示的に設定できるように修正
+      dueDate: clearDueDate ? null : (dueDate ?? this.dueDate), // 期限日の適切な処理
+      reminderTime: clearReminderTime ? null : (reminderTime ?? this.reminderTime), // リマインダー時間の適切な処理
       priority: priority ?? this.priority,
       status: status ?? this.status,
       tags: tags ?? this.tags,

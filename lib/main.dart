@@ -191,6 +191,12 @@ void _initializeAdvancedFeatures() {
         final settingsService = SettingsService.instance;
         final linkRepository = LinkRepository();
         await linkRepository.initialize();
+        
+        // バックアップ完了時のコールバックを設定
+        BackupService.setOnBackupCompleted((backupPath) {
+          _showBackupCompletedNotification(backupPath);
+        });
+        
         final backupService = BackupService(
           linkRepository: linkRepository,
           settingsService: settingsService,
@@ -353,6 +359,25 @@ Future<bool> _checkSingleInstance() async {
   } catch (e) {
     print('重複起動チェックエラー: $e');
     return true; // エラーの場合は起動を許可
+  }
+}
+
+/// バックアップ完了通知を表示
+void _showBackupCompletedNotification(String backupPath) {
+  try {
+    // Windows通知を表示
+    WindowsNotificationService.showToastNotification(
+      '自動バックアップ完了',
+      'データのバックアップが完了しました。\n保存場所: ${backupPath.split('\\').last}',
+    );
+    
+    // バックアップフォルダを開く
+    final backupDir = File(backupPath).parent.path;
+    Process.run('explorer', [backupDir]);
+    
+    print('バックアップ完了通知を表示: $backupPath');
+  } catch (e) {
+    print('バックアップ完了通知エラー: $e');
   }
 }
 

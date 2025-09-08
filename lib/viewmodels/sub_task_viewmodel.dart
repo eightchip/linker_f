@@ -69,6 +69,7 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
         await _loadSubTasks();
       }
       await _subTaskBox!.put(subTask.id, subTask);
+      await _subTaskBox!.flush(); // データの永続化を確実にする
       final newSubTasks = [...state, subTask];
       newSubTasks.sort((a, b) => a.order.compareTo(b.order));
       state = newSubTasks;
@@ -104,6 +105,7 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
         await _loadSubTasks();
       }
       await _subTaskBox!.put(subTask.id, subTask);
+      await _subTaskBox!.flush(); // データの永続化を確実にする
       final newSubTasks = state.map((t) => t.id == subTask.id ? subTask : t).toList();
       newSubTasks.sort((a, b) => a.order.compareTo(b.order));
       state = newSubTasks;
@@ -124,6 +126,7 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
         await _loadSubTasks();
       }
       await _subTaskBox!.delete(subTaskId);
+      await _subTaskBox!.flush(); // データの永続化を確実にする
       state = state.where((task) => task.id != subTaskId).toList();
       
       if (kDebugMode) {

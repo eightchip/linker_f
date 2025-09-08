@@ -214,11 +214,18 @@ class WindowsNotificationService {
   // タスクリマインダー通知をスケジュール（シンプルで確実な方法）
   static Future<void> scheduleTaskReminder(TaskItem task) async {
     if (task.reminderTime == null) return;
+    
+    // 完了済みや削除済みのタスクはリマインダーを発火しない
+    if (task.status == TaskStatus.completed || task.status == TaskStatus.cancelled) {
+      print('完了済み/削除済みタスクのためリマインダーをスキップ: ${task.title}');
+      return;
+    }
 
     try {
       print('=== タスクリマインダー設定開始 ===');
       print('タスク: ${task.title}');
       print('リマインダー時間: ${task.reminderTime}');
+      print('ステータス: ${task.status}');
       
       final now = DateTime.now();
       final reminderTime = task.reminderTime!;
@@ -578,6 +585,11 @@ class WindowsNotificationService {
 
     for (final task in tasks) {
       if (task.reminderTime == null) continue;
+      
+      // 完了済みや削除済みのタスクはリマインダーを発火しない
+      if (task.status == TaskStatus.completed || task.status == TaskStatus.cancelled) {
+        continue;
+      }
 
       final reminderTime = task.reminderTime!;
 

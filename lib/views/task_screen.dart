@@ -127,35 +127,68 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       appBar: AppBar(
         title: const Text('タスク管理'),
         actions: [
-          IconButton(
-            onPressed: () => _showCalendarScreen(),
-            icon: const Icon(Icons.calendar_month),
-            tooltip: 'カレンダー表示',
-          ),
-          IconButton(
-            onPressed: () => _showTestNotification(),
-            icon: const Icon(Icons.notifications),
-            tooltip: '通知テスト',
-          ),
-          IconButton(
-            onPressed: () => _showTestReminderNotification(),
-            icon: const Icon(Icons.schedule),
-            tooltip: 'リマインダーテスト',
-          ),
-          IconButton(
-            onPressed: () => _showTestReminderInOneMinute(),
-            icon: const Icon(Icons.timer),
-            tooltip: '1分後リマインダーテスト',
-          ),
+          // 新しいタスク作成ボタンは常に表示
           IconButton(
             onPressed: () => _showTaskDialog(),
             icon: const Icon(Icons.add),
             tooltip: '新しいタスク',
           ),
-          IconButton(
-            onPressed: () => _exportTasksToCsv(),
-            icon: const Icon(Icons.download),
-            tooltip: 'CSV出力',
+          // 3点ドットメニューに統合
+          PopupMenuButton<String>(
+            onSelected: (value) => _handleMenuAction(value),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'calendar',
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('カレンダー表示'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export',
+                child: Row(
+                  children: [
+                    Icon(Icons.download, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('CSV出力'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'test_notification',
+                child: Row(
+                  children: [
+                    Icon(Icons.notifications, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('通知テスト'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'test_reminder',
+                child: Row(
+                  children: [
+                    Icon(Icons.schedule, color: Colors.purple),
+                    SizedBox(width: 8),
+                    Text('リマインダーテスト'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'test_reminder_1min',
+                child: Row(
+                  children: [
+                    Icon(Icons.timer, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('1分後リマインダーテスト'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -653,6 +686,39 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         leading: _buildPriorityIndicator(task.priority),
         title: Row(
           children: [
+            // 期限日を左側に適度に目立つデザインで配置（固定幅でタイトル位置を統一）
+            Container(
+              width: 60, // 固定幅を設定
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: task.dueDate != null 
+                  ? (task.isOverdue ? Colors.red.shade50 : Colors.blue.shade50)
+                  : Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: task.dueDate != null 
+                    ? (task.isOverdue ? Colors.red.shade400 : Colors.blue.shade400)
+                    : Colors.amber.shade400,
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  task.dueDate != null 
+                    ? DateFormat('MM/dd').format(task.dueDate!)
+                    : '未設定',
+                  style: TextStyle(
+                    color: task.dueDate != null 
+                      ? (task.isOverdue ? Colors.red.shade800 : Colors.blue.shade800)
+                      : Colors.amber.shade800,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 task.title,
@@ -672,34 +738,20 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (task.description != null)
-              Text(
-                task.description!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+            // 説明フィールドは非表示
             const SizedBox(height: 2),
-            // 期限とリマインダー情報を1行に表示
-            Row(
-              children: [
-                if (task.dueDate != null)
+            // リマインダー情報のみ表示（期限日はタイトル行に移動）
+            if (task.reminderTime != null)
+              Row(
+                children: [
                   Text(
-                    '期限: ${DateFormat('MM/dd').format(task.dueDate!)}',
+                    'リマインド: ${DateFormat('MM/dd HH:mm').format(task.reminderTime!)}',
                     style: TextStyle(
-                      color: task.isOverdue ? Colors.red : Colors.grey[600],
-                      fontSize: 11,
+                      color: const Color.fromARGB(255, 255, 102, 0),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                if (task.reminderTime != null) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    'リマ: ${DateFormat('MM/dd HH:mm').format(task.reminderTime!)}',
-                    style: TextStyle(
-                      color: Colors.orange[600],
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
                 if (task.estimatedMinutes != null) ...[
                   const SizedBox(width: 8),
                   Text(
@@ -716,32 +768,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     '依頼先: ${task.assignedTo}',
                     style: TextStyle(
                       color: Colors.blue[600],
-                      fontSize: 11,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ],
             ),
-            // タグを1行に表示（空白を削減）
-            if (task.tags.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Wrap(
-                  spacing: 2,
-                  runSpacing: 0,
-                  children: task.tags.map((tag) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      tag,
-                      style: const TextStyle(fontSize: 9, color: Colors.grey),
-                    ),
-                )).toList(),
-                ),
-              ),
+            // タグフィールドは削除
           ],
         ),
         trailing: Row(
@@ -936,6 +970,26 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         parentTaskTitle: task.title,
       ),
     );
+  }
+
+  void _handleMenuAction(String action) {
+    switch (action) {
+      case 'calendar':
+        _showCalendarScreen();
+        break;
+      case 'export':
+        _exportTasksToCsv();
+        break;
+      case 'test_notification':
+        _showTestNotification();
+        break;
+      case 'test_reminder':
+        _showTestReminderNotification();
+        break;
+      case 'test_reminder_1min':
+        _showTestReminderInOneMinute();
+        break;
+    }
   }
 
   void _handleTaskAction(String action, TaskItem task) {
