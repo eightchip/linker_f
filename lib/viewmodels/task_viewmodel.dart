@@ -419,6 +419,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     String? recurringReminderPattern,
     DateTime? nextReminderTime,
     int reminderCount = 0,
+    String? source,
+    String? externalId,
   }) {
     return TaskItem(
       id: _uuid.v4(),
@@ -439,6 +441,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       recurringReminderPattern: recurringReminderPattern,
       nextReminderTime: nextReminderTime,
       reminderCount: reminderCount,
+      source: source,
+      externalId: externalId,
     );
   }
 
@@ -793,5 +797,101 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     return originalReminderTime;
   }
 
+  // Google Calendar同期関連のメソッド
+  
+  /// Google Calendarから同期したタスクを追加
+  Future<void> syncTasksFromGoogleCalendar(List<TaskItem> calendarTasks) async {
+    try {
+      if (kDebugMode) {
+        print('Google Calendar同期開始: ${calendarTasks.length}件のタスク');
+      }
+      
+      final existingTasks = state;
+      final existingExternalIds = existingTasks
+          .where((task) => task.source == 'google_calendar' && task.externalId != null)
+          .map((task) => task.externalId!)
+          .toSet();
+      
+      int addedCount = 0;
+      int updatedCount = 0;
+      
+      for (final calendarTask in calendarTasks) {
+        if (calendarTask.externalId == null) continue;
+        
+        // 既存のタスクを検索
+        final existingTaskIndex = existingTasks.indexWhere(
+          (task) => task.source == 'google_calendar' && task.externalId == calendarTask.externalId
+        );
+        
+        if (existingTaskIndex >= 0) {
+          // 既存タスクを更新
+          final existingTask = existingTasks[existingTaskIndex];
+          final updatedTask = existingTask.copyWith(
+            title: calendarTask.title,
+            description: calendarTask.description,
+            dueDate: calendarTask.dueDate,
+            reminderTime: calendarTask.reminderTime,
+            priority: calendarTask.priority,
+            estimatedMinutes: calendarTask.estimatedMinutes,
+            assignedTo: calendarTask.assignedTo,
+          );
+          
+          await updateTask(updatedTask);
+          updatedCount++;
+          
+          if (kDebugMode) {
+            print('Google Calendarタスク更新: ${calendarTask.title}');
+          }
+        } else {
+          // 新しいタスクを追加
+          await addTask(calendarTask);
+          addedCount++;
+          
+          if (kDebugMode) {
+            print('Google Calendarタスク追加: ${calendarTask.title}');
+          }
+        }
+      }
+      
+      // 削除されたイベントのタスクを削除
+      final currentExternalIds = calendarTasks
+          .where((task) => task.externalId != null)
+          .map((task) => task.externalId!)
+          .toSet();
+      
+      final tasksToDelete = existingTasks.where((task) =>
+          task.source == 'google_calendar' &&
+          task.externalId != null &&
+          !currentExternalIds.contains(task.externalId)
+      ).toList();
+      
+      for (final taskToDelete in tasksToDelete) {
+        await deleteTask(taskToDelete.id);
+        if (kDebugMode) {
+          print('Google Calendarタスク削除: ${taskToDelete.title}');
+        }
+      }
+      
+      if (kDebugMode) {
+        print('Google Calendar同期完了: 追加${addedCount}件, 更新${updatedCount}件, 削除${tasksToDelete.length}件');
+      }
+    } catch (e) {
+      print('Google Calendar同期エラー: $e');
+      rethrow;
+    }
+  }
+  
+  /// Google Calendarタスクを取得
+  List<TaskItem> getGoogleCalendarTasks() {
+    return state.where((task) => task.source == 'google_calendar').toList();
+  }
+  
+  /// 手動でGoogle Calendarタスクを削除
+  Future<void> removeGoogleCalendarTask(String taskId) async {
+    final task = state.firstWhere((t) => t.id == taskId);
+    if (task.source == 'google_calendar') {
+      await deleteTask(taskId);
+    }
+  }
 
 }

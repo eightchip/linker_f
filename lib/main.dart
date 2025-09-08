@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:io';
+import 'dart:async';
 import 'models/link_item.dart';
 import 'models/group.dart';
 import 'models/task_item.dart';
@@ -17,7 +18,9 @@ import 'services/system_tray_service.dart';
 import 'services/migration_service.dart';
 import 'services/settings_service.dart';
 import 'services/backup_service.dart';
+import 'services/google_calendar_service.dart';
 import 'repositories/link_repository.dart';
+import 'viewmodels/task_viewmodel.dart';
 
 
 void main() async {
@@ -216,6 +219,9 @@ void _initializeAdvancedFeatures() {
         await WindowsNotificationService.restoreReminders(tasks);
       }
       
+      // Google Calendar自動同期の初期化
+      await _initializeGoogleCalendarSync();
+      
       print('高度な機能初期化完了');
     } catch (e) {
       print('高度な機能初期化エラー: $e');
@@ -379,5 +385,89 @@ void _showBackupCompletedNotification(String backupPath) {
   } catch (e) {
     print('バックアップ完了通知エラー: $e');
   }
+}
+
+/// Google Calendar自動同期の初期化
+Future<void> _initializeGoogleCalendarSync() async {
+  try {
+    final settingsService = SettingsService.instance;
+    
+    // Google Calendar連携が有効でない場合はスキップ
+    if (!settingsService.googleCalendarEnabled) {
+      print('Google Calendar連携が無効のため、同期をスキップします');
+      return;
+    }
+    
+    // Google Calendarサービスの初期化
+    final googleCalendarService = GoogleCalendarService();
+    final initialized = await googleCalendarService.initialize();
+    
+    if (!initialized) {
+      print('Google Calendarサービスの初期化に失敗しました');
+      return;
+    }
+    
+    print('Google Calendar自動同期を開始します');
+    
+    // 初回同期を実行
+    await _performGoogleCalendarSync(googleCalendarService);
+    
+    // 自動同期が有効な場合は、定期的な同期を開始
+    if (settingsService.googleCalendarAutoSync) {
+      _startGoogleCalendarAutoSync(googleCalendarService);
+    }
+    
+  } catch (e) {
+    print('Google Calendar自動同期初期化エラー: $e');
+  }
+}
+
+/// Google Calendar同期を実行
+Future<void> _performGoogleCalendarSync(GoogleCalendarService googleCalendarService) async {
+  try {
+    print('Google Calendar同期を実行中...');
+    
+    // 過去30日から未来30日までのイベントを取得
+    final startTime = DateTime.now().subtract(const Duration(days: 30));
+    final endTime = DateTime.now().add(const Duration(days: 30));
+    
+    final calendarTasks = await googleCalendarService.syncEvents(
+      startTime: startTime,
+      endTime: endTime,
+      maxResults: 100,
+    );
+    
+    // TaskViewModelに同期
+    // 注意: ここでは直接TaskViewModelにアクセスできないため、
+    // 実際の実装ではProviderコンテキストが必要です
+    
+    print('Google Calendar同期完了: ${calendarTasks.length}件のタスクを取得');
+    
+    // TODO: 自動同期でもタスクを保存する必要があります
+    // 現在は手動同期でのみタスクが保存されます
+    
+    // 最終同期時刻を更新
+    final settingsService = SettingsService.instance;
+    await settingsService.setGoogleCalendarLastSync(DateTime.now());
+    
+  } catch (e) {
+    print('Google Calendar同期エラー: $e');
+  }
+}
+
+/// Google Calendar自動同期を開始
+void _startGoogleCalendarAutoSync(GoogleCalendarService googleCalendarService) {
+  final settingsService = SettingsService.instance;
+  final syncInterval = settingsService.googleCalendarSyncInterval;
+  
+  print('Google Calendar自動同期を開始: ${syncInterval}分間隔');
+  
+  Timer.periodic(Duration(minutes: syncInterval), (timer) async {
+    try {
+      await _performGoogleCalendarSync(googleCalendarService);
+    } catch (e) {
+      print('Google Calendar自動同期エラー: $e');
+    }
+  });
 }
 

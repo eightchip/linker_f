@@ -16,6 +16,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import '../services/backup_service.dart';
 import '../repositories/link_repository.dart';
+import '../services/google_calendar_service.dart';
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService.instance;
@@ -34,6 +35,9 @@ class SettingsState {
   final int recentItemsCount;
   final bool isLoading;
   final String? error;
+  final bool googleCalendarEnabled;
+  final int googleCalendarSyncInterval;
+  final bool googleCalendarAutoSync;
 
   SettingsState({
     this.autoBackup = true,
@@ -43,6 +47,9 @@ class SettingsState {
     this.recentItemsCount = 10,
     this.isLoading = false,
     this.error,
+    this.googleCalendarEnabled = false,
+    this.googleCalendarSyncInterval = 60,
+    this.googleCalendarAutoSync = false,
   });
 
   SettingsState copyWith({
@@ -53,6 +60,9 @@ class SettingsState {
     int? recentItemsCount,
     bool? isLoading,
     String? error,
+    bool? googleCalendarEnabled,
+    int? googleCalendarSyncInterval,
+    bool? googleCalendarAutoSync,
   }) {
     return SettingsState(
       autoBackup: autoBackup ?? this.autoBackup,
@@ -62,6 +72,9 @@ class SettingsState {
       recentItemsCount: recentItemsCount ?? this.recentItemsCount,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
+      googleCalendarEnabled: googleCalendarEnabled ?? this.googleCalendarEnabled,
+      googleCalendarSyncInterval: googleCalendarSyncInterval ?? this.googleCalendarSyncInterval,
+      googleCalendarAutoSync: googleCalendarAutoSync ?? this.googleCalendarAutoSync,
     );
   }
 }
@@ -84,6 +97,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         showNotifications: _service.showNotifications,
         notificationSound: _service.notificationSound,
         recentItemsCount: _service.recentItemsCount,
+        googleCalendarEnabled: _service.googleCalendarEnabled,
+        googleCalendarSyncInterval: _service.googleCalendarSyncInterval,
+        googleCalendarAutoSync: _service.googleCalendarAutoSync,
         isLoading: false,
       );
     } catch (e) {
@@ -117,6 +133,22 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setRecentItemsCount(int value) async {
     await _service.setRecentItemsCount(value);
     state = state.copyWith(recentItemsCount: value);
+  }
+
+  // Google Calendar関連のメソッド
+  Future<void> setGoogleCalendarEnabled(bool value) async {
+    await _service.setGoogleCalendarEnabled(value);
+    state = state.copyWith(googleCalendarEnabled: value);
+  }
+
+  Future<void> setGoogleCalendarSyncInterval(int value) async {
+    await _service.setGoogleCalendarSyncInterval(value);
+    state = state.copyWith(googleCalendarSyncInterval: value);
+  }
+
+  Future<void> setGoogleCalendarAutoSync(bool value) async {
+    await _service.setGoogleCalendarAutoSync(value);
+    state = state.copyWith(googleCalendarAutoSync: value);
   }
 
   Future<void> resetToDefaults() async {
@@ -230,6 +262,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildMenuSection('通知', [
           _buildMenuItem(context, ref, '通知設定', Icons.notifications, 'notifications'),
         ]),
+        _buildMenuSection('連携', [
+          _buildMenuItem(context, ref, 'Google Calendar', Icons.calendar_today, 'google_calendar'),
+        ]),
         _buildMenuSection('パフォーマンス', [
           _buildMenuItem(context, ref, 'キャッシュ管理', Icons.memory, 'cache'),
         ]),
@@ -310,6 +345,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return _buildExportSection(context, ref);
       case 'notifications':
         return _buildNotificationSection(settingsState, settingsNotifier);
+      case 'google_calendar':
+        return _buildGoogleCalendarSection(settingsState, settingsNotifier);
       case 'cache':
         return _buildCacheSection(ref);
       case 'reset':
@@ -1491,6 +1528,313 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ],
     );
   }
+
+  Widget _buildGoogleCalendarSection(SettingsState settingsState, SettingsNotifier settingsNotifier) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Google Calendar連携', Icons.calendar_today),
+        const SizedBox(height: 16),
+        
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Google Calendar連携の有効/無効
+                SwitchListTile(
+                  title: const Text('Google Calendar連携'),
+                  subtitle: const Text('Google Calendarのイベントをタスクとして同期します'),
+                  value: settingsState.googleCalendarEnabled,
+                  onChanged: (value) {
+                    settingsNotifier.setGoogleCalendarEnabled(value);
+                  },
+                  secondary: const Icon(Icons.calendar_today),
+                ),
+                
+                if (settingsState.googleCalendarEnabled) ...[
+                  const Divider(),
+                  
+                  // 自動同期の有効/無効
+                  SwitchListTile(
+                    title: const Text('自動同期'),
+                    subtitle: const Text('定期的にGoogle Calendarと同期します'),
+                    value: settingsState.googleCalendarAutoSync,
+                    onChanged: (value) {
+                      settingsNotifier.setGoogleCalendarAutoSync(value);
+                    },
+                    secondary: const Icon(Icons.sync),
+                  ),
+                  
+                  if (settingsState.googleCalendarAutoSync) ...[
+                    const Divider(),
+                    
+                    // 同期間隔設定
+                    _buildSliderSetting(
+                      title: '同期間隔',
+                      description: 'Google Calendarとの同期間隔を設定します',
+                      value: settingsState.googleCalendarSyncInterval.toDouble(),
+                      min: 15,
+                      max: 240,
+                      divisions: 15,
+                      onChanged: (value) {
+                        settingsNotifier.setGoogleCalendarSyncInterval(value.round());
+                      },
+                      formatValue: (value) => '${value.round()}分',
+                    ),
+                  ],
+                  
+                  const Divider(),
+                  
+                  // OAuth2認証ボタン
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final googleCalendarService = GoogleCalendarService();
+                          final success = await googleCalendarService.startOAuth2Auth();
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('OAuth2認証が完了しました'),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('認証の開始に失敗しました'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('エラー: $e'),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.login),
+                      label: const Text('OAuth2認証を開始'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // 手動同期ボタン
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final googleCalendarService = GoogleCalendarService();
+                          await googleCalendarService.initialize();
+                          
+                          if (googleCalendarService.isInitialized) {
+                            final tasks = await googleCalendarService.syncEvents();
+                            
+                            // 取得したタスクをデータベースに保存
+                            final taskViewModel = ref.read(taskViewModelProvider.notifier);
+                            int savedCount = 0;
+                            
+                            for (final task in tasks) {
+                              try {
+                                // 既存のタスクかどうかチェック（externalIdで判定）
+                                final existingTasks = taskViewModel.state.where(
+                                  (t) => t.externalId == task.externalId
+                                ).toList();
+                                
+                                if (existingTasks.isEmpty) {
+                                  // 新規タスクとして追加
+                                  final newTask = taskViewModel.createTask(
+                                    title: task.title,
+                                    description: task.description,
+                                    dueDate: task.dueDate,
+                                    reminderTime: task.reminderTime,
+                                    priority: task.priority,
+                                    tags: task.tags,
+                                    estimatedMinutes: task.estimatedMinutes,
+                                    assignedTo: task.assignedTo,
+                                    isRecurringReminder: task.isRecurringReminder,
+                                    recurringReminderPattern: task.recurringReminderPattern,
+                                    source: task.source,
+                                    externalId: task.externalId,
+                                  );
+                                  
+                                  // タスクをデータベースに追加
+                                  await taskViewModel.addTask(newTask);
+                                  savedCount++;
+                                }
+                              } catch (e) {
+                                print('タスク保存エラー: ${task.title} - $e');
+                              }
+                            }
+                            
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('${tasks.length}件のタスクを取得し、${savedCount}件を新規追加しました'),
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('OAuth2認証を先に実行してください'),
+                                backgroundColor: Colors.orange,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('同期エラー: $e'),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.sync),
+                      label: const Text('今すぐ同期'),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // 設定情報
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              '設定方法',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '1. Google Cloud Consoleでプロジェクトを作成\n'
+                          '2. Calendar APIを有効化\n'
+                          '3. サービスアカウントを作成\n'
+                          '4. 認証情報ファイルをダウンロード\n'
+                          '5. ファイルをアプリフォルダに配置',
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSliderSetting({
+    required String title,
+    required String description,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required ValueChanged<double> onChanged,
+    required String Function(double) formatValue,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.blue.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  description,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Slider(
+          value: value,
+          min: min,
+          max: max,
+          divisions: divisions,
+          onChanged: onChanged,
+          label: formatValue(value),
+        ),
+        Center(
+          child: Text(
+            formatValue(value),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.blue.shade700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
 }
 
 // 設定セクション管理用プロバイダー

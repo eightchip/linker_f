@@ -83,6 +83,13 @@ dependencies:
   table_calendar: ^3.0.9
   timezone: ^0.9.2
   
+  # Google Calendar integration
+  googleapis: ^13.1.0
+  googleapis_auth: ^1.5.0
+  http: ^1.2.0
+  crypto: ^3.0.3
+  jose: ^0.3.4
+  
 
 dev_dependencies:
   flutter_test:

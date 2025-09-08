@@ -155,6 +155,12 @@ class TaskItem extends HiveObject {
   @HiveField(22)
   String? assignedTo; // 依頼先（部下の名前）
 
+  @HiveField(23)
+  String? source; // タスクのソース（'manual', 'google_calendar'など）
+
+  @HiveField(24)
+  String? externalId; // 外部システムのID（Google CalendarのイベントIDなど）
+
   TaskItem({
     required this.id,
     required this.title,
@@ -179,6 +185,8 @@ class TaskItem extends HiveObject {
     this.completedSubTasksCount = 0,
     this.totalSubTasksCount = 0,
     this.assignedTo,
+    this.source,
+    this.externalId,
   });
 
   Map<String, dynamic> toJson() {
@@ -206,6 +214,8 @@ class TaskItem extends HiveObject {
       'completedSubTasksCount': completedSubTasksCount,
       'totalSubTasksCount': totalSubTasksCount,
       'assignedTo': assignedTo,
+      'source': source,
+      'externalId': externalId,
     };
   }
 
@@ -234,6 +244,8 @@ class TaskItem extends HiveObject {
       completedSubTasksCount: json['completedSubTasksCount'] ?? 0,
       totalSubTasksCount: json['totalSubTasksCount'] ?? 0,
       assignedTo: json['assignedTo'],
+      source: json['source'],
+      externalId: json['externalId'],
     );
   }
 
@@ -261,6 +273,8 @@ class TaskItem extends HiveObject {
     int? completedSubTasksCount,
     int? totalSubTasksCount,
     String? assignedTo,
+    String? source,
+    String? externalId,
     bool clearDueDate = false,
     bool clearReminderTime = false,
   }) {
@@ -296,6 +310,8 @@ class TaskItem extends HiveObject {
       completedSubTasksCount: completedSubTasksCount ?? this.completedSubTasksCount,
       totalSubTasksCount: totalSubTasksCount ?? this.totalSubTasksCount,
       assignedTo: assignedTo ?? this.assignedTo,
+      source: source ?? this.source,
+      externalId: externalId ?? this.externalId,
     );
     
     print('copyWith結果のdueDate: ${result.dueDate}');

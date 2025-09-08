@@ -42,6 +42,10 @@ class SettingsService {
   static const String _taskFilterPriorityKey = 'taskFilterPriority';
   static const String _taskSortOrdersKey = 'taskSortOrders';
   static const String _taskSearchQueryKey = 'taskSearchQuery';
+  static const String _googleCalendarEnabledKey = 'googleCalendarEnabled';
+  static const String _googleCalendarSyncIntervalKey = 'googleCalendarSyncInterval';
+  static const String _googleCalendarLastSyncKey = 'googleCalendarLastSync';
+  static const String _googleCalendarAutoSyncKey = 'googleCalendarAutoSync';
 
   // デフォルト値
   static const bool _defaultDarkMode = false;
@@ -60,6 +64,9 @@ class SettingsService {
   static const List<String> _defaultTaskFilterStatuses = ['all'];
   static const String _defaultTaskFilterPriority = 'all';
   static const List<Map<String, String>> _defaultTaskSortOrders = [{'field': 'dueDate', 'order': 'asc'}];
+  static const bool _defaultGoogleCalendarEnabled = false;
+  static const int _defaultGoogleCalendarSyncInterval = 60; // 分
+  static const bool _defaultGoogleCalendarAutoSync = false;
 
   /// 初期化（リトライ機能付き）
   Future<void> initialize() async {
@@ -470,5 +477,48 @@ class SettingsService {
   Future<void> dispose() async {
     await _settingsBox.close();
     await _defaultSettingsBox.close();
+  }
+
+  // Google Calendar関連の設定
+  
+  /// Google Calendar連携が有効かどうか
+  bool get googleCalendarEnabled {
+    return _settingsBox.get(_googleCalendarEnabledKey, defaultValue: _defaultGoogleCalendarEnabled);
+  }
+  
+  /// Google Calendar連携の有効/無効を設定
+  Future<void> setGoogleCalendarEnabled(bool value) async {
+    await _settingsBox.put(_googleCalendarEnabledKey, value);
+  }
+  
+  /// Google Calendar同期間隔（分）
+  int get googleCalendarSyncInterval {
+    return _settingsBox.get(_googleCalendarSyncIntervalKey, defaultValue: _defaultGoogleCalendarSyncInterval);
+  }
+  
+  /// Google Calendar同期間隔を設定
+  Future<void> setGoogleCalendarSyncInterval(int value) async {
+    await _settingsBox.put(_googleCalendarSyncIntervalKey, value);
+  }
+  
+  /// Google Calendar自動同期が有効かどうか
+  bool get googleCalendarAutoSync {
+    return _settingsBox.get(_googleCalendarAutoSyncKey, defaultValue: _defaultGoogleCalendarAutoSync);
+  }
+  
+  /// Google Calendar自動同期の有効/無効を設定
+  Future<void> setGoogleCalendarAutoSync(bool value) async {
+    await _settingsBox.put(_googleCalendarAutoSyncKey, value);
+  }
+  
+  /// Google Calendar最終同期時刻
+  DateTime? get googleCalendarLastSync {
+    final timestamp = _settingsBox.get(_googleCalendarLastSyncKey);
+    return timestamp != null ? DateTime.fromMillisecondsSinceEpoch(timestamp) : null;
+  }
+  
+  /// Google Calendar最終同期時刻を設定
+  Future<void> setGoogleCalendarLastSync(DateTime value) async {
+    await _settingsBox.put(_googleCalendarLastSyncKey, value.millisecondsSinceEpoch);
   }
 }
