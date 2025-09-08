@@ -240,22 +240,33 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               tooltip: '選択したタスクを削除',
             ),
           ] else ...[
-            // 選択モード開始ボタン
-            IconButton(
-              onPressed: _toggleSelectionMode,
-              icon: const Icon(Icons.checklist),
-              tooltip: '一括選択モード',
-            ),
-            // 新しいタスク作成ボタン
-            IconButton(
-              onPressed: () => _showTaskDialog(),
-              icon: const Icon(Icons.add),
-              tooltip: '新しいタスク',
-            ),
-          // 3点ドットメニューに統合
-          PopupMenuButton<String>(
+            // 3点ドットメニューに統合
+            PopupMenuButton<String>(
             onSelected: (value) => _handleMenuAction(value),
             itemBuilder: (context) => [
+              // 新しいタスク作成
+              PopupMenuItem(
+                value: 'add_task',
+                child: Row(
+                  children: [
+                    Icon(Icons.add, color: Colors.green, size: 20),
+                    SizedBox(width: 8),
+                    Text('新しいタスク'),
+                  ],
+                ),
+              ),
+              // 一括選択モード
+              PopupMenuItem(
+                value: 'bulk_select',
+                child: Row(
+                  children: [
+                    Icon(Icons.checklist, color: Colors.blue, size: 20),
+                    SizedBox(width: 8),
+                    Text('一括選択モード'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'calendar',
                 child: Row(
@@ -1112,6 +1123,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
   void _handleMenuAction(String action) {
     switch (action) {
+      case 'add_task':
+        _showTaskDialog();
+        break;
+      case 'bulk_select':
+        _toggleSelectionMode();
+        break;
       case 'calendar':
         _showCalendarScreen();
         break;

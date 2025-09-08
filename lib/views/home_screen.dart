@@ -691,7 +691,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         value: 'add_group',
                         child: Row(
                           children: [
-                            Icon(Icons.add, size: 20),
+                            Icon(Icons.add, color: Colors.green, size: 20),
                             SizedBox(width: 8),
                             Text('グループを追加 (Ctrl+N)'),
                           ],
@@ -702,7 +702,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         value: 'search',
                         child: Row(
                           children: [
-                            Icon(Icons.search, size: 20),
+                            Icon(Icons.search, color: Colors.blue, size: 20),
                             SizedBox(width: 8),
                             Text('検索 (Ctrl+F)'),
                           ],
@@ -713,7 +713,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         value: 'task',
                         child: Row(
                           children: [
-                            Icon(Icons.task_alt, size: 20),
+                            Icon(Icons.task_alt, color: Colors.orange, size: 20),
                             SizedBox(width: 8),
                             Text('タスク管理 (Ctrl+T）'),
                           ],
@@ -725,7 +725,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Row(
                           children: [
                             Icon(Icons.push_pin, 
-                              color: _showRecent ? Colors.amber : Colors.grey, 
+                              color: _showRecent ? Colors.amber : Colors.purple, 
                               size: 20
                             ),
                             SizedBox(width: 8),
@@ -738,7 +738,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         value: 'memo_bulk_edit',
                         child: Row(
                           children: [
-                            Icon(Icons.notes, size: 20),
+                            Icon(Icons.notes, color: Colors.teal, size: 20),
                             SizedBox(width: 8),
                             Text('メモ一括編集 (Ctrl+E)'),
                           ],
@@ -749,7 +749,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         value: 'shortcut_help',
                         child: Row(
                           children: [
-                            Icon(Icons.keyboard, size: 20),
+                            Icon(Icons.keyboard, color: Colors.indigo, size: 20),
                             SizedBox(width: 8),
                             Text('ショートカットキー (F1)'),
                           ],
@@ -760,7 +760,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         value: 'settings',
                         child: Row(
                           children: [
-                            Icon(Icons.settings, size: 20),
+                            Icon(Icons.settings, color: Colors.grey, size: 20),
                             SizedBox(width: 8),
                             Text('設定 (Ctrl+Shift+S)'),
                           ],
