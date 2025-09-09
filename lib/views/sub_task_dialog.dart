@@ -48,9 +48,9 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
         // 編集モード：既存のサブタスクを更新
         final updatedSubTask = _editingSubTask!.copyWith(
           title: _titleController.text.trim(),
-          description: _titleController.text.trim().isEmpty 
+          description: _descriptionController.text.trim().isEmpty 
               ? null 
-              : _titleController.text.trim(),
+              : _descriptionController.text.trim(),
           estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
               ? int.tryParse(_estimatedMinutesController.text)
               : null,
@@ -169,7 +169,9 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
     final completedCount = subTasks.where((subTask) => subTask.isCompleted).length;
     final totalCount = subTasks.length;
 
-    return Dialog(
+    return PopScope(
+      canPop: false, // 戻る操作を無効化
+      child: Dialog(
       child: Container(
         width: 600,
         height: 500,
@@ -381,6 +383,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
           ],
         ),
       ),
+    ),
     );
   }
 }

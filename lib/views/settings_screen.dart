@@ -17,6 +17,7 @@ import 'package:intl/intl.dart';
 import '../services/backup_service.dart';
 import '../repositories/link_repository.dart';
 import '../services/google_calendar_service.dart';
+import '../services/snackbar_service.dart';
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService.instance;
@@ -821,21 +822,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             final backupFile = await backupService.performManualBackup();
                             
                             if (backupFile != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('手動バックアップが完了しました: ${backupFile.path}'),
-                                  backgroundColor: Colors.green,
-                                  duration: const Duration(seconds: 3),
-                                ),
+                              SnackBarService.showSuccess(
+                                context,
+                                '手動バックアップが完了しました: ${backupFile.path}',
                               );
                             }
                           } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('バックアップエラー: $e'),
-                                backgroundColor: Colors.red,
-                                duration: const Duration(seconds: 5),
-                              ),
+                            SnackBarService.showError(
+                              context,
+                              'バックアップエラー: $e',
                             );
                           }
                         },
@@ -1596,29 +1591,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           final googleCalendarService = GoogleCalendarService();
                           final success = await googleCalendarService.startOAuth2Auth();
                           if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('OAuth2認証が完了しました'),
-                                backgroundColor: Colors.green,
-                                duration: Duration(seconds: 3),
-                              ),
+                            SnackBarService.showSuccess(
+                              context,
+                              'OAuth2認証が完了しました',
                             );
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('認証の開始に失敗しました'),
-                                backgroundColor: Colors.red,
-                                duration: Duration(seconds: 3),
-                              ),
+                            SnackBarService.showError(
+                              context,
+                              '認証の開始に失敗しました',
                             );
                           }
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('エラー: $e'),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 3),
-                            ),
+                          SnackBarService.showError(
+                            context,
+                            'エラー: $e',
                           );
                         }
                       },
@@ -1682,28 +1668,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               }
                             }
                             
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${tasks.length}件のタスクを取得し、${savedCount}件を新規追加しました'),
-                                duration: const Duration(seconds: 3),
-                              ),
+                            SnackBarService.showSuccess(
+                              context,
+                              '${tasks.length}件のタスクを取得し、${savedCount}件を新規追加しました',
                             );
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('OAuth2認証を先に実行してください'),
-                                backgroundColor: Colors.orange,
-                                duration: Duration(seconds: 3),
-                              ),
+                            SnackBarService.showWarning(
+                              context,
+                              'OAuth2認証を先に実行してください',
                             );
                           }
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('同期エラー: $e'),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 3),
-                            ),
+                          SnackBarService.showError(
+                            context,
+                            '同期エラー: $e',
                           );
                         }
                       },

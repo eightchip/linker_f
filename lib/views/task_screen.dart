@@ -12,6 +12,7 @@ import '../viewmodels/sub_task_viewmodel.dart';
 import '../services/notification_service.dart';
 import '../services/windows_notification_service.dart';
 import '../services/settings_service.dart';
+import '../services/snackbar_service.dart';
 import '../utils/csv_export.dart';
 import 'task_dialog.dart';
 import 'calendar_screen.dart';
@@ -126,11 +127,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
       // 削除完了のメッセージを表示
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${_selectedTaskIds.length}件のタスクを削除しました'),
-            duration: const Duration(seconds: 2),
-          ),
+        SnackBarService.showSuccess(
+          context,
+          '${_selectedTaskIds.length}件のタスクを削除しました',
         );
       }
     }
@@ -816,7 +815,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       key: ValueKey(task.id), // キーを追加
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       color: _isSelectionMode && isSelected 
-        ? Theme.of(context).primaryColor.withOpacity(0.1) 
+        ? Theme.of(context).primaryColor.withValues(alpha: 0.1) 
         : null,
       child: ListTile(
         leading: _isSelectionMode 
@@ -826,97 +825,111 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             )
           : _buildPriorityIndicator(task.priority),
         title: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 期限日を左側に適度に目立つデザインで配置（固定幅でタイトル位置を統一）
+            // 期限日を左側に配置
             Container(
-              width: 60, // 固定幅を設定
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: task.dueDate != null 
                   ? (task.isOverdue ? Colors.red.shade50 : Colors.blue.shade50)
                   : Colors.amber.shade50,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: task.dueDate != null 
                     ? (task.isOverdue ? Colors.red.shade400 : Colors.blue.shade400)
                     : Colors.amber.shade400,
-                  width: 1,
+                  width: 1.5,
                 ),
               ),
-              child: Center(
-                child: Text(
-                  task.dueDate != null 
-                    ? DateFormat('MM/dd').format(task.dueDate!)
-                    : '未設定',
-                  style: TextStyle(
-                    color: task.dueDate != null 
-                      ? (task.isOverdue ? Colors.red.shade800 : Colors.blue.shade800)
-                      : Colors.amber.shade800,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
+              child: Column(
+                children: [
+                  Text(
+                    task.dueDate != null 
+                      ? DateFormat('MM/dd').format(task.dueDate!)
+                      : '未設定',
+                    style: TextStyle(
+                      color: task.dueDate != null 
+                        ? (task.isOverdue ? Colors.red.shade800 : Colors.blue.shade800)
+                        : Colors.amber.shade800,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
+                  if (task.isOverdue || task.isToday) ...[
+                    const SizedBox(height: 2),
+                    Icon(
+                      task.isOverdue ? Icons.warning : Icons.today,
+                      color: task.isOverdue ? Colors.red : Colors.orange,
+                      size: 16,
+                    ),
+                  ],
+                ],
               ),
             ),
             const SizedBox(width: 12),
+            // 右側にタイトル・リマインダー・依頼先を3段で配置
             Expanded(
-              child: Text(
-                task.title,
-                style: TextStyle(
-                  decoration: task.status == TaskStatus.completed 
-                      ? TextDecoration.lineThrough 
-                      : null,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1段目: タイトル
+                  Text(
+                    task.title,
+                    style: TextStyle(
+                      decoration: task.status == TaskStatus.completed 
+                          ? TextDecoration.lineThrough 
+                          : null,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  // 2段目: リマインダーと依頼先・メモの組み合わせ
+                  if (task.reminderTime != null)
+                    Row(
+                      children: [
+                        Text(
+                          'リマインド: ${DateFormat('MM/dd HH:mm').format(task.reminderTime!)}',
+                          style: TextStyle(
+                            color: const Color.fromARGB(255, 255, 102, 0),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (task.assignedTo != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '依頼先(メモ): ${task.assignedTo}',
+                            style: TextStyle(
+                              color: Colors.blue[600],
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: true,
+                          ),
+                        ],
+                      ],
+                    )
+                  else if (task.assignedTo != null)
+                    // リマインドがない場合はタイトルの真下に依頼先・メモを表示
+                    Text(
+                      '依頼先(メモ): ${task.assignedTo}',
+                      style: TextStyle(
+                        color: Colors.blue[600],
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
+                    ),
+                ],
               ),
             ),
-            if (task.isOverdue)
-              const Icon(Icons.warning, color: Colors.red, size: 16),
-            if (task.isToday)
-              const Icon(Icons.today, color: Colors.orange, size: 16),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 説明フィールドは非表示
-            const SizedBox(height: 2),
-            // リマインダー情報のみ表示（期限日はタイトル行に移動）
-            if (task.reminderTime != null)
-              Row(
-                children: [
-                  Text(
-                    'リマインド: ${DateFormat('MM/dd HH:mm').format(task.reminderTime!)}',
-                    style: TextStyle(
-                      color: const Color.fromARGB(255, 255, 102, 0),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                if (task.estimatedMinutes != null) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '${task.estimatedMinutes}分',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-                if (task.assignedTo != null) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '依頼先: ${task.assignedTo}',
-                    style: TextStyle(
-                      color: Colors.blue[600],
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            // タグフィールドは削除
           ],
         ),
         trailing: Row(
@@ -1231,19 +1244,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       linkViewModel.launchLink(relatedLink);
       
       // 成功メッセージを表示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('リンク「${relatedLink.label}」を開きました'),
-          backgroundColor: Colors.green,
-        ),
+      SnackBarService.showSuccess(
+        context,
+        'リンク「${relatedLink.label}」を開きました',
       );
     } else {
       // エラーメッセージを表示
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('関連リンクが見つかりません'),
-          backgroundColor: Colors.red,
-        ),
+      SnackBarService.showError(
+        context,
+        '関連リンクが見つかりません',
       );
     }
   }

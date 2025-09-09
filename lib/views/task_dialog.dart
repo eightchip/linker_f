@@ -138,6 +138,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           reminderCount: _reminderTime == null ? 0 : widget.task!.reminderCount,
           clearDueDate: _dueDate == null && widget.task!.dueDate != null, // 期限日が削除された場合
           clearReminderTime: _reminderTime == null && widget.task!.reminderTime != null, // リマインダーが削除された場合
+          clearAssignedTo: _assignedToController.text.trim().isEmpty && widget.task!.assignedTo != null, // 依頼先が削除された場合
         );
         
         print('copyWith後のリマインダー時間: ${updatedTask.reminderTime}');
@@ -269,18 +270,20 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: FocusNode(),
-      autofocus: true,
-      onKeyEvent: (KeyEvent event) {
-        // 左矢印キーを無効化
-        if (event is KeyDownEvent && 
-            event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-          // 何もしない（左矢印キーを無効化）
-          return;
-        }
-      },
-      child: Dialog(
+    return PopScope(
+      canPop: false, // 戻る操作を無効化
+      child: KeyboardListener(
+        focusNode: FocusNode(),
+        autofocus: true,
+        onKeyEvent: (KeyEvent event) {
+          // 左矢印キーを無効化
+          if (event is KeyDownEvent && 
+              event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            // 何もしない（左矢印キーを無効化）
+            return;
+          }
+        },
+        child: Dialog(
         child: Container(
           width: 500,
           constraints: const BoxConstraints(maxHeight: 800),
@@ -502,9 +505,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 TextFormField(
                   controller: _assignedToController,
                   decoration: const InputDecoration(
-                    labelText: '依頼先（部下の名前）',
+                    labelText: '依頼先やメモ',
                     border: OutlineInputBorder(),
-                    hintText: '例: 田中さん、佐藤さん',
+                    hintText: '例: 佐藤さん、メモ',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -567,6 +570,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         ),
       ),
     ),
+   ),
    );  
   }
 

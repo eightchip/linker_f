@@ -277,6 +277,7 @@ class TaskItem extends HiveObject {
     String? externalId,
     bool clearDueDate = false,
     bool clearReminderTime = false,
+    bool clearAssignedTo = false,
   }) {
     print('=== copyWith呼び出し ===');
     print('元のdueDate: ${this.dueDate}');
@@ -309,7 +310,7 @@ class TaskItem extends HiveObject {
       hasSubTasks: hasSubTasks ?? this.hasSubTasks,
       completedSubTasksCount: completedSubTasksCount ?? this.completedSubTasksCount,
       totalSubTasksCount: totalSubTasksCount ?? this.totalSubTasksCount,
-      assignedTo: assignedTo ?? this.assignedTo,
+      assignedTo: clearAssignedTo ? null : (assignedTo ?? this.assignedTo),
       source: source ?? this.source,
       externalId: externalId ?? this.externalId,
     );
