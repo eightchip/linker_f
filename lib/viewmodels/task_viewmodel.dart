@@ -6,6 +6,7 @@ import '../models/task_item.dart';
 import '../services/notification_service.dart';
 import 'dart:io';
 import '../services/windows_notification_service.dart';
+import '../services/google_calendar_service.dart';
 import 'link_viewmodel.dart';
 import 'sub_task_viewmodel.dart';
 
@@ -444,6 +445,62 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       source: source,
       externalId: externalId,
     );
+  }
+
+  // タスクをGoogle Calendarに送信（個別送信）
+  Future<bool> syncTaskToGoogleCalendar(TaskItem task) async {
+    try {
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      if (task.googleCalendarEventId != null) {
+        // 既存のイベントを更新
+        final success = await googleCalendarService.updateCalendarEvent(task, task.googleCalendarEventId!);
+        return success;
+      } else {
+        // 新しいイベントを作成
+        final success = await googleCalendarService.createCalendarEvent(task);
+        if (success) {
+          // イベントIDを取得してタスクを更新
+          final eventId = await googleCalendarService.getCalendarEventId(task);
+          if (eventId != null) {
+            final updatedTask = task.copyWith(googleCalendarEventId: eventId);
+            updateTask(updatedTask);
+          }
+        }
+        return success;
+      }
+    } catch (e) {
+      print('Google Calendar同期エラー: $e');
+      return false;
+    }
+  }
+
+  // 全タスクをGoogle Calendarに包括的同期
+  Future<Map<String, dynamic>> syncAllTasksToGoogleCalendar() async {
+    try {
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      print('=== TaskViewModel: 包括的Google Calendar同期開始 ===');
+      print('現在のタスク数: ${state.length}');
+      
+      final result = await googleCalendarService.syncAllTasksToGoogleCalendar(state);
+      
+      print('=== TaskViewModel: 包括的Google Calendar同期完了 ===');
+      print('結果: $result');
+      
+      return result;
+    } catch (e) {
+      print('Google Calendar包括的同期エラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'created': 0,
+        'updated': 0,
+        'deleted': 0,
+      };
+    }
   }
 
   // 繰り返しリマインダーの次の通知をスケジュール

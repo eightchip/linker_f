@@ -46,6 +46,7 @@ class SettingsService {
   static const String _googleCalendarSyncIntervalKey = 'googleCalendarSyncInterval';
   static const String _googleCalendarLastSyncKey = 'googleCalendarLastSync';
   static const String _googleCalendarAutoSyncKey = 'googleCalendarAutoSync';
+  static const String _googleCalendarBidirectionalSyncKey = 'googleCalendarBidirectionalSync';
 
   // デフォルト値
   static const bool _defaultDarkMode = false;
@@ -67,6 +68,7 @@ class SettingsService {
   static const bool _defaultGoogleCalendarEnabled = false;
   static const int _defaultGoogleCalendarSyncInterval = 60; // 分
   static const bool _defaultGoogleCalendarAutoSync = false;
+  static const bool _defaultGoogleCalendarBidirectionalSync = false;
 
   /// 初期化（リトライ機能付き）
   Future<void> initialize() async {
@@ -509,6 +511,16 @@ class SettingsService {
   /// Google Calendar自動同期の有効/無効を設定
   Future<void> setGoogleCalendarAutoSync(bool value) async {
     await _settingsBox.put(_googleCalendarAutoSyncKey, value);
+  }
+
+  /// Google Calendar双方向同期の有効/無効を取得
+  bool get googleCalendarBidirectionalSync {
+    return _settingsBox.get(_googleCalendarBidirectionalSyncKey, defaultValue: _defaultGoogleCalendarBidirectionalSync);
+  }
+  
+  /// Google Calendar双方向同期の有効/無効を設定
+  Future<void> setGoogleCalendarBidirectionalSync(bool value) async {
+    await _settingsBox.put(_googleCalendarBidirectionalSyncKey, value);
   }
   
   /// Google Calendar最終同期時刻

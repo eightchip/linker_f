@@ -39,6 +39,7 @@ class SettingsState {
   final bool googleCalendarEnabled;
   final int googleCalendarSyncInterval;
   final bool googleCalendarAutoSync;
+  final bool googleCalendarBidirectionalSync;
 
   SettingsState({
     this.autoBackup = true,
@@ -51,6 +52,7 @@ class SettingsState {
     this.googleCalendarEnabled = false,
     this.googleCalendarSyncInterval = 60,
     this.googleCalendarAutoSync = false,
+    this.googleCalendarBidirectionalSync = false,
   });
 
   SettingsState copyWith({
@@ -64,6 +66,7 @@ class SettingsState {
     bool? googleCalendarEnabled,
     int? googleCalendarSyncInterval,
     bool? googleCalendarAutoSync,
+    bool? googleCalendarBidirectionalSync,
   }) {
     return SettingsState(
       autoBackup: autoBackup ?? this.autoBackup,
@@ -76,6 +79,7 @@ class SettingsState {
       googleCalendarEnabled: googleCalendarEnabled ?? this.googleCalendarEnabled,
       googleCalendarSyncInterval: googleCalendarSyncInterval ?? this.googleCalendarSyncInterval,
       googleCalendarAutoSync: googleCalendarAutoSync ?? this.googleCalendarAutoSync,
+      googleCalendarBidirectionalSync: googleCalendarBidirectionalSync ?? this.googleCalendarBidirectionalSync,
     );
   }
 }
@@ -101,6 +105,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         googleCalendarEnabled: _service.googleCalendarEnabled,
         googleCalendarSyncInterval: _service.googleCalendarSyncInterval,
         googleCalendarAutoSync: _service.googleCalendarAutoSync,
+        googleCalendarBidirectionalSync: _service.googleCalendarBidirectionalSync,
         isLoading: false,
       );
     } catch (e) {
@@ -150,6 +155,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setGoogleCalendarAutoSync(bool value) async {
     await _service.setGoogleCalendarAutoSync(value);
     state = state.copyWith(googleCalendarAutoSync: value);
+  }
+
+  Future<void> setGoogleCalendarBidirectionalSync(bool value) async {
+    await _service.setGoogleCalendarBidirectionalSync(value);
+    state = state.copyWith(googleCalendarBidirectionalSync: value);
   }
 
   Future<void> resetToDefaults() async {
@@ -1582,6 +1592,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   const Divider(),
                   
+                  // 双方向同期の有効/無効
+                  SwitchListTile(
+                    title: const Text('双方向同期'),
+                    subtitle: const Text('アプリのタスクをGoogle Calendarに送信します'),
+                    value: settingsState.googleCalendarBidirectionalSync,
+                    onChanged: (value) {
+                      settingsNotifier.setGoogleCalendarBidirectionalSync(value);
+                    },
+                    secondary: const Icon(Icons.sync_alt),
+                  ),
+                  
+                  const Divider(),
+                  
                   // OAuth2認証ボタン
                   SizedBox(
                     width: double.infinity,
@@ -1685,8 +1708,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           );
                         }
                       },
-                      icon: const Icon(Icons.sync),
-                      label: const Text('今すぐ同期'),
+                      icon: const Icon(Icons.download),
+                      label: const Text('Google Calendarから取得'),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // 包括的同期ボタン（アプリ → Google Calendar）
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final taskViewModel = ref.read(taskViewModelProvider.notifier);
+                          final result = await taskViewModel.syncAllTasksToGoogleCalendar();
+                          
+                          if (result['success']) {
+                            final created = result['created'] ?? 0;
+                            final updated = result['updated'] ?? 0;
+                            final deleted = result['deleted'] ?? 0;
+                            SnackBarService.showSuccess(
+                              context, 
+                              '包括的同期完了: 作成$created件, 更新$updated件, 削除$deleted件'
+                            );
+                          } else {
+                            SnackBarService.showError(context, '包括的同期エラー: ${result['error']}');
+                          }
+                        } catch (e) {
+                          SnackBarService.showError(context, '包括的同期エラー: $e');
+                        }
+                      },
+                      icon: const Icon(Icons.upload),
+                      label: const Text('アプリからGoogle Calendarへ送信'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ),
                   

@@ -5,15 +5,19 @@ import 'package:intl/intl.dart';
 import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart'; // Added import for linkViewModelProvider
+import '../services/settings_service.dart';
+import 'settings_screen.dart'; // Added import for settingsServiceProvider
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
   final String? relatedLinkId;
+  final DateTime? initialDueDate; // 新規作成時の初期期限日
 
   const TaskDialog({
     super.key,
     this.task,
     this.relatedLinkId,
+    this.initialDueDate,
   });
 
   @override
@@ -56,9 +60,18 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       print('初期化後の期限日: $_dueDate');
       print('初期化後のリマインダー時間: $_reminderTime');
       print('=== タスクダイアログ初期化完了 ===');
-    } else if (widget.relatedLinkId != null) {
-      // リンクから作成された場合、リンク情報を取得して設定
-      _initializeFromLink();
+    } else {
+      print('=== タスクダイアログ初期化（新規作成） ===');
+      _dueDate = widget.initialDueDate; // 初期期限日を設定
+      _reminderTime = null;
+      print('初期化後の期限日: $_dueDate');
+      print('初期化後のリマインダー時間: $_reminderTime');
+      print('=== タスクダイアログ初期化完了 ===');
+      
+      if (widget.relatedLinkId != null) {
+        // リンクから作成された場合、リンク情報を取得して設定
+        _initializeFromLink();
+      }
     }
   }
 
@@ -550,20 +563,30 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 const SizedBox(height: 24),
                 
                 // ボタン
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('キャンセル'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: _saveTask,
-                      child: Text(widget.task != null ? '更新' : '作成'),
-                    ),
-                  ],
-                ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('キャンセル'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _syncAllToGoogleCalendar,
+                        icon: const Icon(Icons.sync),
+                        label: const Text('全タスク同期'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _saveTask,
+                        child: Text(widget.task != null ? '更新' : '作成'),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -597,6 +620,64 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         return '高';
       case TaskPriority.urgent:
         return '緊急';
+    }
+  }
+
+  // 全タスクをGoogle Calendarに包括的同期
+  Future<void> _syncAllToGoogleCalendar() async {
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      
+      // ローディング表示
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Google Calendarと同期中...'),
+            ],
+          ),
+        ),
+      );
+      
+      final result = await taskViewModel.syncAllTasksToGoogleCalendar();
+      
+      // ローディングダイアログを閉じる
+      Navigator.of(context).pop();
+      
+      if (result['success']) {
+        final created = result['created'] ?? 0;
+        final updated = result['updated'] ?? 0;
+        final deleted = result['deleted'] ?? 0;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('同期完了: 作成$created件, 更新$updated件, 削除$deleted件'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('同期に失敗しました: ${result['error']}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // ローディングダイアログを閉じる（エラー時）
+      Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('エラー: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

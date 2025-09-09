@@ -14,7 +14,7 @@ class GoogleCalendarService {
   static const String _tokensFileName = 'google_calendar_tokens.json';
   static const String _calendarApiUrl = 'https://www.googleapis.com/calendar/v3';
   static const String _redirectUri = 'http://127.0.0.1:8080/callback';
-  static const String _scope = 'https://www.googleapis.com/auth/calendar.readonly';
+  static const String _scope = 'https://www.googleapis.com/auth/calendar';
   
   String? _accessToken;
   String? _refreshToken;
@@ -691,6 +691,410 @@ class GoogleCalendarService {
     _refreshToken = null;
     _tokenExpiry = null;
     _isInitialized = false;
+  }
+
+  /// タスクをGoogle Calendarに送信
+  Future<bool> createCalendarEvent(TaskItem task) async {
+    if (!_isInitialized || _accessToken == null) {
+      ErrorHandler.logError('Google Calendar送信', '認証されていません');
+      return false;
+    }
+
+    try {
+      // アクセストークンの有効性を確認
+      if (_tokenExpiry != null && DateTime.now().isAfter(_tokenExpiry!)) {
+        final refreshed = await _refreshAccessToken();
+        if (!refreshed) {
+          ErrorHandler.logError('Google Calendar送信', 'トークンの更新に失敗しました');
+          return false;
+        }
+      }
+
+      // イベントの開始・終了時間を設定
+      DateTime startTime;
+      DateTime endTime;
+      
+      if (task.dueDate != null) {
+        startTime = task.dueDate!;
+        endTime = startTime.add(const Duration(hours: 1)); // デフォルト1時間
+      } else if (task.reminderTime != null) {
+        startTime = task.reminderTime!;
+        endTime = startTime.add(const Duration(hours: 1));
+      } else {
+        ErrorHandler.logError('Google Calendar送信', 'タスクに期限日またはリマインダー時間が設定されていません');
+        return false;
+      }
+
+      // イベントデータを作成
+      final eventData = {
+        'summary': task.title,
+        'description': task.description ?? '',
+        'start': {
+          'dateTime': startTime.toIso8601String(),
+          'timeZone': 'Asia/Tokyo',
+        },
+        'end': {
+          'dateTime': endTime.toIso8601String(),
+          'timeZone': 'Asia/Tokyo',
+        },
+        'reminders': {
+          'useDefault': false,
+          'overrides': [
+            {'method': 'popup', 'minutes': 15},
+            {'method': 'email', 'minutes': 30},
+          ],
+        },
+        'extendedProperties': {
+          'private': {
+            'taskId': task.id,
+            'priority': task.priority.toString(),
+            'status': task.status.toString(),
+          }
+        }
+      };
+
+      // Google Calendar APIに送信
+      final response = await http.post(
+        Uri.parse('$_calendarApiUrl/calendars/primary/events'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(eventData),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print('Google Calendarイベント作成成功: ${responseData['id']}');
+        return true;
+      } else {
+        ErrorHandler.logError('Google Calendar送信', 'HTTP ${response.statusCode}: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      ErrorHandler.logError('Google Calendar送信', e);
+      return false;
+    }
+  }
+
+  /// タスクのGoogle Calendarイベントを更新
+  Future<bool> updateCalendarEvent(TaskItem task, String eventId) async {
+    if (!_isInitialized || _accessToken == null) {
+      ErrorHandler.logError('Google Calendar更新', '認証されていません');
+      return false;
+    }
+
+    try {
+      // アクセストークンの有効性を確認
+      if (_tokenExpiry != null && DateTime.now().isAfter(_tokenExpiry!)) {
+        final refreshed = await _refreshAccessToken();
+        if (!refreshed) {
+          ErrorHandler.logError('Google Calendar更新', 'トークンの更新に失敗しました');
+          return false;
+        }
+      }
+
+      // イベントの開始・終了時間を設定
+      DateTime startTime;
+      DateTime endTime;
+      
+      if (task.dueDate != null) {
+        startTime = task.dueDate!;
+        endTime = startTime.add(const Duration(hours: 1));
+      } else if (task.reminderTime != null) {
+        startTime = task.reminderTime!;
+        endTime = startTime.add(const Duration(hours: 1));
+      } else {
+        ErrorHandler.logError('Google Calendar更新', 'タスクに期限日またはリマインダー時間が設定されていません');
+        return false;
+      }
+
+      // イベントデータを作成
+      final eventData = {
+        'summary': task.title,
+        'description': task.description ?? '',
+        'start': {
+          'dateTime': startTime.toIso8601String(),
+          'timeZone': 'Asia/Tokyo',
+        },
+        'end': {
+          'dateTime': endTime.toIso8601String(),
+          'timeZone': 'Asia/Tokyo',
+        },
+        'reminders': {
+          'useDefault': false,
+          'overrides': [
+            {'method': 'popup', 'minutes': 15},
+            {'method': 'email', 'minutes': 30},
+          ],
+        },
+        'extendedProperties': {
+          'private': {
+            'taskId': task.id,
+            'priority': task.priority.toString(),
+            'status': task.status.toString(),
+          }
+        }
+      };
+
+      // Google Calendar APIに送信
+      final response = await http.put(
+        Uri.parse('$_calendarApiUrl/calendars/primary/events/$eventId'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(eventData),
+      );
+
+      if (response.statusCode == 200) {
+        print('Google Calendarイベント更新成功: $eventId');
+        return true;
+      } else {
+        ErrorHandler.logError('Google Calendar更新', 'HTTP ${response.statusCode}: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      ErrorHandler.logError('Google Calendar更新', e);
+      return false;
+    }
+  }
+
+  /// タスクのGoogle Calendarイベントを削除
+  Future<bool> deleteCalendarEvent(String eventId) async {
+    if (!_isInitialized || _accessToken == null) {
+      ErrorHandler.logError('Google Calendar削除', '認証されていません');
+      return false;
+    }
+
+    try {
+      // アクセストークンの有効性を確認
+      if (_tokenExpiry != null && DateTime.now().isAfter(_tokenExpiry!)) {
+        final refreshed = await _refreshAccessToken();
+        if (!refreshed) {
+          ErrorHandler.logError('Google Calendar削除', 'トークンの更新に失敗しました');
+          return false;
+        }
+      }
+
+      // Google Calendar APIに送信
+      final response = await http.delete(
+        Uri.parse('$_calendarApiUrl/calendars/primary/events/$eventId'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+        },
+      );
+
+      if (response.statusCode == 204) {
+        print('Google Calendarイベント削除成功: $eventId');
+        return true;
+      } else {
+        ErrorHandler.logError('Google Calendar削除', 'HTTP ${response.statusCode}: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      ErrorHandler.logError('Google Calendar削除', e);
+      return false;
+    }
+  }
+
+  /// タスクのGoogle CalendarイベントIDを取得
+  Future<String?> getCalendarEventId(TaskItem task) async {
+    if (!_isInitialized || _accessToken == null) {
+      return null;
+    }
+
+    try {
+      // アクセストークンの有効性を確認
+      if (_tokenExpiry != null && DateTime.now().isAfter(_tokenExpiry!)) {
+        final refreshed = await _refreshAccessToken();
+        if (!refreshed) {
+          return null;
+        }
+      }
+
+      // タスクIDでイベントを検索
+      final response = await http.get(
+        Uri.parse('$_calendarApiUrl/calendars/primary/events?q=${task.id}'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final events = data['items'] as List?;
+        
+        if (events != null && events.isNotEmpty) {
+          for (final event in events) {
+            final extendedProperties = event['extendedProperties']?['private'];
+            if (extendedProperties != null && extendedProperties['taskId'] == task.id) {
+              return event['id'] as String;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      ErrorHandler.logError('Google CalendarイベントID取得', e);
+    }
+    
+    return null;
+  }
+
+  /// 包括的Google Calendar同期（全タスクを一括同期）
+  Future<Map<String, dynamic>> syncAllTasksToGoogleCalendar(List<TaskItem> tasks) async {
+    if (!_isInitialized || _accessToken == null) {
+      return {
+        'success': false,
+        'error': '認証されていません',
+        'created': 0,
+        'updated': 0,
+        'deleted': 0,
+      };
+    }
+
+    try {
+      // アクセストークンの有効性を確認
+      if (_tokenExpiry != null && DateTime.now().isAfter(_tokenExpiry!)) {
+        final refreshed = await _refreshAccessToken();
+        if (!refreshed) {
+          return {
+            'success': false,
+            'error': 'トークンの更新に失敗しました',
+            'created': 0,
+            'updated': 0,
+            'deleted': 0,
+          };
+        }
+      }
+
+      print('=== Google Calendar包括的同期開始 ===');
+      print('同期対象タスク数: ${tasks.length}');
+
+      // 1. 現在のGoogle Calendarイベントを取得
+      final existingEvents = await _getAllCalendarEvents();
+      print('既存のGoogle Calendarイベント数: ${existingEvents.length}');
+
+      // 2. 同期対象タスクをフィルタリング（期限日またはリマインダー時間があるもの）
+      final syncableTasks = tasks.where((task) => 
+        task.dueDate != null || task.reminderTime != null
+      ).toList();
+      print('同期可能タスク数: ${syncableTasks.length}');
+
+      int created = 0;
+      int updated = 0;
+      int deleted = 0;
+
+      // 3. 各タスクを同期（タスクが存在する場合のみ）
+      for (final task in syncableTasks) {
+        final result = await _syncSingleTask(task, existingEvents);
+        switch (result) {
+          case 'created':
+            created++;
+            break;
+          case 'updated':
+            updated++;
+            break;
+          case 'skipped':
+            break;
+        }
+      }
+
+      // 4. 削除されたタスクのイベントを削除
+      // アプリのタスクIDセットを作成（空のリストでも動作）
+      final taskIds = syncableTasks.map((task) => task.id).toSet();
+      
+      // 既存のGoogle Calendarイベントをチェック
+      for (final event in existingEvents) {
+        final taskId = event['extendedProperties']?['private']?['taskId'];
+        if (taskId != null && !taskIds.contains(taskId)) {
+          print('削除対象のイベント: ${event['summary']} (タスクID: $taskId)');
+          final success = await deleteCalendarEvent(event['id']);
+          if (success) {
+            deleted++;
+            print('イベント削除成功: ${event['summary']}');
+          } else {
+            print('イベント削除失敗: ${event['summary']}');
+          }
+        }
+      }
+
+      print('=== Google Calendar包括的同期完了 ===');
+      print('作成: $created, 更新: $updated, 削除: $deleted');
+
+      return {
+        'success': true,
+        'created': created,
+        'updated': updated,
+        'deleted': deleted,
+      };
+    } catch (e) {
+      ErrorHandler.logError('Google Calendar包括的同期', e);
+      return {
+        'success': false,
+        'error': e.toString(),
+        'created': 0,
+        'updated': 0,
+        'deleted': 0,
+      };
+    }
+  }
+
+  /// 全てのGoogle Calendarイベントを取得
+  Future<List<Map<String, dynamic>>> _getAllCalendarEvents() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_calendarApiUrl/calendars/primary/events'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final events = data['items'] as List?;
+        
+        if (events != null) {
+          // アプリから作成されたイベントのみをフィルタリング
+          return events.where((event) {
+            final extendedProperties = event['extendedProperties']?['private'];
+            return extendedProperties != null && extendedProperties['taskId'] != null;
+          }).cast<Map<String, dynamic>>().toList();
+        }
+      }
+    } catch (e) {
+      ErrorHandler.logError('Google Calendarイベント取得', e);
+    }
+    
+    return [];
+  }
+
+  /// 単一タスクの同期
+  Future<String> _syncSingleTask(TaskItem task, List<Map<String, dynamic>> existingEvents) async {
+    try {
+      // 既存のイベントを検索
+      Map<String, dynamic>? existingEvent;
+      for (final event in existingEvents) {
+        final taskId = event['extendedProperties']?['private']?['taskId'];
+        if (taskId == task.id) {
+          existingEvent = event;
+          break;
+        }
+      }
+
+      if (existingEvent != null) {
+        // 既存イベントの更新
+        final success = await updateCalendarEvent(task, existingEvent['id']);
+        return success ? 'updated' : 'skipped';
+      } else {
+        // 新規イベントの作成
+        final success = await createCalendarEvent(task);
+        return success ? 'created' : 'skipped';
+      }
+    } catch (e) {
+      ErrorHandler.logError('単一タスク同期', e);
+      return 'skipped';
+    }
   }
 }
 

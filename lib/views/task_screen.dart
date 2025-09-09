@@ -1556,8 +1556,105 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
         // 左矢印キーが押されたらホーム画面に戻る
         Navigator.of(context).pop();
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        // 右矢印キーで3点ドットメニューを表示
+        _showPopupMenu(context);
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        // 下矢印キーで3点ドットメニューを表示
+        _showPopupMenu(context);
       }
     }
+  }
+
+  // 3点ドットメニューを表示
+  void _showPopupMenu(BuildContext context) {
+    showMenu<String>(
+      context: context,
+      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
+      items: [
+        // 新しいタスク作成
+        const PopupMenuItem(
+          value: 'add_task',
+          child: Row(
+            children: [
+              Icon(Icons.add, color: Colors.green, size: 20),
+              SizedBox(width: 8),
+              Text('新しいタスク'),
+            ],
+          ),
+        ),
+        // 一括選択モード
+        const PopupMenuItem(
+          value: 'bulk_select',
+          child: Row(
+            children: [
+              Icon(Icons.checklist, color: Colors.blue, size: 20),
+              SizedBox(width: 8),
+              Text('一括選択モード'),
+            ],
+          ),
+        ),
+        // カレンダー表示
+        const PopupMenuItem(
+          value: 'calendar',
+          child: Row(
+            children: [
+              Icon(Icons.calendar_month, color: Colors.orange, size: 20),
+              SizedBox(width: 8),
+              Text('カレンダー表示'),
+            ],
+          ),
+        ),
+        // CSVエクスポート
+        const PopupMenuItem(
+          value: 'export',
+          child: Row(
+            children: [
+              Icon(Icons.download, color: Colors.purple, size: 20),
+              SizedBox(width: 8),
+              Text('CSVエクスポート'),
+            ],
+          ),
+        ),
+        // テスト通知
+        const PopupMenuItem(
+          value: 'test_notification',
+          child: Row(
+            children: [
+              Icon(Icons.notifications, color: Colors.red, size: 20),
+              SizedBox(width: 8),
+              Text('テスト通知'),
+            ],
+          ),
+        ),
+        // テストリマインダー
+        const PopupMenuItem(
+          value: 'test_reminder',
+          child: Row(
+            children: [
+              Icon(Icons.alarm, color: Colors.teal, size: 20),
+              SizedBox(width: 8),
+              Text('テストリマインダー'),
+            ],
+          ),
+        ),
+        // 1分後リマインダー
+        const PopupMenuItem(
+          value: 'test_reminder_1min',
+          child: Row(
+            children: [
+              Icon(Icons.timer, color: Colors.indigo, size: 20),
+              SizedBox(width: 8),
+              Text('1分後リマインダー'),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value != null) {
+        _handleMenuAction(value);
+      }
+    });
   }
 
   // タスクコピーダイアログを表示

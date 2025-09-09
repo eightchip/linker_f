@@ -161,6 +161,9 @@ class TaskItem extends HiveObject {
   @HiveField(24)
   String? externalId; // 外部システムのID（Google CalendarのイベントIDなど）
 
+  @HiveField(25)
+  String? googleCalendarEventId; // Google CalendarイベントID（双方向同期用）
+
   TaskItem({
     required this.id,
     required this.title,
@@ -187,6 +190,7 @@ class TaskItem extends HiveObject {
     this.assignedTo,
     this.source,
     this.externalId,
+    this.googleCalendarEventId,
   });
 
   Map<String, dynamic> toJson() {
@@ -216,6 +220,7 @@ class TaskItem extends HiveObject {
       'assignedTo': assignedTo,
       'source': source,
       'externalId': externalId,
+      'googleCalendarEventId': googleCalendarEventId,
     };
   }
 
@@ -246,6 +251,7 @@ class TaskItem extends HiveObject {
       assignedTo: json['assignedTo'],
       source: json['source'],
       externalId: json['externalId'],
+      googleCalendarEventId: json['googleCalendarEventId'],
     );
   }
 
@@ -275,6 +281,7 @@ class TaskItem extends HiveObject {
     String? assignedTo,
     String? source,
     String? externalId,
+    String? googleCalendarEventId,
     bool clearDueDate = false,
     bool clearReminderTime = false,
     bool clearAssignedTo = false,
@@ -313,6 +320,7 @@ class TaskItem extends HiveObject {
       assignedTo: clearAssignedTo ? null : (assignedTo ?? this.assignedTo),
       source: source ?? this.source,
       externalId: externalId ?? this.externalId,
+      googleCalendarEventId: googleCalendarEventId ?? this.googleCalendarEventId,
     );
     
     print('copyWith結果のdueDate: ${result.dueDate}');
