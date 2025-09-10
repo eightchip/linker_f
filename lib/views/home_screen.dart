@@ -238,6 +238,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ショートカットキー処理
   void _handleShortcut(KeyEvent event) {
     if (event is KeyDownEvent) {
+      // モーダルが開いている場合はショートカットを無効化
+      if (ModalRoute.of(context)?.isFirst != true) {
+        return;
+      }
+      
       final key = event.logicalKey;
       final isControlPressed = HardwareKeyboard.instance.isControlPressed;
       final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;

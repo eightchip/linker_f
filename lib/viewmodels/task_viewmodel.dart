@@ -79,8 +79,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       state = tasks;
       
-      // 全タスクのサブタスク統計を更新
-      await _updateAllSubTaskStatistics();
+      // 起動時に祝日タスクを自動削除
+      await _removeHolidayTasksOnStartup();
       
       if (kDebugMode) {
         print('=== タスク読み込み完了 ===');
@@ -94,18 +94,38 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
-  // 全タスクのサブタスク統計を更新
-  Future<void> _updateAllSubTaskStatistics() async {
+  // 起動時に祝日タスクを自動削除
+  Future<void> _removeHolidayTasksOnStartup() async {
     try {
-      for (final task in state) {
-        await updateSubTaskStatistics(task.id);
+      final existingTasks = state;
+      final tasksToDelete = <TaskItem>[];
+      
+      // 祝日タスクを検出
+      for (final task in existingTasks) {
+        if (_isHolidayEvent(task)) {
+          tasksToDelete.add(task);
+        }
       }
-      if (kDebugMode) {
-        print('全タスクのサブタスク統計を更新しました');
+      
+      if (tasksToDelete.isNotEmpty) {
+        if (kDebugMode) {
+          print('=== 起動時祝日タスク削除開始 ===');
+          print('削除対象の祝日タスク数: ${tasksToDelete.length}');
+        }
+        
+        // 祝日タスクを直接削除
+        for (final taskToDelete in tasksToDelete) {
+          await _deleteTaskDirectly(taskToDelete.id);
+        }
+        
+        if (kDebugMode) {
+          print('=== 起動時祝日タスク削除完了 ===');
+          print('削除されたタスク数: ${tasksToDelete.length}件');
+        }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('全タスクのサブタスク統計更新エラー: $e');
+        print('起動時祝日タスク削除エラー: $e');
       }
     }
   }
@@ -618,13 +638,72 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         reminderTime: task.reminderTime,
       );
       
-      await updateTask(updatedTask);
+      // サブタスク統計更新時は直接データベースを更新し、updateTaskは呼ばない
+      await _updateTaskDirectly(updatedTask);
       
       print('サブタスク統計更新完了: ${task.title}');
       print('更新後のタスク - サブタスクあり: ${updatedTask.hasSubTasks}, 総数: ${updatedTask.totalSubTasksCount}, 完了: ${updatedTask.completedSubTasksCount}');
     } catch (e) {
       print('サブタスク統計更新エラー: $e');
       print('エラーの詳細: ${e.toString()}');
+    }
+  }
+
+  // タスクを直接更新（サブタスク統計更新用）
+  Future<void> _updateTaskDirectly(TaskItem task) async {
+    try {
+      if (_taskBox == null || !_taskBox!.isOpen) {
+        await _loadTasks();
+      }
+      
+      await _taskBox!.put(task.id, task);
+      await _taskBox!.flush(); // データの永続化を確実にする
+      
+      final newTasks = state.map((t) => t.id == task.id ? task : t).toList();
+      newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      state = newTasks;
+      
+      // リンクのタスク状態を更新
+      await _updateLinkTaskStatus();
+      
+      if (kDebugMode) {
+        print('タスク直接更新: ${task.title}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('タスク直接更新エラー: $e');
+      }
+    }
+  }
+
+  // タスクを直接削除（一括削除用）
+  Future<void> _deleteTaskDirectly(String taskId) async {
+    try {
+      if (_taskBox == null || !_taskBox!.isOpen) {
+        await _loadTasks();
+      }
+      await _taskBox!.delete(taskId);
+      await _taskBox!.flush(); // データの永続化を確実にする
+      state = state.where((task) => task.id != taskId).toList();
+      
+      // 通知をキャンセル（エラーが発生しても続行）
+      try {
+        if (Platform.isWindows) {
+          await WindowsNotificationService.cancelNotification(taskId);
+        } else {
+          await NotificationService.cancelNotification(taskId);
+        }
+      } catch (notificationError) {
+        print('通知キャンセルエラー（無視）: $notificationError');
+      }
+      
+      if (kDebugMode) {
+        print('タスク直接削除: $taskId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('タスク直接削除エラー: $e');
+      }
     }
   }
 
@@ -864,16 +943,32 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       }
       
       final existingTasks = state;
-      final existingExternalIds = existingTasks
-          .where((task) => task.source == 'google_calendar' && task.externalId != null)
-          .map((task) => task.externalId!)
-          .toSet();
       
       int addedCount = 0;
       int updatedCount = 0;
+      int skippedCount = 0;
       
       for (final calendarTask in calendarTasks) {
         if (calendarTask.externalId == null) continue;
+        
+        // 祝日イベントを除外
+        if (_isHolidayEvent(calendarTask)) {
+          if (kDebugMode) {
+            print('祝日イベントをスキップ: ${calendarTask.title}');
+          }
+          skippedCount++;
+          continue;
+        }
+        
+        // 重複チェック（タイトルと日付で判定）
+        final isDuplicate = _isDuplicateTask(calendarTask, existingTasks);
+        if (isDuplicate) {
+          if (kDebugMode) {
+            print('重複タスクをスキップ: ${calendarTask.title}');
+          }
+          skippedCount++;
+          continue;
+        }
         
         // 既存のタスクを検索
         final existingTaskIndex = existingTasks.indexWhere(
@@ -930,12 +1025,123 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       }
       
       if (kDebugMode) {
-        print('Google Calendar同期完了: 追加${addedCount}件, 更新${updatedCount}件, 削除${tasksToDelete.length}件');
+        print('Google Calendar同期完了: 追加${addedCount}件, 更新${updatedCount}件, 削除${tasksToDelete.length}件, スキップ${skippedCount}件');
       }
     } catch (e) {
       print('Google Calendar同期エラー: $e');
       rethrow;
     }
+  }
+  
+  /// 祝日イベントかどうかを判定
+  bool _isHolidayEvent(TaskItem task) {
+    final title = task.title.toLowerCase();
+    final description = (task.description ?? '').toLowerCase();
+    
+    // 祝日関連のキーワードをチェック（拡張版）
+    final holidayKeywords = [
+      '祝日', 'holiday', '国民の祝日', '振替休日', '敬老の日', '春分の日', '秋分の日',
+      'みどりの日', '海の日', '山の日', '体育の日', 'スポーツの日', '文化の日',
+      '勤労感謝の日', '天皇誕生日', '建国記念の日', '昭和の日', '憲法記念日',
+      'こどもの日', '成人の日', '成人式', 'バレンタインデー', 'ホワイトデー',
+      '母の日', '父の日', 'クリスマス', '大晦日', '正月', 'お盆', 'ゴールデンウィーク',
+      'シルバーウィーク', '年末年始', '七夕', '七五三', '銀行休業日', '節分', '雛祭り',
+      '元日', '振替', '休業', '休日', '祝祭日', '国民の休日', 'みどりの日',
+      '海の日', '山の日', 'スポーツの日', '文化の日', '勤労感謝の日', '天皇誕生日',
+      '建国記念の日', '昭和の日', '憲法記念日', 'こどもの日', '成人の日', '敬老の日',
+      '春分の日', '秋分の日', 'みどりの日', '海の日', '山の日', 'スポーツの日',
+      '文化の日', '勤労感謝の日', '天皇誕生日', '建国記念の日', '昭和の日', '憲法記念日',
+      'こどもの日', '成人の日', '敬老の日', '春分の日', '秋分の日'
+    ];
+    
+    // キーワードチェック
+    for (final keyword in holidayKeywords) {
+      if (title.contains(keyword) || description.contains(keyword)) {
+        if (kDebugMode) {
+          print('祝日キーワードで除外: ${task.title} (キーワード: $keyword)');
+        }
+        return true;
+      }
+    }
+    
+    // 終日イベントでタイトルが短い場合は祝日の可能性が高い
+    if (task.dueDate != null && task.reminderTime != null) {
+      final startOfDay = DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+      
+      if (task.reminderTime!.isAtSameMomentAs(startOfDay) && 
+          task.dueDate!.isAtSameMomentAs(endOfDay.subtract(const Duration(seconds: 1)))) {
+        // 終日イベントでタイトルが短い場合は祝日の可能性が高い
+        if (title.length <= 10) {
+          if (kDebugMode) {
+            print('終日イベントで除外: ${task.title} (タイトル長: ${title.length})');
+          }
+          return true;
+        }
+      }
+    }
+    
+    // タイトルが短く、日付が特定のパターンの場合は祝日の可能性が高い
+    if (title.length <= 8 && task.dueDate != null) {
+      // 月日が特定のパターン（祝日になりやすい日付）の場合は除外
+      final month = task.dueDate!.month;
+      final day = task.dueDate!.day;
+      
+      // 祝日になりやすい日付パターン
+      final holidayDates = [
+        [1, 1],   // 元日
+        [1, 8],   // 成人の日（第2月曜日）
+        [2, 11],  // 建国記念の日
+        [2, 23],  // 天皇誕生日
+        [3, 20],  // 春分の日
+        [4, 29],  // 昭和の日
+        [5, 3],   // 憲法記念日
+        [5, 4],   // みどりの日
+        [5, 5],   // こどもの日
+        [7, 15],  // 海の日
+        [8, 11],  // 山の日
+        [9, 16],  // 敬老の日
+        [9, 22],  // 秋分の日
+        [10, 14], // スポーツの日
+        [11, 3],  // 文化の日
+        [11, 23], // 勤労感謝の日
+      ];
+      
+      for (final holidayDate in holidayDates) {
+        if (month == holidayDate[0] && day == holidayDate[1]) {
+          if (kDebugMode) {
+            print('祝日日付パターンで除外: ${task.title} (${month}/${day})');
+          }
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+  
+  /// 重複タスクかどうかを判定
+  bool _isDuplicateTask(TaskItem newTask, List<TaskItem> existingTasks) {
+    for (final existingTask in existingTasks) {
+      // タイトルが同じで、日付が近い場合は重複とみなす
+      if (existingTask.title == newTask.title) {
+        if (newTask.dueDate != null && existingTask.dueDate != null) {
+          final dateDiff = newTask.dueDate!.difference(existingTask.dueDate!).abs();
+          if (dateDiff.inDays <= 1) {
+            return true;
+          }
+        }
+        
+        if (newTask.reminderTime != null && existingTask.reminderTime != null) {
+          final timeDiff = newTask.reminderTime!.difference(existingTask.reminderTime!).abs();
+          if (timeDiff.inDays <= 1) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
   }
   
   /// Google Calendarタスクを取得
@@ -948,6 +1154,254 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     final task = state.firstWhere((t) => t.id == taskId);
     if (task.source == 'google_calendar') {
       await deleteTask(taskId);
+    }
+  }
+
+  /// アプリとGoogleカレンダー間の完全な相互同期
+  Future<Map<String, dynamic>> performFullBidirectionalSync() async {
+    try {
+      if (kDebugMode) {
+        print('=== 完全相互同期開始 ===');
+      }
+      
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      // 1. Googleカレンダーからイベントを取得
+      final startTime = DateTime.now().subtract(const Duration(days: 30));
+      final endTime = DateTime.now().add(const Duration(days: 365));
+      
+      final calendarEvents = await googleCalendarService.getEvents(
+        startTime: startTime,
+        endTime: endTime,
+        maxResults: 1000,
+      );
+      
+      // 2. Googleカレンダーイベントをタスクに変換
+      final calendarTasks = googleCalendarService.convertEventsToTasks(calendarEvents);
+      
+      if (kDebugMode) {
+        print('Googleカレンダーから取得したタスク数: ${calendarTasks.length}');
+        print('アプリの既存タスク数: ${state.length}');
+      }
+      
+      // 3. アプリのタスクをGoogleカレンダーに送信
+      int appToCalendarCount = 0;
+      for (final appTask in state) {
+        // 手動作成のタスクのみを送信（Googleカレンダーから来たタスクは除外）
+        if (appTask.source != 'google_calendar' && 
+            (appTask.dueDate != null || appTask.reminderTime != null)) {
+          
+          // Googleカレンダーに既に存在するかチェック
+          final existsInCalendar = calendarTasks.any((calendarTask) => 
+            _isSameTask(appTask, calendarTask));
+          
+          if (!existsInCalendar) {
+            final success = await googleCalendarService.createCalendarEvent(appTask);
+            if (success) {
+              appToCalendarCount++;
+              if (kDebugMode) {
+                print('アプリタスクをGoogleカレンダーに送信: ${appTask.title}');
+              }
+            }
+          }
+        }
+      }
+      
+      // 4. Googleカレンダーのタスクをアプリに追加
+      int calendarToAppCount = 0;
+      for (final calendarTask in calendarTasks) {
+        // 祝日イベントを除外（二重チェック）
+        if (_isHolidayEvent(calendarTask)) {
+          if (kDebugMode) {
+            print('祝日イベントを二重チェックで除外: ${calendarTask.title}');
+          }
+          continue;
+        }
+        
+        // アプリに既に存在するかチェック
+        final existsInApp = state.any((appTask) => 
+          _isSameTask(appTask, calendarTask));
+        
+        if (!existsInApp) {
+          await addTask(calendarTask);
+          calendarToAppCount++;
+          if (kDebugMode) {
+            print('Googleカレンダータスクをアプリに追加: ${calendarTask.title}');
+          }
+        }
+      }
+      
+      if (kDebugMode) {
+        print('=== 完全相互同期完了 ===');
+        print('アプリ→Googleカレンダー: ${appToCalendarCount}件');
+        print('Googleカレンダー→アプリ: ${calendarToAppCount}件');
+      }
+      
+      return {
+        'success': true,
+        'appToCalendar': appToCalendarCount,
+        'calendarToApp': calendarToAppCount,
+        'total': appToCalendarCount + calendarToAppCount,
+      };
+      
+    } catch (e) {
+      print('完全相互同期エラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'appToCalendar': 0,
+        'calendarToApp': 0,
+        'total': 0,
+      };
+    }
+  }
+  
+  /// 2つのタスクが同じかどうかを判定（タイトルと日付で比較）
+  bool _isSameTask(TaskItem task1, TaskItem task2) {
+    // タイトルが同じ
+    if (task1.title != task2.title) return false;
+    
+    // 日付が同じ（期限日またはリマインダー時間）
+    if (task1.dueDate != null && task2.dueDate != null) {
+      final dateDiff = task1.dueDate!.difference(task2.dueDate!).abs();
+      if (dateDiff.inDays <= 1) return true;
+    }
+    
+    if (task1.reminderTime != null && task2.reminderTime != null) {
+      final timeDiff = task1.reminderTime!.difference(task2.reminderTime!).abs();
+      if (timeDiff.inDays <= 1) return true;
+    }
+    
+    // 期限日とリマインダー時間の組み合わせ
+    if (task1.dueDate != null && task2.reminderTime != null) {
+      final dateDiff = task1.dueDate!.difference(task2.reminderTime!).abs();
+      if (dateDiff.inDays <= 1) return true;
+    }
+    
+    if (task1.reminderTime != null && task2.dueDate != null) {
+      final dateDiff = task1.reminderTime!.difference(task2.dueDate!).abs();
+      if (dateDiff.inDays <= 1) return true;
+    }
+    
+    return false;
+  }
+
+  /// 祝日タスクを一括削除
+  Future<Map<String, dynamic>> removeHolidayTasks() async {
+    try {
+      if (kDebugMode) {
+        print('=== 祝日タスク削除開始 ===');
+      }
+      
+      final existingTasks = state;
+      final tasksToDelete = <TaskItem>[];
+      
+      // 祝日タスクを検出
+      for (final task in existingTasks) {
+        if (_isHolidayEvent(task)) {
+          tasksToDelete.add(task);
+          if (kDebugMode) {
+            print('祝日タスクを削除対象に追加: ${task.title}');
+          }
+        }
+      }
+      
+      // 祝日タスクを直接削除
+      int deletedCount = 0;
+      for (final taskToDelete in tasksToDelete) {
+        await _deleteTaskDirectly(taskToDelete.id);
+        deletedCount++;
+      }
+      
+      if (kDebugMode) {
+        print('=== 祝日タスク削除完了 ===');
+        print('削除されたタスク数: $deletedCount件');
+      }
+      
+      return {
+        'success': true,
+        'deletedCount': deletedCount,
+        'total': tasksToDelete.length,
+      };
+      
+    } catch (e) {
+      print('祝日タスク削除エラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'deletedCount': 0,
+        'total': 0,
+      };
+    }
+  }
+
+  /// 重複タスクを一括削除
+  Future<Map<String, dynamic>> removeDuplicateTasks() async {
+    try {
+      if (kDebugMode) {
+        print('=== 重複タスク削除開始 ===');
+      }
+      
+      final existingTasks = state;
+      final tasksToDelete = <TaskItem>[];
+      
+      // タイトルごとにグループ化して重複を検出
+      final tasksByTitle = <String, List<TaskItem>>{};
+      for (final task in existingTasks) {
+        tasksByTitle.putIfAbsent(task.title, () => []).add(task);
+      }
+      
+      // 各タイトルで重複をチェック
+      for (final entry in tasksByTitle.entries) {
+        final tasks = entry.value;
+        
+        if (tasks.length > 1) {
+          // 同じタイトルのタスクが複数ある場合、重複をチェック
+          for (int i = 0; i < tasks.length; i++) {
+            for (int j = i + 1; j < tasks.length; j++) {
+              if (_isSameTask(tasks[i], tasks[j])) {
+                // より古いタスクを削除対象に追加
+                final olderTask = tasks[i].createdAt.isBefore(tasks[j].createdAt) 
+                    ? tasks[i] : tasks[j];
+                if (!tasksToDelete.contains(olderTask)) {
+                  tasksToDelete.add(olderTask);
+                  if (kDebugMode) {
+                    print('重複タスクを削除対象に追加: ${olderTask.title}');
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // 重複タスクを直接削除
+      int deletedCount = 0;
+      for (final taskToDelete in tasksToDelete) {
+        await _deleteTaskDirectly(taskToDelete.id);
+        deletedCount++;
+      }
+      
+      if (kDebugMode) {
+        print('=== 重複タスク削除完了 ===');
+        print('削除されたタスク数: $deletedCount件');
+      }
+      
+      return {
+        'success': true,
+        'deletedCount': deletedCount,
+        'total': tasksToDelete.length,
+      };
+      
+    } catch (e) {
+      print('重複タスク削除エラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'deletedCount': 0,
+        'total': 0,
+      };
     }
   }
 

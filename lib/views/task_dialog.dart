@@ -5,8 +5,6 @@ import 'package:intl/intl.dart';
 import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart'; // Added import for linkViewModelProvider
-import '../services/settings_service.dart';
-import 'settings_screen.dart'; // Added import for settingsServiceProvider
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
@@ -101,6 +99,79 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     _estimatedMinutesController.dispose();
     _assignedToController.dispose();
     super.dispose();
+  }
+
+  /// モーダル内でのナビゲーション処理
+  void _handleModalNavigation(LogicalKeyboardKey key) {
+    // 現在フォーカスされているウィジェットを取得
+    final currentFocus = FocusScope.of(context);
+    
+    if (key == LogicalKeyboardKey.arrowRight) {
+      // 右矢印：現在のテキストフィールド内でカーソル移動、端に到達したら次のフィールドへ
+      final controller = _getCurrentController();
+      if (controller != null) {
+        final currentPosition = controller.selection.baseOffset;
+        final textLength = controller.text.length;
+        
+        if (currentPosition < textLength) {
+          // テキスト内にまだ文字がある場合は右に移動
+          controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: currentPosition + 1),
+          );
+        } else {
+          // テキストの端に到達した場合は次のフィールドに移動
+          currentFocus.nextFocus();
+        }
+      } else {
+        // テキストフィールド以外の場合は次のフィールドに移動
+        currentFocus.nextFocus();
+      }
+    } else if (key == LogicalKeyboardKey.arrowLeft) {
+      // 左矢印：現在のテキストフィールド内でカーソル移動、端に到達したら前のフィールドへ
+      final controller = _getCurrentController();
+      if (controller != null) {
+        final currentPosition = controller.selection.baseOffset;
+        
+        if (currentPosition > 0) {
+          // テキスト内にまだ文字がある場合は左に移動
+          controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: currentPosition - 1),
+          );
+        } else {
+          // テキストの端に到達した場合は前のフィールドに移動
+          currentFocus.previousFocus();
+        }
+      } else {
+        // テキストフィールド以外の場合は前のフィールドに移動
+        currentFocus.previousFocus();
+      }
+    }
+  }
+  
+  /// 現在フォーカスされているテキストフィールドのコントローラーを取得
+  TextEditingController? _getCurrentController() {
+    // 各コントローラーの選択状態をチェックして、現在フォーカスされているものを特定
+    if (_titleController.selection.isValid && _titleController.selection.baseOffset >= 0) {
+      return _titleController;
+    }
+    if (_descriptionController.selection.isValid && _descriptionController.selection.baseOffset >= 0) {
+      return _descriptionController;
+    }
+    if (_estimatedMinutesController.selection.isValid && _estimatedMinutesController.selection.baseOffset >= 0) {
+      return _estimatedMinutesController;
+    }
+    if (_assignedToController.selection.isValid && _assignedToController.selection.baseOffset >= 0) {
+      return _assignedToController;
+    }
+    
+    // フォーカスされているが選択状態が無効な場合、現在のフォーカスから推測
+    final currentFocus = FocusScope.of(context);
+    if (currentFocus.focusedChild != null) {
+      // デフォルトとしてタイトルコントローラーを返す
+      return _titleController;
+    }
+    
+    return null;
   }
 
   void _saveTask() {
@@ -289,11 +360,15 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         focusNode: FocusNode(),
         autofocus: true,
         onKeyEvent: (KeyEvent event) {
-          // 左矢印キーを無効化
-          if (event is KeyDownEvent && 
-              event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            // 何もしない（左矢印キーを無効化）
-            return;
+          // モーダル内でのキーボード制御
+          if (event is KeyDownEvent) {
+            if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+                event.logicalKey == LogicalKeyboardKey.arrowRight) {
+              // 左右矢印キーはモーダル内での操作として処理
+              // フォーカス移動やフィールド間の移動などに使用
+              _handleModalNavigation(event.logicalKey);
+              return; // イベントを消費して親の処理を防ぐ
+            }
           }
         },
         child: Dialog(
@@ -855,3 +930,4 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
     );
   }
 }
+

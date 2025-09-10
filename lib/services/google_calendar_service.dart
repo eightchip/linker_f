@@ -78,7 +78,7 @@ class GoogleCalendarService {
       
       // 認証情報を読み込み
       final credentialsJson = await credentialsFile.readAsString();
-      final credentials = json.decode(credentialsJson);
+      json.decode(credentialsJson); // 認証情報の検証
       
       // 保存されたトークンを確認
       if (await _loadStoredTokens()) {
@@ -550,6 +550,14 @@ class GoogleCalendarService {
         final title = event['summary'] ?? '無題のイベント';
         final description = event['description'] ?? '';
         
+        // 祝日イベントかどうかをチェック
+        if (_isHolidayEvent(title, description, event)) {
+          if (kDebugMode) {
+            print('祝日イベントをスキップ: $title');
+          }
+          continue;
+        }
+        
         // 開始時間と終了時間
         DateTime? startTime;
         DateTime? endTime;
@@ -601,6 +609,90 @@ class GoogleCalendarService {
     return tasks;
   }
   
+  /// 祝日イベントかどうかを判定
+  bool _isHolidayEvent(String title, String description, Map<String, dynamic> event) {
+    final titleLower = title.toLowerCase();
+    final descriptionLower = description.toLowerCase();
+    
+    // 祝日関連のキーワードをチェック（拡張版）
+    final holidayKeywords = [
+      '祝日', 'holiday', '国民の祝日', '振替休日', '敬老の日', '春分の日', '秋分の日',
+      'みどりの日', '海の日', '山の日', '体育の日', 'スポーツの日', '文化の日',
+      '勤労感謝の日', '天皇誕生日', '建国記念の日', '昭和の日', '憲法記念日',
+      'こどもの日', '成人の日', '成人式', 'バレンタインデー', 'ホワイトデー',
+      '母の日', '父の日', 'クリスマス', '大晦日', '正月', 'お盆', 'ゴールデンウィーク',
+      'シルバーウィーク', '年末年始', '七夕', '七五三', '銀行休業日', '節分', '雛祭り',
+      '元日', '振替', '休業', '休日', '祝祭日', '国民の休日'
+    ];
+    
+    // キーワードチェック
+    for (final keyword in holidayKeywords) {
+      if (titleLower.contains(keyword) || descriptionLower.contains(keyword)) {
+        return true;
+      }
+    }
+    
+    // 終日イベントでタイトルが短い場合は祝日の可能性が高い
+    final start = event['start'];
+    final end = event['end'];
+    
+    if (start != null && end != null) {
+      // 終日イベントかどうかをチェック
+      final isAllDay = start['date'] != null && end['date'] != null;
+      
+      if (isAllDay && titleLower.length <= 10) {
+        return true;
+      }
+    }
+    
+    // タイトルが短く、日付が特定のパターンの場合は祝日の可能性が高い
+    if (titleLower.length <= 8) {
+      DateTime? eventDate;
+      
+      final start = event['start'];
+      if (start != null) {
+        if (start['dateTime'] != null) {
+          eventDate = DateTime.parse(start['dateTime']).toLocal();
+        } else if (start['date'] != null) {
+          eventDate = DateTime.parse(start['date']);
+        }
+      }
+      
+      if (eventDate != null) {
+        final month = eventDate.month;
+        final day = eventDate.day;
+        
+        // 祝日になりやすい日付パターン
+        final holidayDates = [
+          [1, 1],   // 元日
+          [1, 8],   // 成人の日（第2月曜日）
+          [2, 11],  // 建国記念の日
+          [2, 23],  // 天皇誕生日
+          [3, 20],  // 春分の日
+          [4, 29],  // 昭和の日
+          [5, 3],   // 憲法記念日
+          [5, 4],   // みどりの日
+          [5, 5],   // こどもの日
+          [7, 15],  // 海の日
+          [8, 11],  // 山の日
+          [9, 16],  // 敬老の日
+          [9, 22],  // 秋分の日
+          [10, 14], // スポーツの日
+          [11, 3],  // 文化の日
+          [11, 23], // 勤労感謝の日
+        ];
+        
+        for (final holidayDate in holidayDates) {
+          if (month == holidayDate[0] && day == holidayDate[1]) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }
+
   /// イベントから優先度を決定
   TaskPriority _determinePriority(Map<String, dynamic> event) {
     // 重要度や参加者数に基づいて優先度を決定
@@ -716,10 +808,18 @@ class GoogleCalendarService {
       
       if (task.dueDate != null) {
         startTime = task.dueDate!;
-        endTime = startTime.add(const Duration(hours: 1)); // デフォルト1時間
+        // 推定時間がある場合はそれを使用、ない場合は30分
+        final duration = task.estimatedMinutes != null 
+            ? Duration(minutes: task.estimatedMinutes!)
+            : const Duration(minutes: 30);
+        endTime = startTime.add(duration);
       } else if (task.reminderTime != null) {
         startTime = task.reminderTime!;
-        endTime = startTime.add(const Duration(hours: 1));
+        // 推定時間がある場合はそれを使用、ない場合は30分
+        final duration = task.estimatedMinutes != null 
+            ? Duration(minutes: task.estimatedMinutes!)
+            : const Duration(minutes: 30);
+        endTime = startTime.add(duration);
       } else {
         ErrorHandler.logError('Google Calendar送信', 'タスクに期限日またはリマインダー時間が設定されていません');
         return false;
@@ -752,6 +852,15 @@ class GoogleCalendarService {
           }
         }
       };
+      
+      // 推定時間が30分以下の場合は、より短い時間に設定
+      if (task.estimatedMinutes != null && task.estimatedMinutes! <= 30) {
+        endTime = startTime.add(const Duration(minutes: 15));
+        eventData['end'] = {
+          'dateTime': endTime.toIso8601String(),
+          'timeZone': 'Asia/Tokyo',
+        };
+      }
 
       // Google Calendar APIに送信
       final response = await http.post(
@@ -1072,13 +1181,52 @@ class GoogleCalendarService {
   /// 単一タスクの同期
   Future<String> _syncSingleTask(TaskItem task, List<Map<String, dynamic>> existingEvents) async {
     try {
-      // 既存のイベントを検索
+      // 既存のイベントを検索（複数の方法でチェック）
       Map<String, dynamic>? existingEvent;
+      
+      // 1. タスクIDで検索
       for (final event in existingEvents) {
         final taskId = event['extendedProperties']?['private']?['taskId'];
         if (taskId == task.id) {
           existingEvent = event;
           break;
+        }
+      }
+      
+      // 2. タイトルと日付で重複チェック（タスクIDが見つからない場合）
+      if (existingEvent == null) {
+        for (final event in existingEvents) {
+          final eventTitle = event['summary'] ?? '';
+          final eventStart = event['start'];
+          DateTime? eventStartTime;
+          
+          if (eventStart != null) {
+            if (eventStart['dateTime'] != null) {
+              eventStartTime = DateTime.parse(eventStart['dateTime']).toLocal();
+            } else if (eventStart['date'] != null) {
+              eventStartTime = DateTime.parse(eventStart['date']);
+            }
+          }
+          
+          // タイトルが同じで、日付が近い場合は重複とみなす
+          if (eventTitle == task.title && eventStartTime != null) {
+            if (task.dueDate != null) {
+              final dateDiff = eventStartTime.difference(task.dueDate!).abs();
+              if (dateDiff.inDays <= 1) {
+                existingEvent = event;
+                print('重複イベントを発見（タイトル・日付一致）: $eventTitle');
+                break;
+              }
+            }
+            if (task.reminderTime != null) {
+              final timeDiff = eventStartTime.difference(task.reminderTime!).abs();
+              if (timeDiff.inDays <= 1) {
+                existingEvent = event;
+                print('重複イベントを発見（タイトル・時間一致）: $eventTitle');
+                break;
+              }
+            }
+          }
         }
       }
 

@@ -84,14 +84,14 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
       _clearForm();
 
       // UIを強制的に更新
-      ref.refresh(subTaskViewModelProvider);
+      ref.invalidate(subTaskViewModelProvider);
       
       // 少し待機してから統計更新を実行
       await Future.delayed(const Duration(milliseconds: 200));
       await taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
       
       // 統計更新後に再度UIを更新
-      ref.refresh(taskViewModelProvider);
+      ref.invalidate(taskViewModelProvider);
     }
   }
 
@@ -131,14 +131,14 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
     await subTaskViewModel.deleteSubTask(subTaskId);
 
     // UIを強制的に更新
-    ref.refresh(subTaskViewModelProvider);
+    ref.invalidate(subTaskViewModelProvider);
     
     // 少し待機してから統計更新を実行
     await Future.delayed(const Duration(milliseconds: 200));
     await taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
     
     // 統計更新後に再度UIを更新
-    ref.refresh(taskViewModelProvider);
+    ref.invalidate(taskViewModelProvider);
   }
 
   void _toggleSubTaskCompletion(String subTaskId, bool isCompleted) {
@@ -154,8 +154,8 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
     taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
     
     // UIを強制的に更新
-    ref.refresh(subTaskViewModelProvider);
-    ref.refresh(taskViewModelProvider);
+    ref.invalidate(subTaskViewModelProvider);
+    ref.invalidate(taskViewModelProvider);
   }
 
 
@@ -174,7 +174,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
       child: Dialog(
       child: Container(
         width: 600,
-        height: 500,
+        height: 700,
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,10 +192,19 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
-                Text(
-                  '$completedCount/$totalCount 完了',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$completedCount/$totalCount 完了',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],

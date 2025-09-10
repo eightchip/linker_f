@@ -20,7 +20,6 @@ import 'services/settings_service.dart';
 import 'services/backup_service.dart';
 import 'services/google_calendar_service.dart';
 import 'repositories/link_repository.dart';
-import 'viewmodels/task_viewmodel.dart';
 
 
 void main() async {
@@ -431,20 +430,19 @@ Future<void> _performGoogleCalendarSync(GoogleCalendarService googleCalendarServ
     final startTime = DateTime.now().subtract(const Duration(days: 30));
     final endTime = DateTime.now().add(const Duration(days: 30));
     
-    final calendarTasks = await googleCalendarService.syncEvents(
+    final calendarEvents = await googleCalendarService.getEvents(
       startTime: startTime,
       endTime: endTime,
       maxResults: 100,
     );
     
-    // TaskViewModelに同期
-    // 注意: ここでは直接TaskViewModelにアクセスできないため、
-    // 実際の実装ではProviderコンテキストが必要です
+    // Googleカレンダーイベントをタスクに変換（祝日除外済み）
+    final calendarTasks = googleCalendarService.convertEventsToTasks(calendarEvents);
     
-    print('Google Calendar同期完了: ${calendarTasks.length}件のタスクを取得');
+    print('Google Calendar同期完了: ${calendarTasks.length}件のタスクを取得（祝日除外済み）');
     
-    // TODO: 自動同期でもタスクを保存する必要があります
-    // 現在は手動同期でのみタスクが保存されます
+    // 注意: 起動時の自動同期では祝日タスクは除外されますが、
+    // 手動同期（設定画面のボタン）を使用することを推奨します
     
     // 最終同期時刻を更新
     final settingsService = SettingsService.instance;

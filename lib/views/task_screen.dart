@@ -112,25 +112,32 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     );
 
     if (confirmed == true) {
-      final taskViewModel = ref.read(taskViewModelProvider.notifier);
-      
-      // 選択されたタスクを削除
-      for (final taskId in _selectedTaskIds) {
-        taskViewModel.deleteTask(taskId);
-      }
+      try {
+        final taskViewModel = ref.read(taskViewModelProvider.notifier);
+        final deletedCount = _selectedTaskIds.length;
+        
+        // 選択されたタスクを削除
+        for (final taskId in _selectedTaskIds) {
+          await taskViewModel.deleteTask(taskId);
+        }
 
-      // 選択モードを解除
-      setState(() {
-        _selectedTaskIds.clear();
-        _isSelectionMode = false;
-      });
+        // 選択モードを解除
+        setState(() {
+          _selectedTaskIds.clear();
+          _isSelectionMode = false;
+        });
 
-      // 削除完了のメッセージを表示
-      if (mounted) {
-        SnackBarService.showSuccess(
-          context,
-          '${_selectedTaskIds.length}件のタスクを削除しました',
-        );
+        // 削除完了のメッセージを表示
+        if (mounted) {
+          SnackBarService.showSuccess(
+            context,
+            '${deletedCount}件のタスクを削除しました',
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          SnackBarService.showError(context, '削除に失敗しました: $e');
+        }
       }
     }
   }
@@ -901,7 +908,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                         if (task.assignedTo != null) ...[
                           const SizedBox(width: 8),
                           Text(
-                            '依頼先(メモ): ${task.assignedTo}',
+                            '${task.assignedTo}',
                             style: TextStyle(
                               color: Colors.blue[600],
                               fontSize: 13,
@@ -917,7 +924,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   else if (task.assignedTo != null)
                     // リマインドがない場合はタイトルの真下に依頼先・メモを表示
                     Text(
-                      '依頼先(メモ): ${task.assignedTo}',
+                      'メモ: ${task.assignedTo}',
                       style: TextStyle(
                         color: Colors.blue[600],
                         fontSize: 13,
@@ -939,26 +946,26 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             IconButton(
               icon: Stack(
                 children: [
-                  const Icon(Icons.subdirectory_arrow_right, size: 16),
+                  const Icon(Icons.subdirectory_arrow_right, size: 20),
                   if (task.hasSubTasks)
                     Positioned(
-                      right: 0,
-                      top: 0,
+                      right: -2,
+                      top: -2,
                       child: Container(
-                        padding: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.blue,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 12,
-                          minHeight: 12,
+                          minWidth: 16,
+                          minHeight: 16,
                         ),
                         child: Text(
                           '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 8,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -1194,9 +1201,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
-            onPressed: () {
-              ref.read(taskViewModelProvider.notifier).deleteTask(task.id);
-              Navigator.of(context).pop();
+            onPressed: () async {
+              try {
+                await ref.read(taskViewModelProvider.notifier).deleteTask(task.id);
+                Navigator.of(context).pop();
+                if (mounted) {
+                  SnackBarService.showSuccess(context, '「${task.title}」を削除しました');
+                }
+              } catch (e) {
+                if (mounted) {
+                  SnackBarService.showError(context, '削除に失敗しました: $e');
+                }
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('削除', style: TextStyle(color: Colors.white)),
@@ -1340,11 +1356,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     }
   }
 
-  // 複数キーワードがすべて含まれているかチェックするヘルパーメソッド
-  bool _matchesKeywords(String text, List<String> keywords) {
-    if (keywords.isEmpty) return true;
-    return keywords.every((keyword) => text.contains(keyword));
-  }
 
   
   // フィルタリング処理を別メソッドに分離
@@ -1553,6 +1564,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   // キーボードショートカット処理
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is RawKeyDownEvent) {
+      // モーダルが開いている場合はショートカットを無効化
+      if (ModalRoute.of(context)?.isFirst != true) {
+        return;
+      }
+      
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
         // 左矢印キーが押されたらホーム画面に戻る
         Navigator.of(context).pop();
@@ -1734,8 +1750,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         return '高';
       case TaskPriority.urgent:
         return '緊急';
-      default:
-        return '中';
     }
   }
 }

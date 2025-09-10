@@ -1642,105 +1642,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   const SizedBox(height: 8),
                   
-                  // 手動同期ボタン
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final googleCalendarService = GoogleCalendarService();
-                          await googleCalendarService.initialize();
-                          
-                          if (googleCalendarService.isInitialized) {
-                            final tasks = await googleCalendarService.syncEvents();
-                            
-                            // 取得したタスクをデータベースに保存
-                            final taskViewModel = ref.read(taskViewModelProvider.notifier);
-                            int savedCount = 0;
-                            
-                            for (final task in tasks) {
-                              try {
-                                // 既存のタスクかどうかチェック（externalIdで判定）
-                                final existingTasks = taskViewModel.state.where(
-                                  (t) => t.externalId == task.externalId
-                                ).toList();
-                                
-                                if (existingTasks.isEmpty) {
-                                  // 新規タスクとして追加
-                                  final newTask = taskViewModel.createTask(
-                                    title: task.title,
-                                    description: task.description,
-                                    dueDate: task.dueDate,
-                                    reminderTime: task.reminderTime,
-                                    priority: task.priority,
-                                    tags: task.tags,
-                                    estimatedMinutes: task.estimatedMinutes,
-                                    assignedTo: task.assignedTo,
-                                    isRecurringReminder: task.isRecurringReminder,
-                                    recurringReminderPattern: task.recurringReminderPattern,
-                                    source: task.source,
-                                    externalId: task.externalId,
-                                  );
-                                  
-                                  // タスクをデータベースに追加
-                                  await taskViewModel.addTask(newTask);
-                                  savedCount++;
-                                }
-                              } catch (e) {
-                                print('タスク保存エラー: ${task.title} - $e');
-                              }
-                            }
-                            
-                            SnackBarService.showSuccess(
-                              context,
-                              '${tasks.length}件のタスクを取得し、${savedCount}件を新規追加しました',
-                            );
-                          } else {
-                            SnackBarService.showWarning(
-                              context,
-                              'OAuth2認証を先に実行してください',
-                            );
-                          }
-                        } catch (e) {
-                          SnackBarService.showError(
-                            context,
-                            '同期エラー: $e',
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.download),
-                      label: const Text('Google Calendarから取得'),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // 包括的同期ボタン（アプリ → Google Calendar）
+                  // 完全相互同期ボタン
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         try {
                           final taskViewModel = ref.read(taskViewModelProvider.notifier);
-                          final result = await taskViewModel.syncAllTasksToGoogleCalendar();
+                          final result = await taskViewModel.performFullBidirectionalSync();
                           
                           if (result['success']) {
-                            final created = result['created'] ?? 0;
-                            final updated = result['updated'] ?? 0;
-                            final deleted = result['deleted'] ?? 0;
+                            final appToCalendar = result['appToCalendar'] ?? 0;
+                            final calendarToApp = result['calendarToApp'] ?? 0;
+                            final total = result['total'] ?? 0;
+                            
                             SnackBarService.showSuccess(
                               context, 
-                              '包括的同期完了: 作成$created件, 更新$updated件, 削除$deleted件'
+                              '完全同期完了: アプリ→Googleカレンダー${appToCalendar}件, Googleカレンダー→アプリ${calendarToApp}件 (合計${total}件)'
                             );
                           } else {
-                            SnackBarService.showError(context, '包括的同期エラー: ${result['error']}');
+                            SnackBarService.showError(context, '同期エラー: ${result['error']}');
                           }
                         } catch (e) {
-                          SnackBarService.showError(context, '包括的同期エラー: $e');
+                          SnackBarService.showError(context, '同期エラー: $e');
                         }
                       },
-                      icon: const Icon(Icons.upload),
-                      label: const Text('アプリからGoogle Calendarへ送信'),
+                      icon: const Icon(Icons.sync),
+                      label: const Text('完全同期'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
