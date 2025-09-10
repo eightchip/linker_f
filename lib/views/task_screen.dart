@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -33,6 +34,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   List<Map<String, String>> _sortOrders = [{'field': 'dueDate', 'order': 'asc'}]; // 第3順位まで設定可能
   bool _showFilters = false; // フィルター表示/非表示の切り替え
   late TextEditingController _searchController;
+  final FocusNode _appBarMenuFocusNode = FocusNode();
   
   // 一括選択機能の状態変数
   bool _isSelectionMode = false; // 選択モードのオン/オフ
@@ -247,8 +249,24 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             ),
           ] else ...[
             // 3点ドットメニューに統合
-            PopupMenuButton<String>(
-            onSelected: (value) => _handleMenuAction(value),
+            Focus(
+              focusNode: _appBarMenuFocusNode,
+              onKeyEvent: (node, event) {
+                if (event is KeyDownEvent) {
+                  if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                    // 左矢印キーでホーム画面に戻る
+                    Navigator.of(context).pop();
+                    return KeyEventResult.handled;
+                  } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+                    // エンターキーでメニューを開く
+                    _showPopupMenu(context);
+                    return KeyEventResult.handled;
+                  }
+                }
+                return KeyEventResult.ignored;
+              },
+              child: PopupMenuButton<String>(
+              onSelected: (value) => _handleMenuAction(value),
             itemBuilder: (context) => [
               // 新しいタスク作成
               PopupMenuItem(
@@ -325,7 +343,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 ),
               ),
             ],
-          ),
+              ),
+            ),
           ],
         ],
       ),
@@ -961,14 +980,22 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                           minWidth: 16,
                           minHeight: 16,
                         ),
-                        child: Text(
-                          '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
+                        child: Builder(
+                          builder: (context) {
+                            // デバッグ情報を出力
+                            if (kDebugMode) {
+                              print('サブタスクバッジ表示 - タスク: ${task.title}, 完了: ${task.completedSubTasksCount}, 総数: ${task.totalSubTasksCount}');
+                            }
+                            return Text(
+                              '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -1573,11 +1600,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         // 左矢印キーが押されたらホーム画面に戻る
         Navigator.of(context).pop();
       } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-        // 右矢印キーで3点ドットメニューを表示
-        _showPopupMenu(context);
+        // 右矢印キーでAppBarの3点ドットメニューにフォーカスを移す
+        _appBarMenuFocusNode.requestFocus();
       } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-        // 下矢印キーで3点ドットメニューを表示
-        _showPopupMenu(context);
+        // 下矢印キーでAppBarの3点ドットメニューにフォーカスを移す
+        _appBarMenuFocusNode.requestFocus();
       }
     }
   }

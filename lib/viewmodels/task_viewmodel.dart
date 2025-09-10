@@ -659,6 +659,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       await _taskBox!.put(task.id, task);
       await _taskBox!.flush(); // データの永続化を確実にする
       
+      // Riverpodの状態を正しく更新
       final newTasks = state.map((t) => t.id == task.id ? task : t).toList();
       newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       state = newTasks;
@@ -668,6 +669,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       if (kDebugMode) {
         print('タスク直接更新: ${task.title}');
+        print('更新後のサブタスク統計 - 総数: ${task.totalSubTasksCount}, 完了: ${task.completedSubTasksCount}');
       }
     } catch (e) {
       if (kDebugMode) {

@@ -83,15 +83,14 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
       // フォームをクリア
       _clearForm();
 
-      // UIを強制的に更新
-      ref.invalidate(subTaskViewModelProvider);
-      
-      // 少し待機してから統計更新を実行
-      await Future.delayed(const Duration(milliseconds: 200));
-      await taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
-      
-      // 統計更新後に再度UIを更新
-      ref.invalidate(taskViewModelProvider);
+    // UIを強制的に更新
+    ref.invalidate(subTaskViewModelProvider);
+    
+    // 統計更新を即座に実行
+    await taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
+    
+    // 統計更新後に再度UIを更新
+    ref.invalidate(taskViewModelProvider);
     }
   }
 
@@ -133,17 +132,21 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
     // UIを強制的に更新
     ref.invalidate(subTaskViewModelProvider);
     
-    // 少し待機してから統計更新を実行
-    await Future.delayed(const Duration(milliseconds: 200));
+    // 統計更新を即座に実行
     await taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
     
     // 統計更新後に再度UIを更新
     ref.invalidate(taskViewModelProvider);
   }
 
-  void _toggleSubTaskCompletion(String subTaskId, bool isCompleted) {
+  void _toggleSubTaskCompletion(String subTaskId, bool isCompleted) async {
     final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
     final taskViewModel = ref.read(taskViewModelProvider.notifier);
+
+    print('=== サブタスク完了状態変更 ===');
+    print('サブタスクID: $subTaskId');
+    print('完了状態: $isCompleted');
+    print('親タスクID: ${widget.parentTaskId}');
 
     if (isCompleted) {
       subTaskViewModel.uncompleteSubTask(subTaskId);
@@ -151,11 +154,16 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
       subTaskViewModel.completeSubTask(subTaskId);
     }
     
-    taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
-    
-    // UIを強制的に更新
+    // UIを即座に更新
     ref.invalidate(subTaskViewModelProvider);
+    
+    // 統計更新を即座に実行
+    await taskViewModel.updateSubTaskStatistics(widget.parentTaskId);
+    
+    // 統計更新後に再度UIを更新
     ref.invalidate(taskViewModelProvider);
+    
+    print('=== サブタスク完了状態変更完了 ===');
   }
 
 
