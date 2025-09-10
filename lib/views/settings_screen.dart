@@ -2006,10 +2006,185 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        
+        // 重複クリーンアップボタン
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _showDuplicateCleanupDialog(ref),
+            icon: const Icon(Icons.cleaning_services),
+            label: const Text('重複イベントをクリーンアップ'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        // 孤立イベント削除ボタン
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _showOrphanedEventsCleanupDialog(ref),
+            icon: const Icon(Icons.delete_forever),
+            label: const Text('孤立イベントを削除'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
       ],
     );
   }
 
+
+  /// 孤立イベント削除ダイアログ
+  void _showOrphanedEventsCleanupDialog(WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('孤立イベント削除'),
+        content: const Text(
+          'Google Calendarに残っているが、アプリに存在しないタスクのイベントを削除します。\n'
+          'アプリで削除されたタスクのイベントがGoogle Calendarに残っている場合に使用してください。\n\n'
+          'この操作は取り消せません。実行しますか？'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _performOrphanedEventsCleanup(ref);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('削除実行'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 孤立イベント削除を実行
+  Future<void> _performOrphanedEventsCleanup(WidgetRef ref) async {
+    final syncStatusNotifier = ref.read(syncStatusProvider.notifier);
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    
+    try {
+      syncStatusNotifier.startSync(
+        message: '孤立イベントを検出中...',
+      );
+      
+      final result = await taskViewModel.deleteOrphanedCalendarEvents();
+      
+      if (result['success'] == true) {
+        final deletedCount = result['deletedCount'] ?? 0;
+        
+        syncStatusNotifier.syncSuccess(
+          message: '孤立イベント削除完了: ${deletedCount}件削除',
+        );
+        
+        if (deletedCount > 0) {
+          SnackBarService.showSuccess(context, '孤立イベント${deletedCount}件を削除しました');
+        } else {
+          SnackBarService.showSuccess(context, '孤立イベントは見つかりませんでした');
+        }
+      } else {
+        syncStatusNotifier.syncError(
+          errorMessage: result['error'] ?? '不明なエラー',
+          message: '孤立イベント削除に失敗しました',
+        );
+        SnackBarService.showError(context, '孤立イベント削除に失敗しました: ${result['error']}');
+      }
+    } catch (e) {
+      syncStatusNotifier.syncError(
+        errorMessage: e.toString(),
+        message: '孤立イベント削除中にエラーが発生しました',
+      );
+      SnackBarService.showError(context, '孤立イベント削除中にエラーが発生しました: $e');
+    }
+  }
+
+  /// 重複クリーンアップダイアログ
+  void _showDuplicateCleanupDialog(WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重複イベントクリーンアップ'),
+        content: const Text(
+          'Google Calendarの重複したイベントを検出・削除します。\n'
+          '同じタイトルと日付のイベントが複数ある場合、古いものを削除します。\n\n'
+          'この操作は取り消せません。実行しますか？'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _performDuplicateCleanup(ref);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('クリーンアップ実行'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 重複クリーンアップを実行
+  Future<void> _performDuplicateCleanup(WidgetRef ref) async {
+    final syncStatusNotifier = ref.read(syncStatusProvider.notifier);
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    
+    try {
+      syncStatusNotifier.startSync(
+        message: '重複イベントを検出中...',
+      );
+      
+      final result = await taskViewModel.cleanupGoogleCalendarDuplicates();
+      
+      if (result['success'] == true) {
+        final duplicatesFound = result['duplicatesFound'] ?? 0;
+        final duplicatesRemoved = result['duplicatesRemoved'] ?? 0;
+        
+        syncStatusNotifier.syncSuccess(
+          message: '重複クリーンアップ完了: ${duplicatesFound}グループ検出、${duplicatesRemoved}件削除',
+        );
+        
+        if (duplicatesRemoved > 0) {
+          SnackBarService.showSuccess(context, '重複イベント${duplicatesRemoved}件を削除しました');
+        } else {
+          SnackBarService.showSuccess(context, '重複イベントは見つかりませんでした');
+        }
+      } else {
+        syncStatusNotifier.syncError(
+          errorMessage: result['error'] ?? '不明なエラー',
+          message: '重複クリーンアップに失敗しました',
+        );
+        SnackBarService.showError(context, '重複クリーンアップに失敗しました: ${result['error']}');
+      }
+    } catch (e) {
+      syncStatusNotifier.syncError(
+        errorMessage: e.toString(),
+        message: '重複クリーンアップ中にエラーが発生しました',
+      );
+      SnackBarService.showError(context, '重複クリーンアップ中にエラーが発生しました: $e');
+    }
+  }
 
   /// 日付範囲同期ダイアログ
   void _showDateRangeSyncDialog(WidgetRef ref) {

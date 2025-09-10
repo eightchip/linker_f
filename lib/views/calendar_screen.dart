@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../services/snackbar_service.dart';
+import 'settings_screen.dart';
 import 'task_dialog.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -266,7 +267,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tasks = ref.watch(taskViewModelProvider);
+    ref.watch(taskViewModelProvider);
     
     // タスクが変更されたときにイベントを再読み込み
     _loadEvents();
@@ -619,16 +620,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           ),
                         ),
                       ),
-                    if (task.estimatedMinutes != null) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        '${task.estimatedMinutes}分',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ],
@@ -840,7 +831,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _deleteTask(task);
+              _showCalendarDeleteConfirmation(task);
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
@@ -852,21 +843,143 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  void _deleteTask(TaskItem task) {
-    try {
-      final taskViewModel = ref.read(taskViewModelProvider.notifier);
-      taskViewModel.deleteTask(task.id);
-      
-      // イベントを再読み込み
-      setState(() {
-        _loadEvents();
-      });
-      
-      // 成功メッセージを表示
-      SnackBarService.showSuccess(context, '「${task.title}」を削除しました');
-    } catch (e) {
-      // エラーメッセージを表示
-      SnackBarService.showError(context, '削除に失敗しました: $e');
-    }
+  void _showCalendarDeleteConfirmation(TaskItem task) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('タスクを削除'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('「${task.title}」を削除しますか？'),
+            const SizedBox(height: 16),
+            const Text(
+              '削除オプション:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text('• アプリのみ削除'),
+            const Text('• アプリとGoogle Calendarから削除'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                final taskViewModel = ref.read(taskViewModelProvider.notifier);
+                await taskViewModel.deleteTask(task.id);
+                Navigator.of(context).pop();
+                
+                // イベントを再読み込み
+                setState(() {
+                  _loadEvents();
+                });
+                
+                if (mounted) {
+                  SnackBarService.showSuccess(context, '「${task.title}」を削除しました');
+                }
+              } catch (e) {
+                if (mounted) {
+                  SnackBarService.showError(context, '削除に失敗しました: $e');
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('アプリのみ', style: TextStyle(color: Colors.white)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                final taskViewModel = ref.read(taskViewModelProvider.notifier);
+                final result = await taskViewModel.deleteTaskWithCalendarSync(task.id);
+                Navigator.of(context).pop();
+                
+                // イベントを再読み込み
+                setState(() {
+                  _loadEvents();
+                });
+                
+                if (mounted) {
+                  if (result['success'] == true) {
+                    final message = result['message'] ?? '「${task.title}」をアプリとGoogle Calendarから削除しました';
+                    SnackBarService.showSuccess(context, message);
+                    
+                    // 警告メッセージがある場合は表示
+                    if (result['warning'] != null) {
+                      SnackBarService.showError(context, '警告: ${result['warning']}');
+                    }
+                  } else {
+                    final error = result['error'] ?? '削除に失敗しました';
+                    final errorCode = result['errorCode'];
+                    
+                    // 認証エラーの場合は設定画面への案内を表示
+                    if (errorCode == 'AUTH_REQUIRED' || errorCode == 'TOKEN_REFRESH_FAILED') {
+                      _showAuthErrorDialog(context, error);
+                    } else {
+                      SnackBarService.showError(context, error);
+                    }
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  SnackBarService.showError(context, '削除に失敗しました: $e');
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('両方削除', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 認証エラーダイアログを表示
+  void _showAuthErrorDialog(BuildContext context, String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Google Calendar認証エラー'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(errorMessage),
+            const SizedBox(height: 16),
+            const Text(
+              'Google Calendarとの同期を行うには、設定画面でGoogle Calendarの認証を行う必要があります。',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // 設定画面に遷移
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('設定画面へ'),
+          ),
+        ],
+      ),
+    );
   }
 }

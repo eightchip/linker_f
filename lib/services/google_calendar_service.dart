@@ -818,6 +818,255 @@ class GoogleCalendarService {
     }
   }
 
+  /// 重複イベントを検出・削除
+  Future<Map<String, dynamic>> cleanupDuplicateEvents() async {
+    try {
+      if (!_isInitialized || _accessToken == null) {
+        return {
+          'success': false,
+          'error': '認証されていません',
+          'duplicatesFound': 0,
+          'duplicatesRemoved': 0,
+        };
+      }
+
+      print('=== 重複イベントクリーンアップ開始 ===');
+      
+      // 現在のイベントを取得
+      final events = await getEvents(
+        startTime: DateTime.now().subtract(const Duration(days: 365)),
+        endTime: DateTime.now().add(const Duration(days: 365)),
+        maxResults: 1000,
+      );
+      
+      print('取得したイベント数: ${events.length}');
+      
+      // 重複を検出
+      final duplicates = _findDuplicateEvents(events);
+      print('重複イベント数: ${duplicates.length}');
+      
+      int removedCount = 0;
+      List<String> errors = [];
+      
+      // 重複イベントを削除（古い方を削除）
+      for (final duplicateGroup in duplicates) {
+        if (duplicateGroup.length > 1) {
+          // 作成日時でソート（古い順）
+          duplicateGroup.sort((a, b) {
+            final aCreated = DateTime.parse(a['created'] ?? a['updated'] ?? '1970-01-01');
+            final bCreated = DateTime.parse(b['created'] ?? b['updated'] ?? '1970-01-01');
+            return aCreated.compareTo(bCreated);
+          });
+          
+          // 最初の1つ以外を削除
+          for (int i = 1; i < duplicateGroup.length; i++) {
+            try {
+              final eventId = duplicateGroup[i]['id'];
+              if (eventId != null) {
+                await _deleteEvent(eventId);
+                removedCount++;
+                print('重複イベント削除: ${duplicateGroup[i]['summary']} (ID: $eventId)');
+              }
+            } catch (e) {
+              errors.add('イベント削除エラー: $e');
+              print('イベント削除エラー: $e');
+            }
+          }
+        }
+      }
+      
+      print('=== 重複イベントクリーンアップ完了 ===');
+      print('削除されたイベント数: $removedCount');
+      
+      return {
+        'success': true,
+        'duplicatesFound': duplicates.length,
+        'duplicatesRemoved': removedCount,
+        'errors': errors,
+      };
+    } catch (e) {
+      print('重複イベントクリーンアップエラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'duplicatesFound': 0,
+        'duplicatesRemoved': 0,
+      };
+    }
+  }
+
+  /// 重複イベントを検出
+  List<List<Map<String, dynamic>>> _findDuplicateEvents(List<Map<String, dynamic>> events) {
+    final Map<String, List<Map<String, dynamic>>> eventGroups = {};
+    
+    for (final event in events) {
+      final title = event['summary'] ?? '';
+      final start = event['start'];
+      DateTime? startTime;
+      
+      if (start != null) {
+        if (start['dateTime'] != null) {
+          startTime = DateTime.parse(start['dateTime']).toLocal();
+        } else if (start['date'] != null) {
+          startTime = DateTime.parse(start['date']);
+        }
+      }
+      
+      if (title.isNotEmpty && startTime != null) {
+        // タイトルと日付の組み合わせでキーを作成
+        final key = '${title}_${startTime.toIso8601String().split('T')[0]}';
+        
+        if (!eventGroups.containsKey(key)) {
+          eventGroups[key] = [];
+        }
+        eventGroups[key]!.add(event);
+      }
+    }
+    
+    // 重複があるグループのみを返す
+    return eventGroups.values.where((group) => group.length > 1).toList();
+  }
+
+  /// イベントを削除
+  Future<void> _deleteEvent(String eventId) async {
+    final response = await http.delete(
+      Uri.parse('$_calendarApiUrl/calendars/primary/events/$eventId'),
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+    
+    if (response.statusCode != 204) {
+      throw Exception('イベント削除に失敗しました: ${response.statusCode}');
+    }
+  }
+
+  /// タスクIDでイベントを削除
+  Future<SyncResult> deleteCalendarEventByTaskId(String taskId) async {
+    try {
+      if (!_isInitialized || _accessToken == null) {
+        return SyncResult(
+          success: false,
+          errorMessage: 'Google Calendarが認証されていません。',
+          errorCode: 'AUTH_REQUIRED',
+        );
+      }
+
+      // アクセストークンの有効性を確認
+      if (_tokenExpiry != null && DateTime.now().isAfter(_tokenExpiry!)) {
+        final refreshed = await _refreshAccessToken();
+        if (!refreshed) {
+          return SyncResult(
+            success: false,
+            errorMessage: 'アクセストークンの更新に失敗しました。',
+            errorCode: 'TOKEN_REFRESH_FAILED',
+          );
+        }
+      }
+
+      // タスクIDでイベントを検索
+      final events = await getEvents(
+        startTime: DateTime.now().subtract(const Duration(days: 365)),
+        endTime: DateTime.now().add(const Duration(days: 365)),
+        maxResults: 1000,
+      );
+
+      String? eventIdToDelete;
+      for (final event in events) {
+        final eventTaskId = event['extendedProperties']?['private']?['taskId'];
+        if (eventTaskId == taskId) {
+          eventIdToDelete = event['id'];
+          break;
+        }
+      }
+
+      if (eventIdToDelete == null) {
+        return SyncResult(
+          success: false,
+          errorMessage: 'タスクIDに対応するイベントが見つかりませんでした。',
+          errorCode: 'EVENT_NOT_FOUND',
+        );
+      }
+
+      // イベントを削除
+      await _deleteEvent(eventIdToDelete);
+      
+      return SyncResult(
+        success: true,
+        details: {'deletedEventId': eventIdToDelete},
+      );
+    } catch (e) {
+      return SyncResult(
+        success: false,
+        errorMessage: 'イベント削除中にエラーが発生しました: ${e.toString()}',
+        errorCode: 'DELETE_ERROR',
+      );
+    }
+  }
+
+  /// アプリで削除されたタスクのイベントを一括削除
+  Future<Map<String, dynamic>> deleteOrphanedEvents(List<String> existingTaskIds) async {
+    try {
+      if (!_isInitialized || _accessToken == null) {
+        return {
+          'success': false,
+          'error': '認証されていません',
+          'deletedCount': 0,
+        };
+      }
+
+      print('=== 孤立イベント削除開始 ===');
+      print('既存タスクID数: ${existingTaskIds.length}');
+      
+      // 現在のイベントを取得
+      final events = await getEvents(
+        startTime: DateTime.now().subtract(const Duration(days: 365)),
+        endTime: DateTime.now().add(const Duration(days: 365)),
+        maxResults: 1000,
+      );
+      
+      print('取得したイベント数: ${events.length}');
+      
+      int deletedCount = 0;
+      List<String> errors = [];
+      
+      // アプリのタスクIDに対応しないイベントを削除
+      for (final event in events) {
+        final eventTaskId = event['extendedProperties']?['private']?['taskId'];
+        if (eventTaskId != null && !existingTaskIds.contains(eventTaskId)) {
+          try {
+            final eventId = event['id'];
+            if (eventId != null) {
+              await _deleteEvent(eventId);
+              deletedCount++;
+              print('孤立イベント削除: ${event['summary']} (タスクID: $eventTaskId)');
+            }
+          } catch (e) {
+            errors.add('イベント削除エラー: $e');
+            print('イベント削除エラー: $e');
+          }
+        }
+      }
+      
+      print('=== 孤立イベント削除完了 ===');
+      print('削除されたイベント数: $deletedCount');
+      
+      return {
+        'success': true,
+        'deletedCount': deletedCount,
+        'errors': errors,
+      };
+    } catch (e) {
+      print('孤立イベント削除エラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'deletedCount': 0,
+      };
+    }
+  }
+
   /// リソースを解放
   void dispose() {
     _accessToken = null;
@@ -852,24 +1101,13 @@ class GoogleCalendarService {
         }
       }
 
-      // イベントの開始・終了時間を設定
+      // イベントの開始時間を設定（終日イベント用）
       DateTime startTime;
-      DateTime endTime;
       
       if (task.dueDate != null) {
         startTime = task.dueDate!;
-        // 推定時間がある場合はそれを使用、ない場合は30分
-        final duration = task.estimatedMinutes != null 
-            ? Duration(minutes: task.estimatedMinutes!)
-            : const Duration(minutes: 30);
-        endTime = startTime.add(duration);
       } else if (task.reminderTime != null) {
         startTime = task.reminderTime!;
-        // 推定時間がある場合はそれを使用、ない場合は30分
-        final duration = task.estimatedMinutes != null 
-            ? Duration(minutes: task.estimatedMinutes!)
-            : const Duration(minutes: 30);
-        endTime = startTime.add(duration);
       } else {
         ErrorHandler.logError('Google Calendar送信', 'タスクに期限日またはリマインダー時間が設定されていません');
         return SyncResult(
@@ -879,23 +1117,55 @@ class GoogleCalendarService {
         );
       }
 
-      // イベントデータを作成
+      // 重複チェックを実行（終日イベント用）
+      final existingEvents = await getEvents(
+        startTime: startTime.subtract(const Duration(days: 1)),
+        endTime: startTime.add(const Duration(days: 1)),
+        maxResults: 100,
+      );
+      
+      // 同じタイトルと日付のイベントが既に存在するかチェック
+      for (final event in existingEvents) {
+        final eventTitle = event['summary'] ?? '';
+        final eventStart = event['start'];
+        DateTime? eventStartTime;
+        
+        if (eventStart != null) {
+          if (eventStart['dateTime'] != null) {
+            eventStartTime = DateTime.parse(eventStart['dateTime']).toLocal();
+          } else if (eventStart['date'] != null) {
+            eventStartTime = DateTime.parse(eventStart['date']);
+          }
+        }
+        
+        if (eventTitle == task.title && eventStartTime != null) {
+          // 終日イベントなので、同じ日付かどうかで判定
+          final eventDate = eventStartTime.toIso8601String().split('T')[0];
+          final taskDate = startTime.toIso8601String().split('T')[0];
+          if (eventDate == taskDate) {
+            return SyncResult(
+              success: false,
+              errorMessage: '同じタイトルと日付のイベントが既に存在します: $eventTitle',
+              errorCode: 'DUPLICATE_EVENT',
+            );
+          }
+        }
+      }
+
+      // 日付のみの終日イベントとして作成
       final eventData = {
         'summary': task.title,
         'description': task.description ?? '',
         'start': {
-          'dateTime': startTime.toIso8601String(),
-          'timeZone': 'Asia/Tokyo',
+          'date': startTime.toIso8601String().split('T')[0], // 日付のみ
         },
         'end': {
-          'dateTime': endTime.toIso8601String(),
-          'timeZone': 'Asia/Tokyo',
+          'date': startTime.add(const Duration(days: 1)).toIso8601String().split('T')[0], // 翌日
         },
         'reminders': {
           'useDefault': false,
           'overrides': [
-            {'method': 'popup', 'minutes': 15},
-            {'method': 'email', 'minutes': 30},
+            {'method': 'popup', 'minutes': 0}, // 当日の0分前（開始時刻）
           ],
         },
         'extendedProperties': {
@@ -906,15 +1176,6 @@ class GoogleCalendarService {
           }
         }
       };
-      
-      // 推定時間が30分以下の場合は、より短い時間に設定
-      if (task.estimatedMinutes != null && task.estimatedMinutes! <= 30) {
-        endTime = startTime.add(const Duration(minutes: 15));
-        eventData['end'] = {
-          'dateTime': endTime.toIso8601String(),
-          'timeZone': 'Asia/Tokyo',
-        };
-      }
 
       // Google Calendar APIに送信
       final response = await http.post(

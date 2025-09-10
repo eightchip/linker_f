@@ -26,7 +26,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _estimatedMinutesController = TextEditingController();
   final _assignedToController = TextEditingController();
 
   DateTime? _dueDate;
@@ -47,7 +46,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       
       _titleController.text = widget.task!.title;
       _descriptionController.text = widget.task!.description ?? '';
-      _estimatedMinutesController.text = widget.task!.estimatedMinutes?.toString() ?? '';
       _assignedToController.text = widget.task!.assignedTo ?? '';
       _dueDate = widget.task!.dueDate;
       _reminderTime = widget.task!.reminderTime;
@@ -96,7 +94,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _estimatedMinutesController.dispose();
     _assignedToController.dispose();
     super.dispose();
   }
@@ -157,9 +154,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     if (_descriptionController.selection.isValid && _descriptionController.selection.baseOffset >= 0) {
       return _descriptionController;
     }
-    if (_estimatedMinutesController.selection.isValid && _estimatedMinutesController.selection.baseOffset >= 0) {
-      return _estimatedMinutesController;
-    }
     if (_assignedToController.selection.isValid && _assignedToController.selection.baseOffset >= 0) {
       return _assignedToController;
     }
@@ -209,9 +203,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           reminderTime: _reminderTime,
           priority: _priority,
           tags: tags,
-          estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
-              ? int.tryParse(_estimatedMinutesController.text)
-              : null,
+          estimatedMinutes: null,
           assignedTo: _assignedToController.text.trim().isEmpty
               ? null
               : _assignedToController.text.trim(),
@@ -250,9 +242,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           priority: _priority,
           tags: tags,
           relatedLinkId: widget.relatedLinkId,
-          estimatedMinutes: _estimatedMinutesController.text.isNotEmpty
-              ? int.tryParse(_estimatedMinutesController.text)
-              : null,
+          estimatedMinutes: null,
           assignedTo: _assignedToController.text.trim().isEmpty
               ? null
               : _assignedToController.text.trim(),
@@ -578,16 +568,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 // タグフィールドは削除
                 const SizedBox(height: 16),
                 
-                // 推定時間
-                TextFormField(
-                  controller: _estimatedMinutesController,
-                  decoration: const InputDecoration(
-                    labelText: '推定所要時間 (分)',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 16),
                 
                 // 依頼先
                 TextFormField(

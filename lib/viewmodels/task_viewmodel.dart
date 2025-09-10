@@ -1431,6 +1431,129 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     return false;
   }
 
+  /// タスク削除時にGoogle Calendarからもイベントを削除
+  Future<Map<String, dynamic>> deleteTaskWithCalendarSync(String taskId) async {
+    try {
+      if (kDebugMode) {
+        print('=== タスク削除（カレンダー同期）開始 ===');
+        print('削除対象タスクID: $taskId');
+      }
+      
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      // Google Calendarからイベントを削除
+      final deleteResult = await googleCalendarService.deleteCalendarEventByTaskId(taskId);
+      
+      if (deleteResult.success) {
+        if (kDebugMode) {
+          print('Google Calendarイベント削除成功');
+        }
+        
+        // アプリからタスクを削除
+        await deleteTask(taskId);
+        
+        if (kDebugMode) {
+          print('=== タスク削除（カレンダー同期）完了 ===');
+        }
+        
+        return {
+          'success': true,
+          'message': 'タスクとGoogle Calendarイベントを削除しました',
+        };
+      } else {
+        // 認証エラーの場合はタスク削除を停止
+        if (deleteResult.errorCode == 'AUTH_REQUIRED' || 
+            deleteResult.errorCode == 'TOKEN_REFRESH_FAILED') {
+          return {
+            'success': false,
+            'error': deleteResult.errorMessage ?? 'Google Calendarの認証に失敗しました',
+            'errorCode': deleteResult.errorCode,
+          };
+        }
+        
+        if (kDebugMode) {
+          print('Google Calendarイベント削除失敗: ${deleteResult.errorMessage}');
+        }
+        
+        // その他のエラーの場合はタスク削除は続行
+        await deleteTask(taskId);
+        
+        return {
+          'success': true,
+          'message': 'タスクを削除しました（Google Calendarイベント削除に失敗）',
+          'warning': deleteResult.errorMessage,
+        };
+      }
+    } catch (e) {
+      print('タスク削除（カレンダー同期）エラー: $e');
+      return {
+        'success': false,
+        'error': 'タスク削除中にエラーが発生しました: $e',
+      };
+    }
+  }
+
+  /// 孤立したGoogle Calendarイベントを削除
+  Future<Map<String, dynamic>> deleteOrphanedCalendarEvents() async {
+    try {
+      if (kDebugMode) {
+        print('=== 孤立イベント削除開始 ===');
+      }
+      
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      // 現在のアプリのタスクIDリストを取得
+      final existingTaskIds = state.map((task) => task.id).toList();
+      
+      final result = await googleCalendarService.deleteOrphanedEvents(existingTaskIds);
+      
+      if (kDebugMode) {
+        print('=== 孤立イベント削除完了 ===');
+        print('結果: $result');
+      }
+      
+      return result;
+    } catch (e) {
+      print('孤立イベント削除エラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'deletedCount': 0,
+      };
+    }
+  }
+
+  /// Google Calendarの重複イベントをクリーンアップ
+  Future<Map<String, dynamic>> cleanupGoogleCalendarDuplicates() async {
+    try {
+      if (kDebugMode) {
+        print('=== Google Calendar重複クリーンアップ開始 ===');
+      }
+      
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      final result = await googleCalendarService.cleanupDuplicateEvents();
+      
+      if (kDebugMode) {
+        print('=== Google Calendar重複クリーンアップ完了 ===');
+        print('結果: $result');
+      }
+      
+      return result;
+    } catch (e) {
+      print('Google Calendar重複クリーンアップエラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'duplicatesFound': 0,
+        'duplicatesRemoved': 0,
+      };
+    }
+  }
+
   /// 祝日タスクを一括削除
   Future<Map<String, dynamic>> removeHolidayTasks() async {
     try {
