@@ -312,19 +312,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final currentSection = ref.watch(settingsSectionProvider);
     final isSelected = currentSection == section;
     
-    return ListTile(
-      leading: Icon(icon, color: isSelected ? Theme.of(context).primaryColor : Colors.grey),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? Theme.of(context).primaryColor : null,
-        ),
+    // 各セクションに応じた色を定義
+    Color getIconColor() {
+      switch (section) {
+        case 'theme':
+          return const Color(0xFF4CAF50); // 緑
+        case 'font':
+          return const Color(0xFF2196F3); // 青
+        case 'grid':
+          return const Color(0xFFFF9800); // オレンジ
+        case 'card':
+          return const Color(0xFF9C27B0); // 紫
+        case 'item':
+          return const Color(0xFF009688); // ティール
+        case 'backup':
+          return const Color(0xFF607D8B); // ブルーグレー
+        case 'export':
+          return const Color(0xFF4CAF50); // 緑
+        case 'notifications':
+          return const Color(0xFFFF5722); // ディープオレンジ
+        case 'google_calendar':
+          return const Color(0xFF3F51B5); // インディゴ
+        case 'cache':
+          return const Color(0xFF795548); // ブラウン
+        case 'reset':
+          return const Color(0xFFF44336); // 赤
+        default:
+          return Colors.grey;
+      }
+    }
+    
+    final iconColor = getIconColor();
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isSelected ? iconColor.withOpacity(0.1) : null,
+        borderRadius: BorderRadius.circular(8),
+        border: isSelected ? Border.all(color: iconColor.withOpacity(0.3), width: 1) : null,
       ),
-      selected: isSelected,
-      onTap: () {
-        ref.read(settingsSectionProvider.notifier).state = section;
-      },
+      child: ListTile(
+        leading: Icon(
+          icon, 
+          color: isSelected ? iconColor : iconColor.withOpacity(0.7),
+          size: 20,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            color: isSelected ? iconColor : Colors.black87,
+            fontSize: 14,
+          ),
+        ),
+        selected: isSelected,
+        onTap: () {
+          ref.read(settingsSectionProvider.notifier).state = section;
+        },
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      ),
     );
   }
 
