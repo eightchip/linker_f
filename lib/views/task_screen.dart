@@ -14,6 +14,7 @@ import '../services/notification_service.dart';
 import '../services/windows_notification_service.dart';
 import '../services/settings_service.dart';
 import '../services/snackbar_service.dart';
+import '../viewmodels/sync_status_provider.dart';
 import '../utils/csv_export.dart';
 import 'task_dialog.dart';
 import 'calendar_screen.dart';
@@ -1059,6 +1060,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     ),
                   ),
                 const PopupMenuItem(
+                  value: 'sync_to_calendar',
+                  child: Row(
+                    children: [
+                      Icon(Icons.sync, color: Colors.green),
+                      SizedBox(width: 8),
+                      Text('このタスクを同期', style: TextStyle(color: Colors.green)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
@@ -1210,9 +1221,48 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       case 'complete':
         taskViewModel.completeTask(task.id);
         break;
+      case 'sync_to_calendar':
+        _syncTaskToCalendar(task);
+        break;
       case 'delete':
         _showDeleteConfirmation(task);
         break;
+    }
+  }
+
+  /// 個別タスクをGoogle Calendarに同期
+  Future<void> _syncTaskToCalendar(TaskItem task) async {
+    final syncStatusNotifier = ref.read(syncStatusProvider.notifier);
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    
+    try {
+      syncStatusNotifier.startSync(
+        message: '「${task.title}」を同期中...',
+        totalItems: 1,
+      );
+      
+      final result = await taskViewModel.syncSelectedTasksToGoogleCalendar([task.id]);
+      
+      if (result['success'] == true) {
+        syncStatusNotifier.syncSuccess(
+          message: '「${task.title}」の同期が完了しました',
+        );
+        SnackBarService.showSuccess(context, '「${task.title}」をGoogle Calendarに同期しました');
+      } else {
+        final errors = result['errors'] as List<String>?;
+        final errorMessage = errors?.isNotEmpty == true ? errors!.first : '不明なエラー';
+        syncStatusNotifier.syncError(
+          errorMessage: errorMessage,
+          message: '「${task.title}」の同期に失敗しました',
+        );
+        SnackBarService.showError(context, '「${task.title}」の同期に失敗しました: $errorMessage');
+      }
+    } catch (e) {
+      syncStatusNotifier.syncError(
+        errorMessage: e.toString(),
+        message: '「${task.title}」の同期中にエラーが発生しました',
+      );
+      SnackBarService.showError(context, '「${task.title}」の同期中にエラーが発生しました: $e');
     }
   }
 

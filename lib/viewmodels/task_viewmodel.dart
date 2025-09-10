@@ -479,8 +479,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         return success;
       } else {
         // 新しいイベントを作成
-        final success = await googleCalendarService.createCalendarEvent(task);
-        if (success) {
+        final result = await googleCalendarService.createCalendarEvent(task);
+        if (result.success) {
           // イベントIDを取得してタスクを更新
           final eventId = await googleCalendarService.getCalendarEventId(task);
           if (eventId != null) {
@@ -488,7 +488,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
             updateTask(updatedTask);
           }
         }
-        return success;
+        return result.success;
       }
     } catch (e) {
       print('Google Calendar同期エラー: $e');
@@ -1159,6 +1159,148 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
+  /// 選択したタスクのみをGoogle Calendarに同期
+  Future<Map<String, dynamic>> syncSelectedTasksToGoogleCalendar(List<String> taskIds) async {
+    try {
+      if (kDebugMode) {
+        print('=== 選択タスク同期開始 ===');
+        print('選択されたタスク数: ${taskIds.length}');
+      }
+      
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      int successCount = 0;
+      int errorCount = 0;
+      List<String> errors = [];
+      
+      for (final taskId in taskIds) {
+        try {
+          final task = state.firstWhere((t) => t.id == taskId);
+          final result = await googleCalendarService.createCalendarEvent(task);
+          
+          if (result.success) {
+            successCount++;
+            if (kDebugMode) {
+              print('タスク同期成功: ${task.title}');
+            }
+          } else {
+            errorCount++;
+            errors.add('${task.title}: ${result.errorMessage}');
+            if (kDebugMode) {
+              print('タスク同期失敗: ${task.title} - ${result.errorMessage}');
+            }
+          }
+        } catch (e) {
+          errorCount++;
+          errors.add('タスクID $taskId: $e');
+          if (kDebugMode) {
+            print('タスク同期エラー: $taskId - $e');
+          }
+        }
+      }
+      
+      if (kDebugMode) {
+        print('=== 選択タスク同期完了 ===');
+        print('成功: $successCount件, 失敗: $errorCount件');
+      }
+      
+      return {
+        'success': errorCount == 0,
+        'successCount': successCount,
+        'errorCount': errorCount,
+        'errors': errors,
+        'total': taskIds.length,
+      };
+    } catch (e) {
+      print('選択タスク同期エラー: $e');
+      return {
+        'success': false,
+        'successCount': 0,
+        'errorCount': taskIds.length,
+        'errors': ['全体的なエラー: $e'],
+        'total': taskIds.length,
+      };
+    }
+  }
+
+  /// 日付範囲でタスクを同期
+  Future<Map<String, dynamic>> syncTasksByDateRange(DateTime startDate, DateTime endDate) async {
+    try {
+      if (kDebugMode) {
+        print('=== 日付範囲同期開始 ===');
+        print('開始日: $startDate, 終了日: $endDate');
+      }
+      
+      // 指定された日付範囲のタスクをフィルタリング
+      final filteredTasks = state.where((task) {
+        final taskDate = task.dueDate ?? task.reminderTime;
+        if (taskDate == null) return false;
+        
+        return taskDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+               taskDate.isBefore(endDate.add(const Duration(days: 1)));
+      }).toList();
+      
+      if (kDebugMode) {
+        print('フィルタリングされたタスク数: ${filteredTasks.length}');
+      }
+      
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      int successCount = 0;
+      int errorCount = 0;
+      List<String> errors = [];
+      
+      for (final task in filteredTasks) {
+        try {
+          final result = await googleCalendarService.createCalendarEvent(task);
+          
+          if (result.success) {
+            successCount++;
+            if (kDebugMode) {
+              print('タスク同期成功: ${task.title}');
+            }
+          } else {
+            errorCount++;
+            errors.add('${task.title}: ${result.errorMessage}');
+            if (kDebugMode) {
+              print('タスク同期失敗: ${task.title} - ${result.errorMessage}');
+            }
+          }
+        } catch (e) {
+          errorCount++;
+          errors.add('${task.title}: $e');
+          if (kDebugMode) {
+            print('タスク同期エラー: ${task.title} - $e');
+          }
+        }
+      }
+      
+      if (kDebugMode) {
+        print('=== 日付範囲同期完了 ===');
+        print('成功: $successCount件, 失敗: $errorCount件');
+      }
+      
+      return {
+        'success': errorCount == 0,
+        'successCount': successCount,
+        'errorCount': errorCount,
+        'errors': errors,
+        'total': filteredTasks.length,
+      };
+    } catch (e) {
+      print('日付範囲同期エラー: $e');
+      return {
+        'success': false,
+        'successCount': 0,
+        'errorCount': 0,
+        'errors': ['全体的なエラー: $e'],
+        'total': 0,
+      };
+    }
+  }
+
   /// アプリとGoogleカレンダー間の完全な相互同期
   Future<Map<String, dynamic>> performFullBidirectionalSync() async {
     try {
@@ -1199,8 +1341,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
             _isSameTask(appTask, calendarTask));
           
           if (!existsInCalendar) {
-            final success = await googleCalendarService.createCalendarEvent(appTask);
-            if (success) {
+            final result = await googleCalendarService.createCalendarEvent(appTask);
+            if (result.success) {
               appToCalendarCount++;
               if (kDebugMode) {
                 print('アプリタスクをGoogleカレンダーに送信: ${appTask.title}');

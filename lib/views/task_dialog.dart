@@ -646,16 +646,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         child: const Text('キャンセル'),
                       ),
                       const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        onPressed: _syncAllToGoogleCalendar,
-                        icon: const Icon(Icons.sync),
-                        label: const Text('全タスク同期'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: _saveTask,
                         child: Text(widget.task != null ? '更新' : '作成'),
@@ -698,63 +688,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     }
   }
 
-  // 全タスクをGoogle Calendarに包括的同期
-  Future<void> _syncAllToGoogleCalendar() async {
-    try {
-      final taskViewModel = ref.read(taskViewModelProvider.notifier);
-      
-      // ローディング表示
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Google Calendarと同期中...'),
-            ],
-          ),
-        ),
-      );
-      
-      final result = await taskViewModel.syncAllTasksToGoogleCalendar();
-      
-      // ローディングダイアログを閉じる
-      Navigator.of(context).pop();
-      
-      if (result['success']) {
-        final created = result['created'] ?? 0;
-        final updated = result['updated'] ?? 0;
-        final deleted = result['deleted'] ?? 0;
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('同期完了: 作成$created件, 更新$updated件, 削除$deleted件'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('同期に失敗しました: ${result['error']}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      // ローディングダイアログを閉じる（エラー時）
-      Navigator.of(context).pop();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('エラー: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 }
 
 // カスタム時間選択ダイアログ

@@ -18,6 +18,7 @@ import '../services/backup_service.dart';
 import '../repositories/link_repository.dart';
 import '../services/google_calendar_service.dart';
 import '../services/snackbar_service.dart';
+import '../viewmodels/sync_status_provider.dart';
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService.instance;
@@ -1592,6 +1593,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   const Divider(),
                   
+                  // 同期状態表示
+                  _buildSyncStatusSection(ref),
+                  
+                  const Divider(),
+                  
+                  // 部分同期機能
+                  _buildPartialSyncSection(ref),
+                  
+                  const Divider(),
+                  
                   // 双方向同期の有効/無効
                   SwitchListTile(
                     title: const Text('双方向同期'),
@@ -1797,6 +1808,307 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  /// 同期状態表示セクション
+  Widget _buildSyncStatusSection(WidgetRef ref) {
+    final syncState = ref.watch(syncStatusProvider);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '同期状態',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        // 同期状態インジケーター
+        Row(
+          children: [
+            _buildSyncStatusIndicator(syncState.status),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getSyncStatusText(syncState),
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  if (syncState.lastSyncTime != null)
+                    Text(
+                      '最終同期: ${DateFormat('MM/dd HH:mm').format(syncState.lastSyncTime!)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        
+        // 進捗バー（同期中の場合）
+        if (syncState.isSyncing && syncState.totalItems != null) ...[
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: syncState.progressRatio,
+            backgroundColor: Colors.grey[300],
+            valueColor: AlwaysStoppedAnimation<Color>(
+              syncState.hasError ? Colors.red : Colors.blue,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${syncState.processedItems ?? 0}/${syncState.totalItems}件処理中...',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+        
+        // エラーメッセージ（エラーの場合）
+        if (syncState.hasError) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              border: Border.all(color: Colors.red[200]!),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'エラー: ${syncState.errorMessage}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (syncState.errorCode != null)
+                  Text(
+                    'エラーコード: ${syncState.errorCode}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.red[600],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// 同期状態インジケーター
+  Widget _buildSyncStatusIndicator(SyncStatus status) {
+    switch (status) {
+      case SyncStatus.idle:
+        return Icon(Icons.sync, color: Colors.grey[400], size: 20);
+      case SyncStatus.syncing:
+        return SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+          ),
+        );
+      case SyncStatus.success:
+        return Icon(Icons.check_circle, color: Colors.green, size: 20);
+      case SyncStatus.error:
+        return Icon(Icons.error, color: Colors.red, size: 20);
+    }
+  }
+
+  /// 同期状態テキスト
+  String _getSyncStatusText(SyncState syncState) {
+    switch (syncState.status) {
+      case SyncStatus.idle:
+        return '待機中';
+      case SyncStatus.syncing:
+        return syncState.message ?? '同期中...';
+      case SyncStatus.success:
+        return syncState.message ?? '同期完了';
+      case SyncStatus.error:
+        return '同期エラー';
+    }
+  }
+
+  /// 部分同期機能セクション
+  Widget _buildPartialSyncSection(WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '部分同期',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '選択したタスクや日付範囲のタスクのみを同期できます',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        // 個別タスク同期の説明
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            border: Border.all(color: Colors.blue[200]!),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info, color: Colors.blue[700], size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '個別タスクの同期は、タスク画面の各タスクの3点ドットメニューから「このタスクを同期」を選択してください。',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue[700],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        // 日付範囲同期ボタン
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _showDateRangeSyncDialog(ref),
+            icon: const Icon(Icons.date_range),
+            label: const Text('日付範囲で同期'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  /// 日付範囲同期ダイアログ
+  void _showDateRangeSyncDialog(WidgetRef ref) {
+    DateTime startDate = DateTime.now();
+    DateTime endDate = DateTime.now().add(const Duration(days: 7));
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('日付範囲同期'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('同期する日付範囲を選択してください'),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('開始日'),
+                subtitle: Text(DateFormat('yyyy/MM/dd').format(startDate)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: startDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                  );
+                  if (date != null) {
+                    setState(() => startDate = date);
+                  }
+                },
+              ),
+              ListTile(
+                title: const Text('終了日'),
+                subtitle: Text(DateFormat('yyyy/MM/dd').format(endDate)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: endDate,
+                    firstDate: startDate,
+                    lastDate: DateTime(2030),
+                  );
+                  if (date != null) {
+                    setState(() => endDate = date);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _performDateRangeSync(ref, startDate, endDate);
+              },
+              child: const Text('同期実行'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 日付範囲同期を実行
+  Future<void> _performDateRangeSync(WidgetRef ref, DateTime startDate, DateTime endDate) async {
+    final syncStatusNotifier = ref.read(syncStatusProvider.notifier);
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    
+    try {
+      syncStatusNotifier.startSync(
+        message: '日付範囲同期中...',
+      );
+      
+      final result = await taskViewModel.syncTasksByDateRange(startDate, endDate);
+      
+      if (result['success'] == true) {
+        syncStatusNotifier.syncSuccess(
+          message: '日付範囲同期完了: ${result['successCount']}件成功',
+        );
+        SnackBarService.showSuccess(context, '日付範囲同期が完了しました');
+      } else {
+        syncStatusNotifier.syncError(
+          errorMessage: result['errors']?.join(', ') ?? '不明なエラー',
+          message: '日付範囲同期に失敗しました',
+        );
+        SnackBarService.showError(context, '日付範囲同期に失敗しました');
+      }
+    } catch (e) {
+      syncStatusNotifier.syncError(
+        errorMessage: e.toString(),
+        message: '日付範囲同期中にエラーが発生しました',
+      );
+      SnackBarService.showError(context, '日付範囲同期中にエラーが発生しました: $e');
+    }
   }
   
 }

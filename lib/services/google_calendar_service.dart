@@ -8,6 +8,21 @@ import 'package:path_provider/path_provider.dart';
 import '../models/task_item.dart';
 import '../utils/error_handler.dart';
 
+/// 同期結果クラス
+class SyncResult {
+  final bool success;
+  final String? errorMessage;
+  final String? errorCode;
+  final Map<String, dynamic>? details;
+  
+  SyncResult({
+    required this.success,
+    this.errorMessage,
+    this.errorCode,
+    this.details,
+  });
+}
+
 /// Google Calendar連携サービス
 class GoogleCalendarService {
   static const String _credentialsFileName = 'oauth2_credentials.json';
@@ -777,6 +792,32 @@ class GoogleCalendarService {
     }
   }
   
+  /// エラーメッセージを生成
+  String _getErrorMessage(int statusCode, Map<String, dynamic> errorBody) {
+    switch (statusCode) {
+      case 400:
+        return 'リクエストが無効です。タスクの情報を確認してください。';
+      case 401:
+        return '認証に失敗しました。Google Calendarの認証を再実行してください。';
+      case 403:
+        return 'アクセスが拒否されました。Google Calendarの権限を確認してください。';
+      case 404:
+        return 'カレンダーが見つかりません。';
+      case 429:
+        return 'リクエスト制限に達しました。しばらく待ってから再試行してください。';
+      case 500:
+        return 'Google Calendarサーバーでエラーが発生しました。';
+      case 503:
+        return 'Google Calendarサービスが一時的に利用できません。';
+      default:
+        final error = errorBody['error'];
+        if (error != null && error['message'] != null) {
+          return 'Google Calendarエラー: ${error['message']}';
+        }
+        return '予期しないエラーが発生しました (HTTP $statusCode)';
+    }
+  }
+
   /// リソースを解放
   void dispose() {
     _accessToken = null;
@@ -785,11 +826,16 @@ class GoogleCalendarService {
     _isInitialized = false;
   }
 
+
   /// タスクをGoogle Calendarに送信
-  Future<bool> createCalendarEvent(TaskItem task) async {
+  Future<SyncResult> createCalendarEvent(TaskItem task) async {
     if (!_isInitialized || _accessToken == null) {
       ErrorHandler.logError('Google Calendar送信', '認証されていません');
-      return false;
+      return SyncResult(
+        success: false,
+        errorMessage: 'Google Calendarが認証されていません。設定画面でOAuth2認証を実行してください。',
+        errorCode: 'AUTH_REQUIRED',
+      );
     }
 
     try {
@@ -798,7 +844,11 @@ class GoogleCalendarService {
         final refreshed = await _refreshAccessToken();
         if (!refreshed) {
           ErrorHandler.logError('Google Calendar送信', 'トークンの更新に失敗しました');
-          return false;
+          return SyncResult(
+            success: false,
+            errorMessage: 'アクセストークンの更新に失敗しました。再認証が必要です。',
+            errorCode: 'TOKEN_REFRESH_FAILED',
+          );
         }
       }
 
@@ -822,7 +872,11 @@ class GoogleCalendarService {
         endTime = startTime.add(duration);
       } else {
         ErrorHandler.logError('Google Calendar送信', 'タスクに期限日またはリマインダー時間が設定されていません');
-        return false;
+        return SyncResult(
+          success: false,
+          errorMessage: 'タスクに期限日またはリマインダー時間が設定されていません。',
+          errorCode: 'NO_DATE_SET',
+        );
       }
 
       // イベントデータを作成
@@ -875,14 +929,28 @@ class GoogleCalendarService {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         print('Google Calendarイベント作成成功: ${responseData['id']}');
-        return true;
+        return SyncResult(
+          success: true,
+          details: {'eventId': responseData['id']},
+        );
       } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = _getErrorMessage(response.statusCode, errorBody);
         ErrorHandler.logError('Google Calendar送信', 'HTTP ${response.statusCode}: ${response.body}');
-        return false;
+        return SyncResult(
+          success: false,
+          errorMessage: errorMessage,
+          errorCode: 'HTTP_${response.statusCode}',
+          details: errorBody,
+        );
       }
     } catch (e) {
       ErrorHandler.logError('Google Calendar送信', e);
-      return false;
+      return SyncResult(
+        success: false,
+        errorMessage: 'ネットワークエラーまたは予期しないエラーが発生しました: ${e.toString()}',
+        errorCode: 'NETWORK_ERROR',
+      );
     }
   }
 
@@ -1236,8 +1304,8 @@ class GoogleCalendarService {
         return success ? 'updated' : 'skipped';
       } else {
         // 新規イベントの作成
-        final success = await createCalendarEvent(task);
-        return success ? 'created' : 'skipped';
+        final result = await createCalendarEvent(task);
+        return result.success ? 'created' : 'skipped';
       }
     } catch (e) {
       ErrorHandler.logError('単一タスク同期', e);
