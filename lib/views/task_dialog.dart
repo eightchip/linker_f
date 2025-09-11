@@ -58,6 +58,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   String? _pendingMailBody;
   String? _pendingMailApp;
   
+  // 新規タスク作成時のメール送信情報の一時保存
+  Map<String, dynamic>? _pendingMailLog;
+  
   // メール機能の表示状態
   bool _isMailSectionExpanded = false;
   
@@ -254,7 +257,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     return null;
   }
 
-  void _saveTask() {
+  Future<void> _saveTask() async {
     if (_formKey.currentState!.validate()) {
       final taskViewModel = ref.read(taskViewModelProvider.notifier);
       
@@ -349,6 +352,36 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         print('=== タスク作成ダイアログ完了 ===');
         
         taskViewModel.addTask(task);
+        
+        // 新規タスク作成時にメール送信情報が一時保存されている場合は、正しいタスクIDで保存
+        if (_pendingMailLog != null) {
+          try {
+            final mailService = MailService();
+            await mailService.initialize();
+            
+            await mailService.saveMailLogWithToken(
+              taskId: task.id,
+              app: _pendingMailLog!['app'],
+              to: _pendingMailLog!['to'],
+              cc: _pendingMailLog!['cc'],
+              bcc: _pendingMailLog!['bcc'],
+              subject: _pendingMailLog!['subject'],
+              body: _pendingMailLog!['body'],
+              token: _pendingMailLog!['token'],
+            );
+            
+            if (kDebugMode) {
+              print('新規タスク作成時: メール送信情報を正しいタスクID (${task.id}) で保存完了');
+            }
+            
+            // 一時保存された情報をクリア
+            _pendingMailLog = null;
+          } catch (e) {
+            if (kDebugMode) {
+              print('新規タスク作成時: メール送信情報の保存エラー: $e');
+            }
+          }
+        }
       }
 
       Navigator.of(context).pop();
@@ -1224,17 +1257,36 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         return;
       }
 
-      // 元の内容でメール送信ログを保存（既存のトークンを使用）
-      await mailService.saveMailLogWithToken(
-        taskId: taskId,
-        app: _pendingMailApp!,
-        to: _pendingMailTo!,
-        cc: _pendingMailCc ?? '',
-        bcc: _pendingMailBcc ?? '',
-        subject: _pendingMailSubject!,
-        body: _pendingMailBody!,
-        token: token,
-      );
+      // 新規タスク作成時の場合は、メール送信情報を一時保存して後で関連付け
+      if (widget.task == null) {
+        // 一時保存用のメール送信情報を保存
+        _pendingMailLog = {
+          'taskId': taskId,
+          'app': _pendingMailApp!,
+          'to': _pendingMailTo!,
+          'cc': _pendingMailCc ?? '',
+          'bcc': _pendingMailBcc ?? '',
+          'subject': _pendingMailSubject!,
+          'body': _pendingMailBody!,
+          'token': token,
+        };
+        
+        if (kDebugMode) {
+          print('新規タスク作成時: メール送信情報を一時保存');
+        }
+      } else {
+        // 既存タスクの場合は即座に保存
+        await mailService.saveMailLogWithToken(
+          taskId: taskId,
+          app: _pendingMailApp!,
+          to: _pendingMailTo!,
+          cc: _pendingMailCc ?? '',
+          bcc: _pendingMailBcc ?? '',
+          subject: _pendingMailSubject!,
+          body: _pendingMailBody!,
+          token: token,
+        );
+      }
 
       // 連絡先の使用回数を更新
       if (_selectedContacts.isNotEmpty) {
