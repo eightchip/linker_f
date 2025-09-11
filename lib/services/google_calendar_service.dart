@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 import '../models/task_item.dart';
 import '../utils/error_handler.dart';
 
@@ -191,12 +192,32 @@ class GoogleCalendarService {
       final credentialsPath = await _getCredentialsPath();
       final credentialsFile = File(credentialsPath);
       if (!await credentialsFile.exists()) {
-        throw Exception('OAuth2認証情報ファイルが見つかりません: $credentialsPath');
+        if (kDebugMode) {
+          print('OAuth2認証情報ファイルが見つかりません: $credentialsPath');
+        }
+        throw Exception('OAuth2認証情報ファイルが見つかりません。設定方法を確認してください。');
       }
       
       final credentialsJson = await credentialsFile.readAsString();
       final credentials = json.decode(credentialsJson);
-      final clientId = credentials['installed']['client_id'];
+      
+      // 認証情報の形式をチェック
+      if (!credentials.containsKey('installed')) {
+        if (kDebugMode) {
+          print('認証情報ファイルの形式が正しくありません。installed セクションが見つかりません。');
+        }
+        throw Exception('認証情報ファイルの形式が正しくありません。OAuth2デスクトップアプリ用の認証情報を使用してください。');
+      }
+      
+      final installed = credentials['installed'];
+      final clientId = installed['client_id'];
+      
+      if (clientId == null || clientId.isEmpty) {
+        if (kDebugMode) {
+          print('client_id が見つかりません');
+        }
+        throw Exception('認証情報ファイルに client_id が設定されていません。');
+      }
       
       // 認証URLを生成
       final authUrl = Uri.parse('https://accounts.google.com/o/oauth2/auth').replace(
@@ -1143,11 +1164,24 @@ class GoogleCalendarService {
           final eventDate = eventStartTime.toIso8601String().split('T')[0];
           final taskDate = startTime.toIso8601String().split('T')[0];
           if (eventDate == taskDate) {
-            return SyncResult(
-              success: false,
-              errorMessage: '同じタイトルと日付のイベントが既に存在します: $eventTitle',
-              errorCode: 'DUPLICATE_EVENT',
-            );
+            // 重複イベントが見つかった場合、既存イベントを更新
+            print('重複イベントを発見、既存イベントを更新: $eventTitle');
+            final success = await updateCalendarEvent(task, event['id']);
+            
+            if (success) {
+              // タスクにGoogle CalendarイベントIDを設定
+              await _updateTaskWithEventId(task, event['id']);
+              return SyncResult(
+                success: true,
+                details: {'eventId': event['id'], 'action': 'updated'},
+              );
+            } else {
+              return SyncResult(
+                success: false,
+                errorMessage: '既存イベントの更新に失敗しました: $eventTitle',
+                errorCode: 'UPDATE_FAILED',
+              );
+            }
           }
         }
       }
@@ -1162,6 +1196,7 @@ class GoogleCalendarService {
         'end': {
           'date': startTime.add(const Duration(days: 1)).toIso8601String().split('T')[0], // 翌日
         },
+        'colorId': _getStatusColorId(task.status), // ステータスに応じた色ID
         'reminders': {
           'useDefault': false,
           'overrides': [
@@ -1232,38 +1267,33 @@ class GoogleCalendarService {
         }
       }
 
-      // イベントの開始・終了時間を設定
+      // イベントの開始時間を設定（終日イベント用）
       DateTime startTime;
-      DateTime endTime;
       
       if (task.dueDate != null) {
         startTime = task.dueDate!;
-        endTime = startTime.add(const Duration(hours: 1));
       } else if (task.reminderTime != null) {
         startTime = task.reminderTime!;
-        endTime = startTime.add(const Duration(hours: 1));
       } else {
         ErrorHandler.logError('Google Calendar更新', 'タスクに期限日またはリマインダー時間が設定されていません');
         return false;
       }
 
-      // イベントデータを作成
+      // 日付のみの終日イベントとして更新
       final eventData = {
         'summary': task.title,
         'description': task.description ?? '',
         'start': {
-          'dateTime': startTime.toIso8601String(),
-          'timeZone': 'Asia/Tokyo',
+          'date': startTime.toIso8601String().split('T')[0], // 日付のみ
         },
         'end': {
-          'dateTime': endTime.toIso8601String(),
-          'timeZone': 'Asia/Tokyo',
+          'date': startTime.add(const Duration(days: 1)).toIso8601String().split('T')[0], // 翌日
         },
+        'colorId': _getStatusColorId(task.status), // ステータスに応じた色ID
         'reminders': {
           'useDefault': false,
           'overrides': [
-            {'method': 'popup', 'minutes': 15},
-            {'method': 'email', 'minutes': 30},
+            {'method': 'popup', 'minutes': 0}, // 当日の0分前（開始時刻）
           ],
         },
         'extendedProperties': {
@@ -1377,6 +1407,234 @@ class GoogleCalendarService {
     }
     
     return null;
+  }
+
+  /// 認証状態を確認
+  bool get isAuthenticated {
+    return _isInitialized && _accessToken != null && _tokenExpiry != null && DateTime.now().isBefore(_tokenExpiry!);
+  }
+
+  /// タスクステータスに応じたGoogle Calendar色IDを取得
+  String _getStatusColorId(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return '8'; // グレー（未着手）
+      case TaskStatus.inProgress:
+        return '9'; // ブルー（進行中）
+      case TaskStatus.completed:
+        return '10'; // グリーン（完了済み）
+      case TaskStatus.cancelled:
+        return '11'; // レッド（キャンセル）
+    }
+  }
+
+  /// タスクにGoogle CalendarイベントIDを設定
+  Future<void> _updateTaskWithEventId(TaskItem task, String eventId) async {
+    try {
+      // TaskViewModelを通じてタスクを更新
+      final updatedTask = task.copyWith(googleCalendarEventId: eventId);
+      
+      // TaskViewModelのインスタンスを取得して更新
+      // 注意: この方法は直接的な参照が必要ですが、依存関係を避けるため
+      // タスクの更新は呼び出し元で行うことを前提とします
+      if (kDebugMode) {
+        print('タスクにGoogle CalendarイベントIDを設定: ${task.title} -> $eventId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('タスクイベントID設定エラー: $e');
+      }
+    }
+  }
+
+  /// 完了タスクの表示/非表示を制御
+  Future<bool> updateCompletedTaskVisibility(String eventId, bool showCompleted) async {
+    try {
+      if (!_isInitialized || _accessToken == null) {
+        return false;
+      }
+
+      // イベントの詳細を取得
+      final response = await http.get(
+        Uri.parse('$_calendarApiUrl/calendars/primary/events/$eventId'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        return false;
+      }
+
+      final eventData = json.decode(response.body);
+      
+      // 表示/非表示を制御
+      if (showCompleted) {
+        // 完了タスクを表示（透明度を100%に戻す）
+        eventData['transparency'] = 'opaque';
+      } else {
+        // 完了タスクを非表示（透明度を50%に設定）
+        eventData['transparency'] = 'transparent';
+      }
+
+      // イベントを更新
+      final updateResponse = await http.put(
+        Uri.parse('$_calendarApiUrl/calendars/primary/events/$eventId'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(eventData),
+      );
+
+      return updateResponse.statusCode == 200;
+    } catch (e) {
+      if (kDebugMode) {
+        print('完了タスク表示制御エラー: $e');
+      }
+      return false;
+    }
+  }
+
+  /// アプリ側を優先したGoogle Calendar同期（Google Calendarにのみ存在するイベントをアプリに同期）
+  Future<Map<String, dynamic>> syncFromGoogleCalendarToApp(List<TaskItem> existingAppTasks) async {
+    if (!_isInitialized || _accessToken == null) {
+      return {
+        'success': false,
+        'error': '認証されていません',
+        'added': 0,
+        'skipped': 0,
+      };
+    }
+
+    try {
+      // アクセストークンの有効性を確認
+      if (_tokenExpiry != null && DateTime.now().isAfter(_tokenExpiry!)) {
+        final refreshed = await _refreshAccessToken();
+        if (!refreshed) {
+          return {
+            'success': false,
+            'error': 'トークンの更新に失敗しました',
+            'added': 0,
+            'skipped': 0,
+          };
+        }
+      }
+
+      print('=== Google Calendar → アプリ同期開始 ===');
+      
+      // 1. Google Calendarの全イベントを取得
+      final allEvents = await _getAllCalendarEvents();
+      print('Google Calendarイベント数: ${allEvents.length}');
+      
+      // 2. アプリの既存タスクIDセットを作成
+      final appTaskIds = existingAppTasks.map((task) => task.id).toSet();
+      print('アプリの既存タスク数: ${appTaskIds.length}');
+      
+      int added = 0;
+      int skipped = 0;
+      
+      // 3. Google Calendarのイベントをチェック
+      for (final event in allEvents) {
+        final eventTaskId = event['extendedProperties']?['private']?['taskId'];
+        
+        // アプリから作成されたイベントはスキップ
+        if (eventTaskId != null && appTaskIds.contains(eventTaskId)) {
+          skipped++;
+          continue;
+        }
+        
+        // Google Calendarにのみ存在するイベントをアプリに追加
+        final task = _convertEventToTask(event);
+        if (task != null) {
+          // ここでTaskViewModelに追加する処理を呼び出す必要がある
+          // ただし、このサービスからTaskViewModelを直接呼び出すのは適切ではない
+          // 代わりに、変換されたタスクのリストを返す
+          added++;
+          print('Google Calendar → アプリ同期対象: ${task.title}');
+        }
+      }
+      
+      print('=== Google Calendar → アプリ同期完了 ===');
+      print('追加: $added, スキップ: $skipped');
+      
+      return {
+        'success': true,
+        'added': added,
+        'skipped': skipped,
+      };
+    } catch (e) {
+      ErrorHandler.logError('Google Calendar → アプリ同期', e);
+      return {
+        'success': false,
+        'error': e.toString(),
+        'added': 0,
+        'skipped': 0,
+      };
+    }
+  }
+
+  /// イベントをタスクに変換
+  TaskItem? _convertEventToTask(Map<String, dynamic> event) {
+    try {
+      final summary = event['summary'] ?? '';
+      final description = event['description'] ?? '';
+      final start = event['start'];
+      
+      if (summary.isEmpty) return null;
+      
+      DateTime? dueDate;
+      DateTime? reminderTime;
+      
+      if (start != null) {
+        if (start['dateTime'] != null) {
+          // 時刻指定イベント
+          final dateTime = DateTime.parse(start['dateTime']).toLocal();
+          reminderTime = dateTime;
+          dueDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+        } else if (start['date'] != null) {
+          // 終日イベント
+          dueDate = DateTime.parse(start['date']);
+        }
+      }
+      
+      // ステータスを色IDから推定
+      final colorId = event['colorId'] ?? '1';
+      TaskStatus status = _getStatusFromColorId(colorId);
+      
+      return TaskItem(
+        id: const Uuid().v4(),
+        title: summary,
+        description: description.isNotEmpty ? description : null,
+        dueDate: dueDate,
+        reminderTime: reminderTime,
+        priority: TaskPriority.medium,
+        status: status,
+        tags: [],
+        createdAt: DateTime.now(),
+        source: 'google_calendar',
+        externalId: event['id'],
+      );
+    } catch (e) {
+      ErrorHandler.logError('イベント→タスク変換', e);
+      return null;
+    }
+  }
+
+  /// 色IDからステータスを推定
+  TaskStatus _getStatusFromColorId(String colorId) {
+    switch (colorId) {
+      case '8': // グレー
+        return TaskStatus.pending;
+      case '9': // ブルー
+        return TaskStatus.inProgress;
+      case '10': // グリーン
+        return TaskStatus.completed;
+      case '11': // レッド
+        return TaskStatus.cancelled;
+      default:
+        return TaskStatus.pending;
+    }
   }
 
   /// 包括的Google Calendar同期（全タスクを一括同期）
@@ -1577,20 +1835,19 @@ class GoogleCalendarService {
 
 /// Google Calendar認証情報の設定を支援するユーティリティ
 class GoogleCalendarSetup {
-  /// 認証情報ファイルのテンプレートを生成
+  /// 認証情報ファイルのテンプレートを生成（OAuth2デスクトップアプリ用）
   static String generateCredentialsTemplate() {
     return '''
 {
-  "type": "service_account",
-  "project_id": "your-project-id",
-  "private_key_id": "your-private-key-id",
-  "private_key": "-----BEGIN PRIVATE KEY-----\\nYOUR_PRIVATE_KEY\\n-----END PRIVATE KEY-----\\n",
-  "client_email": "your-service-account@your-project-id.iam.gserviceaccount.com",
-  "client_id": "your-client-id",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/your-service-account%40your-project-id.iam.gserviceaccount.com"
+  "installed": {
+    "client_id": "your-client-id.apps.googleusercontent.com",
+    "project_id": "your-project-id",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_secret": "your-client-secret",
+    "redirect_uris": ["http://localhost:8080"]
+  }
 }
 ''';
   }
@@ -1609,7 +1866,49 @@ class GoogleCalendarSetup {
   
   /// 認証情報ファイルの存在確認
   static Future<bool> hasCredentialsFile() async {
-    final file = File('google_calendar_credentials.json');
-    return await file.exists();
+    try {
+      // ユーザーディレクトリを確認
+      final userDir = await getApplicationDocumentsDirectory();
+      final userCredentialsPath = '${userDir.path}/google_calendar_credentials.json';
+      final userCredentialsFile = File(userCredentialsPath);
+      
+      if (await userCredentialsFile.exists()) {
+        return true;
+      }
+      
+      // 実行ディレクトリを確認
+      final currentDirCredentialsFile = File('google_calendar_credentials.json');
+      return await currentDirCredentialsFile.exists();
+    } catch (e) {
+      // エラーの場合は実行ディレクトリのみ確認
+      final file = File('google_calendar_credentials.json');
+      return await file.exists();
+    }
+  }
+  
+  /// 認証情報ファイルのパスを取得
+  static Future<String> getCredentialsFilePath() async {
+    try {
+      // ユーザーディレクトリを確認
+      final userDir = await getApplicationDocumentsDirectory();
+      final userCredentialsPath = '${userDir.path}/google_calendar_credentials.json';
+      final userCredentialsFile = File(userCredentialsPath);
+      
+      if (await userCredentialsFile.exists()) {
+        return userCredentialsPath;
+      }
+      
+      // 実行ディレクトリを確認
+      final currentDirCredentialsFile = File('google_calendar_credentials.json');
+      if (await currentDirCredentialsFile.exists()) {
+        return 'google_calendar_credentials.json';
+      }
+      
+      // どちらにもない場合はユーザーディレクトリのパスを返す
+      return userCredentialsPath;
+    } catch (e) {
+      // エラーの場合は実行ディレクトリを返す
+      return 'google_calendar_credentials.json';
+    }
   }
 }

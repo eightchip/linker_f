@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart'; // Added import for linkViewModelProvider
+import '../services/mail_service.dart';
+import '../services/snackbar_service.dart';
+import '../services/email_contact_service.dart';
+import '../models/email_contact.dart';
+import '../models/sent_mail_log.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
   final String? relatedLinkId;
   final DateTime? initialDueDate; // 新規作成時の初期期限日
+  final VoidCallback? onMailSent; // メール送信後のコールバック
 
   const TaskDialog({
     super.key,
     this.task,
     this.relatedLinkId,
     this.initialDueDate,
+    this.onMailSent,
   });
 
   @override
@@ -27,10 +35,33 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _assignedToController = TextEditingController();
+  
+  // メール送信用のコントローラー
+  final _toController = TextEditingController();
+  final _ccController = TextEditingController();
+  final _bccController = TextEditingController();
+  
+  // メール送信の設定
+  bool _copyTitleToSubject = true;
+  bool _copyMemoToBody = true;
+  String _selectedMailApp = 'gmail'; // 'gmail' | 'outlook'
+  
+  // 連絡先選択
+  List<EmailContact> _selectedContacts = [];
+  final List<EmailContact> _availableContacts = [];
+
+  // メール送信情報の一時保存
+  String? _pendingMailTo;
+  String? _pendingMailCc;
+  String? _pendingMailBcc;
+  String? _pendingMailSubject;
+  String? _pendingMailBody;
+  String? _pendingMailApp;
 
   DateTime? _dueDate;
   DateTime? _reminderTime;
   TaskPriority _priority = TaskPriority.medium;
+  TaskStatus _status = TaskStatus.pending; // デフォルトは未着手
   bool _isRecurringReminder = false;
   String _recurringReminderPattern = RecurringReminderPattern.fiveMinutes;
 
@@ -50,6 +81,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       _dueDate = widget.task!.dueDate;
       _reminderTime = widget.task!.reminderTime;
       _priority = widget.task!.priority;
+      _status = widget.task!.status;
       _isRecurringReminder = widget.task!.isRecurringReminder;
       _recurringReminderPattern = widget.task!.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
       
@@ -69,6 +101,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         _initializeFromLink();
       }
     }
+    
+    // 連絡先リストを初期化
+    _loadContacts();
   }
 
   // リンク情報から初期値を設定
@@ -95,7 +130,31 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     _titleController.dispose();
     _descriptionController.dispose();
     _assignedToController.dispose();
+    _toController.dispose();
+    _ccController.dispose();
+    _bccController.dispose();
     super.dispose();
+  }
+
+  /// 連絡先リストを読み込み
+  Future<void> _loadContacts() async {
+    try {
+      final contactService = EmailContactService();
+      await contactService.initialize();
+      
+      // よく使われる連絡先を取得
+      final contacts = contactService.getFrequentContacts(limit: 20);
+      _availableContacts.clear();
+      _availableContacts.addAll(contacts);
+      
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('連絡先読み込みエラー: $e');
+      }
+    }
   }
 
   /// モーダル内でのナビゲーション処理
@@ -202,6 +261,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           dueDate: _dueDate,
           reminderTime: _reminderTime,
           priority: _priority,
+          status: _status,
           tags: tags,
           estimatedMinutes: null,
           assignedTo: _assignedToController.text.trim().isEmpty
@@ -240,6 +300,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           dueDate: _dueDate,
           reminderTime: _reminderTime,
           priority: _priority,
+          status: _status,
           tags: tags,
           relatedLinkId: widget.relatedLinkId,
           estimatedMinutes: null,
@@ -565,9 +626,51 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     }
                   },
                 ),
-                // タグフィールドは削除
                 const SizedBox(height: 16),
                 
+                // ステータス選択
+                Row(
+                  children: [
+                    const Icon(Icons.flag, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    const Text('ステータス:', style: TextStyle(fontWeight: FontWeight.w500)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: DropdownButtonFormField<TaskStatus>(
+                        value: _status,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: TaskStatus.values.map((status) {
+                          return DropdownMenuItem(
+                            value: status,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: Color(_getStatusColor(status)),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(_getStatusText(status)),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _status = value);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 
                 // 依頼先
                 TextFormField(
@@ -616,6 +719,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
                 // メモフィールドは削除
                 const SizedBox(height: 24),
+                
+                // メール送信セクション
+                _buildMailSection(),
                 
                 // ボタン
                   Row(
@@ -668,6 +774,810 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     }
   }
 
+  // ステータスの色を取得
+  int _getStatusColor(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return 0xFF757575; // グレー
+      case TaskStatus.inProgress:
+        return 0xFF2196F3; // 青
+      case TaskStatus.completed:
+        return 0xFF4CAF50; // 緑
+      case TaskStatus.cancelled:
+        return 0xFFF44336; // 赤
+    }
+  }
+
+  // ステータスのテキストを取得
+  String _getStatusText(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return '未着手';
+      case TaskStatus.inProgress:
+        return '進行中';
+      case TaskStatus.completed:
+        return '完了';
+      case TaskStatus.cancelled:
+        return 'キャンセル';
+    }
+  }
+
+  /// メール送信セクションを構築
+  Widget _buildMailSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+          Row(
+            children: [
+              const Icon(Icons.email, color: Colors.blue),
+              const SizedBox(width: 8),
+              const Text(
+                'メール送信',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // チェックボックス
+          Column(
+            children: [
+              CheckboxListTile(
+                value: _copyTitleToSubject,
+                onChanged: (value) {
+                  setState(() {
+                    _copyTitleToSubject = value ?? true;
+                  });
+                },
+                title: const Text('件名にタイトルをコピー'),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+              CheckboxListTile(
+                value: _copyMemoToBody,
+                onChanged: (value) {
+                  setState(() {
+                    _copyMemoToBody = value ?? true;
+                  });
+                },
+                title: const Text('本文に「依頼先やメモ」をコピー'),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // 連絡先選択セクション
+          _buildContactSelectionSection(),
+          
+          const SizedBox(height: 16),
+          
+          // 宛先入力欄
+          TextFormField(
+            controller: _toController,
+            decoration: const InputDecoration(
+              labelText: 'To',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.person),
+              hintText: '空でもメーラーが起動します',
+              helperText: '※空の場合はメーラーで直接アドレスを指定できます',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _ccController,
+            decoration: const InputDecoration(
+              labelText: 'Cc',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.person_add),
+              hintText: '任意',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _bccController,
+            decoration: const InputDecoration(
+              labelText: 'Bcc',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.person_add_alt),
+              hintText: '任意',
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // 送信アプリ選択
+          Row(
+            children: [
+              const Text('送信アプリ: '),
+              Radio<String>(
+                value: 'gmail',
+                groupValue: _selectedMailApp,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedMailApp = value!;
+                  });
+                },
+              ),
+              const Text('Gmail（Web）'),
+              const SizedBox(width: 16),
+              Radio<String>(
+                value: 'outlook',
+                groupValue: _selectedMailApp,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedMailApp = value!;
+                  });
+                },
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Outlook（デスクトップ）'),
+                  Text(
+                    '※会社PCでのみ利用可能',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // メール送信ボタン
+          Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _sendMail,
+                      icon: const Icon(Icons.send),
+                      label: const Text('メーラーを起動'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // テスト用ボタン
+                  ElevatedButton.icon(
+                    onPressed: _sendTestMail,
+                    icon: const Icon(Icons.bug_report),
+                    label: const Text('テスト'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // 送信完了ボタン
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _pendingMailTo != null ? _markMailAsSent : null,
+                  icon: const Icon(Icons.check_circle),
+                  label: Text(_pendingMailTo != null ? 'メール送信完了' : 'メーラーを先に起動してください'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _pendingMailTo != null ? Colors.green : Colors.grey,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              // デバッグ情報を表示
+              if (kDebugMode)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    border: Border.all(color: Colors.blue.shade200),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'デバッグ: _pendingMailTo = $_pendingMailTo',
+                    style: const TextStyle(fontSize: 10, color: Colors.blue),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              Text(
+                _pendingMailTo != null 
+                  ? '※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください'
+                  : '※まず「メーラーを起動」ボタンでメーラーを開いてください',
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// メール送信を実行（メーラーを起動のみ）
+  Future<void> _sendMail() async {
+    try {
+      final to = _toController.text.trim();
+      final cc = _ccController.text.trim();
+      final bcc = _bccController.text.trim();
+
+      // 件名と本文を構築
+      String subject = _copyTitleToSubject ? _titleController.text.trim() : '';
+      String body = _copyMemoToBody ? _assignedToController.text.trim() : '';
+      
+      // 件名が空の場合はデフォルトの件名を設定
+      if (subject.isEmpty) {
+        subject = 'タスク関連メール';
+      }
+
+      final mailService = MailService();
+      await mailService.initialize();
+      
+      // UUIDを生成
+      final token = mailService.makeShortToken();
+      final finalSubject = '$subject [$token]';
+      final finalBody = '$body\n\n---\n送信ID: $token';
+      
+      // メール送信情報を一時保存（UUID付き）
+      _pendingMailTo = to;
+      _pendingMailCc = cc;
+      _pendingMailBcc = bcc;
+      _pendingMailSubject = finalSubject;
+      _pendingMailBody = finalBody;
+      _pendingMailApp = _selectedMailApp;
+      
+      if (kDebugMode) {
+        print('=== メーラー起動開始 ===');
+        print('アプリ: $_selectedMailApp');
+        print('宛先: $to');
+        print('件名: $finalSubject');
+        print('トークン: $token');
+      }
+      
+      // メーラーを起動（UUID付きでログは保存しない）
+      if (_selectedMailApp == 'gmail') {
+        await mailService.launchGmail(
+          to: to,
+          cc: cc,
+          bcc: bcc,
+          subject: finalSubject,
+          body: finalBody,
+        );
+      } else if (_selectedMailApp == 'outlook') {
+        await mailService.launchOutlookDesktop(
+          to: to,
+          cc: cc,
+          bcc: bcc,
+          subject: finalSubject,
+          body: finalBody,
+        );
+      }
+
+      if (kDebugMode) {
+        print('=== メーラー起動完了 ===');
+      }
+
+      // UIを更新してボタンの状態を変更
+      setState(() {});
+
+      SnackBarService.showSuccess(context, '${_selectedMailApp == 'gmail' ? 'Gmail' : 'Outlook'}のメール作成画面を開きました。\nメールを送信した後、「メール送信完了」ボタンを押してください。');
+      
+    } catch (e) {
+      SnackBarService.showError(context, 'メーラー起動エラー: $e');
+    }
+  }
+
+  /// メール送信完了をマーク
+  Future<void> _markMailAsSent() async {
+    try {
+      // 送信情報が保存されていない場合はエラー
+      if (_pendingMailTo == null || _pendingMailApp == null) {
+        SnackBarService.showError(context, '先に「メーラーを起動」ボタンを押してください');
+        return;
+      }
+
+      // タスクIDを取得（新規作成の場合は一時的なIDを使用）
+      final taskId = widget.task?.id ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
+
+      final mailService = MailService();
+      await mailService.initialize();
+      
+      if (kDebugMode) {
+        print('=== メール送信完了マーク ===');
+        print('タスクID: $taskId');
+        print('アプリ: $_pendingMailApp');
+        print('宛先: $_pendingMailTo');
+        print('件名: $_pendingMailSubject');
+      }
+      
+      // トークンを抽出（件名から [LN-XXXXXX] を抽出）
+      String? token;
+      final subjectMatch = RegExp(r'\[(LN-[A-Z0-9]+)\]').firstMatch(_pendingMailSubject!);
+      if (subjectMatch != null) {
+        token = subjectMatch.group(1);
+      }
+      
+      if (token == null) {
+        SnackBarService.showError(context, 'トークンの抽出に失敗しました');
+        return;
+      }
+
+      // 実際のメール送信ログのみを保存（既存のトークンを使用）
+      await mailService.saveMailLogWithToken(
+        taskId: taskId,
+        app: _pendingMailApp!,
+        to: _pendingMailTo!,
+        cc: _pendingMailCc ?? '',
+        bcc: _pendingMailBcc ?? '',
+        subject: _pendingMailSubject!,
+        body: _pendingMailBody!,
+        token: token,
+      );
+
+      // 連絡先の使用回数を更新
+      if (_selectedContacts.isNotEmpty) {
+        final contactService = EmailContactService();
+        await contactService.initialize();
+        
+        for (final contact in _selectedContacts) {
+          await contactService.updateContactUsage(contact.email);
+        }
+      }
+
+      // 一時保存された情報をクリア
+      _pendingMailTo = null;
+      _pendingMailCc = null;
+      _pendingMailBcc = null;
+      _pendingMailSubject = null;
+      _pendingMailBody = null;
+      _pendingMailApp = null;
+
+      if (kDebugMode) {
+        print('=== メール送信完了マーク完了 ===');
+      }
+
+      // UIを更新してボタンの状態をリセット
+      setState(() {});
+
+      SnackBarService.showSuccess(context, 'メール送信完了を記録しました');
+      
+      // メール送信後のコールバックを実行
+      widget.onMailSent?.call();
+    } catch (e) {
+      SnackBarService.showError(context, 'メール送信完了記録エラー: $e');
+    }
+  }
+
+  /// 連絡先選択セクションを構築
+  Widget _buildContactSelectionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.contacts, color: Colors.green, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              '送信先選択',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: _showContactSelectionDialog,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('連絡先を追加'),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // 選択された連絡先の表示
+        if (_selectedContacts.isNotEmpty) ...[
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: _selectedContacts.map((contact) => Chip(
+              label: Text(
+                contact.shortDisplayName,
+                style: const TextStyle(fontSize: 12),
+              ),
+              deleteIcon: const Icon(Icons.close, size: 16),
+              onDeleted: () {
+                setState(() {
+                  _selectedContacts.remove(contact);
+                  _updateEmailFields();
+                });
+              },
+            )).toList(),
+          ),
+          const SizedBox(height: 8),
+        ],
+        
+        // よく使われる連絡先
+        if (_availableContacts.isNotEmpty) ...[
+          const Text(
+            'よく使われる連絡先:',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 32,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _availableContacts.length,
+              itemBuilder: (context, index) {
+                final contact = _availableContacts[index];
+                final isSelected = _selectedContacts.contains(contact);
+                
+                return Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: ActionChip(
+                    label: Text(
+                      contact.name,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isSelected ? Colors.white : null,
+                      ),
+                    ),
+                    backgroundColor: isSelected ? Colors.blue : Colors.grey.shade200,
+                    onPressed: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedContacts.remove(contact);
+      } else {
+                          _selectedContacts.add(contact);
+                        }
+                        _updateEmailFields();
+                      });
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+        
+        // 送信履歴から選択ボタン
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _showHistorySelectionDialog,
+            icon: const Icon(Icons.history, size: 16),
+            label: const Text('送信履歴から選択'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 送信先選択ダイアログを表示
+  Future<void> _showContactSelectionDialog() async {
+    final result = await showDialog<EmailContact>(
+      context: context,
+      builder: (context) => _ContactAddDialog(),
+    );
+    
+    if (result != null) {
+      setState(() {
+        _selectedContacts.add(result);
+        _updateEmailFields();
+      });
+    }
+  }
+
+  /// 送信履歴選択ダイアログを表示
+  Future<void> _showHistorySelectionDialog() async {
+    final result = await showDialog<List<EmailContact>>(
+      context: context,
+      builder: (context) => _HistorySelectionDialog(),
+    );
+    
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        for (final contact in result) {
+          if (!_selectedContacts.contains(contact)) {
+            _selectedContacts.add(contact);
+          }
+        }
+        _updateEmailFields();
+      });
+    }
+  }
+
+  /// メールフィールドを更新
+  void _updateEmailFields() {
+    final emails = _selectedContacts.map((c) => c.email).toList();
+    _toController.text = emails.join(', ');
+  }
+
+  /// テスト用メール送信
+  Future<void> _sendTestMail() async {
+    try {
+      final taskId = widget.task?.id ?? 'test_${DateTime.now().millisecondsSinceEpoch}';
+      
+      final mailService = MailService();
+      await mailService.initialize();
+      
+      if (kDebugMode) {
+        print('=== テストメール送信開始 ===');
+        print('タスクID: $taskId');
+      }
+      
+      await mailService.sendMail(
+        taskId: taskId,
+        app: 'gmail',
+        to: 'test@example.com',
+        cc: '',
+        bcc: '',
+        subject: 'テストメール',
+        body: 'これはテストメールです。',
+      );
+
+      if (kDebugMode) {
+        print('=== テストメール送信完了 ===');
+      }
+
+      SnackBarService.showSuccess(context, 'テストメール送信完了');
+      
+      // メール送信後のコールバックを実行
+      widget.onMailSent?.call();
+    } catch (e) {
+      SnackBarService.showError(context, 'テストメール送信エラー: $e');
+    }
+  }
+
+}
+
+// 連絡先追加ダイアログ
+class _ContactAddDialog extends StatefulWidget {
+  @override
+  _ContactAddDialogState createState() => _ContactAddDialogState();
+}
+
+class _ContactAddDialogState extends State<_ContactAddDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _organizationController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _organizationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('連絡先を追加'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: '名前 *',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '名前を入力してください';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'メールアドレス *',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'メールアドレスを入力してください';
+                }
+                if (!value.contains('@')) {
+                  return '有効なメールアドレスを入力してください';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _organizationController,
+              decoration: const InputDecoration(
+                labelText: '組織・会社',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            if (_formKey.currentState!.validate()) {
+              try {
+                final contactService = EmailContactService();
+                await contactService.initialize();
+                
+                final contact = await contactService.addContact(
+                  name: _nameController.text.trim(),
+                  email: _emailController.text.trim(),
+                  organization: _organizationController.text.trim().isNotEmpty 
+                    ? _organizationController.text.trim() 
+                    : null,
+                );
+                
+                Navigator.of(context).pop(contact);
+              } catch (e) {
+                SnackBarService.showError(context, '連絡先追加エラー: $e');
+              }
+            }
+          },
+          child: const Text('追加'),
+        ),
+      ],
+    );
+  }
+}
+
+// 送信履歴選択ダイアログ
+class _HistorySelectionDialog extends StatefulWidget {
+  @override
+  _HistorySelectionDialogState createState() => _HistorySelectionDialogState();
+}
+
+class _HistorySelectionDialogState extends State<_HistorySelectionDialog> {
+  final List<EmailContact> _selectedContacts = [];
+  List<EmailContact> _historyContacts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistoryContacts();
+  }
+
+  Future<void> _loadHistoryContacts() async {
+    try {
+      final contactService = EmailContactService();
+      await contactService.initialize();
+      
+      // 登録済みの連絡先から、使用回数順で取得
+      _historyContacts = contactService.getFrequentContacts(limit: 50);
+      
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('送信履歴読み込みエラー: $e');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('送信履歴から選択'),
+      content: SizedBox(
+        width: 450,
+        height: 400,
+        child: _historyContacts.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history, size: 48, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('送信履歴がありません'),
+                  SizedBox(height: 8),
+                  Text('メールを送信すると、宛先が自動で連絡先に登録されます', 
+                       style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('よく使う連絡先 (${_historyContacts.length}件)', 
+                     style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _historyContacts.length,
+                    itemBuilder: (context, index) {
+                      final contact = _historyContacts[index];
+                      final isSelected = _selectedContacts.contains(contact);
+                      
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        child: CheckboxListTile(
+                          title: Text(contact.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(contact.email, style: const TextStyle(fontSize: 12)),
+                              if (contact.organization != null)
+                                Text(contact.organization!, 
+                                     style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                              Text('使用回数: ${contact.useCount}回', 
+                                   style: const TextStyle(fontSize: 10, color: Colors.blue)),
+                            ],
+                          ),
+                          value: isSelected,
+                          onChanged: (value) {
+                            setState(() {
+                              if (value == true) {
+                                _selectedContacts.add(contact);
+                              } else {
+                                _selectedContacts.remove(contact);
+                              }
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton(
+          onPressed: _selectedContacts.isEmpty
+            ? null
+            : () => Navigator.of(context).pop(_selectedContacts),
+          child: Text('選択 (${_selectedContacts.length})'),
+        ),
+      ],
+    );
+  }
 }
 
 // カスタム時間選択ダイアログ

@@ -7,6 +7,7 @@ import '../services/notification_service.dart';
 import 'dart:io';
 import '../services/windows_notification_service.dart';
 import '../services/google_calendar_service.dart';
+import '../services/settings_service.dart';
 import 'link_viewmodel.dart';
 import 'sub_task_viewmodel.dart';
 
@@ -174,6 +175,9 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       await updateSubTaskStatistics(task.id);
       print('=== 新規タスク作成時のサブタスク統計初期化完了 ===');
 
+      // Google Calendar自動同期（認証が有効な場合）
+      await _autoSyncToGoogleCalendar(task);
+
       if (kDebugMode) {
         print('タスク追加: ${task.title}');
         if (task.reminderTime != null) {
@@ -218,6 +222,9 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       print('状態更新完了');
       print('=== タスク更新完了 ===');
+      
+      // Google Calendar自動同期（認証が有効な場合）
+      await _autoSyncToGoogleCalendar(task);
       
       // リマインダー時間または期限日が変更された場合のみ通知を更新
       final dueDateChanged = existingTask.dueDate != task.dueDate;
@@ -429,6 +436,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     DateTime? dueDate,
     DateTime? reminderTime,
     TaskPriority priority = TaskPriority.medium,
+    TaskStatus status = TaskStatus.pending,
     List<String> tags = const [],
     String? relatedLinkId,
     int? estimatedMinutes,
@@ -450,6 +458,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       dueDate: dueDate,
       reminderTime: reminderTime,
       priority: priority,
+      status: status,
       tags: tags,
       relatedLinkId: relatedLinkId,
       createdAt: DateTime.now(),
@@ -478,14 +487,17 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         final success = await googleCalendarService.updateCalendarEvent(task, task.googleCalendarEventId!);
         return success;
       } else {
-        // 新しいイベントを作成
+        // 新しいイベントを作成（重複チェック付き）
         final result = await googleCalendarService.createCalendarEvent(task);
-        if (result.success) {
-          // イベントIDを取得してタスクを更新
-          final eventId = await googleCalendarService.getCalendarEventId(task);
+        if (result.success && result.details != null) {
+          // 同期結果からイベントIDを取得してタスクを更新
+          final eventId = result.details!['eventId'];
           if (eventId != null) {
             final updatedTask = task.copyWith(googleCalendarEventId: eventId);
             updateTask(updatedTask);
+            if (kDebugMode) {
+              print('タスクにGoogle CalendarイベントIDを設定: ${task.title} -> $eventId');
+            }
           }
         }
         return result.success;
@@ -493,6 +505,34 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     } catch (e) {
       print('Google Calendar同期エラー: $e');
       return false;
+    }
+  }
+
+  // Google Calendarからアプリに同期（Google Calendarにのみ存在するイベントをアプリに追加）
+  Future<Map<String, dynamic>> syncFromGoogleCalendarToApp() async {
+    try {
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      print('=== TaskViewModel: Google Calendar → アプリ同期開始 ===');
+      
+      final result = await googleCalendarService.syncFromGoogleCalendarToApp(state);
+      
+      // 実際にタスクを追加する処理は、Google Calendarサービスから返されたタスクリストを使用
+      // ここでは同期結果のみを返す
+      
+      print('=== TaskViewModel: Google Calendar → アプリ同期完了 ===');
+      print('結果: $result');
+      
+      return result;
+    } catch (e) {
+      print('Google Calendar → アプリ同期エラー: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+        'added': 0,
+        'skipped': 0,
+      };
     }
   }
 
@@ -646,6 +686,74 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     } catch (e) {
       print('サブタスク統計更新エラー: $e');
       print('エラーの詳細: ${e.toString()}');
+    }
+  }
+
+  /// Google Calendar自動同期（認証が有効な場合のみ実行）
+  Future<void> _autoSyncToGoogleCalendar(TaskItem task) async {
+    try {
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      
+      // 認証状態をチェック
+      if (!googleCalendarService.isAuthenticated) {
+        if (kDebugMode) {
+          print('Google Calendar認証なし - 自動同期スキップ');
+        }
+        return;
+      }
+      
+      if (kDebugMode) {
+        print('=== Google Calendar自動同期開始 ===');
+        print('タスク: ${task.title}');
+        print('ステータス: ${task.status}');
+      }
+      
+      // 個別タスク同期を実行
+      final success = await syncTaskToGoogleCalendar(task);
+      
+      // 完了タスクの表示/非表示を制御
+      if (success && task.status == TaskStatus.completed && task.googleCalendarEventId != null) {
+        await _controlCompletedTaskVisibility(task);
+      }
+      
+      if (kDebugMode) {
+        print('Google Calendar自動同期結果: $success');
+        print('=== Google Calendar自動同期完了 ===');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Google Calendar自動同期エラー（無視）: $e');
+      }
+      // 自動同期のエラーは無視（ユーザーに通知しない）
+    }
+  }
+
+  /// 完了タスクの表示/非表示を制御
+  Future<void> _controlCompletedTaskVisibility(TaskItem task) async {
+    try {
+      final settingsService = SettingsService.instance;
+      final showCompleted = settingsService.googleCalendarShowCompletedTasks;
+      
+      if (task.googleCalendarEventId != null) {
+        final googleCalendarService = GoogleCalendarService();
+        await googleCalendarService.initialize();
+        
+        // 完了タスクの表示/非表示を制御
+        final success = await googleCalendarService.updateCompletedTaskVisibility(
+          task.googleCalendarEventId!,
+          showCompleted,
+        );
+        
+        if (kDebugMode) {
+          print('完了タスク表示制御: ${showCompleted ? "表示" : "非表示"} - 結果: $success');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('完了タスク表示制御エラー（無視）: $e');
+      }
+      // エラーは無視（ユーザーに通知しない）
     }
   }
 

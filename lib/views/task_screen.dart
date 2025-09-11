@@ -20,6 +20,9 @@ import '../utils/csv_export.dart';
 import 'task_dialog.dart';
 import 'calendar_screen.dart';
 import 'sub_task_dialog.dart';
+import '../widgets/mail_badge.dart';
+import '../services/mail_service.dart';
+import '../models/sent_mail_log.dart';
 
 class TaskScreen extends ConsumerStatefulWidget {
   const TaskScreen({super.key});
@@ -963,6 +966,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // メールバッジ
+            _buildMailBadges(task.id),
             // サブタスクボタン
             IconButton(
               icon: Stack(
@@ -1166,7 +1171,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   void _showTaskDialog({TaskItem? task}) {
     showDialog(
       context: context,
-      builder: (context) => TaskDialog(task: task),
+      builder: (context) => TaskDialog(
+        task: task,
+        onMailSent: () {
+          // メール送信後にタスクリストを更新
+          setState(() {});
+        },
+      ),
     );
   }
 
@@ -1862,6 +1873,61 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         ],
       ),
     );
+  }
+
+  /// メールバッジを構築
+  Widget _buildMailBadges(String taskId) {
+    return FutureBuilder<List<SentMailLog>>(
+      future: _getMailLogsForTask(taskId),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: MailBadgeList(
+              logs: snapshot.data!,
+              onLogTap: _openSentSearch,
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  /// タスクのメールログを取得
+  Future<List<SentMailLog>> _getMailLogsForTask(String taskId) async {
+    try {
+      final mailService = MailService();
+      await mailService.initialize();
+      final logs = mailService.getMailLogsForTask(taskId);
+      
+      if (kDebugMode) {
+        print('タスクID $taskId のメールログ取得: ${logs.length}件');
+        for (final log in logs) {
+          print('  - ${log.app}: ${log.token} (${log.composedAt})');
+        }
+      }
+      
+      return logs;
+    } catch (e) {
+      if (kDebugMode) {
+        print('メールログ取得エラー: $e');
+      }
+      return [];
+    }
+  }
+
+  /// 送信済み検索を開く
+  Future<void> _openSentSearch(SentMailLog log) async {
+    try {
+      final mailService = MailService();
+      await mailService.initialize();
+      await mailService.openSentSearch(log);
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, '送信済み検索エラー: $e');
+      }
+    }
   }
 
   /// 認証エラーダイアログを表示

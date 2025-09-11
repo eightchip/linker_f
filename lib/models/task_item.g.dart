@@ -40,13 +40,16 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       completedSubTasksCount: fields[20] as int,
       totalSubTasksCount: fields[21] as int,
       assignedTo: fields[22] as String?,
+      source: fields[23] as String?,
+      externalId: fields[24] as String?,
+      googleCalendarEventId: fields[25] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TaskItem obj) {
     writer
-      ..writeByte(23)
+      ..writeByte(26)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -92,7 +95,13 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       ..writeByte(21)
       ..write(obj.totalSubTasksCount)
       ..writeByte(22)
-      ..write(obj.assignedTo);
+      ..write(obj.assignedTo)
+      ..writeByte(23)
+      ..write(obj.source)
+      ..writeByte(24)
+      ..write(obj.externalId)
+      ..writeByte(25)
+      ..write(obj.googleCalendarEventId);
   }
 
   @override

@@ -41,6 +41,7 @@ class SettingsState {
   final int googleCalendarSyncInterval;
   final bool googleCalendarAutoSync;
   final bool googleCalendarBidirectionalSync;
+  final bool googleCalendarShowCompletedTasks;
 
   SettingsState({
     this.autoBackup = true,
@@ -54,6 +55,7 @@ class SettingsState {
     this.googleCalendarSyncInterval = 60,
     this.googleCalendarAutoSync = false,
     this.googleCalendarBidirectionalSync = false,
+    this.googleCalendarShowCompletedTasks = true,
   });
 
   SettingsState copyWith({
@@ -68,6 +70,7 @@ class SettingsState {
     int? googleCalendarSyncInterval,
     bool? googleCalendarAutoSync,
     bool? googleCalendarBidirectionalSync,
+    bool? googleCalendarShowCompletedTasks,
   }) {
     return SettingsState(
       autoBackup: autoBackup ?? this.autoBackup,
@@ -81,6 +84,7 @@ class SettingsState {
       googleCalendarSyncInterval: googleCalendarSyncInterval ?? this.googleCalendarSyncInterval,
       googleCalendarAutoSync: googleCalendarAutoSync ?? this.googleCalendarAutoSync,
       googleCalendarBidirectionalSync: googleCalendarBidirectionalSync ?? this.googleCalendarBidirectionalSync,
+      googleCalendarShowCompletedTasks: googleCalendarShowCompletedTasks ?? this.googleCalendarShowCompletedTasks,
     );
   }
 }
@@ -107,6 +111,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         googleCalendarSyncInterval: _service.googleCalendarSyncInterval,
         googleCalendarAutoSync: _service.googleCalendarAutoSync,
         googleCalendarBidirectionalSync: _service.googleCalendarBidirectionalSync,
+        googleCalendarShowCompletedTasks: _service.googleCalendarShowCompletedTasks,
         isLoading: false,
       );
     } catch (e) {
@@ -161,6 +166,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setGoogleCalendarBidirectionalSync(bool value) async {
     await _service.setGoogleCalendarBidirectionalSync(value);
     state = state.copyWith(googleCalendarBidirectionalSync: value);
+  }
+
+  Future<void> setGoogleCalendarShowCompletedTasks(bool value) async {
+    await _service.setGoogleCalendarShowCompletedTasks(value);
+    state = state.copyWith(googleCalendarShowCompletedTasks: value);
   }
 
   Future<void> resetToDefaults() async {
@@ -1665,6 +1675,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   const Divider(),
                   
+                  // 完了タスク表示設定
+                  SwitchListTile(
+                    title: const Text('完了タスクを表示'),
+                    subtitle: const Text('Google Calendarで完了したタスクを表示します'),
+                    value: settingsState.googleCalendarShowCompletedTasks,
+                    onChanged: (value) {
+                      settingsNotifier.setGoogleCalendarShowCompletedTasks(value);
+                    },
+                    secondary: const Icon(Icons.visibility),
+                  ),
+                  
+                  const Divider(),
+                  
+                  // 認証情報ファイルの状態表示
+                  FutureBuilder<bool>(
+                    future: GoogleCalendarSetup.hasCredentialsFile(),
+                    builder: (context, snapshot) {
+                      final hasCredentials = snapshot.data ?? false;
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: hasCredentials ? Colors.green.shade50 : Colors.red.shade50,
+                          border: Border.all(
+                            color: hasCredentials ? Colors.green.shade200 : Colors.red.shade200,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              hasCredentials ? Icons.check_circle : Icons.error,
+                              color: hasCredentials ? Colors.green : Colors.red,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                hasCredentials 
+                                  ? '認証情報ファイルが見つかりました'
+                                  : '認証情報ファイルが見つかりません',
+                                style: TextStyle(
+                                  color: hasCredentials ? Colors.green.shade700 : Colors.red.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  
                   // OAuth2認証ボタン
                   SizedBox(
                     width: double.infinity,
@@ -1702,23 +1764,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   const SizedBox(height: 8),
                   
-                  // 完全相互同期ボタン
+                  // アプリ→Google Calendar同期ボタン
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         try {
                           final taskViewModel = ref.read(taskViewModelProvider.notifier);
-                          final result = await taskViewModel.performFullBidirectionalSync();
+                          final result = await taskViewModel.syncAllTasksToGoogleCalendar();
                           
                           if (result['success']) {
-                            final appToCalendar = result['appToCalendar'] ?? 0;
-                            final calendarToApp = result['calendarToApp'] ?? 0;
-                            final total = result['total'] ?? 0;
+                            final created = result['created'] ?? 0;
+                            final updated = result['updated'] ?? 0;
+                            final deleted = result['deleted'] ?? 0;
                             
                             SnackBarService.showSuccess(
                               context, 
-                              '完全同期完了: アプリ→Googleカレンダー${appToCalendar}件, Googleカレンダー→アプリ${calendarToApp}件 (合計${total}件)'
+                              'アプリ→Google Calendar同期完了: 作成${created}件, 更新${updated}件, 削除${deleted}件'
                             );
                           } else {
                             SnackBarService.showError(context, '同期エラー: ${result['error']}');
@@ -1727,10 +1789,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           SnackBarService.showError(context, '同期エラー: $e');
                         }
                       },
-                      icon: const Icon(Icons.sync),
-                      label: const Text('完全同期'),
+                      icon: const Icon(Icons.upload),
+                      label: const Text('アプリ→Google Calendar同期'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // Google Calendar→アプリ同期ボタン
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final taskViewModel = ref.read(taskViewModelProvider.notifier);
+                          final result = await taskViewModel.syncFromGoogleCalendarToApp();
+                          
+                          if (result['success']) {
+                            final added = result['added'] ?? 0;
+                            final skipped = result['skipped'] ?? 0;
+                            
+                            SnackBarService.showSuccess(
+                              context, 
+                              'Google Calendar→アプリ同期完了: 追加${added}件, スキップ${skipped}件'
+                            );
+                          } else {
+                            SnackBarService.showError(context, '同期エラー: ${result['error']}');
+                          }
+                        } catch (e) {
+                          SnackBarService.showError(context, '同期エラー: $e');
+                        }
+                      },
+                      icon: const Icon(Icons.download),
+                      label: const Text('Google Calendar→アプリ同期'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
                       ),
                     ),

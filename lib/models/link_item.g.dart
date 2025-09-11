@@ -30,7 +30,7 @@ class LinkItemAdapter extends TypeAdapter<LinkItem> {
       tags: (fields[10] as List).cast<String>(),
       hasActiveTasks: fields[11] as bool,
       faviconFallbackDomain: fields[12] as String?,
-      useCount: fields[13] as int? ?? 0,
+      useCount: fields[13] as int,
     );
   }
 

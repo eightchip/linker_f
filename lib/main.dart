@@ -9,6 +9,8 @@ import 'models/link_item.dart';
 import 'models/group.dart';
 import 'models/task_item.dart';
 import 'models/sub_task.dart';
+import 'models/sent_mail_log.dart';
+import 'models/email_contact.dart';
 import 'views/link_launcher_app.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screen_retriever/screen_retriever.dart';
@@ -131,6 +133,16 @@ Future<void> _initializeHive() async {
       Hive.registerAdapter(SubTaskAdapter());
     } catch (e) {
       print('SubTaskAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(SentMailLogAdapter());
+    } catch (e) {
+      print('SentMailLogAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(EmailContactAdapter());
+    } catch (e) {
+      print('EmailContactAdapter登録エラー: $e');
     }
     
     print('Hive初期化完了');
