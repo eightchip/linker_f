@@ -1138,58 +1138,71 @@ class GoogleCalendarService {
         );
       }
 
-      // 重複チェックを実行（終日イベント用）
+      // より広範囲で既存イベントを検索（日付変更に対応）
       final existingEvents = await getEvents(
-        startTime: startTime.subtract(const Duration(days: 1)),
-        endTime: startTime.add(const Duration(days: 1)),
-        maxResults: 100,
+        startTime: startTime.subtract(const Duration(days: 30)), // 過去30日から
+        endTime: startTime.add(const Duration(days: 30)), // 未来30日まで
+        maxResults: 200,
       );
       
-      // 同じタイトルと日付のイベントが既に存在するかチェック
+      // 1. まずタスクIDで既存イベントを検索
+      Map<String, dynamic>? existingEvent;
       for (final event in existingEvents) {
-        final eventTitle = event['summary'] ?? '';
-        final eventStart = event['start'];
-        DateTime? eventStartTime;
-        
-        if (eventStart != null) {
-          if (eventStart['dateTime'] != null) {
-            eventStartTime = DateTime.parse(eventStart['dateTime']).toLocal();
-          } else if (eventStart['date'] != null) {
-            eventStartTime = DateTime.parse(eventStart['date']);
-          }
+        final taskId = event['extendedProperties']?['private']?['taskId'];
+        if (taskId == task.id) {
+          existingEvent = event;
+          print('タスクIDで既存イベントを発見: ${event['summary']} (ID: $taskId)');
+          break;
         }
-        
-        if (eventTitle == task.title && eventStartTime != null) {
-          // 終日イベントなので、同じ日付かどうかで判定
-          final eventDate = eventStartTime.toIso8601String().split('T')[0];
-          final taskDate = startTime.toIso8601String().split('T')[0];
-          if (eventDate == taskDate) {
-            // 重複イベントが見つかった場合、既存イベントを更新
-            print('重複イベントを発見、既存イベントを更新: $eventTitle');
-            final success = await updateCalendarEvent(task, event['id']);
-            
-            if (success) {
-              // タスクにGoogle CalendarイベントIDを設定
-              await _updateTaskWithEventId(task, event['id']);
-              return SyncResult(
-                success: true,
-                details: {'eventId': event['id'], 'action': 'updated'},
-              );
-            } else {
-              return SyncResult(
-                success: false,
-                errorMessage: '既存イベントの更新に失敗しました: $eventTitle',
-                errorCode: 'UPDATE_FAILED',
-              );
-            }
+      }
+      
+      // 2. タスクIDで見つからない場合は、タイトルのみで検索
+      if (existingEvent == null) {
+        for (final event in existingEvents) {
+          final eventTitle = event['summary'] ?? '';
+          if (eventTitle == task.title) {
+            // 同じタイトルのイベントが見つかった場合
+            existingEvent = event;
+            print('タイトルで既存イベントを発見: $eventTitle');
+            break;
           }
         }
       }
+      
+      // 3. 既存イベントが見つかった場合は更新
+      if (existingEvent != null) {
+        print('既存イベントを更新: ${existingEvent['summary']}');
+        final success = await updateCalendarEvent(task, existingEvent['id']);
+        
+        if (success) {
+          // タスクにGoogle CalendarイベントIDを設定
+          await _updateTaskWithEventId(task, existingEvent['id']);
+          return SyncResult(
+            success: true,
+            details: {'eventId': existingEvent['id'], 'action': 'updated'},
+          );
+        } else {
+          return SyncResult(
+            success: false,
+            errorMessage: '既存イベントの更新に失敗しました: ${existingEvent['summary']}',
+            errorCode: 'UPDATE_FAILED',
+          );
+        }
+      }
 
+      // 詳細説明を構築（複数の情報を含める）
+      final description = _buildEnhancedDescription(task);
+      
+      // 参加者リストを構築
+      final attendees = _buildAttendeesList(task);
+      
+      // 繰り返しルールを構築
+      final recurrence = _buildRecurrenceRule(task);
+      
       // 日付のみの終日イベントとして作成
       final eventData = {
         'summary': task.title,
-        'description': task.description ?? '',
+        'description': description,
         'start': {
           'date': startTime.toIso8601String().split('T')[0], // 日付のみ
         },
@@ -1208,9 +1221,38 @@ class GoogleCalendarService {
             'taskId': task.id,
             'priority': task.priority.toString(),
             'status': task.status.toString(),
+            'estimatedMinutes': task.estimatedMinutes?.toString() ?? '',
+            'hasSubTasks': task.hasSubTasks.toString(),
+            'subTasksProgress': '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
           }
         }
       };
+
+      // 場所情報がある場合のみ追加
+      if (task.assignedTo != null && task.assignedTo!.isNotEmpty) {
+        eventData['location'] = task.assignedTo!;
+      }
+
+      // 参加者リストがある場合のみ追加
+      if (attendees.isNotEmpty) {
+        eventData['attendees'] = attendees;
+      }
+
+      // 繰り返しルールがある場合は追加
+      if (recurrence.isNotEmpty) {
+        eventData['recurrence'] = recurrence;
+      }
+
+      // デバッグ用: 送信データをログ出力
+      if (kDebugMode) {
+        print('=== Google Calendar API送信データ ===');
+        print('タスク: ${task.title}');
+        print('依頼先: ${task.assignedTo}');
+        print('参加者数: ${attendees.length}');
+        print('参加者詳細: $attendees');
+        print('送信データ: ${jsonEncode(eventData)}');
+        print('===============================');
+      }
 
       // Google Calendar APIに送信
       final response = await http.post(
@@ -1279,10 +1321,19 @@ class GoogleCalendarService {
         return false;
       }
 
+      // 詳細説明を構築（複数の情報を含める）
+      final description = _buildEnhancedDescription(task);
+      
+      // 参加者リストを構築
+      final attendees = _buildAttendeesList(task);
+      
+      // 繰り返しルールを構築
+      final recurrence = _buildRecurrenceRule(task);
+      
       // 日付のみの終日イベントとして更新
       final eventData = {
         'summary': task.title,
-        'description': task.description ?? '',
+        'description': description,
         'start': {
           'date': startTime.toIso8601String().split('T')[0], // 日付のみ
         },
@@ -1301,9 +1352,39 @@ class GoogleCalendarService {
             'taskId': task.id,
             'priority': task.priority.toString(),
             'status': task.status.toString(),
+            'estimatedMinutes': task.estimatedMinutes?.toString() ?? '',
+            'hasSubTasks': task.hasSubTasks.toString(),
+            'subTasksProgress': '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
           }
         }
       };
+
+      // 場所情報がある場合のみ追加
+      if (task.assignedTo != null && task.assignedTo!.isNotEmpty) {
+        eventData['location'] = task.assignedTo!;
+      }
+
+      // 参加者リストがある場合のみ追加
+      if (attendees.isNotEmpty) {
+        eventData['attendees'] = attendees;
+      }
+
+      // 繰り返しルールがある場合は追加
+      if (recurrence.isNotEmpty) {
+        eventData['recurrence'] = recurrence;
+      }
+
+      // デバッグ用: 送信データをログ出力
+      if (kDebugMode) {
+        print('=== Google Calendar API更新データ ===');
+        print('タスク: ${task.title}');
+        print('イベントID: $eventId');
+        print('依頼先: ${task.assignedTo}');
+        print('参加者数: ${attendees.length}');
+        print('参加者詳細: $attendees');
+        print('送信データ: ${jsonEncode(eventData)}');
+        print('===============================');
+      }
 
       // Google Calendar APIに送信
       final response = await http.put(
@@ -1418,13 +1499,13 @@ class GoogleCalendarService {
   String _getStatusColorId(TaskStatus status) {
     switch (status) {
       case TaskStatus.pending:
-        return '8'; // グレー（未着手）
+        return '8'; // グラファイト（グレー）- 未着手
       case TaskStatus.inProgress:
-        return '9'; // ブルー（進行中）
+        return '7'; // ピーコック（青）- 進行中（画像のような鮮やかな青い色）
       case TaskStatus.completed:
-        return '10'; // グリーン（完了済み）
+        return '10'; // バジル（緑）- 完了済み
       case TaskStatus.cancelled:
-        return '11'; // レッド（キャンセル）
+        return '11'; // トマト（赤）- キャンセル
     }
   }
 
@@ -1444,6 +1525,179 @@ class GoogleCalendarService {
       if (kDebugMode) {
         print('タスクイベントID設定エラー: $e');
       }
+    }
+  }
+
+  /// 拡張された詳細説明を構築
+  String _buildEnhancedDescription(TaskItem task) {
+    final parts = <String>[];
+    
+    // 基本説明
+    if (task.description != null && task.description!.isNotEmpty) {
+      parts.add(task.description!);
+    }
+    
+    // 追加メモ
+    if (task.notes != null && task.notes!.isNotEmpty) {
+      parts.add('📝 メモ: ${task.notes!}');
+    }
+    
+    // タグ情報
+    if (task.tags.isNotEmpty) {
+      parts.add('🏷️ タグ: ${task.tags.join(', ')}');
+    }
+    
+    // 推定時間
+    if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
+      final hours = task.estimatedMinutes! ~/ 60;
+      final minutes = task.estimatedMinutes! % 60;
+      if (hours > 0) {
+        parts.add('⏱️ 推定時間: ${hours}時間${minutes > 0 ? '${minutes}分' : ''}');
+      } else {
+        parts.add('⏱️ 推定時間: ${minutes}分');
+      }
+    }
+    
+    // サブタスク情報
+    if (task.hasSubTasks && task.totalSubTasksCount > 0) {
+      parts.add('📋 サブタスク: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了');
+    }
+    
+    // 優先度情報
+    final priorityText = _getPriorityText(task.priority);
+    parts.add('⭐ 優先度: $priorityText');
+    
+    // ステータス情報
+    final statusText = _getStatusText(task.status);
+    parts.add('📊 ステータス: $statusText');
+    
+    // 作成日時
+    parts.add('📅 作成日: ${task.createdAt.toIso8601String().split('T')[0]}');
+    
+    final fullDescription = parts.join('\n');
+    
+    // Google Calendar APIの説明文の長さ制限（約8000文字）を考慮
+    if (fullDescription.length > 8000) {
+      // 重要な情報のみ残す
+      final essentialParts = <String>[];
+      
+      // 基本説明
+      if (task.description != null && task.description!.isNotEmpty) {
+        essentialParts.add(task.description!);
+      }
+      
+      // 追加メモ（短縮）
+      if (task.notes != null && task.notes!.isNotEmpty) {
+        final shortNotes = task.notes!.length > 100 
+            ? '${task.notes!.substring(0, 100)}...' 
+            : task.notes!;
+        essentialParts.add('📝 メモ: $shortNotes');
+      }
+      
+      // 推定時間
+      if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
+        final hours = task.estimatedMinutes! ~/ 60;
+        final minutes = task.estimatedMinutes! % 60;
+        if (hours > 0) {
+          essentialParts.add('⏱️ 推定時間: ${hours}時間${minutes > 0 ? '${minutes}分' : ''}');
+        } else {
+          essentialParts.add('⏱️ 推定時間: ${minutes}分');
+        }
+      }
+      
+      // 優先度とステータス
+      essentialParts.add('⭐ 優先度: ${_getPriorityText(task.priority)}');
+      essentialParts.add('📊 ステータス: ${_getStatusText(task.status)}');
+      
+      return essentialParts.join('\n');
+    }
+    
+    return fullDescription;
+  }
+
+  /// 参加者リストを構築
+  List<Map<String, dynamic>> _buildAttendeesList(TaskItem task) {
+    final attendees = <Map<String, dynamic>>[];
+    
+    // 依頼先が設定されている場合、参加者として追加
+    if (task.assignedTo != null && task.assignedTo!.isNotEmpty) {
+      // 有効なメールアドレスかどうかをチェック
+      if (_isValidEmail(task.assignedTo!)) {
+        // メールアドレスが有効な場合のみ参加者として追加
+        attendees.add({
+          'email': task.assignedTo!,
+          'displayName': task.assignedTo!.split('@')[0], // メールアドレスの@より前を表示名として使用
+          'responseStatus': 'needsAction',
+        });
+      }
+      // メールアドレスが無効な場合は参加者として追加しない
+      // （Google Calendar APIではemailフィールドが必須のため）
+    }
+    
+    return attendees;
+  }
+
+  /// 有効なメールアドレスかどうかをチェック
+  bool _isValidEmail(String email) {
+    // 基本的なメールアドレス形式のチェック
+    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  /// 繰り返しルールを構築
+  List<String> _buildRecurrenceRule(TaskItem task) {
+    if (!task.isRecurring || task.recurringPattern == null) {
+      return [];
+    }
+    
+    final rules = <String>[];
+    
+    switch (task.recurringPattern) {
+      case 'daily':
+        rules.add('RRULE:FREQ=DAILY');
+        break;
+      case 'weekly':
+        rules.add('RRULE:FREQ=WEEKLY');
+        break;
+      case 'monthly':
+        rules.add('RRULE:FREQ=MONTHLY');
+        break;
+      case 'yearly':
+        rules.add('RRULE:FREQ=YEARLY');
+        break;
+      default:
+        // その他のパターンは無視
+        break;
+    }
+    
+    return rules;
+  }
+
+  /// 優先度のテキストを取得
+  String _getPriorityText(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return '低';
+      case TaskPriority.medium:
+        return '中';
+      case TaskPriority.high:
+        return '高';
+      case TaskPriority.urgent:
+        return '緊急';
+    }
+  }
+
+  /// ステータスのテキストを取得
+  String _getStatusText(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return '未着手';
+      case TaskStatus.inProgress:
+        return '進行中';
+      case TaskStatus.completed:
+        return '完了';
+      case TaskStatus.cancelled:
+        return 'キャンセル';
     }
   }
 
@@ -1602,6 +1856,40 @@ class GoogleCalendarService {
       final colorId = event['colorId'] ?? '1';
       TaskStatus status = _getStatusFromColorId(colorId);
       
+      // 拡張プロパティから追加情報を取得
+      final extendedProps = event['extendedProperties']?['private'] ?? {};
+      final estimatedMinutesStr = extendedProps['estimatedMinutes'] ?? '';
+      final estimatedMinutes = estimatedMinutesStr.isNotEmpty ? int.tryParse(estimatedMinutesStr) : null;
+      
+      // 場所情報を依頼先として設定
+      final location = event['location'] ?? '';
+      final assignedTo = location.isNotEmpty ? location : null;
+      
+      // 参加者情報を取得
+      final attendees = event['attendees'] as List? ?? [];
+      String? attendeeEmail;
+      if (attendees.isNotEmpty) {
+        final firstAttendee = attendees[0] as Map<String, dynamic>?;
+        attendeeEmail = firstAttendee?['email'] ?? assignedTo;
+      }
+      
+      // 繰り返し情報を取得
+      final recurrence = event['recurrence'] as List? ?? [];
+      bool isRecurring = recurrence.isNotEmpty;
+      String? recurringPattern;
+      if (isRecurring) {
+        final rrule = recurrence[0] as String? ?? '';
+        if (rrule.contains('FREQ=DAILY')) {
+          recurringPattern = 'daily';
+        } else if (rrule.contains('FREQ=WEEKLY')) {
+          recurringPattern = 'weekly';
+        } else if (rrule.contains('FREQ=MONTHLY')) {
+          recurringPattern = 'monthly';
+        } else if (rrule.contains('FREQ=YEARLY')) {
+          recurringPattern = 'yearly';
+        }
+      }
+      
       return TaskItem(
         id: const Uuid().v4(),
         title: summary,
@@ -1612,6 +1900,10 @@ class GoogleCalendarService {
         status: status,
         tags: [],
         createdAt: DateTime.now(),
+        estimatedMinutes: estimatedMinutes,
+        assignedTo: attendeeEmail ?? assignedTo,
+        isRecurring: isRecurring,
+        recurringPattern: recurringPattern,
         source: 'google_calendar',
         externalId: event['id'],
       );
@@ -1624,13 +1916,15 @@ class GoogleCalendarService {
   /// 色IDからステータスを推定
   TaskStatus _getStatusFromColorId(String colorId) {
     switch (colorId) {
-      case '8': // グレー
+      case '8': // グラファイト（グレー）
         return TaskStatus.pending;
-      case '9': // ブルー
+      case '7': // ピーコック（青）- 進行中
         return TaskStatus.inProgress;
-      case '10': // グリーン
+      case '9': // ブルーベリー（青）- 進行中（旧設定との互換性）
+        return TaskStatus.inProgress;
+      case '10': // バジル（グリーン）
         return TaskStatus.completed;
-      case '11': // レッド
+      case '11': // トマト（レッド）
         return TaskStatus.cancelled;
       default:
         return TaskStatus.pending;

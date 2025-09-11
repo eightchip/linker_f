@@ -247,6 +247,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         print('=== タスク更新 ===');
         print('元のリマインダー時間: ${widget.task!.reminderTime}');
         print('元の期限日: ${widget.task!.dueDate}');
+        print('元のGoogle CalendarイベントID: ${widget.task!.googleCalendarEventId}');
         print('ダイアログのリマインダー時間: $_reminderTime');
         print('ダイアログの期限日: $_dueDate');
         print('_reminderTimeの型: ${_reminderTime.runtimeType}');
@@ -272,6 +273,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           // リマインダーがクリアされた場合、関連フィールドもクリア
           nextReminderTime: _reminderTime == null ? null : widget.task!.nextReminderTime,
           reminderCount: _reminderTime == null ? 0 : widget.task!.reminderCount,
+          // Google CalendarイベントIDを保持
+          googleCalendarEventId: widget.task!.googleCalendarEventId,
           clearDueDate: _dueDate == null && widget.task!.dueDate != null, // 期限日が削除された場合
           clearReminderTime: _reminderTime == null && widget.task!.reminderTime != null, // リマインダーが削除された場合
           clearAssignedTo: _assignedToController.text.trim().isEmpty && widget.task!.assignedTo != null, // 依頼先が削除された場合
@@ -279,6 +282,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         
         print('copyWith後のリマインダー時間: ${updatedTask.reminderTime}');
         print('copyWith後の期限日: ${updatedTask.dueDate}');
+        print('copyWith後のGoogle CalendarイベントID: ${updatedTask.googleCalendarEventId}');
         print('新しいリマインダー時間: ${updatedTask.reminderTime}');
         print('新しい期限日: ${updatedTask.dueDate}');
         print('リマインダーがクリアされた: ${widget.task!.reminderTime != null && updatedTask.reminderTime == null}');
