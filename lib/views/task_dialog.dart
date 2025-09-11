@@ -57,6 +57,33 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   String? _pendingMailSubject;
   String? _pendingMailBody;
   String? _pendingMailApp;
+  
+  // メール機能の表示状態
+  bool _isMailSectionExpanded = false;
+  
+  // メールテンプレート
+  final List<Map<String, String>> _emailTemplates = [
+    {
+      'name': '報告書について',
+      'subject': '報告書について',
+      'body': 'お疲れ様です。\n\n以下についてご確認をお願いいたします。\n\n',
+    },
+    {
+      'name': '会議資料の確認',
+      'subject': '会議資料の確認',
+      'body': 'いつもお世話になっております。\n\n件名の件について、以下をご連絡いたします。\n\n',
+    },
+    {
+      'name': '進捗状況の共有',
+      'subject': '進捗状況の共有',
+      'body': 'お疲れ様です。\n\n進捗状況についてご報告いたします。\n\n',
+    },
+    {
+      'name': '質問・相談事項',
+      'subject': '質問・相談事項',
+      'body': 'いつもお世話になっております。\n\n以下についてご質問・ご相談がございます。\n\n',
+    },
+  ];
 
   DateTime? _dueDate;
   DateTime? _reminderTime;
@@ -679,10 +706,15 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 // 依頼先
                 TextFormField(
                   controller: _assignedToController,
+                  maxLines: 4, // 複数行対応
+                  minLines: 2, // 最小2行
+                  textAlignVertical: TextAlignVertical.top, // テキストを上揃え
                   decoration: const InputDecoration(
                     labelText: '依頼先やメモ',
                     border: OutlineInputBorder(),
-                    hintText: '例: 佐藤さん、メモ',
+                    hintText: '例: 佐藤さん\n\nメモや詳細情報をここに記入してください。\nテンプレートを使用した場合も、ここで内容を確認・編集できます。',
+                    alignLabelWithHint: true, // ラベルを上に配置
+                    helperText: '※複数行での入力が可能です',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -724,8 +756,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 // メモフィールドは削除
                 const SizedBox(height: 24),
                 
-                // メール送信セクション
-                _buildMailSection(),
+                // メール送信セクション（アコーディオン）
+                _buildMailSectionAccordion(),
                 
                 // ボタン
                   Row(
@@ -804,6 +836,41 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       case TaskStatus.cancelled:
         return 'キャンセル';
     }
+  }
+
+  /// メール送信セクション（アコーディオン）を構築
+  Widget _buildMailSectionAccordion() {
+    return Card(
+      elevation: 2,
+      child: ExpansionTile(
+        title: Row(
+          children: [
+            Icon(Icons.email, color: Colors.blue),
+            const SizedBox(width: 8),
+            const Text(
+              'メール送信機能',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        subtitle: Text(
+          _isMailSectionExpanded ? 'メール機能を折りたたむ' : 'メール送信とテンプレート機能',
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        initiallyExpanded: _isMailSectionExpanded,
+        onExpansionChanged: (bool expanded) {
+          setState(() {
+            _isMailSectionExpanded = expanded;
+          });
+        },
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _buildMailSection(),
+          ),
+        ],
+      ),
+    );
   }
 
   /// メール送信セクションを構築
@@ -943,35 +1010,65 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           
           const SizedBox(height: 16),
           
-          // メール送信ボタン
-          Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _sendMail,
-                      icon: const Icon(Icons.send),
-                      label: const Text('メーラーを起動'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // テスト用ボタン
-                  ElevatedButton.icon(
-                    onPressed: _sendTestMail,
-                    icon: const Icon(Icons.bug_report),
-                    label: const Text('テスト'),
+        // テンプレートと履歴ボタン
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _showTemplateDialog,
+                icon: const Icon(Icons.description),
+                label: const Text('テンプレート'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _showHistoryDialog,
+                icon: const Icon(Icons.history),
+                label: const Text('送信履歴'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // メール送信ボタン
+        Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _sendMail,
+                    icon: const Icon(Icons.send),
+                    label: const Text('メーラーを起動'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
+                      backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                // テスト用ボタン
+                ElevatedButton.icon(
+                  onPressed: _sendTestMail,
+                  icon: const Icon(Icons.bug_report),
+                  label: const Text('テスト'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
               const SizedBox(height: 8),
               // 送信完了ボタン
               SizedBox(
@@ -1039,7 +1136,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       // UUIDを生成
       final token = mailService.makeShortToken();
       final finalSubject = '$subject [$token]';
-      final finalBody = '$body\n\n---\n送信ID: $token';
+      final finalBody = _createEnhancedMailBody(body, token);
       
       // メール送信情報を一時保存（UUID付き）
       _pendingMailTo = to;
@@ -1099,6 +1196,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         return;
       }
 
+      // メーラーでの編集内容は反映せず、元の内容で保存
+
       // タスクIDを取得（新規作成の場合は一時的なIDを使用）
       final taskId = widget.task?.id ?? 'temp_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -1125,7 +1224,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         return;
       }
 
-      // 実際のメール送信ログのみを保存（既存のトークンを使用）
+      // 元の内容でメール送信ログを保存（既存のトークンを使用）
       await mailService.saveMailLogWithToken(
         taskId: taskId,
         app: _pendingMailApp!,
@@ -1146,6 +1245,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           await contactService.updateContactUsage(contact.email);
         }
       }
+
+      // メール送信完了後の処理
+      await _handleMailSentCompletion();
 
       // 一時保存された情報をクリア
       _pendingMailTo = null;
@@ -1324,6 +1426,375 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   void _updateEmailFields() {
     final emails = _selectedContacts.map((c) => c.email).toList();
     _toController.text = emails.join(', ');
+  }
+
+  /// 強化されたメール本文を作成
+  String _createEnhancedMailBody(String originalBody, String token) {
+    final currentTime = DateTime.now();
+    final formattedTime = '${currentTime.year}年${currentTime.month}月${currentTime.day}日 ${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+    
+    // タスク情報を取得
+    final taskTitle = widget.task?.title ?? _titleController.text.trim();
+    final taskDescription = widget.task?.description ?? _descriptionController.text.trim();
+    final taskDueDate = widget.task?.dueDate;
+    final taskStatus = widget.task?.status;
+    
+    String taskInfo = '';
+    if (taskTitle.isNotEmpty) {
+      taskInfo += '📋 タスク: $taskTitle\n';
+    }
+    if (taskDescription.isNotEmpty) {
+      taskInfo += '📝 説明: $taskDescription\n';
+    }
+    if (taskDueDate != null) {
+      final dueDateStr = '${taskDueDate.year}年${taskDueDate.month}月${taskDueDate.day}日';
+      taskInfo += '📅 期限: $dueDateStr\n';
+    }
+    if (taskStatus != null) {
+      final statusText = _getStatusText(taskStatus);
+      taskInfo += '📊 ステータス: $statusText\n';
+    }
+    
+    final enhancedBody = '''
+${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 関連タスク情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📧 メール情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📅 送信日時: $formattedTime
+🆔 送信ID: $token
+📱 送信元: Link Navigator (タスク管理アプリ)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+このメールは Link Navigator タスク管理アプリから自動送信されました。
+返信や質問がございましたら、お気軽にお声かけください。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+''';
+    
+    return enhancedBody;
+  }
+
+
+  /// メール送信完了後の処理
+  Future<void> _handleMailSentCompletion() async {
+    try {
+      if (kDebugMode) {
+        print('=== メール送信完了後の処理開始 ===');
+      }
+      
+      // メール送信完了を記録（必要に応じてタスクのステータスを更新）
+      if (widget.task != null) {
+        // タスクが存在する場合、メール送信完了を記録
+        if (kDebugMode) {
+          print('タスク「${widget.task!.title}」のメール送信完了を記録');
+        }
+        
+        // 必要に応じてタスクのメモにメール送信情報を追加
+        await _updateTaskWithMailInfo();
+      }
+      
+      if (kDebugMode) {
+        print('=== メール送信完了後の処理完了 ===');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('メール送信完了後の処理エラー: $e');
+      }
+    }
+  }
+
+  /// タスクにメール送信情報を追加
+  Future<void> _updateTaskWithMailInfo() async {
+    try {
+      if (widget.task == null) return;
+      
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final currentTime = DateTime.now();
+      final timeStr = '${currentTime.year}/${currentTime.month}/${currentTime.day} ${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+      
+      // メール送信情報をメモに追加
+      final mailInfo = '\n\n📧 メール送信完了: $timeStr';
+      final updatedNotes = '${widget.task!.notes ?? ''}$mailInfo';
+      
+      // タスクを更新
+      final updatedTask = widget.task!.copyWith(
+        notes: updatedNotes,
+      );
+      
+      await taskViewModel.updateTask(updatedTask);
+      
+      if (kDebugMode) {
+        print('タスク「${widget.task!.title}」にメール送信情報を追加');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('タスク更新エラー: $e');
+      }
+    }
+  }
+
+  /// テンプレートダイアログを表示
+  Future<void> _showTemplateDialog() async {
+    final selectedTemplate = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.description, color: Colors.purple),
+              const SizedBox(width: 8),
+              const Text('メールテンプレート'),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _emailTemplates.length,
+              itemBuilder: (context, index) {
+                final template = _emailTemplates[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop(template);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  template['name']!,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios, size: 16),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '件名: ${template['subject']!}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '本文: ${template['body']!.replaceAll('\n', ' ').substring(0, template['body']!.length > 50 ? 50 : template['body']!.length)}${template['body']!.length > 50 ? '...' : ''}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('キャンセル'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selectedTemplate != null) {
+      // テンプレートを適用
+      setState(() {
+        _toController.text = _toController.text.isNotEmpty ? _toController.text : '';
+        _ccController.text = _ccController.text.isNotEmpty ? _ccController.text : '';
+        _bccController.text = _bccController.text.isNotEmpty ? _bccController.text : '';
+        
+        // 件名と本文をテンプレートで更新（既存の内容がある場合は追加）
+        final currentSubject = _titleController.text.trim();
+        final newSubject = currentSubject.isNotEmpty 
+            ? '$currentSubject - ${selectedTemplate['subject']}'
+            : selectedTemplate['subject']!;
+        
+        final currentBody = _assignedToController.text.trim();
+        final newBody = currentBody.isNotEmpty 
+            ? '$currentBody\n\n${selectedTemplate['body']}'
+            : selectedTemplate['body']!;
+        
+        _titleController.text = newSubject;
+        _assignedToController.text = newBody;
+      });
+      
+      SnackBarService.showSuccess(context, 'テンプレート「${selectedTemplate['name']}」を適用しました');
+    }
+  }
+
+  /// 送信履歴ダイアログを表示
+  Future<void> _showHistoryDialog() async {
+    try {
+      final mailService = MailService();
+      await mailService.initialize();
+      
+      final taskId = widget.task?.id;
+      if (taskId == null) {
+        SnackBarService.showError(context, 'タスクが選択されていません');
+        return;
+      }
+      
+      final mailLogs = mailService.getMailLogsForTask(taskId);
+      
+      if (mailLogs.isEmpty) {
+        SnackBarService.showInfo(context, 'このタスクの送信履歴はありません');
+        return;
+      }
+      
+      final selectedLog = await showDialog<SentMailLog>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.history, color: Colors.green),
+                const SizedBox(width: 8),
+                const Text('送信履歴'),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: ListView.builder(
+                itemCount: mailLogs.length,
+                itemBuilder: (context, index) {
+                  final log = mailLogs[index];
+                  final dateStr = DateFormat('MM/dd HH:mm').format(log.composedAt);
+                  
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.of(context).pop(log);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    log.subject.replaceAll(RegExp(r'\s*\[LN-[A-Z0-9]+\]'), ''), // トークンを除去
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios, size: 16),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('宛先: ${log.to}'),
+                                  Text('送信日時: $dateStr'),
+                                  Text('アプリ: ${log.app}'),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    child: Text(
+                                      log.body.replaceAll(RegExp(r'---\s*送信ID:.*$', multiLine: true), '').trim(), // 送信ID部分を除去
+                                      style: const TextStyle(fontSize: 12),
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('キャンセル'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (selectedLog != null) {
+        // 履歴から内容を再利用
+        setState(() {
+          _toController.text = selectedLog.to;
+          _ccController.text = selectedLog.cc;
+          _bccController.text = selectedLog.bcc;
+          
+          // 件名からトークンを除去して適用
+          final subjectWithoutToken = selectedLog.subject.replaceAll(RegExp(r'\s*\[LN-[A-Z0-9]+\]'), '');
+          _titleController.text = subjectWithoutToken;
+          
+          // 本文から送信ID部分を除去して適用
+          final bodyWithoutToken = selectedLog.body.replaceAll(RegExp(r'---\s*送信ID:.*$', multiLine: true), '').trim();
+          _assignedToController.text = bodyWithoutToken;
+        });
+        
+        SnackBarService.showSuccess(context, '送信履歴を再利用しました');
+      }
+    } catch (e) {
+      SnackBarService.showError(context, '履歴取得エラー: $e');
+    }
   }
 
   /// テスト用メール送信

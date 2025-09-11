@@ -176,18 +176,146 @@ class MailService {
 <head>
     <meta charset="utf-8">
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; }
-        .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 0.9em; color: #666; }
+        body { 
+            font-family: 'Segoe UI', 'Hiragino Sans', 'ヒラギノ角ゴシック', 'Yu Gothic', 'メイリオ', sans-serif; 
+            line-height: 1.8; 
+            color: #333; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+        }
+        .header {
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content {
+            font-size: 16px;
+            margin-bottom: 25px;
+        }
+        .task-info {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .footer { 
+            margin-top: 30px; 
+            padding-top: 20px; 
+            border-top: 2px solid #e9ecef; 
+            font-size: 14px; 
+            color: #6c757d;
+            text-align: center;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .app-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 12px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
-    ${body.replaceAll('\n', '<br>')}
-    <div class="footer">
-        <p>このメールはタスク管理アプリから送信されました。</p>
+    <div class="container">
+        <div class="header">
+            <h1>📧 タスク管理アプリからのメール</h1>
+        </div>
+        
+        <div class="content">
+            ${_formatBodyContent(body)}
+        </div>
+        
+        <div class="task-info">
+            <strong>📋 タスク情報</strong><br>
+            このメールはタスク管理システムから自動生成されました。
+        </div>
+        
+        <div class="footer">
+            <div class="app-badge">Link Navigator</div>
+            <p>このメールはタスク管理アプリから送信されました。</p>
+            <p>送信日時: ${DateTime.now().toString().split('.')[0]}</p>
+        </div>
     </div>
 </body>
 </html>
     ''';
+  }
+
+  /// 本文コンテンツをフォーマット
+  String _formatBodyContent(String body) {
+    if (body.trim().isEmpty) {
+      return '<p style="color: #6c757d; font-style: italic;">メッセージがありません。</p>';
+    }
+    
+    // 改行を適切に処理し、HTMLエスケープ
+    final escapedBody = body
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#x27;');
+    
+    // 改行を段落に変換
+    final paragraphs = escapedBody.split('\n')
+        .where((line) => line.trim().isNotEmpty)
+        .map((line) => '<p style="margin: 10px 0;">${line.trim()}</p>')
+        .join('');
+    
+    return paragraphs.isNotEmpty ? paragraphs : '<p>${escapedBody}</p>';
+  }
+
+  /// 強化されたメール本文を作成
+  String _createEnhancedBody(String originalBody, String token) {
+    final currentTime = DateTime.now();
+    final formattedTime = '${currentTime.year}年${currentTime.month}月${currentTime.day}日 ${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+    
+    final enhancedBody = '''
+${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📧 メール情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📅 送信日時: $formattedTime
+🆔 送信ID: $token
+📱 送信元: Link Navigator (タスク管理アプリ)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+このメールは Link Navigator タスク管理アプリから自動送信されました。
+返信や質問がございましたら、お気軽にお声かけください。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+''';
+    
+    return enhancedBody;
   }
 
   /// 送信済み検索（Gmail）
@@ -337,7 +465,7 @@ class MailService {
   }) async {
     final token = makeShortToken();
     final finalSubject = '$subject [$token]';
-    final finalBody = '$body\n\n---\n送信ID: $token';
+    final finalBody = _createEnhancedBody(body, token);
 
     try {
       if (app == 'gmail') {
