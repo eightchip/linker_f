@@ -111,7 +111,10 @@ class TaskItem extends HiveObject {
   List<String> tags;
 
   @HiveField(8)
-  String? relatedLinkId; // リンクとの関連付け
+  String? relatedLinkId; // リンクとの関連付け（後方互換性のため残す）
+
+  @HiveField(26)
+  List<String> relatedLinkIds; // 複数リンクとの関連付け
 
   @HiveField(9)
   DateTime createdAt;
@@ -174,6 +177,7 @@ class TaskItem extends HiveObject {
     this.status = TaskStatus.pending,
     this.tags = const [],
     this.relatedLinkId,
+    this.relatedLinkIds = const [],
     required this.createdAt,
     this.completedAt,
     this.estimatedMinutes,
@@ -204,6 +208,7 @@ class TaskItem extends HiveObject {
       'status': status.index,
       'tags': tags,
       'relatedLinkId': relatedLinkId,
+      'relatedLinkIds': relatedLinkIds,
       'createdAt': createdAt.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'estimatedMinutes': estimatedMinutes,
@@ -235,6 +240,7 @@ class TaskItem extends HiveObject {
       status: TaskStatus.values[json['status'] ?? 0],
       tags: List<String>.from(json['tags'] ?? []),
       relatedLinkId: json['relatedLinkId'],
+      relatedLinkIds: List<String>.from(json['relatedLinkIds'] ?? []),
       createdAt: DateTime.parse(json['createdAt']),
       completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
       estimatedMinutes: json['estimatedMinutes'],
@@ -265,6 +271,7 @@ class TaskItem extends HiveObject {
     TaskStatus? status,
     List<String>? tags,
     String? relatedLinkId,
+    List<String>? relatedLinkIds,
     DateTime? createdAt,
     DateTime? completedAt,
     int? estimatedMinutes,
@@ -304,6 +311,7 @@ class TaskItem extends HiveObject {
       status: status ?? this.status,
       tags: tags ?? this.tags,
       relatedLinkId: relatedLinkId ?? this.relatedLinkId,
+      relatedLinkIds: relatedLinkIds ?? this.relatedLinkIds,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
       estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,

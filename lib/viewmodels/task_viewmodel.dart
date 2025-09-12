@@ -424,9 +424,64 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     return state.where((task) => task.tags.contains(tag)).toList();
   }
 
-  // リンクに関連するタスクを取得
+  // リンクに関連するタスクを取得（後方互換性のため残す）
   List<TaskItem> getTasksByLinkId(String linkId) {
-    return state.where((task) => task.relatedLinkId == linkId).toList();
+    return state.where((task) => 
+      task.relatedLinkId == linkId || 
+      task.relatedLinkIds.contains(linkId)
+    ).toList();
+  }
+  
+  // タスクにリンクを追加
+  Future<void> addLinkToTask(String taskId, String linkId) async {
+    final taskIndex = state.indexWhere((task) => task.id == taskId);
+    if (taskIndex != -1) {
+      final task = state[taskIndex];
+      final updatedRelatedLinkIds = List<String>.from(task.relatedLinkIds);
+      
+      if (!updatedRelatedLinkIds.contains(linkId)) {
+        updatedRelatedLinkIds.add(linkId);
+        
+        final updatedTask = task.copyWith(
+          relatedLinkIds: updatedRelatedLinkIds,
+          // 最初のリンクがない場合は設定
+          relatedLinkId: task.relatedLinkId ?? linkId,
+        );
+        
+        state[taskIndex] = updatedTask;
+        await _taskBox?.put(taskId, updatedTask);
+        
+        // リンクのタスク状態を更新
+        await refreshLinkTaskStatus();
+      }
+    }
+  }
+  
+  // タスクからリンクを削除
+  Future<void> removeLinkFromTask(String taskId, String linkId) async {
+    final taskIndex = state.indexWhere((task) => task.id == taskId);
+    if (taskIndex != -1) {
+      final task = state[taskIndex];
+      final updatedRelatedLinkIds = List<String>.from(task.relatedLinkIds);
+      
+      if (updatedRelatedLinkIds.contains(linkId)) {
+        updatedRelatedLinkIds.remove(linkId);
+        
+        final updatedTask = task.copyWith(
+          relatedLinkIds: updatedRelatedLinkIds,
+          // 削除したリンクが最初のリンクだった場合は、次のリンクを設定
+          relatedLinkId: task.relatedLinkId == linkId 
+            ? (updatedRelatedLinkIds.isNotEmpty ? updatedRelatedLinkIds.first : null)
+            : task.relatedLinkId,
+        );
+        
+        state[taskIndex] = updatedTask;
+        await _taskBox?.put(taskId, updatedTask);
+        
+        // リンクのタスク状態を更新
+        await refreshLinkTaskStatus();
+      }
+    }
   }
 
   // 新しいタスクを作成
@@ -439,6 +494,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     TaskStatus status = TaskStatus.pending,
     List<String> tags = const [],
     String? relatedLinkId,
+    List<String> relatedLinkIds = const [],
     int? estimatedMinutes,
     String? notes,
     String? assignedTo,
@@ -451,6 +507,12 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     String? source,
     String? externalId,
   }) {
+    // 後方互換性のため、relatedLinkIdがある場合はrelatedLinkIdsに追加
+    List<String> finalRelatedLinkIds = List.from(relatedLinkIds);
+    if (relatedLinkId != null && !finalRelatedLinkIds.contains(relatedLinkId)) {
+      finalRelatedLinkIds.add(relatedLinkId);
+    }
+    
     return TaskItem(
       id: _uuid.v4(),
       title: title,
@@ -461,6 +523,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       status: status,
       tags: tags,
       relatedLinkId: relatedLinkId,
+      relatedLinkIds: finalRelatedLinkIds,
       createdAt: DateTime.now(),
       estimatedMinutes: estimatedMinutes,
       notes: notes,

@@ -1012,12 +1012,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               tooltip: 'サブタスク管理',
             ),
             // 関連リンクへのアクセスボタン
-            if (task.relatedLinkId != null)
-              IconButton(
-                icon: const Icon(Icons.link, size: 16),
-                onPressed: () => _openRelatedLink(task),
-                tooltip: '関連リンクを開く',
-              ),
+            _buildRelatedLinksButton(task),
             _buildStatusChip(task.status),
             const SizedBox(width: 8),
             PopupMenuButton<String>(
@@ -1370,18 +1365,130 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     );
   }
 
-  // 関連リンクを開くメソッド
-  void _openRelatedLink(TaskItem task) {
-    if (task.relatedLinkId == null) return;
-
+  /// 関連リンクボタンを構築
+  Widget _buildRelatedLinksButton(TaskItem task) {
+    final hasLinks = task.relatedLinkId != null || task.relatedLinkIds.isNotEmpty;
+    
+    if (!hasLinks) {
+      return IconButton(
+        icon: const Icon(Icons.link_off, size: 16, color: Colors.grey),
+        onPressed: () => _showLinkAssociationDialog(task),
+        tooltip: 'リンクを関連付け',
+      );
+    }
+    
+    return PopupMenuButton<String>(
+      icon: Stack(
+        children: [
+          const Icon(Icons.link, size: 16),
+          if (task.relatedLinkIds.length > 1)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 12,
+                  minHeight: 12,
+                ),
+                child: Text(
+                  '${task.relatedLinkIds.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
+      ),
+      tooltip: '関連リンクを開く',
+      onSelected: (value) => _handleLinkAction(value, task),
+      itemBuilder: (context) {
+        final items = <PopupMenuEntry<String>>[];
+        
+        // 各リンクを開くオプション
+        for (int i = 0; i < task.relatedLinkIds.length; i++) {
+          final linkId = task.relatedLinkIds[i];
+          items.add(PopupMenuItem(
+            value: 'open_$linkId',
+            child: Row(
+              children: [
+                const Icon(Icons.open_in_new, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _getLinkLabel(linkId) ?? 'リンク $i',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ));
+        }
+        
+        // 区切り線
+        items.add(const PopupMenuDivider());
+        
+        // リンク管理オプション
+        items.addAll([
+          const PopupMenuItem(
+            value: 'manage_links',
+            child: Row(
+              children: [
+                Icon(Icons.link, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('リンク管理', style: TextStyle(color: Colors.blue)),
+              ],
+            ),
+          ),
+        ]);
+        
+        return items;
+      },
+    );
+  }
+  
+  /// リンクのラベルを取得
+  String? _getLinkLabel(String linkId) {
+    final groups = ref.read(linkViewModelProvider);
+    
+    for (final group in groups.groups) {
+      for (final link in group.items) {
+        if (link.id == linkId) {
+          return link.label;
+        }
+      }
+    }
+    return null;
+  }
+  
+  /// リンクアクションを処理
+  void _handleLinkAction(String action, TaskItem task) {
+    if (action.startsWith('open_')) {
+      final linkId = action.substring(5); // 'open_' を除去
+      _openSpecificLink(task, linkId);
+    } else if (action == 'manage_links') {
+      _showLinkAssociationDialog(task);
+    }
+  }
+  
+  /// 特定のリンクを開く
+  void _openSpecificLink(TaskItem task, String linkId) {
     final linkViewModel = ref.read(linkViewModelProvider.notifier);
     final groups = ref.read(linkViewModelProvider);
     
-    // 関連リンクを検索
-    LinkItem? relatedLink;
+    // リンクを検索
+    LinkItem? targetLink;
     for (final group in groups.groups) {
-      relatedLink = group.items.firstWhere(
-        (link) => link.id == task.relatedLinkId,
+      targetLink = group.items.firstWhere(
+        (link) => link.id == linkId,
         orElse: () => LinkItem(
           id: '',
           label: '',
@@ -1390,25 +1497,44 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           createdAt: DateTime.now(),
         ),
       );
-      if (relatedLink.id.isNotEmpty) break;
+      if (targetLink.id.isNotEmpty) break;
     }
 
-    if (relatedLink != null && relatedLink.id.isNotEmpty) {
+    if (targetLink != null && targetLink.id.isNotEmpty) {
       // リンクを開く
-      linkViewModel.launchLink(relatedLink);
+      linkViewModel.launchLink(targetLink);
       
       // 成功メッセージを表示
       SnackBarService.showSuccess(
         context,
-        'リンク「${relatedLink.label}」を開きました',
+        'リンク「${targetLink.label}」を開きました',
       );
     } else {
       // エラーメッセージを表示
       SnackBarService.showError(
         context,
-        '関連リンクが見つかりません',
+        'リンクが見つかりません',
       );
     }
+  }
+
+  // 関連リンクを開くメソッド（後方互換性のため残す）
+  void _openRelatedLink(TaskItem task) {
+    if (task.relatedLinkId == null) return;
+    _openSpecificLink(task, task.relatedLinkId!);
+  }
+  
+  /// リンク関連付けダイアログを表示
+  void _showLinkAssociationDialog(TaskItem task) {
+    showDialog(
+      context: context,
+      builder: (context) => _LinkAssociationDialog(
+        task: task,
+        onLinksUpdated: () {
+          setState(() {}); // UIを更新
+        },
+      ),
+    );
   }
 
   // 通知テストメソッド
@@ -1985,6 +2111,204 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         return '高';
       case TaskPriority.urgent:
         return '緊急';
+    }
+  }
+}
+
+/// リンク関連付けダイアログ
+class _LinkAssociationDialog extends ConsumerStatefulWidget {
+  final TaskItem task;
+  final VoidCallback onLinksUpdated;
+
+  const _LinkAssociationDialog({
+    required this.task,
+    required this.onLinksUpdated,
+  });
+
+  @override
+  ConsumerState<_LinkAssociationDialog> createState() => _LinkAssociationDialogState();
+}
+
+class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> {
+  Set<String> _selectedLinkIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // 現在の関連リンクを選択状態に設定
+    _selectedLinkIds = Set.from(widget.task.relatedLinkIds);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final linkGroups = ref.watch(linkViewModelProvider);
+    
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.link, color: Colors.blue),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'タスク「${widget.task.title}」のリンク管理',
+              style: const TextStyle(fontSize: 18),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 400,
+        height: 500,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '関連付けたいリンクを選択してください：',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: linkGroups.groups.length,
+                itemBuilder: (context, groupIndex) {
+                  final group = linkGroups.groups[groupIndex];
+                  return ExpansionTile(
+                    title: Text(
+                      group.title,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    children: group.items.map((link) {
+                      final isSelected = _selectedLinkIds.contains(link.id);
+                      return CheckboxListTile(
+                        title: Text(
+                          link.label,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          link.path,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        value: isSelected,
+                        onChanged: (value) {
+                          setState(() {
+                            if (value == true) {
+                              _selectedLinkIds.add(link.id);
+                            } else {
+                              _selectedLinkIds.remove(link.id);
+                            }
+                          });
+                        },
+                        secondary: Icon(
+                          _getLinkTypeIcon(link.type),
+                          size: 20,
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '選択されたリンク数: ${_selectedLinkIds.length}',
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton(
+          onPressed: _saveLinkAssociations,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('保存'),
+        ),
+      ],
+    );
+  }
+
+  IconData _getLinkTypeIcon(LinkType type) {
+    switch (type) {
+      case LinkType.url:
+        return Icons.language;
+      case LinkType.file:
+        return Icons.description;
+      case LinkType.folder:
+        return Icons.folder;
+      default:
+        return Icons.link;
+    }
+  }
+
+  Future<void> _saveLinkAssociations() async {
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      
+      // 現在のリンクを取得
+      final currentLinkIds = Set.from(widget.task.relatedLinkIds);
+      
+      // 追加するリンク
+      final linksToAdd = _selectedLinkIds.difference(currentLinkIds);
+      
+      // 削除するリンク
+      final linksToRemove = currentLinkIds.difference(_selectedLinkIds);
+      
+      // リンクを追加
+      for (final linkId in linksToAdd) {
+        await taskViewModel.addLinkToTask(widget.task.id, linkId);
+      }
+      
+      // リンクを削除
+      for (final linkId in linksToRemove) {
+        await taskViewModel.removeLinkFromTask(widget.task.id, linkId);
+      }
+      
+      // 成功メッセージを表示
+      SnackBarService.showSuccess(
+        context,
+        'リンクの関連付けを更新しました',
+      );
+      
+      // コールバックを実行
+      widget.onLinksUpdated();
+      
+      // ダイアログを閉じる
+      Navigator.of(context).pop();
+      
+    } catch (e) {
+      SnackBarService.showError(
+        context,
+        'リンクの関連付け更新に失敗しました: $e',
+      );
     }
   }
 }

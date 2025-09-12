@@ -6,7 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/task_item.dart';
+import '../models/sub_task.dart';
 import '../utils/error_handler.dart';
 
 /// 同期結果クラス
@@ -1558,9 +1560,23 @@ class GoogleCalendarService {
       }
     }
     
-    // サブタスク情報
+    // サブタスク詳細情報
     if (task.hasSubTasks && task.totalSubTasksCount > 0) {
-      parts.add('📋 サブタスク: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了');
+      parts.add('📋 サブタスク進捗: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了');
+      
+      // サブタスクの詳細を取得して表示
+      final subtaskDetails = _getSubTaskDetails(task.id);
+      if (subtaskDetails.isNotEmpty) {
+        parts.add('');
+        parts.add('📝 サブタスク詳細:');
+        for (final subtask in subtaskDetails) {
+          final statusIcon = subtask.isCompleted ? '✅' : '⭕';
+          parts.add('  $statusIcon ${subtask.title}');
+          if (subtask.description != null && subtask.description!.isNotEmpty) {
+            parts.add('     ${subtask.description!}');
+          }
+        }
+      }
     }
     
     // 優先度情報
@@ -1605,6 +1621,27 @@ class GoogleCalendarService {
         }
       }
       
+      // サブタスク情報（短縮版）
+      if (task.hasSubTasks && task.totalSubTasksCount > 0) {
+        essentialParts.add('📋 サブタスク: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了');
+        
+        // 最初の3つのサブタスクのみ表示
+        final subtaskDetails = _getSubTaskDetails(task.id);
+        if (subtaskDetails.isNotEmpty) {
+          essentialParts.add('');
+          essentialParts.add('📝 サブタスク:');
+          final maxSubTasks = subtaskDetails.length > 3 ? 3 : subtaskDetails.length;
+          for (int i = 0; i < maxSubTasks; i++) {
+            final subtask = subtaskDetails[i];
+            final statusIcon = subtask.isCompleted ? '✅' : '⭕';
+            essentialParts.add('  $statusIcon ${subtask.title}');
+          }
+          if (subtaskDetails.length > 3) {
+            essentialParts.add('  ...他${subtaskDetails.length - 3}件');
+          }
+        }
+      }
+      
       // 優先度とステータス
       essentialParts.add('⭐ 優先度: ${_getPriorityText(task.priority)}');
       essentialParts.add('📊 ステータス: ${_getStatusText(task.status)}');
@@ -1613,6 +1650,27 @@ class GoogleCalendarService {
     }
     
     return fullDescription;
+  }
+  
+  /// タスクのサブタスク詳細を取得
+  List<SubTask> _getSubTaskDetails(String taskId) {
+    try {
+      // 簡易実装: Hiveボックスから直接取得
+      final subTaskBox = Hive.box<SubTask>('sub_tasks');
+      final subTasks = subTaskBox.values
+          .where((subtask) => subtask.parentTaskId == taskId)
+          .toList();
+      
+      // 並び順でソート
+      subTasks.sort((a, b) => a.order.compareTo(b.order));
+      
+      return subTasks;
+    } catch (e) {
+      if (kDebugMode) {
+        print('サブタスク詳細取得エラー: $e');
+      }
+      return [];
+    }
   }
 
   /// 参加者リストを構築
