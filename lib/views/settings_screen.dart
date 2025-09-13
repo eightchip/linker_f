@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/settings_service.dart';
 import '../services/notification_service.dart';
@@ -18,6 +19,7 @@ import '../services/backup_service.dart';
 import '../repositories/link_repository.dart';
 import '../services/google_calendar_service.dart';
 import '../services/snackbar_service.dart';
+import '../services/gmail_api_service.dart';
 import '../viewmodels/sync_status_provider.dart';
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {
@@ -286,6 +288,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ]),
         _buildMenuSection('連携', [
           _buildMenuItem(context, ref, 'Google Calendar', Icons.calendar_today, 'google_calendar'),
+          _buildMenuItem(context, ref, 'Gmail API', Icons.email, 'gmail_api'),
         ]),
         _buildMenuSection('パフォーマンス', [
           _buildMenuItem(context, ref, 'キャッシュ管理', Icons.memory, 'cache'),
@@ -416,8 +419,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return _buildExportSection(context, ref);
       case 'notifications':
         return _buildNotificationSection(settingsState, settingsNotifier);
-      case 'google_calendar':
-        return _buildGoogleCalendarSection(settingsState, settingsNotifier);
+        case 'google_calendar':
+          return _buildGoogleCalendarSection(settingsState, settingsNotifier);
+        case 'gmail_api':
+          return _buildGmailApiSection(settingsState, settingsNotifier);
       case 'cache':
         return _buildCacheSection(ref);
       case 'reset':
@@ -2429,6 +2434,308 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         message: '日付範囲同期中にエラーが発生しました',
       );
       SnackBarService.showError(context, '日付範囲同期中にエラーが発生しました: $e');
+    }
+  }
+
+  /// Gmail API設定セクション
+  Widget _buildGmailApiSection(SettingsState settingsState, SettingsNotifier settingsNotifier) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Gmail API連携', Icons.email),
+        const SizedBox(height: 16),
+        
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Gmail API説明
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info, color: Colors.blue[700], size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Gmail API連携について',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Gmail APIを使用して、メール受信時の自動タスク生成と完了報告機能を利用できます。\n'
+                        '自分宛てのメールで「依頼」「タスク」「お願い」などのキーワードが含まれている場合、自動でタスクとして登録されます。',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // アクセストークン設定
+                _buildAccessTokenSection(),
+                
+                const SizedBox(height: 16),
+                
+                // テスト機能
+                _buildTestSection(),
+                
+                const SizedBox(height: 16),
+                
+                // 設定情報
+                _buildGmailApiInfo(),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// アクセストークン設定セクション
+  Widget _buildAccessTokenSection() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final settingsService = ref.watch(settingsServiceProvider);
+        final currentToken = settingsService.gmailApiAccessToken ?? '';
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'アクセストークン設定',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Gmail APIのアクセストークンを設定してください。',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            // アクセストークン入力フィールド
+            TextFormField(
+              initialValue: currentToken,
+              decoration: const InputDecoration(
+                labelText: 'アクセストークン',
+                hintText: 'Gmail APIのアクセストークンを入力',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.key),
+              ),
+              obscureText: true,
+              maxLines: 3,
+              onChanged: (value) {
+                // アクセストークンを保存
+                _saveGmailAccessToken(value);
+              },
+            ),
+        
+            const SizedBox(height: 8),
+            
+            // アクセストークン取得ボタン
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _openGmailApiSetupGuide,
+                    icon: const Icon(Icons.help_outline),
+                    label: const Text('設定方法を確認'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _testGmailConnection,
+                    icon: const Icon(Icons.wifi_protected_setup),
+                    label: const Text('接続テスト'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// テスト機能セクション
+  Widget _buildTestSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'テスト機能',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _testGmailSearch,
+                icon: const Icon(Icons.search),
+                label: const Text('メール検索テスト'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _sendTestCompletionReport,
+                icon: const Icon(Icons.send),
+                label: const Text('完了報告テスト'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Gmail API情報セクション
+  Widget _buildGmailApiInfo() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Gmail API設定情報',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '• 必要な権限: Gmail読み取り、Gmail送信\n'
+            '• 対応機能: メール受信監視、タスク自動生成、完了報告\n'
+            '• 検索対象: 件名に「依頼」「タスク」「お願い」等のキーワード\n'
+            '• 監視間隔: 5分ごと',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Gmail API設定ガイドを開く
+  void _openGmailApiSetupGuide() {
+    // TODO: Gmail API設定ガイドのURLを開く
+    SnackBarService.showInfo(context, 'Gmail API設定ガイドを開きます（実装予定）');
+  }
+
+  /// Gmail接続をテスト
+  Future<void> _testGmailConnection() async {
+    try {
+      final gmailApiService = GmailApiService();
+      // TODO: アクセストークンを設定
+      
+      SnackBarService.showInfo(context, 'Gmail接続テストを実行します（実装予定）');
+    } catch (e) {
+      SnackBarService.showError(context, 'Gmail接続テストエラー: $e');
+    }
+  }
+
+  /// Gmail検索をテスト
+  Future<void> _testGmailSearch() async {
+    try {
+      final gmailApiService = GmailApiService();
+      final assignments = await gmailApiService.searchTaskAssignmentEmails();
+      
+      SnackBarService.showSuccess(
+        context, 
+        'Gmail検索テスト完了: ${assignments.length}件のタスク割り当てメールを発見'
+      );
+    } catch (e) {
+      SnackBarService.showError(context, 'Gmail検索テストエラー: $e');
+    }
+  }
+
+  /// 完了報告テストを送信
+  Future<void> _sendTestCompletionReport() async {
+    try {
+      final gmailApiService = GmailApiService();
+      final success = await gmailApiService.sendCompletionReport(
+        'test@example.com',
+        'テストタスク',
+        'これはテスト完了報告です。',
+      );
+      
+      if (success) {
+        SnackBarService.showSuccess(context, '完了報告テスト送信完了');
+      } else {
+        SnackBarService.showError(context, '完了報告テスト送信失敗');
+      }
+    } catch (e) {
+      SnackBarService.showError(context, '完了報告テストエラー: $e');
+    }
+  }
+
+  /// Gmailアクセストークンを保存
+  void _saveGmailAccessToken(String token) async {
+    try {
+      final settingsService = SettingsService.instance;
+      await settingsService.setGmailApiAccessToken(token.isEmpty ? null : token);
+      
+      if (kDebugMode) {
+        print('Gmailアクセストークンを保存: ${token.isNotEmpty ? token.substring(0, 10) + '...' : '削除'}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Gmailアクセストークン保存エラー: $e');
+      }
     }
   }
   

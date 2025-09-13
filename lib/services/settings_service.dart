@@ -48,6 +48,7 @@ class SettingsService {
   static const String _googleCalendarAutoSyncKey = 'googleCalendarAutoSync';
   static const String _googleCalendarBidirectionalSyncKey = 'googleCalendarBidirectionalSync';
   static const String _googleCalendarShowCompletedTasksKey = 'googleCalendarShowCompletedTasks';
+  static const String _gmailApiAccessTokenKey = 'gmailApiAccessToken';
 
   // デフォルト値
   static const bool _defaultDarkMode = false;
@@ -544,5 +545,19 @@ class SettingsService {
   /// Google Calendar完了タスク表示設定を設定
   Future<void> setGoogleCalendarShowCompletedTasks(bool value) async {
     await _settingsBox.put(_googleCalendarShowCompletedTasksKey, value);
+  }
+
+  /// Gmail APIアクセストークンを取得
+  String? get gmailApiAccessToken {
+    return _settingsBox.get(_gmailApiAccessTokenKey);
+  }
+  
+  /// Gmail APIアクセストークンを設定
+  Future<void> setGmailApiAccessToken(String? token) async {
+    if (token != null) {
+      await _settingsBox.put(_gmailApiAccessTokenKey, token);
+    } else {
+      await _settingsBox.delete(_gmailApiAccessTokenKey);
+    }
   }
 }

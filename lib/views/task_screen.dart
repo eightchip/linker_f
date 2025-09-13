@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
+import '../models/group.dart';
+import '../views/home_screen.dart'; // HighlightedText用
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/sub_task_viewmodel.dart';
@@ -23,6 +26,7 @@ import 'sub_task_dialog.dart';
 import '../widgets/mail_badge.dart';
 import '../services/mail_service.dart';
 import '../models/sent_mail_log.dart';
+import '../services/keyboard_shortcut_service.dart';
 
 class TaskScreen extends ConsumerStatefulWidget {
   const TaskScreen({super.key});
@@ -38,8 +42,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   String _searchQuery = '';
   List<Map<String, String>> _sortOrders = [{'field': 'dueDate', 'order': 'asc'}]; // 第3順位まで設定可能
   bool _showFilters = false; // フィルター表示/非表示の切り替え
-  late TextEditingController _searchController;
   final FocusNode _appBarMenuFocusNode = FocusNode();
+  late FocusNode _searchFocusNode;
+  
+  // フォーカス
+  final FocusNode _rootKeyFocus = FocusNode(debugLabel: 'rootKeys');
+  // 検索欄
+  late final TextEditingController _searchController;
+  // ユーザーが検索操作を始めたか（ハイライト制御用）
+  bool _userTypedSearch = false;
   
   // 一括選択機能の状態変数
   bool _isSelectionMode = false; // 選択モードのオン/オフ
@@ -48,17 +59,51 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   @override
   void initState() {
     super.initState();
+    print('=== TaskScreen initState 開始 ===');
     _settingsService = SettingsService.instance;
-    _searchController = TextEditingController(text: _searchQuery);
-    // 非同期で初期化を実行
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeSettings();
+    _searchFocusNode = FocusNode();
+    _searchController = TextEditingController();
+
+    _searchQuery = '';
+    print('初期化時の_searchQuery: "$_searchQuery"');
+    _initializeSettings().then((_) {
+      if (!mounted) return;
+
+      // いったん復元（必要なら一瞬だけ内部状態に取り込む）
+      _searchController.text = _searchQuery;
+
+      // 初期表示は必ず空にする（復元値を使わない仕様）
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _userTypedSearch = false;
+          _searchQuery = '';
+          _searchController.clear();
+        });
+        _saveFilterSettings();        // 空で保存して以後は空スタート
+        _searchFocusNode.requestFocus(); // カーソルも置く
+      });
     });
+
+    // 入力のたびに _searchQuery を同期
+    _searchController.addListener(() {
+      final v = _searchController.text;
+      if (v != _searchQuery) {
+        setState(() {
+          _searchQuery = v;
+        });
+        _saveFilterSettings();
+      }
+    });
+    print('=== TaskScreen initState 終了 ===');
   }
 
   @override
   void dispose() {
+    _rootKeyFocus.dispose();
     _searchController.dispose();
+    _searchFocusNode.dispose();
+    _appBarMenuFocusNode.dispose();
     super.dispose();
   }
 
@@ -120,26 +165,26 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
     if (confirmed == true) {
       try {
-        final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
         final deletedCount = _selectedTaskIds.length;
-        
-        // 選択されたタスクを削除
-        for (final taskId in _selectedTaskIds) {
+      
+      // 選択されたタスクを削除
+      for (final taskId in _selectedTaskIds) {
           await taskViewModel.deleteTask(taskId);
-        }
+      }
 
-        // 選択モードを解除
-        setState(() {
-          _selectedTaskIds.clear();
-          _isSelectionMode = false;
-        });
+      // 選択モードを解除
+      setState(() {
+        _selectedTaskIds.clear();
+        _isSelectionMode = false;
+      });
 
-        // 削除完了のメッセージを表示
-        if (mounted) {
-          SnackBarService.showSuccess(
-            context,
+      // 削除完了のメッセージを表示
+      if (mounted) {
+        SnackBarService.showSuccess(
+          context,
             '${deletedCount}件のタスクを削除しました',
-          );
+        );
         }
       } catch (e) {
         if (mounted) {
@@ -168,6 +213,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           _filterStatuses = {'all'};
           _filterPriority = 'all';
           _sortOrders = [{'field': 'dueDate', 'order': 'asc'}];
+          _searchQuery = '';
         });
       }
     }
@@ -181,8 +227,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         _filterPriority = _settingsService.taskFilterPriority;
         _sortOrders = _settingsService.taskSortOrders.map((item) => Map<String, String>.from(item)).toList();
         _searchQuery = _settingsService.taskSearchQuery;
-        // 検索コントローラーのテキストも更新
-        _searchController.text = _searchQuery;
+      } else {
+        // 設定サービスが初期化されていない場合はデフォルト値を使用
+        _filterStatuses = {'all'};
+        _filterPriority = 'all';
+        _sortOrders = [{'field': 'dueDate', 'order': 'asc'}];
+        _searchQuery = '';
       }
     } catch (e) {
       print('フィルター設定の読み込みエラー: $e');
@@ -191,7 +241,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       _filterPriority = 'all';
       _sortOrders = [{'field': 'dueDate', 'order': 'asc'}];
       _searchQuery = '';
-      _searchController.text = _searchQuery;
     }
   }
 
@@ -211,6 +260,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('build呼び出し: _searchQuery="$_searchQuery"');
     final tasks = ref.watch(taskViewModelProvider);
     final taskViewModel = ref.read(taskViewModelProvider.notifier);
     final statistics = taskViewModel.getTaskStatistics();
@@ -218,26 +268,33 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     // フィルタリング
     final filteredTasks = _getFilteredTasks(tasks);
 
-    return RawKeyboardListener(
-      focusNode: FocusNode(),
-      autofocus: true,
-      onKey: _handleKeyEvent,
-      child: Scaffold(
-      appBar: AppBar(
-        title: _isSelectionMode 
-          ? Text('${_selectedTaskIds.length}件選択中')
-          : const Text('タスク管理'),
-        leading: _isSelectionMode 
-          ? IconButton(
-              onPressed: _toggleSelectionMode,
-              icon: const Icon(Icons.close),
-              tooltip: '選択モードを終了',
-            )
-          : null,
-        actions: [
-          if (_isSelectionMode) ...[
-            // 全選択/全解除ボタン
-            IconButton(
+    return KeyboardShortcutWidget(
+      child: KeyboardListener(
+        focusNode: _rootKeyFocus, // 再生成しない
+        autofocus: false,         // ← これが超重要。TextField のフォーカスを奪わない
+        onKeyEvent: (e) {
+          // TextField にフォーカスがある時はグローバルショートカット無効化
+          final focused = FocusManager.instance.primaryFocus;
+          final isEditing = focused?.context?.widget is EditableText;
+          if (isEditing) return;
+          _handleKeyEvent(e);
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: _isSelectionMode 
+              ? Text('${_selectedTaskIds.length}件選択中')
+              : const Text('タスク管理'),
+            leading: _isSelectionMode 
+              ? IconButton(
+                  onPressed: _toggleSelectionMode,
+                  icon: const Icon(Icons.close),
+                  tooltip: '選択モードを終了',
+                )
+              : null,
+            actions: [
+              if (_isSelectionMode) ...[
+                // 全選択/全解除ボタン
+                IconButton(
               onPressed: () => _toggleSelectAll(filteredTasks),
               icon: Icon(_selectedTaskIds.length == filteredTasks.length 
                 ? Icons.deselect 
@@ -252,7 +309,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               icon: const Icon(Icons.delete),
               tooltip: '選択したタスクを削除',
             ),
-          ] else ...[
+             ] else ...[
             // 3点ドットメニューに統合
             Focus(
               focusNode: _appBarMenuFocusNode,
@@ -267,11 +324,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     _showPopupMenu(context);
                     return KeyEventResult.handled;
                   }
-                }
+                }//if (event is KeyDownEvent)
                 return KeyEventResult.ignored;
               },
               child: PopupMenuButton<String>(
-              onSelected: (value) => _handleMenuAction(value),
+            onSelected: (value) => _handleMenuAction(value),
             itemBuilder: (context) => [
               // 新しいタスク作成
               PopupMenuItem(
@@ -347,14 +404,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   ],
                 ),
               ),
-            ],
-              ),
-            ),
-          ],
-        ],
-      ),
-      body: Column(
-        children: [
+            ],//itemBuilder
+          ),
+          ),
+         ],//else
+         ],//actions
+       ),
+        body: Column(
+          children: [
           // 統計情報と検索・フィルターを1行に配置
           _buildCompactHeaderSection(statistics),
           
@@ -373,12 +430,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       return _buildTaskCard(filteredTasks[index]);
                     },
                   ),
-          ),
-        ],
-      ),
+          ),//Expanded
+          ],//children
+        ),//Column
+        ),
       ),
     );
-  }
+  }//build
 
   Widget _buildCompactHeaderSection(Map<String, int> statistics) {
     return Container(
@@ -415,20 +473,38 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 const SizedBox(width: 16),
                 // 検索バー
                 Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      hintText: 'タスクを検索...',
-                      prefixIcon: Icon(Icons.search, size: 18),
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      isDense: true,
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                      _saveFilterSettings();
+                  child: Builder(
+                    builder: (context) {
+                      print('TextField構築時: _searchFocusNode.hasFocus=${_searchFocusNode.hasFocus}');
+                      return TextField(
+                        key: const ValueKey('task_search_field'),
+                        controller: _searchController,                 // ← controller を使う
+                        focusNode: _searchFocusNode,
+                        textInputAction: TextInputAction.search,
+                        decoration: const InputDecoration(
+                          hintText: 'タスクを検索（タイトル・説明・メモ・タグ）...',
+                          prefixIcon: Icon(Icons.search, size: 18),
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          isDense: true,
+                        ),
+                        onChanged: (_) {
+                          // 入力が始まったらハイライト有効化
+                          if (!_userTypedSearch) {
+                            setState(() => _userTypedSearch = true);
+                          }
+                          // フォーカスを再主張（親に奪われた直後でも戻す）
+                          if (!_searchFocusNode.hasFocus) {
+                            _searchFocusNode.requestFocus();
+                          }
+                        },
+                        onSubmitted: (_) {
+                          // Enter で確定した際もハイライト有効化
+                          if (!_userTypedSearch) {
+                            setState(() => _userTypedSearch = true);
+                          }
+                        },
+                      );
                     },
                   ),
                 ),
@@ -848,7 +924,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       color: _isSelectionMode && isSelected 
         ? Theme.of(context).primaryColor.withValues(alpha: 0.1) 
         : null,
-      child: ListTile(
+      child: _buildTaskListTile(task, isSelected),
+    );
+  }
+  
+  /// タスクのListTileを構築
+  Widget _buildTaskListTile(TaskItem task, bool isSelected) {
+    return ListTile(
         leading: _isSelectionMode 
           ? Checkbox(
               value: isSelected,
@@ -905,16 +987,59 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1段目: タイトル
-                  Text(
-                    task.title,
-                    style: TextStyle(
-                      decoration: task.status == TaskStatus.completed 
-                          ? TextDecoration.lineThrough 
-                          : null,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  // 1段目: タイトル（チームタスクの場合はバッジ付き）
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Builder(
+                          builder: (context) {
+                            final highlightText = (_userTypedSearch && _searchQuery.isNotEmpty) ? _searchQuery : null;
+                            print('HighlightedText タイトル: text="${task.title}", highlight="$highlightText", _searchQuery="$_searchQuery"');
+                            return HighlightedText(
+                              text: task.title,
+                              highlight: highlightText,
+                              style: TextStyle(
+                                decoration: task.status == TaskStatus.completed 
+                                    ? TextDecoration.lineThrough 
+                                    : null,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      if (task.isTeamTask) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[100],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue[300]!),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.group,
+                                size: 12,
+                                color: Colors.blue[700],
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'チーム',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.blue[700],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   // 2段目: リマインダーと依頼先・メモの組み合わせ
@@ -931,8 +1056,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                         ),
                         if (task.assignedTo != null) ...[
                           const SizedBox(width: 8),
-                          Text(
-                            '${task.assignedTo}',
+                          HighlightedText(
+                            text: '${task.assignedTo}',
+                            highlight: (_userTypedSearch && _searchQuery.isNotEmpty) ? _searchQuery : null,
                             style: TextStyle(
                               color: Colors.blue[600],
                               fontSize: 13,
@@ -940,15 +1066,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            softWrap: true,
                           ),
                         ],
                       ],
                     )
                   else if (task.assignedTo != null)
                     // リマインドがない場合はタイトルの真下に依頼先・メモを表示
-                    Text(
-                      'メモ: ${task.assignedTo}',
+                    HighlightedText(
+                      text: 'メモ: ${task.assignedTo}',
+                      highlight: (_userTypedSearch && _searchQuery.isNotEmpty) ? _searchQuery : null,
                       style: TextStyle(
                         color: Colors.blue[600],
                         fontSize: 13,
@@ -956,7 +1082,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      softWrap: true,
                     ),
                 ],
               ),
@@ -994,13 +1119,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                               print('サブタスクバッジ表示 - タスク: ${task.title}, 完了: ${task.completedSubTasksCount}, 総数: ${task.totalSubTasksCount}');
                             }
                             return Text(
-                              '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-                              style: const TextStyle(
-                                color: Colors.white,
+                          '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
                                 fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
                             );
                           },
                         ),
@@ -1018,7 +1143,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             PopupMenuButton<String>(
               onSelected: (value) => _handleTaskAction(value, task),
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'edit',
                   child: Row(
                     children: [
@@ -1028,7 +1153,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'copy',
                   child: Row(
                     children: [
@@ -1039,7 +1164,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   ),
                 ),
                 if (task.status == TaskStatus.pending)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'start',
                     child: Row(
                       children: [
@@ -1050,7 +1175,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     ),
                   ),
                 if (task.status == TaskStatus.inProgress)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'complete',
                     child: Row(
                       children: [
@@ -1060,7 +1185,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       ],
                     ),
                   ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'sync_to_calendar',
                   child: Row(
                     children: [
@@ -1070,7 +1195,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
@@ -1093,7 +1218,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               _toggleSelectionMode();
               _toggleTaskSelection(task.id);
             },
-      ),
     );
   }
 
@@ -1302,7 +1426,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             onPressed: () async {
               try {
                 await ref.read(taskViewModelProvider.notifier).deleteTask(task.id);
-                Navigator.of(context).pop();
+              Navigator.of(context).pop();
                 if (mounted) {
                   SnackBarService.showSuccess(context, '「${task.title}」を削除しました');
                 }
@@ -1518,12 +1642,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     }
   }
 
-  // 関連リンクを開くメソッド（後方互換性のため残す）
-  void _openRelatedLink(TaskItem task) {
-    if (task.relatedLinkId == null) return;
-    _openSpecificLink(task, task.relatedLinkId!);
-  }
-  
   /// リンク関連付けダイアログを表示
   void _showLinkAssociationDialog(TaskItem task) {
     showDialog(
@@ -1665,11 +1783,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         final query = _searchQuery.toLowerCase();
         final title = task.title.toLowerCase();
         final description = task.description?.toLowerCase() ?? '';
+        final notes = task.notes?.toLowerCase() ?? '';
+        final assignedTo = task.assignedTo?.toLowerCase() ?? '';
         final tags = task.tags.map((tag) => tag.toLowerCase()).join(' ');
         
-        if (!title.contains(query) && 
-            !description.contains(query) && 
-            !tags.contains(query)) {
+        final titleMatch = title.contains(query);
+        final descriptionMatch = description.contains(query);
+        final notesMatch = notes.contains(query);
+        final assignedToMatch = assignedTo.contains(query);
+        final tagsMatch = tags.contains(query);
+        
+        if (!titleMatch && !descriptionMatch && !notesMatch && !assignedToMatch && !tagsMatch) {
           return false;
         }
       }
@@ -1826,16 +1950,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   }
 
   // キーボードショートカット処理
-  void _handleKeyEvent(RawKeyEvent event) {
-    if (event is RawKeyDownEvent) {
+  void _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent) {
       // モーダルが開いている場合はショートカットを無効化
       if (ModalRoute.of(context)?.isFirst != true) {
         return;
       }
       
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-        // 左矢印キーが押されたらホーム画面に戻る
-        Navigator.of(context).pop();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).maybePop();
+        }
+        return;
       } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
         // 右矢印キーでAppBarの3点ドットメニューにフォーカスを移す
         _appBarMenuFocusNode.requestFocus();
@@ -1958,7 +2084,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               Text('• リマインダー: ${DateFormat('yyyy/MM/dd HH:mm').format(task.reminderTime!)}'),
             Text('• 優先度: ${_getPriorityText(task.priority)}'),
             if (task.tags.isNotEmpty)
-              Text('• タグ: ${task.tags.join(', ')}'),
+              HighlightedText(
+                text: '• タグ: ${task.tags.join(', ')}',
+                highlight: (_userTypedSearch && _searchQuery.isNotEmpty) ? _searchQuery : null,
+              ),
             const SizedBox(height: 8),
             const Text('※ 期限日とリマインダー時間は翌月の同日に自動調整されます'),
           ],
@@ -2113,6 +2242,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         return '緊急';
     }
   }
+  
 }
 
 /// リンク関連付けダイアログ
@@ -2142,96 +2272,188 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
   @override
   Widget build(BuildContext context) {
     final linkGroups = ref.watch(linkViewModelProvider);
+    final theme = Theme.of(context);
     
-    return AlertDialog(
-      title: Row(
-        children: [
-          const Icon(Icons.link, color: Colors.blue),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'タスク「${widget.task.title}」のリンク管理',
-              style: const TextStyle(fontSize: 18),
-            ),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 500,
+        height: 600,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.surface,
+              theme.colorScheme.surface.withValues(alpha: 0.8),
+            ],
           ),
-        ],
-      ),
-      content: SizedBox(
-        width: 400,
-        height: 500,
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '関連付けたいリンクを選択してください：',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: linkGroups.groups.length,
-                itemBuilder: (context, groupIndex) {
-                  final group = linkGroups.groups[groupIndex];
-                  return ExpansionTile(
-                    title: Text(
-                      group.title,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    children: group.items.map((link) {
-                      final isSelected = _selectedLinkIds.contains(link.id);
-                      return CheckboxListTile(
-                        title: Text(
-                          link.label,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          link.path,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        value: isSelected,
-                        onChanged: (value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedLinkIds.add(link.id);
-                            } else {
-                              _selectedLinkIds.remove(link.id);
-                            }
-                          });
-                        },
-                        secondary: Icon(
-                          _getLinkTypeIcon(link.type),
-                          size: 20,
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
+            // ヘッダー部分
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue[200]!),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary.withValues(alpha: 0.1),
+                    theme.colorScheme.secondary.withValues(alpha: 0.1),
+                  ],
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.link,
+                      color: theme.colorScheme.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
-                    child: Text(
-                      '選択されたリンク数: ${_selectedLinkIds.length}',
-                      style: TextStyle(
-                        color: Colors.blue[700],
-                        fontWeight: FontWeight.w500,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'リンク管理',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'タスク「${widget.task.title}」にリンクを関連付け',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // コンテンツ部分
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '関連付けたいリンクを選択してください：',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: linkGroups.groups.length,
+                        itemBuilder: (context, groupIndex) {
+                          final group = linkGroups.groups[groupIndex];
+                          return _buildGroupCard(group, theme);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // フッター部分
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+              ),
+              child: Row(
+                children: [
+                  // 選択情報
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _selectedLinkIds.isNotEmpty 
+                          ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                          : theme.colorScheme.outline.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _selectedLinkIds.isNotEmpty 
+                            ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                            : theme.colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _selectedLinkIds.isNotEmpty ? Icons.check_circle : Icons.info_outline,
+                          color: _selectedLinkIds.isNotEmpty 
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.outline,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '選択されたリンク: ${_selectedLinkIds.length}個',
+                          style: TextStyle(
+                            color: _selectedLinkIds.isNotEmpty 
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outline,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const Spacer(),
+                  
+                  // ボタン
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: theme.colorScheme.outline,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: const Text('キャンセル'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _selectedLinkIds.isNotEmpty ? _saveLinkAssociations : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('保存'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -2239,21 +2461,207 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(
-          onPressed: _saveLinkAssociations,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('保存'),
-        ),
-      ],
     );
+  }
+
+  Widget _buildGroupCard(Group group, ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _getGroupColor(group).withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.folder,
+                color: _getGroupColor(group),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                group.title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getGroupColor(group).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${group.items.length}個',
+                style: TextStyle(
+                  color: _getGroupColor(group),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        children: group.items.map((link) => _buildLinkItem(link, theme)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildLinkItem(LinkItem link, ThemeData theme) {
+    final isSelected = _selectedLinkIds.contains(link.id);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected 
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isSelected 
+              ? theme.colorScheme.primary.withValues(alpha: 0.3)
+              : theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () {
+            setState(() {
+              if (isSelected) {
+                _selectedLinkIds.remove(link.id);
+              } else {
+                _selectedLinkIds.add(link.id);
+              }
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // アイコン
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _getLinkTypeColor(link.type).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getLinkTypeIcon(link.type),
+                    color: _getLinkTypeColor(link.type),
+                    size: 20,
+                  ),
+                ),
+                
+                const SizedBox(width: 12),
+                
+                // リンク情報
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        link.label,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        link.path,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // 選択状態インジケーター
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isSelected 
+                        ? theme.colorScheme.primary
+                        : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected 
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outline.withValues(alpha: 0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    isSelected ? Icons.check : Icons.add,
+                    color: isSelected 
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.outline.withValues(alpha: 0.6),
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getGroupColor(Group group) {
+    // グループ名に基づいて色を決定
+    switch (group.title.toLowerCase()) {
+      case 'favorites':
+        return Colors.blue;
+      case 'favorites2':
+        return Colors.green;
+      case 'favorites3':
+        return Colors.red;
+      case 'programming':
+        return Colors.purple;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  Color _getLinkTypeColor(LinkType type) {
+    switch (type) {
+      case LinkType.url:
+        return Colors.blue;
+      case LinkType.file:
+        return Colors.green;
+      case LinkType.folder:
+        return Colors.orange;
+    }
   }
 
   IconData _getLinkTypeIcon(LinkType type) {
@@ -2264,8 +2672,6 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
         return Icons.description;
       case LinkType.folder:
         return Icons.folder;
-      default:
-        return Icons.link;
     }
   }
 
@@ -2311,4 +2717,5 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
       );
     }
   }
+  
 }

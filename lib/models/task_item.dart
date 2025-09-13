@@ -167,6 +167,18 @@ class TaskItem extends HiveObject {
   @HiveField(25)
   String? googleCalendarEventId; // Google CalendarイベントID（双方向同期用）
 
+  @HiveField(27)
+  bool isTeamTask; // チームタスクかどうか
+
+  @HiveField(28)
+  String? createdBy; // タスク作成者のメールアドレス
+
+  @HiveField(29)
+  String? originalEmailId; // 元のメールID
+
+  @HiveField(30)
+  String? originalEmailSubject; // 元のメール件名
+
   TaskItem({
     required this.id,
     required this.title,
@@ -195,6 +207,10 @@ class TaskItem extends HiveObject {
     this.source,
     this.externalId,
     this.googleCalendarEventId,
+    this.isTeamTask = false,
+    this.createdBy,
+    this.originalEmailId,
+    this.originalEmailSubject,
   });
 
   Map<String, dynamic> toJson() {

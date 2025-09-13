@@ -9,6 +9,7 @@ import '../viewmodels/link_viewmodel.dart'; // Added import for linkViewModelPro
 import '../services/mail_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/email_contact_service.dart';
+import '../services/email_monitor_service.dart';
 import '../models/email_contact.dart';
 import '../models/sent_mail_log.dart';
 
@@ -796,6 +797,19 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+                      // チームタスクの場合は完了報告ボタンを追加
+                      if (widget.task?.isTeamTask == true && widget.task?.status == TaskStatus.completed) ...[
+                      ElevatedButton.icon(
+                          onPressed: _showCompletionReportDialog,
+                          icon: const Icon(Icons.report),
+                          label: const Text('完了報告'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         child: const Text('キャンセル'),
@@ -1526,7 +1540,7 @@ ${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-このメールは Link Navigator タスク管理アプリから自動送信されました。
+このメールは Link Navigator タスク管理アプリから送信されました。
 返信や質問がございましたら、お気軽にお声かけください。
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1597,7 +1611,7 @@ ${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
   /// テンプレートダイアログを表示
   Future<void> _showTemplateDialog() async {
     final selectedTemplate = await showDialog<Map<String, String>>(
-      context: context,
+        context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Row(
@@ -1885,6 +1899,112 @@ ${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
     }
   }
 
+  /// 完了報告ダイアログを表示
+  Future<void> _showCompletionReportDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => _CompletionReportDialog(
+        taskTitle: widget.task?.title ?? '',
+        requesterEmail: widget.task?.createdBy ?? '',
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      try {
+        // メール監視サービスを使用して完了報告を送信
+        final emailMonitorService = EmailMonitorService();
+        await emailMonitorService.sendCompletionReport(
+          widget.task!,
+          result,
+        );
+        
+        SnackBarService.showSuccess(context, '完了報告を送信しました');
+      } catch (e) {
+        SnackBarService.showError(context, '完了報告送信エラー: $e');
+      }
+    }
+  }
+
+}
+
+// 完了報告ダイアログ
+class _CompletionReportDialog extends StatefulWidget {
+  final String taskTitle;
+  final String requesterEmail;
+
+  const _CompletionReportDialog({
+    required this.taskTitle,
+    required this.requesterEmail,
+  });
+
+  @override
+  State<_CompletionReportDialog> createState() => _CompletionReportDialogState();
+}
+
+class _CompletionReportDialogState extends State<_CompletionReportDialog> {
+  final _notesController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('完了報告'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'タスク: ${widget.taskTitle}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '依頼者: ${widget.requesterEmail}',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _notesController,
+              decoration: const InputDecoration(
+                labelText: '完了メモ',
+                hintText: '完了内容や結果を記入してください',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 5,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '完了メモを入力してください';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('キャンセル'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.of(context).pop(_notesController.text.trim());
+            }
+          },
+          child: const Text('完了報告を送信'),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
 }
 
 // 連絡先追加ダイアログ

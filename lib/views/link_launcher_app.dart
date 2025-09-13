@@ -1,18 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/font_size_provider.dart';
+import '../services/keyboard_shortcut_service.dart';
 import 'home_screen.dart';
 
-class LinkLauncherApp extends ConsumerWidget {
+class LinkLauncherApp extends ConsumerStatefulWidget {
   const LinkLauncherApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LinkLauncherApp> createState() => _LinkLauncherAppState();
+}
+
+class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // ナビゲーターキーを設定
+    KeyboardShortcutService.setNavigatorKey(_navigatorKey);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDarkMode = ref.watch(darkModeProvider);
     final accentColor = ref.watch(accentColorProvider);
     final fontSize = ref.watch(fontSizeProvider);
     
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Link Navigator',
       debugShowCheckedModeBanner: false,
       // ちらつきを防ぐための設定

@@ -14,6 +14,7 @@ import '../models/task_item.dart';
 import 'group_card.dart';
 import 'settings_screen.dart';
 import 'task_screen.dart';
+import 'calendar_screen.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -27,6 +28,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdfx/pdfx.dart' as pdfx;
 import '../utils/favicon_service.dart';
 import '../utils/usage_statistics.dart';
+import '../services/keyboard_shortcut_service.dart';
 
 
 // ハイライト用のウィジェット
@@ -310,6 +312,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         print('✅ 右矢印キー 検出: 3点ドットメニューを表示');
         _showPopupMenu(context);
       }
+      
+      // 新しいキーボードショートカット
+      // Ctrl+Shift+L: グローバルタスク作成
+      else if (key == LogicalKeyboardKey.keyL && isControlPressed && isShiftPressed) {
+        print('✅ Ctrl+Shift+L 検出: グローバルタスク作成');
+        _showGlobalTaskCreation(context);
+      }
+      
+      // Ctrl+2: タスク画面に移動
+      else if (key == LogicalKeyboardKey.digit2 && isControlPressed) {
+        print('✅ Ctrl+2 検出: タスク画面に移動');
+        _showTaskScreen(context);
+      }
+      
+      // Ctrl+3: カレンダー画面に移動
+      else if (key == LogicalKeyboardKey.digit3 && isControlPressed) {
+        print('✅ Ctrl+3 検出: カレンダー画面に移動');
+        _showCalendarScreen(context);
+      }
+      
+      // Ctrl+G: 次の検索結果
+      else if (key == LogicalKeyboardKey.keyG && isControlPressed) {
+        print('✅ Ctrl+G 検出: 次の検索結果に移動');
+        _navigateToNextSearchResult();
+      }
 
       // F1: ヘルプを表示
       else if (key == LogicalKeyboardKey.f1) {
@@ -525,6 +552,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _ShortcutItem('Ctrl+Shift+S', '設定画面'),
               _ShortcutItem('Escape', '検索バーを閉じる'),
               _ShortcutItem('Tab', 'タグ選択を切り替え'),
+              Divider(),
+              _ShortcutItem('Ctrl+Shift+L', 'グローバルタスク作成'),
+              _ShortcutItem('Ctrl+2', 'タスク画面に移動'),
+              _ShortcutItem('Ctrl+3', 'カレンダー画面に移動'),
+              _ShortcutItem('Ctrl+G', '次の検索結果に移動'),
             ],
           ),
         ),
@@ -889,48 +921,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                 ],
                               ),
-                              // タグ候補表示（検索フィールドの下に配置）
-                              if (_availableTags.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Container(
-                                  height: 20,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: _availableTags.length,
-                                    itemBuilder: (context, index) {
-                                      final tag = _availableTags[index];
-                                      return Padding(
-                                        padding: const EdgeInsets.only(right: 4),
-                                        child: InkWell(
-                                          onTap: () {
-                                            setState(() {
-                                              _searchQuery = tag;
-                                            });
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.blue.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(
-                                                color: Colors.blue.withValues(alpha: 0.3),
-                                                width: 1,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              tag,
-                                              style: const TextStyle(
-                                                fontSize: 8,
-                                                color: Colors.blue,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -1438,25 +1428,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final fallbackDomainController = TextEditingController();
     LinkType selectedType = LinkType.file;
 
-    // リンクタイプが変更されたときにデフォルトタグを更新
-    void updateDefaultTags() {
-      String defaultTag = '';
-      switch (selectedType) {
-        case LinkType.file:
-          defaultTag = 'ファイル';
-          break;
-        case LinkType.folder:
-          defaultTag = 'フォルダ';
-          break;
-        case LinkType.url:
-          defaultTag = 'URL';
-          break;
-      }
-      tagsController.text = defaultTag;
-    }
 
-    // 初期デフォルトタグを設定
-    updateDefaultTags();
 
     showDialog(
       context: context,
@@ -1497,7 +1469,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   if (value != null) {
                     setState(() {
                       selectedType = value;
-                      updateDefaultTags();
                     });
                   }
                 },
@@ -4336,5 +4307,30 @@ extension UsageStatisticsExtension on _HomeScreenState {
         tooltip: '${link.label}\n$usageDescription\n使用回数: ${link.useCount}回',
       ),
     );
+  }
+  
+  // グローバルタスク作成
+  void _showGlobalTaskCreation(BuildContext context) {
+    // タスク画面に移動してからタスク作成ダイアログを表示
+    _showTaskScreen(context);
+  }
+  
+  // カレンダー画面を表示
+  void _showCalendarScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CalendarScreen(),
+      ),
+    );
+  }
+  
+  // 次の検索結果に移動
+  void _navigateToNextSearchResult() {
+    // 検索結果のナビゲーション実装
+    // 現在は検索結果のインデックス管理が必要
+    if (kDebugMode) {
+      print('次の検索結果に移動');
+    }
   }
 }

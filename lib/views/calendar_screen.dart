@@ -7,6 +7,7 @@ import '../viewmodels/task_viewmodel.dart';
 import '../services/snackbar_service.dart';
 import 'settings_screen.dart';
 import 'task_dialog.dart';
+import '../services/keyboard_shortcut_service.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -272,8 +273,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     // タスクが変更されたときにイベントを再読み込み
     _loadEvents();
 
-    return Scaffold(
-      appBar: AppBar(
+    return KeyboardShortcutWidget(
+      child: Scaffold(
+        appBar: AppBar(
         title: const Text('カレンダー'),
         actions: [
           // フィルターメニュー
@@ -538,6 +540,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 : _buildEventList(),
           ),
         ],
+      ),
       ),
     );
   }

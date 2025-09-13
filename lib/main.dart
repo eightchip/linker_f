@@ -21,6 +21,7 @@ import 'services/migration_service.dart';
 import 'services/settings_service.dart';
 import 'services/backup_service.dart';
 import 'services/google_calendar_service.dart';
+import 'services/email_monitor_service.dart';
 import 'repositories/link_repository.dart';
 
 
@@ -44,6 +45,16 @@ void main() async {
       print('通知サービス初期化完了');
     } catch (e) {
       print('通知サービス初期化エラー: $e');
+    }
+
+    // メール監視サービス初期化
+    try {
+      print('メール監視サービス初期化開始');
+      await EmailMonitorService().startMonitoring();
+      print('メール監視サービス初期化完了');
+    } catch (e) {
+      print('メール監視サービス初期化エラー: $e');
+      print('メール監視サービスは無効化されましたが、アプリは正常に動作します');
     }
     
     runApp(const ProviderScope(child: LinkLauncherApp()));
