@@ -108,7 +108,10 @@ class HighlightedText extends StatelessWidget {
     }
 
     return RichText(
-      text: TextSpan(children: spans),
+      text: TextSpan(
+        style: style, // デフォルトスタイルを設定
+        children: spans,
+      ),
       overflow: overflow ?? TextOverflow.clip,
       maxLines: maxLines,
     );

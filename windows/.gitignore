@@ -13,4 +13,5 @@ x86/
 .exe
 .json
 .hive
-
+.ps1
+*.env

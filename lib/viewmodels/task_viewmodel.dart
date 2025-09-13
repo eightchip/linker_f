@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../models/task_item.dart';
 import '../services/notification_service.dart';
 import 'dart:io';
+import 'dart:math' as math;
 import '../services/windows_notification_service.dart';
 import '../services/google_calendar_service.dart';
 import '../services/settings_service.dart';
@@ -62,35 +63,39 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
 
   Future<void> _loadTasks() async {
     try {
+      print('=== _loadTasks開始 ===');
       if (_taskBox == null || !_taskBox!.isOpen) {
+        print('_taskBoxを新規作成中...');
         _taskBox = await Hive.openBox<TaskItem>(_boxName);
+        print('_taskBox作成完了');
       }
       
+      print('データベースからタスクを読み込み中...');
       final tasks = _taskBox!.values.toList();
       tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
-      // 期限日のデバッグログ
-      print('=== タスク読み込み時の期限日確認 ===');
-      for (final task in tasks) {
-        print('タスク: ${task.title}');
-        print('期限日: ${task.dueDate}');
-        print('リマインダー時間: ${task.reminderTime}');
-        print('---');
+      print('読み込まれたタスク数: ${tasks.length}');
+      for (int i = 0; i < tasks.length; i++) {
+        final task = tasks[i];
+        print('読み込みタスク[$i]: ${task.title} (ID: ${task.id})');
       }
       
       state = tasks;
+      print('状態を更新しました');
       
-      // 起動時に祝日タスクを自動削除
+      // 起動時に祝日タスクを自動削除（初期化時のみ）
+      print('祝日タスク削除チェック開始...');
       await _removeHolidayTasksOnStartup();
+      print('祝日タスク削除チェック完了');
       
       if (kDebugMode) {
         print('=== タスク読み込み完了 ===');
-        print('読み込まれたタスク数: ${tasks.length}');
+        print('最終的なタスク数: ${state.length}');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('タスク読み込みエラー: $e');
-      }
+      print('❌ _loadTasksエラー: $e');
+      print('エラーの詳細: ${e.toString()}');
+      print('スタックトレース: ${StackTrace.current}');
       state = [];
     }
   }
@@ -98,36 +103,48 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   // 起動時に祝日タスクを自動削除
   Future<void> _removeHolidayTasksOnStartup() async {
     try {
+      print('=== 祝日タスク削除チェック開始 ===');
       final existingTasks = state;
+      print('現在のタスク数: ${existingTasks.length}');
+      
       final tasksToDelete = <TaskItem>[];
       
       // 祝日タスクを検出
       for (final task in existingTasks) {
+        print('タスクをチェック: ${task.title}');
         if (_isHolidayEvent(task)) {
+          print('❌ 祝日タスクとして検出: ${task.title}');
           tasksToDelete.add(task);
+        } else {
+          print('✅ 通常タスク: ${task.title}');
         }
       }
       
       if (tasksToDelete.isNotEmpty) {
-        if (kDebugMode) {
-          print('=== 起動時祝日タスク削除開始 ===');
-          print('削除対象の祝日タスク数: ${tasksToDelete.length}');
+        print('=== 起動時祝日タスク削除開始 ===');
+        print('削除対象の祝日タスク数: ${tasksToDelete.length}');
+        
+        // 削除対象のタスクを詳細出力
+        for (final taskToDelete in tasksToDelete) {
+          print('削除対象: ${taskToDelete.title} (ID: ${taskToDelete.id})');
         }
         
         // 祝日タスクを直接削除
         for (final taskToDelete in tasksToDelete) {
+          print('削除実行: ${taskToDelete.title}');
           await _deleteTaskDirectly(taskToDelete.id);
         }
         
-        if (kDebugMode) {
-          print('=== 起動時祝日タスク削除完了 ===');
-          print('削除されたタスク数: ${tasksToDelete.length}件');
-        }
+        print('=== 起動時祝日タスク削除完了 ===');
+        print('削除されたタスク数: ${tasksToDelete.length}件');
+      } else {
+        print('祝日タスクは見つかりませんでした');
       }
+      
+      print('=== 祝日タスク削除チェック完了 ===');
     } catch (e) {
-      if (kDebugMode) {
-        print('起動時祝日タスク削除エラー: $e');
-      }
+      print('❌ 起動時祝日タスク削除エラー: $e');
+      print('エラーの詳細: ${e.toString()}');
     }
   }
 
@@ -187,6 +204,67 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     } catch (e) {
       if (kDebugMode) {
         print('タスク追加エラー: $e');
+      }
+    }
+  }
+
+  /// Google Calendarからインポートしたタスクを追加（サブタスク統計を初期化しない）
+  Future<void> _addTaskFromGoogleCalendar(TaskItem task) async {
+    try {
+      if (_taskBox == null || !_taskBox!.isOpen) {
+        await _loadTasks();
+      }
+      await _taskBox!.put(task.id, task);
+      await _taskBox!.flush(); // データの永続化を確実にする
+      final newTasks = [task, ...state];
+      newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      state = newTasks;
+
+      // リマインダー通知をスケジュール（エラーが発生しても続行）
+      try {
+        if (task.reminderTime != null) {
+          print('=== Google Calendarインポート時のリマインダー設定 ===');
+          print('タスク: ${task.title}');
+          print('リマインダー時間: ${task.reminderTime}');
+          print('現在時刻: ${DateTime.now()}');
+          
+          if (Platform.isWindows) {
+            await WindowsNotificationService.scheduleTaskReminder(task);
+          } else {
+            await NotificationService.scheduleTaskReminder(task);
+          }
+          
+          print('=== Google Calendarインポート時のリマインダー設定完了 ===');
+        } else {
+          print('=== Google Calendarインポート時のリマインダーなし ===');
+          print('タスク: ${task.title}');
+          print('リマインダー時間: null');
+        }
+      } catch (notificationError) {
+        print('通知設定エラー（無視）: $notificationError');
+      }
+
+      // リンクのタスク状態を更新
+      await _updateLinkTaskStatus();
+      
+      // サブタスク統計は初期化しない（Google Calendarから復元された値を保持）
+      print('=== Google Calendarインポート時のサブタスク統計保持 ===');
+      print('タスク: ${task.title} (ID: ${task.id})');
+      print('サブタスク統計: ${task.totalSubTasksCount}/${task.completedSubTasksCount}');
+      print('=== Google Calendarインポート時のサブタスク統計保持完了 ===');
+
+      // Google Calendar自動同期は実行しない（既にGoogle Calendarから来たタスクのため）
+
+      if (kDebugMode) {
+        print('Google Calendarタスク追加: ${task.title}');
+        print('サブタスク統計保持: ${task.totalSubTasksCount}/${task.completedSubTasksCount}');
+        if (task.reminderTime != null) {
+          print('リマインダー設定: ${task.reminderTime}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Google Calendarタスク追加エラー: $e');
       }
     }
   }
@@ -579,15 +657,31 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       print('=== TaskViewModel: Google Calendar → アプリ同期開始 ===');
       
-      final result = await googleCalendarService.syncFromGoogleCalendarToApp(state);
+      // 1. Google Calendarからイベントを取得
+      final startTime = DateTime.now().subtract(const Duration(days: 30));
+      final endTime = DateTime.now().add(const Duration(days: 365));
       
-      // 実際にタスクを追加する処理は、Google Calendarサービスから返されたタスクリストを使用
-      // ここでは同期結果のみを返す
+      final calendarEvents = await googleCalendarService.getEvents(
+        startTime: startTime,
+        endTime: endTime,
+        maxResults: 1000,
+      );
+      
+      // 2. Google Calendarイベントをタスクに変換
+      final calendarTasks = googleCalendarService.convertEventsToTasks(calendarEvents);
+      
+      print('Google Calendarから取得したタスク数: ${calendarTasks.length}');
+      
+      // 3. 実際にタスクをアプリに追加
+      await syncTasksFromGoogleCalendar(calendarTasks);
       
       print('=== TaskViewModel: Google Calendar → アプリ同期完了 ===');
-      print('結果: $result');
       
-      return result;
+      return {
+        'success': true,
+        'added': calendarTasks.length,
+        'skipped': 0,
+      };
     } catch (e) {
       print('Google Calendar → アプリ同期エラー: $e');
       return {
@@ -713,6 +807,13 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     try {
       print('=== サブタスク統計更新開始 ===');
       print('対象タスクID: $taskId');
+      print('現在のタスク数: ${state.length}');
+      
+      // 現在のタスク一覧をデバッグ出力
+      for (int i = 0; i < state.length; i++) {
+        final task = state[i];
+        print('タスク[$i]: ${task.title} (ID: ${task.id})');
+      }
       
       final subTaskViewModel = _ref.read(subTaskViewModelProvider.notifier);
       
@@ -732,7 +833,23 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       print('計算結果 - 総数: $totalSubTasksCount, 完了: $completedSubTasksCount, サブタスクあり: $hasSubTasks');
       
-      final task = state.firstWhere((t) => t.id == taskId);
+      // タスクが見つからない場合の詳細デバッグ
+      TaskItem? task;
+      try {
+        task = state.firstWhere((t) => t.id == taskId);
+        print('対象タスクが見つかりました: ${task.title}');
+      } catch (e) {
+        print('❌ 対象タスクが見つかりません！');
+        print('エラー: $e');
+        print('検索対象のタスクID: $taskId');
+        print('現在のタスク一覧:');
+        for (int i = 0; i < state.length; i++) {
+          final t = state[i];
+          print('  [$i] ID: ${t.id}, タイトル: ${t.title}');
+        }
+        return; // タスクが見つからない場合は処理を終了
+      }
+      
       final updatedTask = task.copyWith(
         hasSubTasks: hasSubTasks,
         totalSubTasksCount: totalSubTasksCount,
@@ -749,6 +866,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     } catch (e) {
       print('サブタスク統計更新エラー: $e');
       print('エラーの詳細: ${e.toString()}');
+      print('スタックトレース: ${StackTrace.current}');
     }
   }
 
@@ -823,17 +941,33 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   // タスクを直接更新（サブタスク統計更新用）
   Future<void> _updateTaskDirectly(TaskItem task) async {
     try {
+      print('=== タスク直接更新開始 ===');
+      print('更新対象タスク: ${task.title} (ID: ${task.id})');
+      print('更新前の状態のタスク数: ${state.length}');
+      
       if (_taskBox == null || !_taskBox!.isOpen) {
+        print('_taskBoxが開いていないため、_loadTasksを実行');
         await _loadTasks();
       }
       
+      print('データベースにタスクを保存中...');
       await _taskBox!.put(task.id, task);
       await _taskBox!.flush(); // データの永続化を確実にする
+      print('データベースへの保存完了');
       
       // Riverpodの状態を正しく更新
+      print('状態を更新中...');
       final newTasks = state.map((t) => t.id == task.id ? task : t).toList();
       newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       state = newTasks;
+      print('状態更新完了');
+      print('更新後の状態のタスク数: ${state.length}');
+      
+      // 更新後のタスク一覧をデバッグ出力
+      for (int i = 0; i < state.length; i++) {
+        final t = state[i];
+        print('更新後タスク[$i]: ${t.title} (ID: ${t.id})');
+      }
       
       // リンクのタスク状態を更新
       await _updateLinkTaskStatus();
@@ -842,10 +976,12 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         print('タスク直接更新: ${task.title}');
         print('更新後のサブタスク統計 - 総数: ${task.totalSubTasksCount}, 完了: ${task.completedSubTasksCount}');
       }
+      
+      print('=== タスク直接更新完了 ===');
     } catch (e) {
-      if (kDebugMode) {
-        print('タスク直接更新エラー: $e');
-      }
+      print('❌ タスク直接更新エラー: $e');
+      print('エラーの詳細: ${e.toString()}');
+      print('スタックトレース: ${StackTrace.current}');
     }
   }
 
@@ -1112,7 +1248,19 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   Future<void> syncTasksFromGoogleCalendar(List<TaskItem> calendarTasks) async {
     try {
       if (kDebugMode) {
-        print('Google Calendar同期開始: ${calendarTasks.length}件のタスク');
+        print('=== Google Calendar同期開始 ===');
+        print('同期対象タスク数: ${calendarTasks.length}件');
+        print('現在のアプリタスク数: ${state.length}件');
+        
+        // 最初の3件のタスク詳細を出力
+        for (int i = 0; i < math.min(3, calendarTasks.length); i++) {
+          final task = calendarTasks[i];
+          print('タスク${i + 1}: ${task.title}');
+          print('  externalId: ${task.externalId}');
+          print('  優先度: ${task.priority}');
+          print('  サブタスク: ${task.totalSubTasksCount}/${task.completedSubTasksCount}');
+          print('  タグ: ${task.tags}');
+        }
       }
       
       final existingTasks = state;
@@ -1133,32 +1281,36 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
           continue;
         }
         
-        // 重複チェック（タイトルと日付で判定）
-        final isDuplicate = _isDuplicateTask(calendarTask, existingTasks);
-        if (isDuplicate) {
-          if (kDebugMode) {
-            print('重複タスクをスキップ: ${calendarTask.title}');
-          }
-          skippedCount++;
-          continue;
-        }
-        
-        // 既存のタスクを検索
+        // 既存のタスクを検索（externalIdで判定）
         final existingTaskIndex = existingTasks.indexWhere(
-          (task) => task.source == 'google_calendar' && task.externalId == calendarTask.externalId
+          (task) => task.externalId == calendarTask.externalId
         );
         
         if (existingTaskIndex >= 0) {
+          // 既存のタスクを更新
+          if (kDebugMode) {
+            print('既存タスクを更新: ${calendarTask.title}');
+            print('  更新前の優先度: ${existingTasks[existingTaskIndex].priority}');
+            print('  更新後の優先度: ${calendarTask.priority}');
+            print('  更新前のサブタスク: ${existingTasks[existingTaskIndex].totalSubTasksCount}/${existingTasks[existingTaskIndex].completedSubTasksCount}');
+            print('  更新後のサブタスク: ${calendarTask.totalSubTasksCount}/${calendarTask.completedSubTasksCount}');
+          }
           // 既存タスクを更新
           final existingTask = existingTasks[existingTaskIndex];
           final updatedTask = existingTask.copyWith(
             title: calendarTask.title,
             description: calendarTask.description,
+            notes: calendarTask.notes,
             dueDate: calendarTask.dueDate,
             reminderTime: calendarTask.reminderTime,
             priority: calendarTask.priority,
+            status: calendarTask.status,
+            tags: calendarTask.tags,
             estimatedMinutes: calendarTask.estimatedMinutes,
             assignedTo: calendarTask.assignedTo,
+            hasSubTasks: calendarTask.hasSubTasks,
+            completedSubTasksCount: calendarTask.completedSubTasksCount,
+            totalSubTasksCount: calendarTask.totalSubTasksCount,
           );
           
           await updateTask(updatedTask);
@@ -1168,8 +1320,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
             print('Google Calendarタスク更新: ${calendarTask.title}');
           }
         } else {
-          // 新しいタスクを追加
-          await addTask(calendarTask);
+          // 新しいタスクを追加（Google Calendarからインポート時はサブタスク統計を初期化しない）
+          await _addTaskFromGoogleCalendar(calendarTask);
           addedCount++;
           
           if (kDebugMode) {
@@ -1197,8 +1349,16 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         }
       }
       
+      // 重複タスクをチェックして削除
+      await _removeDuplicateTasks();
+      
       if (kDebugMode) {
-        print('Google Calendar同期完了: 追加${addedCount}件, 更新${updatedCount}件, 削除${tasksToDelete.length}件, スキップ${skippedCount}件');
+        print('=== Google Calendar同期完了 ===');
+        print('追加: ${addedCount}件');
+        print('更新: ${updatedCount}件');
+        print('削除: ${tasksToDelete.length}件');
+        print('スキップ: ${skippedCount}件');
+        print('最終アプリタスク数: ${state.length}件');
       }
     } catch (e) {
       print('Google Calendar同期エラー: $e');
@@ -1227,8 +1387,12 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       'こどもの日', '成人の日', '敬老の日', '春分の日', '秋分の日'
     ];
     
-    // キーワードチェック
+    // キーワードチェック（単独の「日」は除外）
     for (final keyword in holidayKeywords) {
+      if (keyword == '日') {
+        // 「日」は単独では除外しない（「今日」「明日」などは除外対象外）
+        continue;
+      }
       if (title.contains(keyword) || description.contains(keyword)) {
         if (kDebugMode) {
           print('祝日キーワードで除外: ${task.title} (キーワード: $keyword)');
@@ -1282,10 +1446,13 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       for (final holidayDate in holidayDates) {
         if (month == holidayDate[0] && day == holidayDate[1]) {
-          if (kDebugMode) {
-            print('祝日日付パターンで除外: ${task.title} (${month}/${day})');
+          // 祝日パターンの日付でも、タイトルが長い場合は除外しない（ビジネスイベントの可能性）
+          if (title.length <= 5) {
+            if (kDebugMode) {
+              print('祝日日付パターンで除外: ${task.title} (${month}/${day})');
+            }
+            return true;
           }
-          return true;
         }
       }
     }
@@ -1771,6 +1938,48 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         'deletedCount': 0,
         'total': 0,
       };
+    }
+  }
+
+  /// 重複タスクを削除（内部メソッド）
+  Future<void> _removeDuplicateTasks() async {
+    try {
+      final existingTasks = state;
+      final tasksToDelete = <TaskItem>[];
+      
+      // タイトルとexternalIdの組み合わせで重複をチェック
+      final seenTasks = <String, TaskItem>{};
+      
+      for (final task in existingTasks) {
+        final key = '${task.title}_${task.externalId ?? 'no_external'}';
+        
+        if (seenTasks.containsKey(key)) {
+          // 重複発見：より新しいタスクを保持
+          final existingTask = seenTasks[key]!;
+          if (task.createdAt.isAfter(existingTask.createdAt)) {
+            tasksToDelete.add(existingTask);
+            seenTasks[key] = task;
+          } else {
+            tasksToDelete.add(task);
+          }
+        } else {
+          seenTasks[key] = task;
+        }
+      }
+      
+      // 重複タスクを削除
+      for (final taskToDelete in tasksToDelete) {
+        await _deleteTaskDirectly(taskToDelete.id);
+        if (kDebugMode) {
+          print('重複タスクを削除: ${taskToDelete.title}');
+        }
+      }
+      
+      if (kDebugMode && tasksToDelete.isNotEmpty) {
+        print('重複タスク削除完了: ${tasksToDelete.length}件');
+      }
+    } catch (e) {
+      print('重複タスク削除エラー: $e');
     }
   }
 

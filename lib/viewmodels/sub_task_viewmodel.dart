@@ -6,11 +6,11 @@ import '../models/sub_task.dart';
 import 'task_viewmodel.dart';
 
 final subTaskViewModelProvider = StateNotifierProvider<SubTaskViewModel, List<SubTask>>((ref) {
-  return SubTaskViewModel();
+  return SubTaskViewModel(ref);
 });
 
 class SubTaskViewModel extends StateNotifier<List<SubTask>> {
-  SubTaskViewModel() : super([]) {
+  SubTaskViewModel(this._ref) : super([]) {
     _initializeSubTaskBox();
   }
 
@@ -18,6 +18,7 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
   Box<SubTask>? _subTaskBox;
   final _uuid = const Uuid();
   bool _isInitialized = false; // 初期化完了フラグを追加
+  final Ref _ref; // Riverpodのrefを追加
 
   // 初期化完了を待つメソッド
   Future<void> waitForInitialization() async {
@@ -89,7 +90,16 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
         // 状態変更を確実に反映させるため、少し待機
         await Future.delayed(const Duration(milliseconds: 200));
         
-        // 統計更新を手動で呼び出す（循環依存を避けるため）
+        // TaskViewModelの統計更新を呼び出す
+        try {
+          // Riverpodのrefを使用してTaskViewModelにアクセス
+          final taskViewModel = _ref.read(taskViewModelProvider.notifier);
+          await taskViewModel.updateSubTaskStatistics(subTask.parentTaskId!);
+          print('親タスクの統計更新完了');
+        } catch (e) {
+          print('親タスクの統計更新エラー: $e');
+        }
+        
         print('=== サブタスク追加時の親タスク統計更新完了 ===');
       }
     } catch (e) {
@@ -113,6 +123,17 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
       if (kDebugMode) {
         print('サブタスク更新: ${subTask.title}');
       }
+      
+      // 親タスクの統計更新
+      if (subTask.parentTaskId != null) {
+        try {
+          final taskViewModel = _ref.read(taskViewModelProvider.notifier);
+          await taskViewModel.updateSubTaskStatistics(subTask.parentTaskId!);
+          print('サブタスク更新後の親タスク統計更新完了');
+        } catch (e) {
+          print('サブタスク更新後の親タスク統計更新エラー: $e');
+        }
+      }
     } catch (e) {
       if (kDebugMode) {
         print('サブタスク更新エラー: $e');
@@ -122,6 +143,11 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
 
   Future<void> deleteSubTask(String subTaskId) async {
     try {
+      // 削除前に親タスクIDを取得
+      String? parentTaskId;
+      final subTaskToDelete = state.firstWhere((task) => task.id == subTaskId, orElse: () => throw Exception('サブタスクが見つかりません'));
+      parentTaskId = subTaskToDelete.parentTaskId;
+      
       if (_subTaskBox == null || !_subTaskBox!.isOpen) {
         await _loadSubTasks();
       }
@@ -131,6 +157,17 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
       
       if (kDebugMode) {
         print('サブタスク削除: $subTaskId');
+      }
+      
+      // 親タスクの統計更新
+      if (parentTaskId != null) {
+        try {
+          final taskViewModel = _ref.read(taskViewModelProvider.notifier);
+          await taskViewModel.updateSubTaskStatistics(parentTaskId);
+          print('サブタスク削除後の親タスク統計更新完了');
+        } catch (e) {
+          print('サブタスク削除後の親タスク統計更新エラー: $e');
+        }
       }
     } catch (e) {
       if (kDebugMode) {

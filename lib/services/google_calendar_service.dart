@@ -618,26 +618,14 @@ class GoogleCalendarService {
           }
         }
         
-        // タスクの作成
-        final task = TaskItem(
-          id: 'google_cal_${event['id']}',
-          title: title,
-          description: description.isNotEmpty ? description : null,
-          status: TaskStatus.pending,
-          priority: _determinePriority(event),
-          createdAt: DateTime.now(),
-          dueDate: endTime,
-          reminderTime: startTime,
-          estimatedMinutes: _calculateEstimatedMinutes(startTime, endTime),
-          assignedTo: _extractAttendees(event),
-          source: 'google_calendar',
-          externalId: event['id'],
-        );
-        
-        tasks.add(task);
-        
-        if (kDebugMode) {
-          print('Google Calendar イベントをタスクに変換: $title');
+        // タスクの作成（詳細情報を含む）
+        final task = _convertEventToTask(event);
+        if (task != null) {
+          tasks.add(task);
+          
+          if (kDebugMode) {
+            print('Google Calendar イベントをタスクに変換: $title');
+          }
         }
       } catch (e) {
         ErrorHandler.logError('イベント変換エラー: ${event['summary']}', e);
@@ -647,6 +635,59 @@ class GoogleCalendarService {
     return tasks;
   }
   
+  /// ビジネスイベントかどうかを判定
+  bool _isBusinessEvent(String title, String description) {
+    final titleLower = title.toLowerCase();
+    final descriptionLower = description.toLowerCase();
+    
+    // ビジネス関連のキーワード
+    final businessKeywords = [
+      '会議', 'meeting', '打ち合わせ', '商談', '営業', 'sales', 'business',
+      'プロジェクト', 'project', 'ミーティング', 'mtg', 'mtg', 'm&a',
+      'レビュー', 'review', '報告', 'report', 'プレゼン', 'presentation',
+      '研修', 'training', 'セミナー', 'seminar', '講習', 'workshop',
+      '面談', 'interview', '評価', 'evaluation', '1on1', 'one-on-one',
+      '定例', 'regular', '週次', 'weekly', '月次', 'monthly', '四半期', 'quarterly',
+      '顧客', 'customer', 'クライアント', 'client', '取引先', 'partner',
+      '契約', 'contract', '提案', 'proposal', '企画', 'planning',
+      '開発', 'development', 'デザイン', 'design', 'テスト', 'test',
+      'リリース', 'release', 'デプロイ', 'deploy', '運用', 'operation',
+      'サポート', 'support', '保守', 'maintenance', '障害', 'incident',
+      '電話', 'call', 'テレビ会議', 'zoom', 'teams', 'webex', 'skype',
+      '出張', 'business trip', '訪問', 'visit', '移動', 'travel',
+      '資料', 'document', '資料作成', '資料準備', '資料確認', '資料レビュー',
+      '予算', 'budget', 'コスト', 'cost', '経費', 'expense',
+      'スケジュール', 'schedule', '調整', 'coordination', '調整会議',
+      '承認', 'approval', '決裁', 'decision', '確認', 'confirmation',
+      'フォロー', 'follow-up', 'follow up', 'アフター', 'after',
+      'キックオフ', 'kickoff', 'kick-off', '開始', 'start', 'スタート',
+      '完了', 'completion', '終了', 'finish', 'close', 'クローズ',
+      '振り返り', 'retrospective', 'レトロ', 'retro', '反省会',
+      '歓送迎会', '送別会', '歓迎会', '飲み会', '懇親会', '忘年会', '新年会',
+      'イベント', 'event', '展示会', 'exhibition', '見本市', 'trade show',
+      'マーケティング', 'marketing', 'キャンペーン', 'campaign', 'プロモーション',
+      '人事', 'hr', '採用', 'recruitment', '面接', 'interview',
+      '法務', 'legal', 'コンプライアンス', 'compliance', '契約書',
+      '財務', 'finance', '経理', 'accounting', '会計', 'audit',
+      'システム', 'system', 'it', 'インフラ', 'infrastructure',
+      'セキュリティ', 'security', 'プライバシー', 'privacy', 'gdpr',
+      '品質', 'quality', 'qa', 'テスト', 'test', '検証', 'verification',
+      'パフォーマンス', 'performance', '最適化', 'optimization',
+      '分析', 'analysis', 'データ', 'data', 'レポート', 'report',
+      'kpi', '指標', 'metric', '測定', 'measurement', '評価', 'evaluation'
+    ];
+    
+    // ビジネスキーワードが含まれているかチェック
+    for (final keyword in businessKeywords) {
+      if (titleLower.contains(keyword) || descriptionLower.contains(keyword)) {
+        return true;
+      }
+    }
+    
+    // 時刻指定のイベントはビジネスイベントの可能性が高い
+    return false;
+  }
+
   /// 祝日イベントかどうかを判定
   bool _isHolidayEvent(String title, String description, Map<String, dynamic> event) {
     final titleLower = title.toLowerCase();
@@ -660,17 +701,55 @@ class GoogleCalendarService {
       'こどもの日', '成人の日', '成人式', 'バレンタインデー', 'ホワイトデー',
       '母の日', '父の日', 'クリスマス', '大晦日', '正月', 'お盆', 'ゴールデンウィーク',
       'シルバーウィーク', '年末年始', '七夕', '七五三', '銀行休業日', '節分', '雛祭り',
-      '元日', '振替', '休業', '休日', '祝祭日', '国民の休日'
+      '元日', '振替', '休業', '休日', '祝祭日', '国民の休日',
+      // 追加の祝日キーワード
+      'japanese holiday', 'national holiday', 'public holiday', 'calendar holiday',
+      '祝', '祭', '日', '誕生日', '記念日', 'イベント', 'event', 'カレンダー', 'calendar',
+      // 日本の祝日名（詳細）
+      '元日', '成人の日', '建国記念の日', '天皇誕生日', '春分の日', '昭和の日',
+      '憲法記念日', 'みどりの日', 'こどもの日', '海の日', '山の日', '敬老の日',
+      '秋分の日', 'スポーツの日', '文化の日', '勤労感謝の日',
+      // その他の休日
+      '土日', 'weekend', '土曜', '日曜', 'saturday', 'sunday'
     ];
     
-    // キーワードチェック
+    // キーワードチェック（より慎重に）
     for (final keyword in holidayKeywords) {
       if (titleLower.contains(keyword) || descriptionLower.contains(keyword)) {
+        // ただし、明らかにビジネス関連のイベントは除外しない
+        if (_isBusinessEvent(title, description)) {
+          if (kDebugMode) {
+            print('ビジネスイベントのため祝日除外をスキップ: "$title" (キーワード: "$keyword")');
+          }
+          continue;
+        }
+        
+        if (kDebugMode) {
+          print('祝日キーワードで除外: "$title" (キーワード: "$keyword")');
+        }
         return true;
       }
     }
     
-    // 終日イベントでタイトルが短い場合は祝日の可能性が高い
+    // Google Calendarの祝日カレンダーを除外
+    final calendarId = event['organizer']?['email'] ?? '';
+    if (calendarId.contains('holiday') || calendarId.contains('祝日')) {
+      if (kDebugMode) {
+        print('祝日カレンダーで除外: "$title" (カレンダー: "$calendarId")');
+      }
+      return true;
+    }
+    
+    // イベントの作成者をチェック
+    final creator = event['creator']?['email'] ?? '';
+    if (creator.contains('holiday') || creator.contains('祝日') || creator.contains('calendar')) {
+      if (kDebugMode) {
+        print('祝日作成者で除外: "$title" (作成者: "$creator")');
+      }
+      return true;
+    }
+    
+    // 終日イベントの判定を緩和
     final start = event['start'];
     final end = event['end'];
     
@@ -678,8 +757,30 @@ class GoogleCalendarService {
       // 終日イベントかどうかをチェック
       final isAllDay = start['date'] != null && end['date'] != null;
       
-      if (isAllDay && titleLower.length <= 10) {
-        return true;
+      if (isAllDay) {
+        // ビジネスイベントの場合は除外しない
+        if (_isBusinessEvent(title, description)) {
+          if (kDebugMode) {
+            print('終日ビジネスイベントのため除外をスキップ: "$title"');
+          }
+          return false;
+        }
+        
+        // タイトルが非常に短い場合のみ除外（5文字以下に緩和）
+        if (titleLower.length <= 5) {
+          if (kDebugMode) {
+            print('終日イベント（極短タイトル）で除外: "$title"');
+          }
+          return true;
+        }
+        
+        // 説明が空で、かつタイトルが短い場合のみ除外
+        if (description.isEmpty && titleLower.length <= 8) {
+          if (kDebugMode) {
+            print('終日イベント（説明なし・短タイトル）で除外: "$title"');
+          }
+          return true;
+        }
       }
     }
     
@@ -819,6 +920,19 @@ class GoogleCalendarService {
   String _getErrorMessage(int statusCode, Map<String, dynamic> errorBody) {
     switch (statusCode) {
       case 400:
+        final error = errorBody['error'];
+        if (error != null) {
+          final errors = error['errors'] as List?;
+          if (errors != null && errors.isNotEmpty) {
+            final firstError = errors[0] as Map<String, dynamic>;
+            final reason = firstError['reason'] as String?;
+            final message = firstError['message'] as String?;
+            if (reason == 'required') {
+              return '必須フィールドが不足しています: ${message ?? '詳細不明'}';
+            }
+            return 'リクエストが無効です: ${message ?? reason ?? '詳細不明'}';
+          }
+        }
         return 'リクエストが無効です。タスクの情報を確認してください。';
       case 401:
         return '認証に失敗しました。Google Calendarの認証を再実行してください。';
@@ -1201,38 +1315,96 @@ class GoogleCalendarService {
       // 繰り返しルールを構築
       final recurrence = _buildRecurrenceRule(task);
       
-      // 日付のみの終日イベントとして作成
+      // 必須フィールドの検証
+      if (task.title.trim().isEmpty) {
+        ErrorHandler.logError('Google Calendar送信', 'タスクのタイトルが空です');
+        return SyncResult(
+          success: false,
+          errorMessage: 'タスクのタイトルが空です。',
+          errorCode: 'EMPTY_TITLE',
+        );
+      }
+
+      // 日付の検証
+      final startDateStr = startTime.toIso8601String().split('T')[0];
+      final endDateStr = startTime.add(const Duration(days: 1)).toIso8601String().split('T')[0];
+      
+      print('日付検証: 開始日=$startDateStr, 終了日=$endDateStr');
+
+      // 基本データ（成功確認済み）
       final eventData = {
-        'summary': task.title,
-        'description': description,
+        'summary': task.title.trim(),
         'start': {
-          'date': startTime.toIso8601String().split('T')[0], // 日付のみ
+          'date': startDateStr,
         },
         'end': {
-          'date': startTime.add(const Duration(days: 1)).toIso8601String().split('T')[0], // 翌日
+          'date': endDateStr,
         },
-        'colorId': _getStatusColorId(task.status), // ステータスに応じた色ID
-        'reminders': {
-          'useDefault': false,
-          'overrides': [
-            {'method': 'popup', 'minutes': 0}, // 当日の0分前（開始時刻）
-          ],
-        },
-        'extendedProperties': {
-          'private': {
-            'taskId': task.id,
-            'priority': task.priority.toString(),
-            'status': task.status.toString(),
-            'estimatedMinutes': task.estimatedMinutes?.toString() ?? '',
-            'hasSubTasks': task.hasSubTasks.toString(),
-            'subTasksProgress': '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-          }
+      };
+      
+      // 説明文がある場合のみ追加
+      if (description.isNotEmpty) {
+        eventData['description'] = description;
+      }
+      
+      // colorIdを追加（段階的復元）
+      eventData['colorId'] = _getStatusColorId(task.status);
+      
+      // extendedPropertiesを段階的に追加（サブタスク関連フィールドを追加）
+      final createExtendedProps = {
+        'taskId': task.id,
+        'status': task.status.toString(),
+        'priority': task.priority.toString(),
+        'hasSubTasks': task.hasSubTasks.toString(),
+        'subTasksProgress': '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+        'completedSubTasksCount': task.completedSubTasksCount.toString(),
+        'totalSubTasksCount': task.totalSubTasksCount.toString(),
+      };
+      
+      // サブタスクの詳細データを保存
+      if (task.hasSubTasks && task.totalSubTasksCount > 0) {
+        final subtaskDetails = _getSubTaskDetails(task.id);
+        print('=== エクスポート時サブタスク詳細取得 ===');
+        print('タスク: ${task.title}');
+        print('hasSubTasks: ${task.hasSubTasks}');
+        print('totalSubTasksCount: ${task.totalSubTasksCount}');
+        print('取得されたサブタスク数: ${subtaskDetails.length}');
+        
+        if (subtaskDetails.isNotEmpty) {
+          final subtasksJson = subtaskDetails.map((subtask) => {
+            'id': subtask.id,
+            'title': subtask.title,
+            'description': subtask.description ?? '',
+            'isCompleted': subtask.isCompleted,
+            'order': subtask.order,
+          }).toList();
+          createExtendedProps['subtasks'] = jsonEncode(subtasksJson);
+          print('サブタスク詳細をextendedPropertiesに保存: ${subtasksJson.length}件');
+          print('保存されたサブタスクJSON: ${jsonEncode(subtasksJson)}');
+        } else {
+          print('サブタスク詳細が空です');
         }
+        print('=== エクスポート時サブタスク詳細取得完了 ===');
+      } else {
+        print('=== エクスポート時サブタスクなし ===');
+        print('タスク: ${task.title}');
+        print('hasSubTasks: ${task.hasSubTasks}');
+        print('totalSubTasksCount: ${task.totalSubTasksCount}');
+        print('=== エクスポート時サブタスクなし完了 ===');
+      }
+      
+      eventData['extendedProperties'] = {
+        'private': createExtendedProps
       };
 
-      // 場所情報がある場合のみ追加
+      // 場所情報がある場合のみ追加（有効な場所情報のみ）
       if (task.assignedTo != null && task.assignedTo!.isNotEmpty) {
-        eventData['location'] = task.assignedTo!;
+        if (_isValidLocation(task.assignedTo!)) {
+          eventData['location'] = task.assignedTo!;
+          print('場所情報を追加: ${task.assignedTo}');
+        } else {
+          print('場所情報をスキップ（無効）: ${task.assignedTo}');
+        }
       }
 
       // 参加者リストがある場合のみ追加
@@ -1245,6 +1417,44 @@ class GoogleCalendarService {
         eventData['recurrence'] = recurrence;
       }
 
+      // 送信前の最終検証
+      print('=== 送信前検証 ===');
+      final summary = eventData['summary']?.toString() ?? '';
+      final startData = eventData['start'] as Map<String, dynamic>?;
+      final endData = eventData['end'] as Map<String, dynamic>?;
+      final startDate = startData?['date']?.toString() ?? '';
+      final endDate = endData?['date']?.toString() ?? '';
+      final extendedProps = eventData['extendedProperties'] as Map<String, dynamic>?;
+      
+      print('summary: "$summary" (長さ: ${summary.length})');
+      print('start.date: $startDate');
+      print('end.date: $endDate');
+      print('colorId: ${eventData['colorId']}');
+      print('description長さ: ${description.length}');
+      print('extendedProperties長さ: ${jsonEncode(extendedProps).length}');
+      print('extendedPropertiesサブタスク関連フィールド追加テスト実行中...');
+      
+      // 必須フィールドの最終チェック
+      if (summary.trim().isEmpty) {
+        print('❌ summaryが空です');
+        return SyncResult(
+          success: false,
+          errorMessage: 'イベントのタイトルが空です。',
+          errorCode: 'EMPTY_SUMMARY',
+        );
+      }
+      
+      if (startDate.isEmpty || endDate.isEmpty) {
+        print('❌ 日付が空です');
+        return SyncResult(
+          success: false,
+          errorMessage: 'イベントの日付が設定されていません。',
+          errorCode: 'EMPTY_DATE',
+        );
+      }
+      
+      print('✅ extendedPropertiesサブタスク関連フィールド追加検証完了');
+
       // デバッグ用: 送信データをログ出力
       if (kDebugMode) {
         print('=== Google Calendar API送信データ ===');
@@ -1252,11 +1462,19 @@ class GoogleCalendarService {
         print('依頼先: ${task.assignedTo}');
         print('参加者数: ${attendees.length}');
         print('参加者詳細: $attendees');
+        print('説明文の長さ: ${description.length}文字');
+        print('説明文プレビュー: ${description.length > 200 ? description.substring(0, 200) + "..." : description}');
         print('送信データ: ${jsonEncode(eventData)}');
         print('===============================');
       }
 
       // Google Calendar APIに送信
+      print('=== API送信詳細 ===');
+      print('URL: $_calendarApiUrl/calendars/primary/events');
+      print('Authorization: Bearer ${_accessToken?.substring(0, 20)}...');
+      print('Content-Type: application/json');
+      print('送信データサイズ: ${jsonEncode(eventData).length}文字');
+      
       final response = await http.post(
         Uri.parse('$_calendarApiUrl/calendars/primary/events'),
         headers: {
@@ -1265,6 +1483,9 @@ class GoogleCalendarService {
         },
         body: jsonEncode(eventData),
       );
+      
+      print('レスポンスステータス: ${response.statusCode}');
+      print('レスポンスボディ: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -1332,38 +1553,80 @@ class GoogleCalendarService {
       // 繰り返しルールを構築
       final recurrence = _buildRecurrenceRule(task);
       
-      // 日付のみの終日イベントとして更新
+      // 最小限のデータでテスト（更新処理の問題を特定するため）
       final eventData = {
-        'summary': task.title,
-        'description': description,
+        'summary': task.title.trim(),
         'start': {
-          'date': startTime.toIso8601String().split('T')[0], // 日付のみ
+          'date': startTime.toIso8601String().split('T')[0],
         },
         'end': {
-          'date': startTime.add(const Duration(days: 1)).toIso8601String().split('T')[0], // 翌日
+          'date': startTime.add(const Duration(days: 1)).toIso8601String().split('T')[0],
         },
-        'colorId': _getStatusColorId(task.status), // ステータスに応じた色ID
-        'reminders': {
-          'useDefault': false,
-          'overrides': [
-            {'method': 'popup', 'minutes': 0}, // 当日の0分前（開始時刻）
-          ],
-        },
-        'extendedProperties': {
-          'private': {
-            'taskId': task.id,
-            'priority': task.priority.toString(),
-            'status': task.status.toString(),
-            'estimatedMinutes': task.estimatedMinutes?.toString() ?? '',
-            'hasSubTasks': task.hasSubTasks.toString(),
-            'subTasksProgress': '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-          }
+      };
+      
+      // 説明文がある場合のみ追加
+      if (description.isNotEmpty) {
+        eventData['description'] = description;
+      }
+      
+      // colorIdを復元（段階的テスト）
+      eventData['colorId'] = _getStatusColorId(task.status);
+      
+      // extendedPropertiesを段階的に追加（サブタスク関連フィールドを追加）
+      final updateExtendedProps = {
+        'taskId': task.id,
+        'status': task.status.toString(),
+        'priority': task.priority.toString(),
+        'hasSubTasks': task.hasSubTasks.toString(),
+        'subTasksProgress': '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+        'completedSubTasksCount': task.completedSubTasksCount.toString(),
+        'totalSubTasksCount': task.totalSubTasksCount.toString(),
+      };
+      
+      // サブタスクの詳細データを保存
+      if (task.hasSubTasks && task.totalSubTasksCount > 0) {
+        final subtaskDetails = _getSubTaskDetails(task.id);
+        print('=== 更新時サブタスク詳細取得 ===');
+        print('タスク: ${task.title}');
+        print('hasSubTasks: ${task.hasSubTasks}');
+        print('totalSubTasksCount: ${task.totalSubTasksCount}');
+        print('取得されたサブタスク数: ${subtaskDetails.length}');
+        
+        if (subtaskDetails.isNotEmpty) {
+          final subtasksJson = subtaskDetails.map((subtask) => {
+            'id': subtask.id,
+            'title': subtask.title,
+            'description': subtask.description ?? '',
+            'isCompleted': subtask.isCompleted,
+            'order': subtask.order,
+          }).toList();
+          updateExtendedProps['subtasks'] = jsonEncode(subtasksJson);
+          print('サブタスク詳細をextendedPropertiesに保存（更新）: ${subtasksJson.length}件');
+          print('保存されたサブタスクJSON: ${jsonEncode(subtasksJson)}');
+        } else {
+          print('サブタスク詳細が空です');
         }
+        print('=== 更新時サブタスク詳細取得完了 ===');
+      } else {
+        print('=== 更新時サブタスクなし ===');
+        print('タスク: ${task.title}');
+        print('hasSubTasks: ${task.hasSubTasks}');
+        print('totalSubTasksCount: ${task.totalSubTasksCount}');
+        print('=== 更新時サブタスクなし完了 ===');
+      }
+      
+      eventData['extendedProperties'] = {
+        'private': updateExtendedProps
       };
 
-      // 場所情報がある場合のみ追加
+      // 場所情報がある場合のみ追加（有効な場所情報のみ）
       if (task.assignedTo != null && task.assignedTo!.isNotEmpty) {
-        eventData['location'] = task.assignedTo!;
+        if (_isValidLocation(task.assignedTo!)) {
+          eventData['location'] = task.assignedTo!;
+          print('場所情報を追加: ${task.assignedTo}');
+        } else {
+          print('場所情報をスキップ（無効）: ${task.assignedTo}');
+        }
       }
 
       // 参加者リストがある場合のみ追加
@@ -1375,6 +1638,36 @@ class GoogleCalendarService {
       if (recurrence.isNotEmpty) {
         eventData['recurrence'] = recurrence;
       }
+
+      // 送信前検証（完全復元テスト）
+      print('=== 更新前検証 ===');
+      final summary = eventData['summary']?.toString() ?? '';
+      final startData = eventData['start'] as Map<String, dynamic>?;
+      final endData = eventData['end'] as Map<String, dynamic>?;
+      final startDate = startData?['date']?.toString() ?? '';
+      final endDate = endData?['date']?.toString() ?? '';
+      final extendedProps = eventData['extendedProperties'] as Map<String, dynamic>?;
+      
+      print('summary: "$summary" (長さ: ${summary.length})');
+      print('start.date: $startDate');
+      print('end.date: $endDate');
+      print('colorId: ${eventData['colorId']}');
+      print('description長さ: ${description.length}');
+      print('extendedProperties長さ: ${jsonEncode(extendedProps).length}');
+      print('extendedPropertiesサブタスク関連フィールド追加テスト実行中...');
+      
+      // 必須フィールドの最終チェック
+      if (summary.trim().isEmpty) {
+        print('❌ summaryが空です');
+        return false;
+      }
+      
+      if (startDate.isEmpty || endDate.isEmpty) {
+        print('❌ 日付が設定されていません');
+        return false;
+      }
+      
+      print('✅ 更新処理extendedPropertiesサブタスク関連フィールド追加検証完了');
 
       // デバッグ用: 送信データをログ出力
       if (kDebugMode) {
@@ -1388,6 +1681,13 @@ class GoogleCalendarService {
         print('===============================');
       }
 
+      // API送信詳細ログ
+      print('=== 更新API送信詳細 ===');
+      print('URL: $_calendarApiUrl/calendars/primary/events/$eventId');
+      print('Authorization: Bearer ${_accessToken?.substring(0, 20)}...');
+      print('Content-Type: application/json');
+      print('送信データサイズ: ${jsonEncode(eventData).length}文字');
+
       // Google Calendar APIに送信
       final response = await http.put(
         Uri.parse('$_calendarApiUrl/calendars/primary/events/$eventId'),
@@ -1398,10 +1698,15 @@ class GoogleCalendarService {
         body: jsonEncode(eventData),
       );
 
+      print('レスポンスステータス: ${response.statusCode}');
+      print('レスポンスボディ: ${response.body}');
+
       if (response.statusCode == 200) {
         print('Google Calendarイベント更新成功: $eventId');
         return true;
       } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = _getErrorMessage(response.statusCode, errorBody);
         ErrorHandler.logError('Google Calendar更新', 'HTTP ${response.statusCode}: ${response.body}');
         return false;
       }
@@ -1530,67 +1835,161 @@ class GoogleCalendarService {
     }
   }
 
+  /// 説明文からサブタスク関連の情報を削除
+  String _removeSubtaskInfoFromDescription(String description) {
+    final lines = description.split('\n');
+    final cleanedLines = <String>[];
+    
+    for (final line in lines) {
+      final trimmedLine = line.trim();
+      
+      // サブタスク関連の行をスキップ
+      if (trimmedLine.startsWith('📋 サブタスク進捗:') ||
+          trimmedLine.startsWith('📝 サブタスク詳細:') ||
+          trimmedLine.startsWith('  ✖') ||
+          trimmedLine.startsWith('  ✅') ||
+          trimmedLine.startsWith('✖') ||
+          trimmedLine.startsWith('✅') ||
+          trimmedLine.startsWith('⭐ 優先度:') ||
+          trimmedLine.startsWith('📊 ステータス:') ||
+          trimmedLine.startsWith('📅 作成日:') ||
+          trimmedLine.startsWith('📝 メモ:')) {
+        continue;
+      }
+      
+      // 空行でない場合は追加
+      if (trimmedLine.isNotEmpty) {
+        cleanedLines.add(line);
+      }
+    }
+    
+    return cleanedLines.join('\n').trim();
+  }
+
   /// 拡張された詳細説明を構築
   String _buildEnhancedDescription(TaskItem task) {
     final parts = <String>[];
     
-    // 基本説明
+    // 基本説明（重複チェック）
     if (task.description != null && task.description!.isNotEmpty) {
-      parts.add(task.description!);
-    }
-    
-    // 追加メモ
-    if (task.notes != null && task.notes!.isNotEmpty) {
-      parts.add('📝 メモ: ${task.notes!}');
-    }
-    
-    // タグ情報
-    if (task.tags.isNotEmpty) {
-      parts.add('🏷️ タグ: ${task.tags.join(', ')}');
-    }
-    
-    // 推定時間
-    if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
-      final hours = task.estimatedMinutes! ~/ 60;
-      final minutes = task.estimatedMinutes! % 60;
-      if (hours > 0) {
-        parts.add('⏱️ 推定時間: ${hours}時間${minutes > 0 ? '${minutes}分' : ''}');
-      } else {
-        parts.add('⏱️ 推定時間: ${minutes}分');
+      final cleanDescription = task.description!.trim();
+      if (cleanDescription.isNotEmpty) {
+        // 既存の説明文からサブタスク関連の情報を削除
+        final cleanedDescription = _removeSubtaskInfoFromDescription(cleanDescription);
+        print('=== 説明文クリーンアップ ===');
+        print('元の説明文: $cleanDescription');
+        print('クリーンアップ後: $cleanedDescription');
+        print('=== 説明文クリーンアップ完了 ===');
+        
+        if (cleanedDescription.isNotEmpty && !parts.contains(cleanedDescription)) {
+          parts.add(cleanedDescription);
+        }
       }
     }
     
-    // サブタスク詳細情報
-    if (task.hasSubTasks && task.totalSubTasksCount > 0) {
-      parts.add('📋 サブタスク進捗: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了');
+    // 追加メモ（重複チェック）
+    if (task.notes != null && task.notes!.isNotEmpty) {
+      final memoText = '📝 メモ: ${task.notes!}';
+      if (!parts.any((part) => part.contains('📝 メモ:'))) {
+        parts.add(memoText);
+      }
+    }
+    
+    // タグ情報（重複チェック）
+    if (task.tags.isNotEmpty) {
+      final tagText = '🏷️ タグ: ${task.tags.join(', ')}';
+      if (!parts.any((part) => part.contains('🏷️ タグ:'))) {
+        parts.add(tagText);
+      }
+    }
+    
+    // 推定時間（重複チェック）
+    if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
+      final hours = task.estimatedMinutes! ~/ 60;
+      final minutes = task.estimatedMinutes! % 60;
+      final timeText = hours > 0 
+          ? '⏱️ 推定時間: ${hours}時間${minutes > 0 ? '${minutes}分' : ''}'
+          : '⏱️ 推定時間: ${minutes}分';
       
+      if (!parts.any((part) => part.contains('⏱️ 推定時間:'))) {
+        parts.add(timeText);
+      }
+    }
+    
+    // サブタスク詳細情報（重複チェック）
+    print('=== サブタスク詳細情報構築開始 ===');
+    print('task.hasSubTasks: ${task.hasSubTasks}');
+    print('task.totalSubTasksCount: ${task.totalSubTasksCount}');
+    print('task.completedSubTasksCount: ${task.completedSubTasksCount}');
+    
+    if (task.hasSubTasks && task.totalSubTasksCount > 0) {
+      final subtaskProgressText = '📋 サブタスク進捗: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了';
+      print('サブタスク進捗テキスト: $subtaskProgressText');
+      
+      // 古いサブタスク進捗を削除
+      parts.removeWhere((part) => part.contains('📋 サブタスク進捗:'));
+      print('古いサブタスク進捗を削除しました');
+      
+      // 新しいサブタスク進捗を追加
+      parts.add(subtaskProgressText);
+      print('新しいサブタスク進捗を追加しました');
+        
       // サブタスクの詳細を取得して表示
       final subtaskDetails = _getSubTaskDetails(task.id);
+      print('=== サブタスク詳細構築 ===');
+      print('取得されたサブタスク数: ${subtaskDetails.length}');
+      for (final subtask in subtaskDetails) {
+        print('サブタスク: ${subtask.title} (完了: ${subtask.isCompleted})');
+      }
+      
       if (subtaskDetails.isNotEmpty) {
+        // 古いサブタスク詳細を削除
+        parts.removeWhere((part) => part.contains('📝 サブタスク詳細:'));
+        parts.removeWhere((part) => part.startsWith('  ✖') || part.startsWith('  ✅'));
+        print('古いサブタスク詳細を削除しました');
+        
+        // 新しいサブタスク詳細を追加
         parts.add('');
         parts.add('📝 サブタスク詳細:');
         for (final subtask in subtaskDetails) {
-          final statusIcon = subtask.isCompleted ? '✅' : '⭕';
+          final statusIcon = subtask.isCompleted ? '✅' : '✖';
           parts.add('  $statusIcon ${subtask.title}');
           if (subtask.description != null && subtask.description!.isNotEmpty) {
             parts.add('     ${subtask.description!}');
           }
         }
+        print('新しいサブタスク詳細を追加しました');
       }
+      print('=== サブタスク詳細構築完了 ===');
+    } else {
+      print('サブタスク条件に合致しませんでした');
     }
+    print('=== サブタスク詳細情報構築完了 ===');
     
-    // 優先度情報
+    // 優先度情報（古いものを削除してから新しいものを追加）
     final priorityText = _getPriorityText(task.priority);
-    parts.add('⭐ 優先度: $priorityText');
+    final priorityLine = '⭐ 優先度: $priorityText';
+    parts.removeWhere((part) => part.contains('⭐ 優先度:'));
+    parts.add(priorityLine);
+    print('優先度を更新しました: $priorityText');
     
-    // ステータス情報
+    // ステータス情報（古いものを削除してから新しいものを追加）
     final statusText = _getStatusText(task.status);
-    parts.add('📊 ステータス: $statusText');
+    final statusLine = '📊 ステータス: $statusText';
+    parts.removeWhere((part) => part.contains('📊 ステータス:'));
+    parts.add(statusLine);
+    print('ステータスを更新しました: $statusText');
     
-    // 作成日時
-    parts.add('📅 作成日: ${task.createdAt.toIso8601String().split('T')[0]}');
+    // 作成日時（古いものを削除してから新しいものを追加）
+    final createdAtLine = '📅 作成日: ${task.createdAt.toIso8601String().split('T')[0]}';
+    parts.removeWhere((part) => part.contains('📅 作成日:'));
+    parts.add(createdAtLine);
+    print('作成日を更新しました: ${task.createdAt.toIso8601String().split('T')[0]}');
     
     final fullDescription = parts.join('\n');
+    print('=== 最終説明文構築結果 ===');
+    print('構築された説明文: $fullDescription');
+    print('=== 最終説明文構築結果完了 ===');
     
     // Google Calendar APIの説明文の長さ制限（約8000文字）を考慮
     if (fullDescription.length > 8000) {
@@ -1599,7 +1998,10 @@ class GoogleCalendarService {
       
       // 基本説明
       if (task.description != null && task.description!.isNotEmpty) {
-        essentialParts.add(task.description!);
+        final cleanDescription = task.description!.trim();
+        if (cleanDescription.isNotEmpty && !essentialParts.contains(cleanDescription)) {
+          essentialParts.add(cleanDescription);
+        }
       }
       
       // 追加メモ（短縮）
@@ -1607,44 +2009,58 @@ class GoogleCalendarService {
         final shortNotes = task.notes!.length > 100 
             ? '${task.notes!.substring(0, 100)}...' 
             : task.notes!;
-        essentialParts.add('📝 メモ: $shortNotes');
+        final memoText = '📝 メモ: $shortNotes';
+        if (!essentialParts.any((part) => part.contains('📝 メモ:'))) {
+          essentialParts.add(memoText);
+        }
       }
       
       // 推定時間
       if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
         final hours = task.estimatedMinutes! ~/ 60;
         final minutes = task.estimatedMinutes! % 60;
-        if (hours > 0) {
-          essentialParts.add('⏱️ 推定時間: ${hours}時間${minutes > 0 ? '${minutes}分' : ''}');
-        } else {
-          essentialParts.add('⏱️ 推定時間: ${minutes}分');
+        final timeText = hours > 0 
+            ? '⏱️ 推定時間: ${hours}時間${minutes > 0 ? '${minutes}分' : ''}'
+            : '⏱️ 推定時間: ${minutes}分';
+        if (!essentialParts.any((part) => part.contains('⏱️ 推定時間:'))) {
+          essentialParts.add(timeText);
         }
       }
       
       // サブタスク情報（短縮版）
       if (task.hasSubTasks && task.totalSubTasksCount > 0) {
-        essentialParts.add('📋 サブタスク: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了');
-        
-        // 最初の3つのサブタスクのみ表示
-        final subtaskDetails = _getSubTaskDetails(task.id);
-        if (subtaskDetails.isNotEmpty) {
-          essentialParts.add('');
-          essentialParts.add('📝 サブタスク:');
-          final maxSubTasks = subtaskDetails.length > 3 ? 3 : subtaskDetails.length;
-          for (int i = 0; i < maxSubTasks; i++) {
-            final subtask = subtaskDetails[i];
-            final statusIcon = subtask.isCompleted ? '✅' : '⭕';
-            essentialParts.add('  $statusIcon ${subtask.title}');
-          }
-          if (subtaskDetails.length > 3) {
-            essentialParts.add('  ...他${subtaskDetails.length - 3}件');
+        final subtaskProgressText = '📋 サブタスク: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了';
+        if (!essentialParts.any((part) => part.contains('📋 サブタスク:'))) {
+          essentialParts.add(subtaskProgressText);
+          
+          // 最初の3つのサブタスクのみ表示
+          final subtaskDetails = _getSubTaskDetails(task.id);
+          if (subtaskDetails.isNotEmpty) {
+            essentialParts.add('');
+            essentialParts.add('📝 サブタスク詳細:');
+            final maxSubTasks = subtaskDetails.length > 3 ? 3 : subtaskDetails.length;
+            for (int i = 0; i < maxSubTasks; i++) {
+              final subtask = subtaskDetails[i];
+              final statusIcon = subtask.isCompleted ? '✅' : '✖';
+              essentialParts.add('  $statusIcon ${subtask.title}');
+            }
+            if (subtaskDetails.length > 3) {
+              essentialParts.add('  ...他${subtaskDetails.length - 3}件');
+            }
           }
         }
       }
       
       // 優先度とステータス
-      essentialParts.add('⭐ 優先度: ${_getPriorityText(task.priority)}');
-      essentialParts.add('📊 ステータス: ${_getStatusText(task.status)}');
+      final priorityText = '⭐ 優先度: ${_getPriorityText(task.priority)}';
+      final statusText = '📊 ステータス: ${_getStatusText(task.status)}';
+      
+      if (!essentialParts.any((part) => part.contains('⭐ 優先度:'))) {
+        essentialParts.add(priorityText);
+      }
+      if (!essentialParts.any((part) => part.contains('📊 ステータス:'))) {
+        essentialParts.add(statusText);
+      }
       
       return essentialParts.join('\n');
     }
@@ -1670,6 +2086,33 @@ class GoogleCalendarService {
         print('サブタスク詳細取得エラー: $e');
       }
       return [];
+    }
+  }
+
+  /// サブタスクを復元（Google Calendarからインポート時）
+  void _restoreSubTasks(String parentTaskId, List<dynamic> subtasksJson) {
+    try {
+      final subTaskBox = Hive.box<SubTask>('sub_tasks');
+      
+      for (final subtaskData in subtasksJson) {
+        final subtask = SubTask(
+          id: subtaskData['id'] ?? const Uuid().v4(),
+          parentTaskId: parentTaskId,
+          title: subtaskData['title'] ?? '',
+          description: subtaskData['description']?.isNotEmpty == true ? subtaskData['description'] : null,
+          isCompleted: subtaskData['isCompleted'] ?? false,
+          order: subtaskData['order'] ?? 0,
+          createdAt: DateTime.now(),
+        );
+        
+        subTaskBox.put(subtask.id, subtask);
+        print('サブタスク復元: ${subtask.title} (完了: ${subtask.isCompleted})');
+      }
+      
+      subTaskBox.flush();
+      print('サブタスク復元完了: ${subtasksJson.length}件');
+    } catch (e) {
+      print('サブタスク復元エラー: $e');
     }
   }
 
@@ -1700,6 +2143,44 @@ class GoogleCalendarService {
     // 基本的なメールアドレス形式のチェック
     final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     return emailRegex.hasMatch(email);
+  }
+
+  /// 有効な場所情報かどうかをチェック
+  bool _isValidLocation(String location) {
+    // 場所情報として有効な文字列かどうかをチェック
+    // 基本的な文字列の長さと内容をチェック
+    if (location.length < 2 || location.length > 200) {
+      return false;
+    }
+    
+    // 単純な文字列や疑問符を含む文字列は場所情報として不適切
+    final invalidLocations = [
+      'test', 'テスト', 'sample', 'サンプル', 'example', '例',
+      'なんで？', 'なぜ？', 'どうして？', 'what', 'why', 'how',
+      'どこ？', 'when', 'where', 'who'
+    ];
+    if (invalidLocations.contains(location.toLowerCase())) {
+      return false;
+    }
+    
+    // 疑問符のみまたは疑問符で終わる短い文字列は不適切
+    if (location.endsWith('？') || location.endsWith('?')) {
+      if (location.length <= 10) {
+        return false;
+      }
+    }
+    
+    // メールアドレス形式は場所情報として不適切
+    if (_isValidEmail(location)) {
+      return false;
+    }
+    
+    // 数字のみの文字列は不適切
+    if (RegExp(r'^\d+$').hasMatch(location)) {
+      return false;
+    }
+    
+    return true;
   }
 
   /// 繰り返しルールを構築
@@ -1856,14 +2337,32 @@ class GoogleCalendarService {
           continue;
         }
         
+        // 祝日イベントをスキップ
+        final summary = event['summary'] ?? '';
+        if (_isHolidayEvent(summary, event['description'] ?? '', event)) {
+          skipped++;
+          continue;
+        }
+        
         // Google Calendarにのみ存在するイベントをアプリに追加
+        print('=== イベント変換開始 ===');
+        print('イベントID: ${event['id']}');
+        print('イベントタイトル: ${event['summary']}');
+        print('extendedProperties: ${event['extendedProperties']}');
+        
         final task = _convertEventToTask(event);
         if (task != null) {
-          // ここでTaskViewModelに追加する処理を呼び出す必要がある
-          // ただし、このサービスからTaskViewModelを直接呼び出すのは適切ではない
-          // 代わりに、変換されたタスクのリストを返す
-          added++;
-          print('Google Calendar → アプリ同期対象: ${task.title}');
+          // UUIDベースの重複チェック（厳密）
+          final isDuplicate = existingAppTasks.any((existingTask) => 
+            existingTask.id == task.id);
+          
+          if (!isDuplicate) {
+            added++;
+            print('Google Calendar → アプリ同期対象: ${task.title} (UUID: ${task.id})');
+          } else {
+            skipped++;
+            print('UUID重複のためスキップ: ${task.title} (UUID: ${task.id})');
+          }
         }
       }
       
@@ -1886,14 +2385,22 @@ class GoogleCalendarService {
     }
   }
 
-  /// イベントをタスクに変換
+  /// イベントをタスクに変換（詳細情報を含む）
   TaskItem? _convertEventToTask(Map<String, dynamic> event) {
     try {
+      print('=== _convertEventToTask開始 ===');
       final summary = event['summary'] ?? '';
       final description = event['description'] ?? '';
       final start = event['start'];
       
-      if (summary.isEmpty) return null;
+      print('summary: "$summary"');
+      print('description: "$description"');
+      print('start: $start');
+      
+      if (summary.isEmpty) {
+        print('summaryが空のためnullを返す');
+        return null;
+      }
       
       DateTime? dueDate;
       DateTime? reminderTime;
@@ -1910,14 +2417,195 @@ class GoogleCalendarService {
         }
       }
       
-      // ステータスを色IDから推定
-      final colorId = event['colorId'] ?? '1';
-      TaskStatus status = _getStatusFromColorId(colorId);
-      
-      // 拡張プロパティから追加情報を取得
+      // 拡張プロパティから詳細情報を取得
       final extendedProps = event['extendedProperties']?['private'] ?? {};
+      
+      // デバッグ: 拡張プロパティの内容を出力
+      print('=== Google Calendarイベント変換デバッグ ===');
+      print('イベントタイトル: $summary');
+      print('拡張プロパティ: $extendedProps');
+      print('extendedProperties全体: ${event['extendedProperties']}');
+      
+      // ステータス（拡張プロパティから直接取得、なければ色IDから推定）
+      TaskStatus status;
+      final statusStr = extendedProps['status'] ?? '';
+      if (statusStr.isNotEmpty) {
+        status = _parseStatus(statusStr);
+      } else {
+        // フォールバック：色IDから推定
+        final colorId = event['colorId'] ?? '1';
+        status = _getStatusFromColorId(colorId);
+      }
+      
+      // 見積もり時間
       final estimatedMinutesStr = extendedProps['estimatedMinutes'] ?? '';
-      final estimatedMinutes = estimatedMinutesStr.isNotEmpty ? int.tryParse(estimatedMinutesStr) : null;
+      int? estimatedMinutes = estimatedMinutesStr.isNotEmpty ? int.tryParse(estimatedMinutesStr) : null;
+      
+      // 優先度
+      final priorityStr = extendedProps['priority'] ?? '';
+      TaskPriority priority = _parsePriority(priorityStr);
+      
+      // タグ（List<dynamic>型とString型の両方に対応）
+      List<String> tags = [];
+      final tagsData = extendedProps['tags'];
+      if (tagsData != null) {
+        if (tagsData is List) {
+          // List<dynamic>型の場合
+          tags = tagsData.map((tag) => tag.toString().trim()).where((tag) => tag.isNotEmpty).toList();
+        } else if (tagsData is String) {
+          // String型の場合
+          final tagsStr = tagsData.trim();
+          if (tagsStr.isNotEmpty) {
+            tags = tagsStr.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+          }
+        }
+      }
+      
+      // サブタスク情報（拡張プロパティから直接取得）
+      bool hasSubTasks = false;
+      int completedSubTasksCount = 0;
+      int totalSubTasksCount = 0;
+      
+      // 新しい形式のサブタスク情報を取得
+      final hasSubTasksStr = extendedProps['hasSubTasks'] ?? '';
+      final completedSubTasksStr = extendedProps['completedSubTasksCount'] ?? '';
+      final totalSubTasksStr = extendedProps['totalSubTasksCount'] ?? '';
+      
+      print('サブタスク情報取得:');
+      print('  hasSubTasksStr: "$hasSubTasksStr"');
+      print('  completedSubTasksStr: "$completedSubTasksStr"');
+      print('  totalSubTasksStr: "$totalSubTasksStr"');
+      
+      if (hasSubTasksStr.isNotEmpty) {
+        hasSubTasks = hasSubTasksStr.toLowerCase() == 'true';
+        completedSubTasksCount = int.tryParse(completedSubTasksStr) ?? 0;
+        totalSubTasksCount = int.tryParse(totalSubTasksStr) ?? 0;
+        print('新形式サブタスク情報: hasSubTasks=$hasSubTasks, 完了=$completedSubTasksCount, 総数=$totalSubTasksCount');
+      } else {
+        // 旧形式のサブタスク情報を取得
+        final subtasksStr = extendedProps['subtasks'] ?? '';
+        print('旧形式サブタスク情報: "$subtasksStr"');
+        if (subtasksStr.isNotEmpty) {
+          try {
+            final List<dynamic> subtasksJson = json.decode(subtasksStr);
+            totalSubTasksCount = subtasksJson.length;
+            completedSubTasksCount = subtasksJson.where((subtask) => subtask['isCompleted'] == true).length;
+            hasSubTasks = totalSubTasksCount > 0;
+            print('旧形式サブタスク解析成功: hasSubTasks=$hasSubTasks, 完了=$completedSubTasksCount, 総数=$totalSubTasksCount');
+          } catch (e) {
+            // JSON解析に失敗した場合はデフォルト値を使用
+            hasSubTasks = false;
+            completedSubTasksCount = 0;
+            totalSubTasksCount = 0;
+            print('旧形式サブタスク解析失敗: $e');
+          }
+        } else {
+          print('サブタスク情報なし');
+        }
+      }
+      
+      // 元のタスクIDを復元（UUIDベースのマッチングのため）
+      final originalTaskId = extendedProps['taskId'] ?? const Uuid().v4();
+      
+      // サブタスクの詳細データを復元
+      if (hasSubTasks && totalSubTasksCount > 0) {
+        final subtasksStr = extendedProps['subtasks'] ?? '';
+        if (subtasksStr.isNotEmpty) {
+          try {
+            final List<dynamic> subtasksJson = json.decode(subtasksStr);
+            print('サブタスク詳細を復元: ${subtasksJson.length}件');
+            // サブタスクをHiveに保存
+            _restoreSubTasks(originalTaskId, subtasksJson);
+          } catch (e) {
+            print('サブタスク詳細復元エラー: $e');
+          }
+        }
+      }
+      
+      // メモ（拡張プロパティまたは説明から取得）
+      String notes = extendedProps['notes'] ?? '';
+      
+      // 説明フィールドからもメモ情報を抽出
+      if (notes.isEmpty && description.isNotEmpty) {
+        // 説明にメモ情報が含まれている場合
+        final lines = description.split('\n');
+        final memoLines = <String>[];
+        
+        for (final line in lines) {
+          final trimmedLine = line.trim();
+          if (trimmedLine.startsWith('メモ:') || 
+              trimmedLine.startsWith('Memo:') ||
+              trimmedLine.startsWith('Notes:') ||
+              trimmedLine.startsWith('備考:')) {
+            memoLines.add(trimmedLine.substring(trimmedLine.indexOf(':') + 1).trim());
+          } else if (trimmedLine.startsWith('- ') || 
+                     trimmedLine.startsWith('• ') ||
+                     trimmedLine.startsWith('・')) {
+            // 箇条書きの場合はメモとして扱う
+            memoLines.add(trimmedLine.substring(2).trim());
+          }
+        }
+        
+        if (memoLines.isNotEmpty) {
+          notes = memoLines.join('\n');
+        } else {
+          // 説明が短い場合はメモとして扱う
+          notes = description;
+        }
+      }
+      
+      // 説明フィールドからサブタスク情報を抽出（拡張プロパティにない場合）
+      if (!hasSubTasks && description.isNotEmpty) {
+        final lines = description.split('\n');
+        int subtaskCount = 0;
+        int completedCount = 0;
+        
+        for (final line in lines) {
+          final trimmedLine = line.trim();
+          if (trimmedLine.contains('[x]') || trimmedLine.contains('[✓]') || trimmedLine.contains('✅')) {
+            // 完了したサブタスク
+            subtaskCount++;
+            completedCount++;
+          } else if (trimmedLine.contains('[]') || trimmedLine.contains('[ ]') || 
+                     trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ') || 
+                     trimmedLine.startsWith('・')) {
+            // 未完了のサブタスク
+            subtaskCount++;
+          }
+        }
+        
+        if (subtaskCount > 0) {
+          hasSubTasks = true;
+          totalSubTasksCount = subtaskCount;
+          completedSubTasksCount = completedCount;
+        }
+      }
+      
+      // 説明フィールドから優先度を抽出（拡張プロパティにない場合）
+      if (priority == TaskPriority.medium && description.isNotEmpty) {
+        final descLower = description.toLowerCase();
+        if (descLower.contains('緊急') || descLower.contains('urgent')) {
+          priority = TaskPriority.urgent;
+        } else if (descLower.contains('高') || descLower.contains('high')) {
+          priority = TaskPriority.high;
+        } else if (descLower.contains('低') || descLower.contains('low')) {
+          priority = TaskPriority.low;
+        }
+      }
+      
+      // 説明フィールドから見積もり時間を抽出（拡張プロパティにない場合）
+      if (estimatedMinutes == null && description.isNotEmpty) {
+        final timeMatch = RegExp(r'(\d+)\s*分|(\d+)\s*min|(\d+)\s*時間|(\d+)\s*hour').firstMatch(description);
+        if (timeMatch != null) {
+          final minutes = int.tryParse(timeMatch.group(1) ?? timeMatch.group(2) ?? '');
+          final hours = int.tryParse(timeMatch.group(3) ?? timeMatch.group(4) ?? '');
+          if (minutes != null) {
+            estimatedMinutes = minutes;
+          } else if (hours != null) {
+            estimatedMinutes = hours * 60;
+          }
+        }
+      }
       
       // 場所情報を依頼先として設定
       final location = event['location'] ?? '';
@@ -1948,28 +2636,132 @@ class GoogleCalendarService {
         }
       }
       
-      return TaskItem(
-        id: const Uuid().v4(),
+      // 作成日時を取得（可能であれば）
+      DateTime? createdAt;
+      if (event['created'] != null) {
+        try {
+          createdAt = DateTime.parse(event['created']).toLocal();
+        } catch (e) {
+          createdAt = DateTime.now();
+        }
+      } else {
+        createdAt = DateTime.now();
+      }
+      
+      final task = TaskItem(
+        id: originalTaskId,
         title: summary,
         description: description.isNotEmpty ? description : null,
+        notes: notes.isNotEmpty ? notes : null,
         dueDate: dueDate,
         reminderTime: reminderTime,
-        priority: TaskPriority.medium,
+        priority: priority,
         status: status,
-        tags: [],
-        createdAt: DateTime.now(),
+        tags: tags,
+        createdAt: createdAt,
         estimatedMinutes: estimatedMinutes,
         assignedTo: attendeeEmail ?? assignedTo,
         isRecurring: isRecurring,
         recurringPattern: recurringPattern,
         source: 'google_calendar',
         externalId: event['id'],
+        hasSubTasks: hasSubTasks,
+        completedSubTasksCount: completedSubTasksCount,
+        totalSubTasksCount: totalSubTasksCount,
       );
+      
+      // デバッグ情報を出力
+      if (kDebugMode) {
+        print('=== タスク変換完了 ===');
+        print('タイトル: ${task.title}');
+        print('UUID復元: $originalTaskId (元のID: ${extendedProps['taskId']})');
+        print('優先度: ${task.priority}');
+        print('ステータス: ${task.status}');
+        print('タグ: ${task.tags}');
+        print('サブタスク: ${task.totalSubTasksCount}/${task.completedSubTasksCount}');
+        print('サブタスク詳細: hasSubTasks=${task.hasSubTasks}, 完了=${task.completedSubTasksCount}, 総数=${task.totalSubTasksCount}');
+        print('見積もり時間: ${task.estimatedMinutes}分');
+        print('メモ: ${task.notes}');
+        print('依頼先: ${task.assignedTo}');
+        print('ソース: ${task.source}');
+        print('外部ID: ${task.externalId}');
+        print('拡張プロパティ情報:');
+        extendedProps.forEach((key, value) {
+          print('  $key: $value');
+        });
+        print('ステータス解析: statusStr="$statusStr" → ${task.status}');
+        print('==================');
+      }
+      
+      return task;
     } catch (e) {
       ErrorHandler.logError('イベント→タスク変換', e);
       return null;
     }
   }
+  
+  /// 優先度を文字列から解析
+  TaskPriority _parsePriority(String priorityStr) {
+    switch (priorityStr.toLowerCase()) {
+      case 'urgent':
+      case '緊急':
+        return TaskPriority.urgent;
+      case 'high':
+      case '高':
+        return TaskPriority.high;
+      case 'medium':
+      case '中':
+        return TaskPriority.medium;
+      case 'low':
+      case '低':
+        return TaskPriority.low;
+      default:
+        return TaskPriority.medium;
+    }
+  }
+
+  /// ステータスを文字列から解析
+  TaskStatus _parseStatus(String statusStr) {
+    // TaskStatus.enumValue 形式の文字列を処理
+    if (statusStr.contains('TaskStatus.')) {
+      final statusPart = statusStr.split('TaskStatus.')[1];
+      switch (statusPart.toLowerCase()) {
+        case 'pending':
+        case '未着手':
+          return TaskStatus.pending;
+        case 'inprogress':
+        case '進行中':
+          return TaskStatus.inProgress;
+        case 'completed':
+        case '完了':
+          return TaskStatus.completed;
+        case 'cancelled':
+        case 'キャンセル':
+          return TaskStatus.cancelled;
+        default:
+          return TaskStatus.pending;
+      }
+    }
+    
+    // 直接的な文字列を処理
+    switch (statusStr.toLowerCase()) {
+      case 'pending':
+      case '未着手':
+        return TaskStatus.pending;
+      case 'inprogress':
+      case '進行中':
+        return TaskStatus.inProgress;
+      case 'completed':
+      case '完了':
+        return TaskStatus.completed;
+      case 'cancelled':
+      case 'キャンセル':
+        return TaskStatus.cancelled;
+      default:
+        return TaskStatus.pending;
+    }
+  }
+  
 
   /// 色IDからステータスを推定
   TaskStatus _getStatusFromColorId(String colorId) {
@@ -2091,8 +2883,22 @@ class GoogleCalendarService {
   /// 全てのGoogle Calendarイベントを取得
   Future<List<Map<String, dynamic>>> _getAllCalendarEvents() async {
     try {
+      final now = DateTime.now();
+      final startTime = now.subtract(const Duration(days: 30));
+      final endTime = now.add(const Duration(days: 365));
+      
+      final url = Uri.parse('$_calendarApiUrl/calendars/primary/events').replace(
+        queryParameters: {
+          'timeMin': startTime.toUtc().toIso8601String(),
+          'timeMax': endTime.toUtc().toIso8601String(),
+          'maxResults': '2500', // 最大取得数を増加
+          'singleEvents': 'true',
+          'orderBy': 'startTime',
+        },
+      );
+      
       final response = await http.get(
-        Uri.parse('$_calendarApiUrl/calendars/primary/events'),
+        url,
         headers: {
           'Authorization': 'Bearer $_accessToken',
         },
@@ -2103,12 +2909,82 @@ class GoogleCalendarService {
         final events = data['items'] as List?;
         
         if (events != null) {
-          // アプリから作成されたイベントのみをフィルタリング
-          return events.where((event) {
-            final extendedProperties = event['extendedProperties']?['private'];
-            return extendedProperties != null && extendedProperties['taskId'] != null;
-          }).cast<Map<String, dynamic>>().toList();
+          // 全てのイベントを取得（アプリから作成されたものも、Google Calendarに元々あったものも含む）
+          print('Google Calendarから取得した全イベント数: ${events.length}');
+          
+          // デバッグ情報を出力
+          int holidayCount = 0;
+          int validEventCount = 0;
+          int businessEventCount = 0;
+          
+          print('=== イベント詳細分析 ===');
+          for (int i = 0; i < events.length && i < 30; i++) {
+            final event = events[i] as Map<String, dynamic>;
+            final summary = event['summary'] ?? '無題';
+            final description = event['description'] ?? '';
+            final start = event['start'];
+            String dateStr = '日付なし';
+            bool isAllDay = false;
+            
+            if (start != null) {
+              if (start['dateTime'] != null) {
+                dateStr = DateTime.parse(start['dateTime']).toLocal().toString();
+                isAllDay = false;
+              } else if (start['date'] != null) {
+                dateStr = DateTime.parse(start['date']).toString();
+                isAllDay = true;
+              }
+            }
+            
+            final extendedProps = event['extendedProperties']?['private'];
+            final isAppCreated = extendedProps?['taskId'] != null;
+            
+            // ビジネスイベントチェック
+            final isBusiness = _isBusinessEvent(summary, description);
+            if (isBusiness) businessEventCount++;
+            
+            // 祝日チェック
+            final isHoliday = _isHolidayEvent(summary, description, event);
+            if (isHoliday) {
+              holidayCount++;
+            } else {
+              validEventCount++;
+            }
+            
+            print('  イベント${i + 1}: "$summary"');
+            print('    日付: $dateStr (終日: $isAllDay)');
+            print('    説明: ${description.length > 50 ? description.substring(0, 50) + "..." : description}');
+            print('    アプリ作成: $isAppCreated, ビジネス: $isBusiness, 祝日: $isHoliday');
+            
+            // 拡張プロパティの詳細を出力
+            final eventExtendedProps = event['extendedProperties']?['private'] ?? {};
+            if (eventExtendedProps.isNotEmpty) {
+              print('    拡張プロパティ:');
+              eventExtendedProps.forEach((key, value) {
+                print('      $key: $value');
+              });
+            } else {
+              print('    拡張プロパティ: なし');
+            }
+            
+            // 色IDとステータス情報
+            final colorId = event['colorId'] ?? '1';
+            print('    色ID: $colorId');
+            
+            print('');
+          }
+          
+          print('=== 統計サマリー ===');
+          print('総イベント数: ${events.length}件');
+          print('祝日除外: ${holidayCount}件');
+          print('ビジネスイベント: ${businessEventCount}件');
+          print('有効イベント: ${validEventCount}件');
+          print('==================');
+          
+          return events.cast<Map<String, dynamic>>().toList();
         }
+      } else {
+        print('Google Calendar イベント取得エラー: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       ErrorHandler.logError('Google Calendarイベント取得', e);
@@ -2117,22 +2993,23 @@ class GoogleCalendarService {
     return [];
   }
 
-  /// 単一タスクの同期
+  /// 単一タスクの同期（UUIDベースの厳密なマッチング）
   Future<String> _syncSingleTask(TaskItem task, List<Map<String, dynamic>> existingEvents) async {
     try {
-      // 既存のイベントを検索（複数の方法でチェック）
+      // 既存のイベントを検索（UUIDベースの厳密なマッチング）
       Map<String, dynamic>? existingEvent;
       
-      // 1. タスクIDで検索
+      // 1. タスクID（UUID）で厳密に検索
       for (final event in existingEvents) {
         final taskId = event['extendedProperties']?['private']?['taskId'];
         if (taskId == task.id) {
           existingEvent = event;
+          print('UUID一致で既存イベント発見: ${task.title} (ID: $taskId)');
           break;
         }
       }
       
-      // 2. タイトルと日付で重複チェック（タスクIDが見つからない場合）
+      // 2. UUIDが見つからない場合のみ、タイトルベースのフォールバック検索
       if (existingEvent == null) {
         for (final event in existingEvents) {
           final eventTitle = event['summary'] ?? '';
@@ -2147,36 +3024,40 @@ class GoogleCalendarService {
             }
           }
           
-          // タイトルが同じで、日付が近い場合は重複とみなす
-          if (eventTitle == task.title && eventStartTime != null) {
-            if (task.dueDate != null) {
-              final dateDiff = eventStartTime.difference(task.dueDate!).abs();
-              if (dateDiff.inDays <= 1) {
-                existingEvent = event;
-                print('重複イベントを発見（タイトル・日付一致）: $eventTitle');
-                break;
-              }
-            }
-            if (task.reminderTime != null) {
-              final timeDiff = eventStartTime.difference(task.reminderTime!).abs();
-              if (timeDiff.inDays <= 1) {
-                existingEvent = event;
-                print('重複イベントを発見（タイトル・時間一致）: $eventTitle');
-                break;
-              }
+          // タイトルが完全一致し、日付が同じ場合のみ重複とみなす
+          if (eventTitle == task.title && eventStartTime != null && task.dueDate != null) {
+            final taskDate = DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
+            final eventDate = DateTime(eventStartTime.year, eventStartTime.month, eventStartTime.day);
+            
+            if (taskDate.isAtSameMomentAs(eventDate)) {
+              existingEvent = event;
+              print('タイトル・日付一致で既存イベント発見: $eventTitle');
+              break;
             }
           }
         }
       }
 
       if (existingEvent != null) {
-        // 既存イベントの更新
+        // 既存イベントの更新（UUIDを確実に保持）
         final success = await updateCalendarEvent(task, existingEvent['id']);
-        return success ? 'updated' : 'skipped';
+        if (success) {
+          print('既存イベント更新成功: ${task.title}');
+          return 'updated';
+        } else {
+          print('既存イベント更新失敗: ${task.title}');
+          return 'skipped';
+        }
       } else {
         // 新規イベントの作成
         final result = await createCalendarEvent(task);
-        return result.success ? 'created' : 'skipped';
+        if (result.success) {
+          print('新規イベント作成成功: ${task.title}');
+          return 'created';
+        } else {
+          print('新規イベント作成失敗: ${task.title}');
+          return 'skipped';
+        }
       }
     } catch (e) {
       ErrorHandler.logError('単一タスク同期', e);
