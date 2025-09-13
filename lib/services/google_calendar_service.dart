@@ -38,6 +38,9 @@ class GoogleCalendarService {
   String? _refreshToken;
   DateTime? _tokenExpiry;
   bool _isInitialized = false;
+
+  /// コンストラクタ
+  GoogleCalendarService();
   
   /// 認証ファイルのパスを取得（ユーザーディレクトリ優先）
   Future<String> _getCredentialsPath() async {
