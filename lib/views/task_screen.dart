@@ -924,6 +924,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       color: _isSelectionMode && isSelected 
         ? Theme.of(context).primaryColor.withValues(alpha: 0.1) 
         : null,
+      elevation: 3, // 影を強化
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+      ),
       child: _buildTaskListTile(task, isSelected),
     );
   }
@@ -999,6 +1007,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                               text: task.title,
                               highlight: highlightText,
                               style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface, // 文字色を明示的に指定
                                 decoration: task.status == TaskStatus.completed 
                                     ? TextDecoration.lineThrough 
                                     : null,

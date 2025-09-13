@@ -111,6 +111,7 @@ class HighlightedText extends StatelessWidget {
         style: style?.copyWith(
           backgroundColor: Colors.red.withValues(alpha: 0.75),
           fontWeight: FontWeight.bold,
+          color: style?.color ?? Colors.black, // 元の文字色を保持
         ),
       ));
       currentIndex = match.end;

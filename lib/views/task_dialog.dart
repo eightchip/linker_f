@@ -492,6 +492,21 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           width: 500,
           constraints: const BoxConstraints(maxHeight: 800),
           padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
