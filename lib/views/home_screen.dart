@@ -14,7 +14,6 @@ import '../models/task_item.dart';
 import 'group_card.dart';
 import 'settings_screen.dart';
 import 'task_screen.dart';
-import 'calendar_screen.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -330,11 +329,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _showTaskScreen(context);
       }
       
-      // Ctrl+3: カレンダー画面に移動
-      else if (key == LogicalKeyboardKey.digit3 && isControlPressed) {
-        print('✅ Ctrl+3 検出: カレンダー画面に移動');
-        _showCalendarScreen(context);
-      }
       
       // Ctrl+G: 次の検索結果
       else if (key == LogicalKeyboardKey.keyG && isControlPressed) {
@@ -4319,15 +4313,6 @@ extension UsageStatisticsExtension on _HomeScreenState {
     _showTaskScreen(context);
   }
   
-  // カレンダー画面を表示
-  void _showCalendarScreen(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CalendarScreen(),
-      ),
-    );
-  }
   
   // 次の検索結果に移動
   void _navigateToNextSearchResult() {

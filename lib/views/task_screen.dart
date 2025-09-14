@@ -21,7 +21,6 @@ import '../viewmodels/sync_status_provider.dart';
 import 'settings_screen.dart';
 import '../utils/csv_export.dart';
 import 'task_dialog.dart';
-import 'calendar_screen.dart';
 import 'sub_task_dialog.dart';
 import '../widgets/mail_badge.dart';
 import '../services/mail_service.dart';
@@ -354,16 +353,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(
-                value: 'calendar',
-                child: Row(
-                  children: [
-                    Icon(Icons.calendar_month, color: Colors.blue),
-                    SizedBox(width: 8),
-                    Text('カレンダー表示'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
                 value: 'export',
                 child: Row(
                   children: [
@@ -453,13 +442,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           Expanded(
             flex: 3,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildStatItem('総タスク', statistics['total'] ?? 0, Icons.list),
+                const SizedBox(width: 4),
                 _buildStatItem('未着手', statistics['pending'] ?? 0, Icons.radio_button_unchecked, Colors.grey),
+                const SizedBox(width: 4),
                 _buildStatItem('完了', statistics['completed'] ?? 0, Icons.check_circle, Colors.green),
+                const SizedBox(width: 4),
                 _buildStatItem('進行中', statistics['inProgress'] ?? 0, Icons.pending, Colors.blue),
+                const SizedBox(width: 4),
                 _buildStatItem('期限切れ', statistics['overdue'] ?? 0, Icons.warning, Colors.red),
+                const SizedBox(width: 4),
                 _buildStatItem('今日', statistics['today'] ?? 0, Icons.today, Colors.orange),
               ],
             ),
@@ -473,6 +467,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 const SizedBox(width: 16),
                 // 検索バー
                 Expanded(
+                  flex: 3, // 検索バーを広く
                   child: Builder(
                     builder: (context) {
                       print('TextField構築時: _searchFocusNode.hasFocus=${_searchFocusNode.hasFocus}');
@@ -513,6 +508,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 
                 // 優先度フィルター
                 Expanded(
+                  flex: 1, // 優先度ドロップダウンを狭く
                   child: DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
@@ -1327,9 +1323,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       case 'bulk_select':
         _toggleSelectionMode();
         break;
-      case 'calendar':
-        _showCalendarScreen();
-        break;
       case 'export':
         _exportTasksToCsv();
         break;
@@ -1488,15 +1481,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     );
   }
 
-  // カレンダー画面を表示
-  void _showCalendarScreen() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CalendarScreen(),
-      ),
-    );
-  }
 
   /// 関連リンクボタンを構築
   Widget _buildRelatedLinksButton(TaskItem task) {
@@ -2006,17 +1990,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               Icon(Icons.checklist, color: Colors.blue, size: 20),
               SizedBox(width: 8),
               Text('一括選択モード'),
-            ],
-          ),
-        ),
-        // カレンダー表示
-        const PopupMenuItem(
-          value: 'calendar',
-          child: Row(
-            children: [
-              Icon(Icons.calendar_month, color: Colors.orange, size: 20),
-              SizedBox(width: 8),
-              Text('カレンダー表示'),
             ],
           ),
         ),

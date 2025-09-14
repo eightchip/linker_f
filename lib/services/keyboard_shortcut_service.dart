@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 import '../views/task_screen.dart';
-import '../views/calendar_screen.dart';
 
 /// キーボードショートカットサービス
 class KeyboardShortcutService {
@@ -257,15 +256,6 @@ class KeyboardShortcutService {
           context,
           MaterialPageRoute(
             builder: (context) => TaskScreen(),
-          ),
-        );
-        break;
-      case 2: // カレンダー画面
-        // CalendarScreenに移動
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CalendarScreen(),
           ),
         );
         break;
