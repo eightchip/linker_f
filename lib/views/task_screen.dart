@@ -26,6 +26,8 @@ import '../widgets/mail_badge.dart';
 import '../services/mail_service.dart';
 import '../models/sent_mail_log.dart';
 import '../services/keyboard_shortcut_service.dart';
+import '../widgets/unified_dialog.dart';
+import '../widgets/app_spacing.dart';
 
 class TaskScreen extends ConsumerStatefulWidget {
   const TaskScreen({super.key});
@@ -144,22 +146,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   Future<void> _deleteSelectedTasks() async {
     if (_selectedTaskIds.isEmpty) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('確認'),
-        content: Text('選択した${_selectedTaskIds.length}件のタスクを削除しますか？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('削除'),
-          ),
-        ],
-      ),
+    final confirmed = await UnifiedDialogHelper.showDeleteConfirmDialog(
+      context,
+      title: '確認',
+      message: '選択した${_selectedTaskIds.length}件のタスクを削除しますか？',
+      confirmText: '削除',
+      cancelText: 'キャンセル',
     );
 
     if (confirmed == true) {
@@ -445,15 +437,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildStatItem('総タスク', statistics['total'] ?? 0, Icons.list),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 _buildStatItem('未着手', statistics['pending'] ?? 0, Icons.radio_button_unchecked, Colors.grey),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 _buildStatItem('完了', statistics['completed'] ?? 0, Icons.check_circle, Colors.green),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 _buildStatItem('進行中', statistics['inProgress'] ?? 0, Icons.pending, Colors.blue),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 _buildStatItem('期限切れ', statistics['overdue'] ?? 0, Icons.warning, Colors.red),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 _buildStatItem('今日', statistics['today'] ?? 0, Icons.today, Colors.orange),
               ],
             ),
@@ -464,7 +456,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             flex: 2,
             child: Row(
               children: [
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.lg),
                 // 検索バー
                 Expanded(
                   flex: 3, // 検索バーを広く
@@ -478,7 +470,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                         textInputAction: TextInputAction.search,
                         decoration: const InputDecoration(
                           hintText: 'タスクを検索（タイトル・説明・メモ・タグ）...',
-                          prefixIcon: Icon(Icons.search, size: 18),
+                          prefixIcon: Icon(Icons.search, size: AppIconSizes.medium),
                           border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           isDense: true,
@@ -504,7 +496,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   ),
                 ),
                 
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 
                 // 優先度フィルター
                 Expanded(
@@ -535,11 +527,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   ),
                 ),
                 
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 
                 // フィルター表示/非表示ボタン
                 IconButton(
-                  icon: Icon(_showFilters ? Icons.expand_less : Icons.expand_more, size: 20),
+                  icon: Icon(_showFilters ? Icons.expand_less : Icons.expand_more, size: AppIconSizes.medium),
                   onPressed: () {
                     setState(() {
                       _showFilters = !_showFilters;
@@ -561,7 +553,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: color, size: 18),
+        Icon(icon, color: color, size: AppIconSizes.medium),
         const SizedBox(height: 2),
         Text(
           count.toString(),
@@ -733,7 +725,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           decoration: const InputDecoration(
@@ -805,7 +797,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           decoration: const InputDecoration(
@@ -877,7 +869,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           decoration: const InputDecoration(
@@ -1015,7 +1007,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                         ),
                       ),
                       if (task.isTeamTask) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -1031,7 +1023,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                                 size: 12,
                                 color: Colors.blue[700],
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppSpacing.xs),
                               Text(
                                 'チーム',
                                 style: TextStyle(
@@ -1060,7 +1052,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                           ),
                         ),
                         if (task.assignedTo != null) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           HighlightedText(
                             text: '${task.assignedTo}',
                             highlight: (_userTypedSearch && _searchQuery.isNotEmpty) ? _searchQuery : null,
@@ -1402,19 +1394,21 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   void _showDeleteConfirmation(TaskItem task) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('タスクを削除'),
+      builder: (context) => UnifiedDialog(
+        title: 'タスクを削除',
+        icon: Icons.delete_outline,
+        iconColor: Colors.red,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('「${task.title}」を削除しますか？'),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             const Text(
               '削除オプション:',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             const Text('• アプリのみ削除'),
             const Text('• アプリとGoogle Calendarから削除'),
           ],
@@ -1422,6 +1416,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: AppButtonStyles.text(context),
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
@@ -1438,8 +1433,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('アプリのみ', style: TextStyle(color: Colors.white)),
+            style: AppButtonStyles.warning(context),
+            child: const Text('アプリのみ'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1473,8 +1468,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('両方削除', style: TextStyle(color: Colors.white)),
+            style: AppButtonStyles.danger(context),
+            child: const Text('両方削除'),
           ),
         ],
       ),
@@ -1538,7 +1533,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             child: Row(
               children: [
                 const Icon(Icons.open_in_new, size: 16),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     _getLinkLabel(linkId) ?? 'リンク $i',
@@ -2049,16 +2044,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   void _showCopyTaskDialog(TaskItem task) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('タスクをコピー'),
+      builder: (context) => UnifiedDialog(
+        title: 'タスクをコピー',
+        icon: Icons.copy,
+        iconColor: Colors.blue,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('「${task.title}」をコピーしますか？'),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             const Text('コピーされる内容:'),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text('• タイトル: ${task.title} (コピー)'),
             if (task.dueDate != null)
               Text('• 期限日: ${DateFormat('yyyy/MM/dd').format(task.dueDate!)}'),
@@ -2070,13 +2067,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 text: '• タグ: ${task.tags.join(', ')}',
                 highlight: (_userTypedSearch && _searchQuery.isNotEmpty) ? _searchQuery : null,
               ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             const Text('※ 期限日とリマインダー時間は翌月の同日に自動調整されます'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: AppButtonStyles.text(context),
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
@@ -2104,8 +2102,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            child: const Text('コピー', style: TextStyle(color: Colors.white)),
+            style: AppButtonStyles.primary(context),
+            child: const Text('コピー'),
           ),
         ],
       ),
@@ -2171,14 +2169,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   void _showAuthErrorDialog(BuildContext context, String errorMessage) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Google Calendar認証エラー'),
+      builder: (context) => UnifiedDialog(
+        title: 'Google Calendar認証エラー',
+        icon: Icons.error_outline,
+        iconColor: Colors.red,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(errorMessage),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             const Text(
               'Google Calendarとの同期を行うには、設定画面でGoogle Calendarの認証を行う必要があります。',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -2188,6 +2188,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: AppButtonStyles.text(context),
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
@@ -2200,10 +2201,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
+            style: AppButtonStyles.primary(context),
             child: const Text('設定画面へ'),
           ),
         ],
@@ -2303,7 +2301,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                       size: 24,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2343,7 +2341,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Expanded(
                       child: ListView.builder(
                         itemCount: linkGroups.groups.length,
@@ -2394,7 +2392,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                               : theme.colorScheme.outline,
                           size: 18,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           '選択されたリンク: ${_selectedLinkIds.length}個',
                           style: TextStyle(

@@ -28,6 +28,7 @@ import 'package:pdfx/pdfx.dart' as pdfx;
 import '../utils/favicon_service.dart';
 import '../utils/usage_statistics.dart';
 import '../services/keyboard_shortcut_service.dart';
+import '../widgets/unified_dialog.dart';
 
 
 // ハイライト用のウィジェット
@@ -532,8 +533,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showShortcutHelp(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('キーボードショートカット'),
+      builder: (context) => UnifiedDialog(
+        title: 'キーボードショートカット',
+        icon: Icons.keyboard,
+        iconColor: Colors.blue,
+        width: 400,
+        height: 400,
         content: SizedBox(
           width: 400,
           height: 300,
@@ -553,14 +558,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Divider(),
               _ShortcutItem('Ctrl+Shift+L', 'グローバルタスク作成'),
               _ShortcutItem('Ctrl+2', 'タスク画面に移動'),
-              _ShortcutItem('Ctrl+3', 'カレンダー画面に移動'),
               _ShortcutItem('Ctrl+G', '次の検索結果に移動'),
             ],
           ),
         ),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context),
+            style: AppButtonStyles.primary(context),
             child: const Text('閉じる'),
           ),
         ],
@@ -1556,21 +1561,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _deleteGroup(String groupId) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Group'),
-        content: const Text('Are you sure you want to delete this group?'),
+      builder: (context) => UnifiedDialog(
+        title: 'グループを削除',
+        icon: Icons.delete_outline,
+        iconColor: Colors.red,
+        content: const Text('このグループを削除しますか？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            style: AppButtonStyles.text(context),
+            child: const Text('キャンセル'),
           ),
           ElevatedButton(
             onPressed: () {
               ref.read(linkViewModelProvider.notifier).deleteGroup(groupId);
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            style: AppButtonStyles.danger(context),
+            child: const Text('削除'),
           ),
         ],
       ),

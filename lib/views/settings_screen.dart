@@ -18,6 +18,7 @@ import 'package:intl/intl.dart';
 import '../services/backup_service.dart';
 import '../repositories/link_repository.dart';
 import '../services/google_calendar_service.dart';
+import '../widgets/unified_dialog.dart';
 import '../services/snackbar_service.dart';
 import '../services/gmail_api_service.dart';
 import '../viewmodels/sync_status_provider.dart';
@@ -2268,8 +2269,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showDuplicateCleanupDialog(WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('重複イベントクリーンアップ'),
+      builder: (context) => UnifiedDialog(
+        title: '重複イベントクリーンアップ',
+        icon: Icons.cleaning_services,
+        iconColor: Colors.orange,
         content: const Text(
           'Google Calendarの重複したイベントを検出・削除します。\n'
           '同じタイトルと日付のイベントが複数ある場合、古いものを削除します。\n\n'
@@ -2278,6 +2281,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: AppButtonStyles.text(context),
             child: const Text('キャンセル'),
           ),
           ElevatedButton(
@@ -2285,10 +2289,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.of(context).pop();
               await _performDuplicateCleanup(ref);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-            ),
+            style: AppButtonStyles.warning(context),
             child: const Text('クリーンアップ実行'),
           ),
         ],

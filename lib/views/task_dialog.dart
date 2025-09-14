@@ -12,6 +12,7 @@ import '../services/email_contact_service.dart';
 import '../services/email_monitor_service.dart';
 import '../models/email_contact.dart';
 import '../models/sent_mail_log.dart';
+import '../widgets/unified_dialog.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
@@ -818,20 +819,19 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                           onPressed: _showCompletionReportDialog,
                           icon: const Icon(Icons.report),
                           label: const Text('完了報告'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                        ),
+                          style: AppButtonStyles.primary(context),
                         ),
                         const SizedBox(width: 8),
                       ],
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
+                        style: AppButtonStyles.text(context),
                         child: const Text('キャンセル'),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: _saveTask,
+                        style: AppButtonStyles.primary(context),
                         child: Text(widget.task != null ? '更新' : '作成'),
                       ),
                     ],
@@ -1080,10 +1080,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 onPressed: _showTemplateDialog,
                 icon: const Icon(Icons.description),
                 label: const Text('テンプレート'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
-                ),
+                style: AppButtonStyles.secondary(context),
               ),
             ),
             const SizedBox(width: 8),
@@ -1092,10 +1089,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 onPressed: _showHistoryDialog,
                 icon: const Icon(Icons.history),
                 label: const Text('送信履歴'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                ),
+                style: AppButtonStyles.primary(context),
               ),
             ),
           ],
@@ -1112,10 +1106,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     onPressed: _sendMail,
                     icon: const Icon(Icons.send),
                     label: const Text('メーラーを起動'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
+                    style: AppButtonStyles.primary(context),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1124,10 +1115,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   onPressed: _sendTestMail,
                   icon: const Icon(Icons.bug_report),
                   label: const Text('テスト'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                  ),
+                  style: AppButtonStyles.warning(context),
                 ),
               ],
             ),
@@ -1139,10 +1127,14 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   onPressed: _pendingMailTo != null ? _markMailAsSent : null,
                   icon: const Icon(Icons.check_circle),
                   label: Text(_pendingMailTo != null ? 'メール送信完了' : 'メーラーを先に起動してください'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _pendingMailTo != null ? Colors.green : Colors.grey,
-                    foregroundColor: Colors.white,
-                  ),
+                  style: _pendingMailTo != null 
+                    ? AppButtonStyles.primary(context)
+                    : ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                 ),
               ),
               const SizedBox(height: 4),
