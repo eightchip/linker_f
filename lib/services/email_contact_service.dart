@@ -70,13 +70,6 @@ class EmailContactService {
     return sorted.take(limit).toList();
   }
 
-  /// 最近使った連絡先を取得（最終使用日順）
-  List<EmailContact> getRecentContacts({int limit = 10}) {
-    if (_box == null) return [];
-    final sorted = _box!.values.toList();
-    sorted.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
-    return sorted.take(limit).toList();
-  }
 
   /// 連絡先を追加
   Future<EmailContact> addContact({

@@ -7,14 +7,11 @@ import 'dart:async';
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../viewmodels/layout_settings_provider.dart';
-import '../viewmodels/task_viewmodel.dart';
 import '../models/group.dart';
 import '../models/link_item.dart';
-import '../models/task_item.dart';
 import 'group_card.dart';
 import 'settings_screen.dart';
 import 'task_screen.dart';
-import 'dart:convert';
 import 'dart:io';
 
 
@@ -22,12 +19,9 @@ import 'package:hive/hive.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdfx/pdfx.dart' as pdfx;
 import '../utils/favicon_service.dart';
-import '../utils/usage_statistics.dart';
-import '../services/keyboard_shortcut_service.dart';
 import '../widgets/unified_dialog.dart';
 
 
@@ -155,13 +149,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<Group> _orderedGroups = [];
   String? _centerMessage;
   final ScrollController _scrollController = ScrollController();
-  bool _showOnlyFavorites = false;
   bool _showSearchBar = true;
   String _searchQuery = '';
   LinkType? _selectedLinkTypeFilter; // リンクタイプフィルター
-  bool _showRecent = false;
   bool _tutorialShown = false;
-  bool _showFavoriteLinks = false;
   List<String> _availableTags = []; // 利用可能なタグ一覧
   // 表示モード管理
 
@@ -284,13 +275,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         print('✅ Ctrl+T 検出: タスク管理画面を開く');
         _showTaskScreen(context);
       }
-      // ④最近使ったリンク (Ctrl+R): 最近使ったリンクの表示切り替え
-      else if (key == LogicalKeyboardKey.keyR && isControlPressed) {
-        print('✅ Ctrl+R 検出: 最近使ったリンクの表示切り替え');
-        setState(() {
-          _showRecent = !_showRecent;
-        });
-      }
       // ⑤メモ一括編集 (Ctrl+E): メモ一括編集ダイアログを表示
       else if (key == LogicalKeyboardKey.keyE && isControlPressed) {
         print('✅ Ctrl+E 検出: メモ一括編集ダイアログを表示');
@@ -321,7 +305,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Ctrl+Shift+L: グローバルタスク作成
       else if (key == LogicalKeyboardKey.keyL && isControlPressed && isShiftPressed) {
         print('✅ Ctrl+Shift+L 検出: グローバルタスク作成');
-        _showGlobalTaskCreation(context);
+        _showTaskScreen(context);
       }
       
       // Ctrl+2: タスク画面に移動
@@ -334,7 +318,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Ctrl+G: 次の検索結果
       else if (key == LogicalKeyboardKey.keyG && isControlPressed) {
         print('✅ Ctrl+G 検出: 次の検索結果に移動');
-        _navigateToNextSearchResult();
+        // 検索結果のナビゲーション実装
       }
 
       // F1: ヘルプを表示
@@ -417,20 +401,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
-        // ④最近使ったリンク
-        PopupMenuItem(
-          value: 'recent_links',
-          child: Row(
-            children: [
-              Icon(Icons.push_pin, 
-                color: _showRecent ? Colors.amber : Colors.purple, 
-                size: 20
-              ),
-              SizedBox(width: 8),
-              Text(_showRecent ? '最近使った非表示' : '最近使ったリンクを表示 (Ctrl+R)'),
-            ],
-          ),
-        ),
         // ⑤メモ一括編集
         PopupMenuItem(
           value: 'memo_bulk_edit',
@@ -479,11 +449,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             break;
           case 'task':
             _showTaskScreen(context);
-            break;
-          case 'recent_links':
-            setState(() {
-              _showRecent = !_showRecent;
-            });
             break;
           case 'memo_bulk_edit':
             _showMemoBulkEditDialog(context);
@@ -547,7 +512,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _ShortcutItem('Ctrl+N', 'グループを追加'),
               _ShortcutItem('Ctrl+F', '検索バーを開く'),
               _ShortcutItem('Ctrl+T', 'タスク管理'),
-              _ShortcutItem('Ctrl+R', '最近使ったリンク'),
               _ShortcutItem('Ctrl+E', 'メモ一括編集'),
               _ShortcutItem('Ctrl+M', '3点ドットメニュー'),
               _ShortcutItem('→', '3点ドットメニュー'),
@@ -586,12 +550,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isDarkMode = ref.watch(darkModeProvider);
     final accentColor = ref.watch(accentColorProvider);
     
-    // お気に入りグループと通常グループを分離
-    final favoriteGroups = groups.where((g) => g.isFavorite).toList();
-    final normalGroups = groups.where((g) => !g.isFavorite).toList();
-    
-    // 検索・最近使ったフィルタ適用
-    List<Group> displayGroups = _showOnlyFavorites ? favoriteGroups : [...favoriteGroups, ...normalGroups];
+    // 検索フィルタ適用
+    List<Group> displayGroups = groups;
     
     // リンクタイプフィルター適用
     if (_selectedLinkTypeFilter != null) {
@@ -640,34 +600,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .cast<Group>()
         .toList();
     }
-    // 最近使ったグループ・リンク
-    final recentLinks = groups.expand((g) => g.items)
-      .where((l) => l.lastUsed != null)
-      .toList()
-      ..sort((a, b) => b.lastUsed!.compareTo(a.lastUsed!));
-    final recentGroups = groups
-      .where((g) => g.items.any((l) => l.lastUsed != null))
-      .toList()
-      ..sort((a, b) {
-        final aLast = a.items.map((l) => l.lastUsed ?? DateTime.fromMillisecondsSinceEpoch(0)).reduce((a, b) => a.isAfter(b) ? a : b);
-        final bLast = b.items.map((l) => l.lastUsed ?? DateTime.fromMillisecondsSinceEpoch(0)).reduce((a, b) => a.isAfter(b) ? a : b);
-        return bLast.compareTo(aLast);
-      });
     
-    // お気に入りリンク一覧抽出
-    final favoriteLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
-      .where((entry) => entry.value.isFavorite)
-      .toList();
     
     // デバッグ情報（開発時のみ）
     if (kDebugMode) {
       print('=== デバッグ情報 ===');
       print('総リンク数: ${groups.expand((g) => g.items).length}');
-      print('lastUsedが設定されているリンク数: ${recentLinks.length}');
-      print('最近使ったリンク: ${recentLinks.map((l) => '${l.label} (${l.lastUsed})').toList()}');
-      print('最近使ったグループ数: ${recentGroups.length}');
-      print('_showRecent: $_showRecent');
-      print('showRecent: ${_showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty)}');
       print('==================');
     }
     
@@ -715,11 +653,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         case 'task':
                           _showTaskScreen(context);
                           break;
-                        case 'recent_links':
-                          setState(() {
-                            _showRecent = !_showRecent;
-                          });
-                          break;
                         case 'memo_bulk_edit':
                           _showMemoBulkEditDialog(context);
                           break;
@@ -762,20 +695,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             Icon(Icons.task_alt, color: Colors.orange, size: 20),
                             SizedBox(width: 8),
                             Text('タスク管理 (Ctrl+T）'),
-                          ],
-                        ),
-                      ),
-                      // ④最近使ったリンク
-                      PopupMenuItem(
-                        value: 'recent_links',
-                        child: Row(
-                          children: [
-                            Icon(Icons.push_pin, 
-                              color: _showRecent ? Colors.amber : Colors.purple, 
-                              size: 20
-                            ),
-                            SizedBox(width: 8),
-                            Text(_showRecent ? '最近使った非表示' : '最近使ったリンクを表示 (Ctrl+R)'),
                           ],
                         ),
                       ),
@@ -936,15 +855,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   return RepaintBoundary(
                     child: Stack(
                       children: [
-                        _showFavoriteLinks
-                          ? _buildFavoriteLinksList(favoriteLinks)
-                          : isLoading
+                        isLoading
                               ? const Center(child: CircularProgressIndicator())
                               : error != null
                                   ? Center(child: Text('Error: $error'))
                                   : groups.isEmpty
                                       ? _buildEmptyState()
-                                      : _buildContent(displayGroups, recentLinks, recentGroups),
+                                      : _buildContent(displayGroups),
                         // 右下ジャンプボタン（アクセントカラー連動）
                         Positioned(
                           right: 24,
@@ -999,8 +916,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildContent(List<Group> displayGroups, List<LinkItem> recentLinks, List<Group> recentGroups) {
-    final showRecent = _showRecent && (recentLinks.isNotEmpty || recentGroups.isNotEmpty);
+  Widget _buildContent(List<Group> displayGroups) {
     final layoutSettings = ref.watch(layoutSettingsProvider);
     
     return RepaintBoundary(
@@ -1038,24 +954,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
         return Column(
               children: [
-            if (showRecent)
-                    Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('最近使ったリンク', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 8),
-                                                    Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: _getSortedRecentLinks(recentLinks, ref.watch(settingsProvider).recentItemsCount)
-                                .map((link) => _buildUsageBasedChip(link, ref))
-                                .toList(),
-                          ),
-                        ],
-                      ),
-                    ),
             Expanded(
               child: GridView.builder(
                 controller: _scrollController,
@@ -1337,25 +1235,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildFavoriteLinksList(List<MapEntry<Group, LinkItem>> favoriteLinks) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 64),
-      itemCount: favoriteLinks.length,
-      itemBuilder: (context, index) {
-        final entry = favoriteLinks[index];
-        return FavoriteLinkTile(
-          link: entry.value,
-          group: entry.key,
-          onUnfavorite: () => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(entry.key, entry.value),
-          onLaunch: () => ref.read(linkViewModelProvider.notifier).launchLink(entry.value),
-          isDark: isDark,
-          onShowMessage: _showCenterMessage,
-          ref: ref,
-        );
-      },
-    );
-  }
 
   IconData _iconForType(LinkType type) {
     switch (type) {
@@ -2100,230 +1979,6 @@ class ColorPaletteSelector extends StatelessWidget {
   }
 }
 
-// 追加: お気に入りリンク用タイルWidget
-class FavoriteLinkTile extends StatefulWidget {
-  final LinkItem link;
-  final Group group;
-  final VoidCallback onUnfavorite;
-  final Future<void> Function() onLaunch;
-  final bool isDark;
-  final void Function(String, {IconData? icon, Color? color}) onShowMessage;
-  final WidgetRef ref;
-  const FavoriteLinkTile({
-    super.key,
-    required this.link,
-    required this.group,
-    required this.onUnfavorite,
-    required this.onLaunch,
-    required this.isDark,
-    required this.onShowMessage,
-    required this.ref,
-  });
-  @override
-  State<FavoriteLinkTile> createState() => _FavoriteLinkTileState();
-}
-class _FavoriteLinkTileState extends State<FavoriteLinkTile> {
-  bool isHovered = false;
-  Color _getHighlightColor() {
-    final isFavorite = widget.link.isFavorite;
-    final hasMemo = widget.link.memo?.isNotEmpty == true;
-    if (isFavorite && hasMemo) return Colors.green.withValues(alpha: 0.18);
-    if (hasMemo) return Colors.blue.withValues(alpha: 0.18);
-    if (isFavorite) return Colors.amber.withValues(alpha: 0.18);
-    return widget.isDark ? const Color(0xFF23272F) : Colors.white;
-  }
-  @override
-  Widget build(BuildContext context) {
-    final isFavorite = widget.link.isFavorite;
-    final hasMemo = widget.link.memo?.isNotEmpty == true;
-    Color indicatorColor = Colors.transparent;
-    if (isFavorite && hasMemo) {
-      indicatorColor = Colors.green;
-    } else if (hasMemo) {
-      indicatorColor = Colors.blue;
-    } else if (isFavorite) {
-      indicatorColor = Colors.amber;
-    }
-    return MouseRegion(
-      onEnter: (_) => setState(() => isHovered = true),
-      onExit: (_) => setState(() => isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeInOutCubic,
-        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-        decoration: BoxDecoration(
-          color: widget.isDark ? const Color(0xFF23272F) : Colors.white,
-          border: Border.all(
-            color: widget.group.color != null ? Color(widget.group.color!) : Colors.blue,
-            width: isHovered ? 6 : 3,
-          ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            if (isHovered)
-              BoxShadow(
-                color: (widget.group.color != null ? Color(widget.group.color!) : Colors.amber).withValues(alpha: 0.5),
-                blurRadius: 24,
-                spreadRadius: 6,
-              ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // サイドバーインジケータ
-            Container(
-              width: 10,
-              height: 40,
-              decoration: BoxDecoration(
-                color: indicatorColor,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // メインテキスト＋サブテキスト
-            Expanded(
-      child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-                  Text(
-                    widget.link.label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: widget.isDark ? Colors.white : Colors.black,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (isHovered)
-                    ClipRect(
-                      child: Text(
-                        widget.link.path,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: widget.isDark ? Colors.white70 : Colors.black87,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            // アイコン群
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Tooltip(
-                      message: widget.link.memo?.isNotEmpty == true ? widget.link.memo! : 'メモ追加',
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.note_alt_outlined,
-                          color: widget.link.memo?.isNotEmpty == true ? Colors.orange : Colors.grey,
-                        ),
-                        tooltip: null, // Tooltipは外側で管理
-                        onPressed: () async {
-                          final controller = TextEditingController(text: widget.link.memo ?? '');
-                          final result = await showDialog<String>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('メモ編集'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  TextField(
-                                    controller: controller,
-                                    maxLines: 5,
-                                    decoration: const InputDecoration(
-                                      hintText: 'メモを入力...',
-                                      helperText: '空の場合はメモを削除します',
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '現在のメモ: ${widget.link.memo?.isNotEmpty == true ? widget.link.memo : "なし"}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('キャンセル'),
-                                ),
-                                if (widget.link.memo?.isNotEmpty == true)
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, ''), // 空文字列でメモ削除
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.red,
-                                    ),
-                                    child: const Text('削除'),
-                                  ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, controller.text.trim()),
-                                  child: const Text('保存'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (result != null) {
-                            // 空文字列の場合はセンチネル値を使用（メモ削除）
-                            final memoValue = result.trim().isEmpty ? LinkItem.nullSentinel : result.trim();
-                            
-                            final updated = widget.link.copyWith(memo: memoValue);
-                            await widget.ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
-                              groupId: widget.group.id,
-                              updated: updated,
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                    if (widget.link.memo?.isNotEmpty == true)
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: Colors.orange,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 1),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                // お気に入りアイコンを削除
-                // IconButton(
-                //   icon: Icon(
-                //     widget.link.isFavorite ? Icons.star : Icons.star_border,
-                //     color: widget.link.isFavorite ? Colors.amber : Colors.grey,
-                //   ),
-                //   tooltip: widget.link.isFavorite ? 'お気に入り解除' : 'お気に入り',
-                //   onPressed: () => widget.onUnfavorite(),
-                // ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  tooltip: 'Delete Link',
-                  onPressed: () => widget.onShowMessage('削除機能はここで実装', icon: Icons.delete),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // 追加: URLプレビューWidget
 class UrlPreviewWidget extends StatefulWidget {
@@ -4244,92 +3899,5 @@ class _ShortcutItem extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// 使用頻度統計機能のメソッド
-extension UsageStatisticsExtension on _HomeScreenState {
-  /// 使用頻度に基づいて最近使ったリンクをソート
-  List<LinkItem> _getSortedRecentLinks(List<LinkItem> links, int count) {
-    // 使用頻度スコアでソート（高い順）
-    final sortedLinks = List<LinkItem>.from(links);
-    sortedLinks.sort((a, b) {
-      final scoreA = UsageStatistics.calculateUsageScore(a);
-      final scoreB = UsageStatistics.calculateUsageScore(b);
-      return scoreB.compareTo(scoreA); // 降順（高い順）
-    });
-    
-    return sortedLinks.take(count).toList();
-  }
-  
-  /// 使用頻度に基づいたチップウィジェットを構築
-  Widget _buildUsageBasedChip(LinkItem link, WidgetRef ref) {
-    final usageLevel = UsageStatistics.getUsageLevel(link);
-    final usageColor = UsageStatistics.getUsageColor(link);
-    final usageBackgroundColor = UsageStatistics.getUsageBackgroundColor(link);
-    final usageIcon = UsageStatistics.getUsageIcon(link);
-    final usageDescription = UsageStatistics.getUsageDescription(link);
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: Color(usageBackgroundColor),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Color(usageColor),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(usageColor).withValues(alpha: 0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ActionChip(
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              link.label,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Color(usageColor),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              usageIcon,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-        avatar: Icon(
-          _iconForType(link.type),
-          size: 18,
-          color: Color(usageColor),
-        ),
-        backgroundColor: Colors.transparent,
-        onPressed: () => ref.read(linkViewModelProvider.notifier).launchLink(link),
-        tooltip: '${link.label}\n$usageDescription\n使用回数: ${link.useCount}回',
-      ),
-    );
-  }
-  
-  // グローバルタスク作成
-  void _showGlobalTaskCreation(BuildContext context) {
-    // タスク画面に移動してからタスク作成ダイアログを表示
-    _showTaskScreen(context);
-  }
-  
-  
-  // 次の検索結果に移動
-  void _navigateToNextSearchResult() {
-    // 検索結果のナビゲーション実装
-    // 現在は検索結果のインデックス管理が必要
-    if (kDebugMode) {
-      print('次の検索結果に移動');
-    }
   }
 }

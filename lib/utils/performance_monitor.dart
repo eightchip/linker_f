@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
-import 'performance_cache.dart';
 
 /// パフォーマンス監視サービス
 class PerformanceMonitor {
@@ -14,10 +13,6 @@ class PerformanceMonitor {
   final Queue<_PerformanceEvent> _events = Queue();
   final int _maxEvents = 1000;
   
-  // キャッシュ統計
-  int _cacheHits = 0;
-  int _cacheMisses = 0;
-  int _cacheSets = 0;
   
   // メモリ使用量
   int _memoryUsage = 0;
@@ -75,20 +70,6 @@ class PerformanceMonitor {
     }
   }
 
-  /// キャッシュヒットを記録
-  void recordCacheHit() {
-    _cacheHits++;
-  }
-
-  /// キャッシュミスを記録
-  void recordCacheMiss() {
-    _cacheMisses++;
-  }
-
-  /// キャッシュセットを記録
-  void recordCacheSet() {
-    _cacheSets++;
-  }
 
   /// メモリ使用量を更新
   void updateMemoryUsage(int bytes) {
@@ -141,10 +122,6 @@ class PerformanceMonitor {
   /// メトリクスを収集
   void _collectMetrics() {
     try {
-      // キャッシュ統計を収集
-      final cacheStats = PerformanceCache.getStats();
-      recordMetric('cache_size', cacheStats['size'].toDouble());
-      recordMetric('cache_max_size', cacheStats['maxSize'].toDouble());
       
       // メモリ使用量を収集
       recordMetric('memory_usage', _memoryUsage.toDouble(), unit: 'bytes');
@@ -168,7 +145,6 @@ class PerformanceMonitor {
     final report = PerformanceReport(
       metrics: Map.from(_metrics),
       events: List.from(_events),
-      cacheStats: _generateCacheStats(),
       memoryStats: _generateMemoryStats(),
       timestamp: DateTime.now(),
     );
@@ -176,19 +152,6 @@ class PerformanceMonitor {
     return report;
   }
 
-  /// キャッシュ統計を生成
-  _CacheStats _generateCacheStats() {
-    final totalRequests = _cacheHits + _cacheMisses;
-    final hitRate = totalRequests > 0 ? _cacheHits / totalRequests : 0.0;
-    
-    return _CacheStats(
-      hits: _cacheHits,
-      misses: _cacheMisses,
-      sets: _cacheSets,
-      totalRequests: totalRequests,
-      hitRate: hitRate,
-    );
-  }
 
   /// メモリ統計を生成
   _MemoryStats _generateMemoryStats() {
@@ -202,9 +165,6 @@ class PerformanceMonitor {
   void resetMetrics() {
     _metrics.clear();
     _events.clear();
-    _cacheHits = 0;
-    _cacheMisses = 0;
-    _cacheSets = 0;
     _memoryUsage = 0;
     _peakMemoryUsage = 0;
     
@@ -295,24 +255,6 @@ class _PerformanceEvent {
       '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}:${timestamp.second.toString().padLeft(2, '0')}';
 }
 
-/// キャッシュ統計
-class _CacheStats {
-  final int hits;
-  final int misses;
-  final int sets;
-  final int totalRequests;
-  final double hitRate;
-
-  _CacheStats({
-    required this.hits,
-    required this.misses,
-    required this.sets,
-    required this.totalRequests,
-    required this.hitRate,
-  });
-
-  String get formattedHitRate => '${(hitRate * 100).toStringAsFixed(1)}%';
-}
 
 /// メモリ統計
 class _MemoryStats {
@@ -338,14 +280,12 @@ class _MemoryStats {
 class PerformanceReport {
   final Map<String, _MetricData> metrics;
   final List<_PerformanceEvent> events;
-  final _CacheStats cacheStats;
   final _MemoryStats memoryStats;
   final DateTime timestamp;
 
   PerformanceReport({
     required this.metrics,
     required this.events,
-    required this.cacheStats,
     required this.memoryStats,
     required this.timestamp,
   });
@@ -368,13 +308,6 @@ class PerformanceReport {
         'timestamp': event.timestamp.toIso8601String(),
         'data': event.data,
       }).toList(),
-      'cacheStats': {
-        'hits': cacheStats.hits,
-        'misses': cacheStats.misses,
-        'sets': cacheStats.sets,
-        'totalRequests': cacheStats.totalRequests,
-        'hitRate': cacheStats.hitRate,
-      },
       'memoryStats': {
         'currentUsage': memoryStats.currentUsage,
         'peakUsage': memoryStats.peakUsage,
@@ -395,12 +328,6 @@ class PerformanceReport {
     }
     buffer.writeln();
     
-    buffer.writeln('--- キャッシュ統計 ---');
-    buffer.writeln('ヒット率: ${cacheStats.formattedHitRate}');
-    buffer.writeln('ヒット数: ${cacheStats.hits}');
-    buffer.writeln('ミス数: ${cacheStats.misses}');
-    buffer.writeln('セット数: ${cacheStats.sets}');
-    buffer.writeln();
     
     buffer.writeln('--- メモリ統計 ---');
     buffer.writeln('現在使用量: ${memoryStats.formattedCurrentUsage}');

@@ -33,9 +33,7 @@ class SettingsService {
   static const String _backupIntervalKey = 'backupInterval';
   static const String _showNotificationsKey = 'showNotifications';
   static const String _notificationSoundKey = 'notificationSound';
-  static const String _recentItemsCountKey = 'recentItemsCount';
   static const String _searchHistoryKey = 'searchHistory';
-  static const String _favoriteGroupsKey = 'favoriteGroups';
   static const String _lastBackupKey = 'lastBackup';
   static const String _versionKey = 'version';
   static const String _taskFilterStatusesKey = 'taskFilterStatuses';
@@ -63,7 +61,6 @@ class SettingsService {
   static const int _defaultBackupInterval = 7; // 日数
   static const bool _defaultShowNotifications = true;
   static const bool _defaultNotificationSound = true;
-  static const int _defaultRecentItemsCount = 10;
   static const int _currentVersion = 1;
   static const List<String> _defaultTaskFilterStatuses = ['all'];
   static const String _defaultTaskFilterPriority = 'all';
@@ -169,7 +166,6 @@ class SettingsService {
       await _defaultSettingsBox.put(_backupIntervalKey, _defaultBackupInterval);
       await _defaultSettingsBox.put(_showNotificationsKey, _defaultShowNotifications);
       await _defaultSettingsBox.put(_notificationSoundKey, _defaultNotificationSound);
-      await _defaultSettingsBox.put(_recentItemsCountKey, _defaultRecentItemsCount);
       await _defaultSettingsBox.put(_taskFilterStatusesKey, _defaultTaskFilterStatuses);
       await _defaultSettingsBox.put(_taskFilterPriorityKey, _defaultTaskFilterPriority);
       await _defaultSettingsBox.put(_taskSortOrdersKey, _defaultTaskSortOrders);
@@ -209,9 +205,6 @@ class SettingsService {
     }
     if (!_settingsBox.containsKey(_notificationSoundKey)) {
       await _settingsBox.put(_notificationSoundKey, _defaultNotificationSound);
-    }
-    if (!_settingsBox.containsKey(_recentItemsCountKey)) {
-      await _settingsBox.put(_recentItemsCountKey, _defaultRecentItemsCount);
     }
   }
 
@@ -300,11 +293,6 @@ class SettingsService {
 
   // ==================== UI設定 ====================
   
-  /// 最近使用したアイテム数
-  int get recentItemsCount => _settingsBox.get(_recentItemsCountKey, defaultValue: _defaultRecentItemsCount) as int;
-  Future<void> setRecentItemsCount(int value) async {
-    await _settingsBox.put(_recentItemsCountKey, value);
-  }
 
   /// 検索履歴
   List<String> get searchHistory {
@@ -336,30 +324,6 @@ class SettingsService {
     await _settingsBox.delete(_searchHistoryKey);
   }
 
-  /// お気に入りグループ
-  List<String> get favoriteGroups {
-    final groups = _settingsBox.get(_favoriteGroupsKey);
-    return groups != null ? List<String>.from(groups as List) : [];
-  }
-  Future<void> setFavoriteGroups(List<String> value) async {
-    await _settingsBox.put(_favoriteGroupsKey, value);
-  }
-
-  /// お気に入りグループに追加
-  Future<void> addFavoriteGroup(String groupId) async {
-    final groups = favoriteGroups;
-    if (!groups.contains(groupId)) {
-      groups.add(groupId);
-      await setFavoriteGroups(groups);
-    }
-  }
-
-  /// お気に入りグループから削除
-  Future<void> removeFavoriteGroup(String groupId) async {
-    final groups = favoriteGroups;
-    groups.remove(groupId);
-    await setFavoriteGroups(groups);
-  }
 
   // ==================== タスクフィルター設定 ====================
   

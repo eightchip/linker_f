@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../services/settings_service.dart';
 import '../services/notification_service.dart';
 import '../services/windows_notification_service.dart';
-import '../utils/performance_cache.dart';
 import '../viewmodels/layout_settings_provider.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../viewmodels/link_viewmodel.dart';
@@ -38,7 +38,6 @@ class SettingsState {
   final int backupInterval;
   final bool showNotifications;
   final bool notificationSound;
-  final int recentItemsCount;
   final bool isLoading;
   final String? error;
   final bool googleCalendarEnabled;
@@ -53,7 +52,6 @@ class SettingsState {
     this.backupInterval = 7,
     this.showNotifications = true,
     this.notificationSound = true,
-    this.recentItemsCount = 10,
     this.isLoading = false,
     this.error,
     this.googleCalendarEnabled = false,
@@ -69,7 +67,6 @@ class SettingsState {
     int? backupInterval,
     bool? showNotifications,
     bool? notificationSound,
-    int? recentItemsCount,
     bool? isLoading,
     String? error,
     bool? googleCalendarEnabled,
@@ -84,7 +81,6 @@ class SettingsState {
       backupInterval: backupInterval ?? this.backupInterval,
       showNotifications: showNotifications ?? this.showNotifications,
       notificationSound: notificationSound ?? this.notificationSound,
-      recentItemsCount: recentItemsCount ?? this.recentItemsCount,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       googleCalendarEnabled: googleCalendarEnabled ?? this.googleCalendarEnabled,
@@ -114,7 +110,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         backupInterval: _service.backupInterval,
         showNotifications: _service.showNotifications,
         notificationSound: _service.notificationSound,
-        recentItemsCount: _service.recentItemsCount,
         googleCalendarEnabled: _service.googleCalendarEnabled,
         googleCalendarSyncInterval: _service.googleCalendarSyncInterval,
         googleCalendarAutoSync: _service.googleCalendarAutoSync,
@@ -151,10 +146,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(notificationSound: value);
   }
 
-  Future<void> setRecentItemsCount(int value) async {
-    await _service.setRecentItemsCount(value);
-    state = state.copyWith(recentItemsCount: value);
-  }
 
   // Google Calendar関連のメソッド
   Future<void> setGoogleCalendarEnabled(bool value) async {
@@ -253,17 +244,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 800),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: _buildSettingsContent(
-                            context, 
-                            ref, 
-                            settingsState, 
-                            settingsNotifier, 
-                            layoutSettings,
-                            currentDarkMode,
-                            currentAccentColor,
-                            currentFontSize,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: _buildSettingsContent(
+                        context, 
+                        ref, 
+                        settingsState, 
+                        settingsNotifier, 
+                        layoutSettings,
+                        currentDarkMode,
+                        currentAccentColor,
+                        currentFontSize,
                           ),
                         ),
                       ),
@@ -307,12 +298,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ]),
         _buildMenuSection('連携', [
           _buildMenuItem(context, ref, 'Google Calendar', Icons.calendar_today, 'google_calendar'),
-          _buildMenuItem(context, ref, 'Gmail API', Icons.email, 'gmail_api'),
-          _buildMenuItem(context, ref, 'Outlook', Icons.business, 'outlook'),
+          _buildMenuItem(context, ref, 'Gmail API', FontAwesomeIcons.envelope, 'gmail_api'),
+          _buildMenuItem(context, ref, 'Outlook', FontAwesomeIcons.microsoft, 'outlook'),
         ], subtitle: '各連携機能には個別の設定が必要です'),
-        _buildMenuSection('パフォーマンス', [
-          _buildMenuItem(context, ref, 'キャッシュ管理', Icons.memory, 'cache'),
-        ]),
         _buildMenuSection('その他', [
           _buildMenuItem(context, ref, 'リセット', Icons.restore, 'reset'),
         ]),
@@ -330,10 +318,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title,
+            title,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
@@ -381,8 +369,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           return const Color(0xFFFF5722); // ディープオレンジ
         case 'google_calendar':
           return const Color(0xFF3F51B5); // インディゴ
-        case 'cache':
-          return const Color(0xFF795548); // ブラウン
+        case 'gmail_api':
+          return const Color(0xFFEA4335); // Gmail赤
+        case 'outlook':
+          return const Color(0xFF0078D4); // Outlook青
         case 'reset':
           return const Color(0xFFF44336); // 赤
         default:
@@ -400,7 +390,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         border: isSelected ? Border.all(color: iconColor.withOpacity(0.3), width: 1) : null,
       ),
       child: ListTile(
-        leading: Icon(
+        leading: icon.fontFamily == 'FontAwesome'
+          ? FaIcon(
+              icon,
+              color: isSelected ? iconColor : iconColor.withOpacity(0.7),
+              size: 20,
+            )
+          : Icon(
           icon, 
           color: isSelected ? iconColor : iconColor.withOpacity(0.7),
           size: 20,
@@ -460,8 +456,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           return _buildGmailApiSection(settingsState, settingsNotifier);
         case 'outlook':
           return _buildOutlookSection();
-      case 'cache':
-        return _buildCacheSection(ref);
       case 'reset':
         return _buildResetSection(context, settingsNotifier, ref);
       default:
@@ -610,19 +604,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 const SizedBox(height: 16),
                 
-                _buildSettingItemWithDescription(
-                  title: '最近使用したアイテム数',
-                  value: '${settingsState.recentItemsCount}個',
-                  description: 'ホーム画面に表示される「最近使ったリンク」の数を設定します。使用頻度の高いリンクが優先表示され、色分けで視認性が向上します。',
-                  slider: Slider(
-                    value: settingsState.recentItemsCount.toDouble(),
-                    min: 5,
-                    max: 50,
-                    divisions: 9,
-                    label: '${settingsState.recentItemsCount}個',
-                    onChanged: (value) => settingsNotifier.setRecentItemsCount(value.round()),
-                  ),
-                ),
                 
                 const SizedBox(height: 16),
                 
@@ -694,6 +675,91 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: const Text('画面サイズに応じて自動調整'),
                   value: layoutSettings.autoAdjustLayout,
                   onChanged: (value) => notifier.toggleAutoAdjustLayout(),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 自動レイアウトの説明
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            layoutSettings.autoAdjustLayout ? Icons.auto_awesome : Icons.settings,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            layoutSettings.autoAdjustLayout ? '自動レイアウト有効' : '手動レイアウト設定',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      if (layoutSettings.autoAdjustLayout) ...[
+                        Text(
+                          '自動レイアウトが有効です。画面サイズに応じて最適な列数が自動で決定されます。',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildLayoutInfo(
+                          '大画面（1920px以上）',
+                          '6列表示',
+                          'デスクトップモニターに最適',
+                        ),
+                        _buildLayoutInfo(
+                          '中画面（1200-1919px）',
+                          '4列表示',
+                          'ノートPCやタブレットに最適',
+                        ),
+                        _buildLayoutInfo(
+                          '小画面（800-1199px）',
+                          '3列表示',
+                          '小さな画面に最適',
+                        ),
+                        _buildLayoutInfo(
+                          '最小画面（800px未満）',
+                          '2列表示',
+                          'モバイル表示に最適',
+                        ),
+                      ] else ...[
+                        Text(
+                          '手動レイアウト設定が有効です。固定の列数で表示されます。',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildLayoutInfo(
+                          '固定列数',
+                          '${layoutSettings.defaultCrossAxisCount}列表示',
+                          'すべての画面サイズで同じ列数',
+                        ),
+                        _buildLayoutInfo(
+                          '使用場面',
+                          '特定の表示を維持したい場合',
+                          '一貫したレイアウトが必要な場合',
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
                 
                 if (!layoutSettings.autoAdjustLayout) ...[
@@ -921,8 +987,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   runSpacing: 16,
                   children: [
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.backup),
-                      label: const Text('手動バックアップ実行'),
+                        icon: const Icon(Icons.backup),
+                        label: const Text('手動バックアップ実行'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
@@ -955,8 +1021,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.folder_open),
-                      label: const Text('バックアップフォルダを開く'),
+                        icon: const Icon(Icons.folder_open),
+                        label: const Text('バックアップフォルダを開く'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
@@ -984,7 +1050,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             );
                           }
                         },
-                      ),
+                    ),
                   ],
                 ),
                 
@@ -1050,20 +1116,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 500),
             child: Card(
-              child: Padding(
+          child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Column(
+            child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
+              children: [
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.upload, size: 24),
                         label: const Text('データをエクスポート', style: TextStyle(fontSize: 16)),
-                        onPressed: () => _exportData(context, ref),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
+                  onPressed: () => _exportData(context, ref),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1079,10 +1145,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.download, size: 24),
                         label: const Text('データをインポート', style: TextStyle(fontSize: 16)),
-                        onPressed: () => _importData(context, ref),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
+                  onPressed: () => _importData(context, ref),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1107,19 +1173,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'エクスポート/インポート機能',
+                  'エクスポート/インポート機能',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                               color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                ),
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            '• メモあり/なしを選択可能\n'
-                            '• アプリの現在のディレクトリに保存\n'
-                            '• 設定情報も含めてエクスポート\n'
-                            '• ファイルダイアログでインポート',
+                  '• メモあり/なしを選択可能\n'
+                  '• アプリの現在のディレクトリに保存\n'
+                  '• 設定情報も含めてエクスポート\n'
+                  '• ファイルダイアログでインポート',
                             style: TextStyle(
                               fontSize: 14, 
                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -1203,10 +1269,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                'ファイル名: $fileName',
+              'ファイル名: $fileName',
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'monospace',
+                fontSize: 12,
+                fontFamily: 'monospace',
                 ),
               ),
             ),
@@ -1219,10 +1285,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                '保存場所: ${currentDir.path}',
+              '保存場所: ${currentDir.path}',
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'monospace',
+                fontSize: 12,
+                fontFamily: 'monospace',
                 ),
               ),
             ),
@@ -1296,7 +1362,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         SnackBarService.showSuccess(
           context,
           hasTasks 
-            ? 'リンクとタスクをインポートしました: ${file.path}'
+              ? 'リンクとタスクをインポートしました: ${file.path}'
             : 'リンクをインポートしました: ${file.path}',
         );
       }
@@ -1415,44 +1481,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildCacheSection(WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('キャッシュ管理', Icons.memory),
-        const SizedBox(height: 16),
-        
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Consumer(
-                  builder: (context, ref, child) {
-                    final stats = PerformanceCache.getStats();
-                    return Column(
-                      children: [
-                        _buildStatRow('キャッシュサイズ', '${stats['size']}/${stats['maxSize']}'),
-                        _buildStatRow('キャッシュキー数', '${stats['keys'].length}'),
-                        const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            PerformanceCache.clear();
-                            ref.invalidate(settingsProvider);
-                          },
-                          child: const Text('キャッシュをクリア'),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildResetSection(BuildContext context, SettingsNotifier notifier, WidgetRef ref) {
     return Column(
@@ -1461,35 +1489,113 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildSectionHeader('リセット', Icons.restore),
         const SizedBox(height: 16),
         
-        Card(
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
             child: Column(
+                  mainAxisSize: MainAxisSize.min,
               children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.restore),
-                  label: const Text('設定をデフォルトにリセット'),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.restore, size: 24),
+                        label: const Text('設定をデフォルトにリセット', style: TextStyle(fontSize: 16)),
+                        onPressed: () => _showResetConfirmationDialog(context, notifier),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.grid_view, size: 24),
+                        label: const Text('レイアウト設定をリセット', style: TextStyle(fontSize: 16)),
+                          onPressed: () {
+                          ref.read(layoutSettingsProvider.notifier).resetToDefaults();
+                        },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                          backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
-                  ),
-                  onPressed: () => _showResetConfirmationDialog(context, notifier),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.grid_view),
-                  label: const Text('レイアウト設定をリセット'),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.help_outline, size: 24),
+                        label: const Text('リセット機能の詳細', style: TextStyle(fontSize: 16)),
+                        onPressed: () => _openResetDetailsGuide(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                          backgroundColor: Colors.grey,
                     foregroundColor: Colors.white,
-                  ),
-                  onPressed: () {
-                    ref.read(layoutSettingsProvider.notifier).resetToDefaults();
-                  },
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // 説明
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'リセット機能',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '• 設定リセット: テーマ、通知、連携設定など\n'
+                            '• レイアウトリセット: グリッドサイズ、カード設定など\n'
+                            '• データは保持: リンク、タスク、メモは削除されません\n'
+                            '• 詳細は「リセット機能の詳細」ボタンで確認',
+                            style: TextStyle(
+                              fontSize: 14, 
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -1498,9 +1604,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
+    // FontAwesomeアイコンの場合はFaIconを使用
+    Widget iconWidget;
+    if (icon.fontFamily == 'FontAwesome') {
+      iconWidget = FaIcon(icon, size: 24);
+    } else {
+      iconWidget = Icon(icon, size: 24);
+    }
+    
     return Row(
       children: [
-        Icon(icon, size: 24),
+        iconWidget,
         const SizedBox(width: 8),
         Text(
           title,
@@ -1510,14 +1624,239 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildStatRow(String label, String value) {
+
+  void _openResetDetailsGuide(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => UnifiedDialog(
+        title: 'リセット機能の詳細',
+        icon: Icons.help_outline,
+        iconColor: Colors.grey,
+        width: 700,
+        height: 800,
+        content: SingleChildScrollView(
+            child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              const Text(
+                'リセット機能の詳細説明:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+                const SizedBox(height: 16),
+                
+            _buildGuideStep('1', '設定をデフォルトにリセット'),
+            const Text('以下の設定が初期値に戻ります:'),
+            const SizedBox(height: 8),
+            _buildResetItem('テーマ設定', 'ダークモード: OFF、アクセントカラー: デフォルト'),
+            _buildResetItem('通知設定', '通知: ON、通知音: ON'),
+            _buildResetItem('連携設定', 'Google Calendar: OFF、Gmail API: OFF、Outlook: OFF'),
+            _buildResetItem('バックアップ設定', '自動バックアップ: ON、間隔: 7日'),
+            const SizedBox(height: 12),
+            
+            _buildGuideStep('2', 'レイアウト設定をリセット'),
+            const Text('以下のレイアウト設定が初期値に戻ります:'),
+            const SizedBox(height: 8),
+            _buildResetItem('グリッド設定', 'カラム数: 4、間隔: デフォルト'),
+            _buildResetItem('カード設定', 'サイズ: デフォルト、影: デフォルト'),
+            _buildResetItem('アイテム設定', 'フォントサイズ: デフォルト、アイコンサイズ: デフォルト'),
+            const SizedBox(height: 12),
+            
+            _buildGuideStep('3', 'データの保持について'),
+            const Text('以下のデータは削除されません:'),
+            const SizedBox(height: 8),
+            _buildResetItem('リンクデータ', 'すべてのリンク、グループ、メモが保持されます'),
+            _buildResetItem('タスクデータ', 'すべてのタスク、サブタスク、進捗が保持されます'),
+            _buildResetItem('検索履歴', '検索履歴は保持されます'),
+            const SizedBox(height: 12),
+            
+            _buildGuideStep('4', 'リセット後の動作'),
+            const Text('リセット後は以下のようになります:'),
+            const SizedBox(height: 8),
+            _buildResetItem('アプリ再起動', '設定変更を反映するため再起動が推奨されます'),
+            _buildResetItem('設定確認', '設定画面で新しい設定値を確認できます'),
+            _buildResetItem('データ復元', 'エクスポート/インポート機能でデータを復元可能'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: AppButtonStyles.text(context),
+            child: const Text('閉じる'),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildResetItem(String title, String description) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.only(left: 16, top: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                children: [
+                  TextSpan(
+                    text: '$title: ',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(text: description),
+                ],
+              ),
+          ),
+        ),
+      ],
+      ),
+    );
+  }
+
+  Widget _buildPowerShellFileInfo(String fileName, String title, String description, String location, String usage) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+          Row(
+            children: [
+              Icon(Icons.code, color: Colors.blue, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                fileName,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.blue.shade700,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+        Text(
+          title,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(Icons.folder, color: Colors.grey, size: 12),
+              const SizedBox(width: 4),
+              Text(
+                '格納場所: $location',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(Icons.play_arrow, color: Colors.green, size: 12),
+              const SizedBox(width: 4),
+              Text(
+                '実行方法: $usage',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.green.shade600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLayoutInfo(String title, String value, String description) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            margin: const EdgeInsets.only(top: 6, right: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1833,35 +2172,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       ),
                       ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            final googleCalendarService = GoogleCalendarService();
-                            final success = await googleCalendarService.startOAuth2Auth();
-                            if (success) {
-                              SnackBarService.showSuccess(
-                                context,
-                                'OAuth2認証が完了しました',
-                              );
-                            } else {
-                              SnackBarService.showError(
-                                context,
-                                '認証の開始に失敗しました',
-                              );
-                            }
-                          } catch (e) {
+                      onPressed: () async {
+                        try {
+                          final googleCalendarService = GoogleCalendarService();
+                          final success = await googleCalendarService.startOAuth2Auth();
+                          if (success) {
+                            SnackBarService.showSuccess(
+                              context,
+                              'OAuth2認証が完了しました',
+                            );
+                          } else {
                             SnackBarService.showError(
                               context,
-                              'エラー: $e',
+                              '認証の開始に失敗しました',
                             );
                           }
-                        },
-                        icon: const Icon(Icons.login),
-                        label: const Text('OAuth2認証を開始'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
+                        } catch (e) {
+                          SnackBarService.showError(
+                            context,
+                            'エラー: $e',
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.login),
+                      label: const Text('OAuth2認証を開始'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
                       ),
+                    ),
                     ],
                   ),
                   
@@ -2507,7 +2846,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Gmail API連携', Icons.email),
+        _buildSectionHeader('Gmail API連携', FontAwesomeIcons.envelope),
         const SizedBox(height: 16),
         
         Card(
@@ -2530,57 +2869,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // Gmail API説明（トグルがオンの時のみ表示）
                 if (settingsState.gmailApiEnabled) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.info, color: Theme.of(context).colorScheme.primary, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Gmail API連携について',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Gmail APIを使用して、メール受信時の自動タスク生成と完了報告機能を利用できます。\n'
-                          '自分宛てのメールで「依頼」「タスク」「お願い」などのキーワードが含まれている場合、自動でタスクとして登録されます。',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                  const SizedBox(height: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                            Icon(Icons.info, color: Theme.of(context).colorScheme.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Gmail API連携について',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Gmail APIを使用して、メール受信時の自動タスク生成と完了報告機能を利用できます。\n'
+                        '自分宛てのメールで「依頼」「タスク」「お願い」などのキーワードが含まれている場合、自動でタスクとして登録されます。',
+                        style: TextStyle(
+                          fontSize: 14,
+                            color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 ],
                 
                 // アクセストークン設定（トグルがオンの時のみ表示）
                 if (settingsState.gmailApiEnabled) ...[
-                  _buildAccessTokenSection(),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // テスト機能
-                  _buildTestSection(),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // 設定情報
-                  _buildGmailApiInfo(),
+                _buildAccessTokenSection(),
+                
+                const SizedBox(height: 16),
+                
+                // テスト機能
+                _buildTestSection(),
+                
+                const SizedBox(height: 16),
+                
+                // 設定情報
+                _buildGmailApiInfo(),
                 ],
               ],
             ),
@@ -2642,21 +2981,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               runSpacing: 8,
               children: [
                 ElevatedButton.icon(
-                  onPressed: _openGmailApiSetupGuide,
-                  icon: const Icon(Icons.help_outline),
-                  label: const Text('設定方法を確認'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
+                    onPressed: _openGmailApiSetupGuide,
+                    icon: const Icon(Icons.help_outline),
+                    label: const Text('設定方法を確認'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
-                ),
                 ElevatedButton.icon(
-                  onPressed: _testGmailConnection,
-                  icon: const Icon(Icons.wifi_protected_setup),
-                  label: const Text('接続テスト'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    onPressed: _testGmailConnection,
+                    icon: const Icon(Icons.wifi_protected_setup),
+                    label: const Text('接続テスト'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
                   ),
                 ),
               ],
@@ -2672,7 +3011,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Outlook連携', Icons.business),
+        _buildSectionHeader('Outlook連携', FontAwesomeIcons.microsoft),
         const SizedBox(height: 16),
         
         Card(
@@ -2710,6 +3049,113 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'Outlook APIを使用して、メール受信時の自動タスク生成機能を利用できます。\n会社PCでのみ利用可能です。',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // PowerShellファイルの詳細説明
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.description, color: Theme.of(context).colorScheme.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'PowerShellファイルの詳細',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      _buildPowerShellFileInfo(
+                        'company_outlook_test.ps1',
+                        'Outlook接続テスト',
+                        'Outlookアプリケーションとの接続をテストします',
+                        'C:\\Apps\\',
+                        '手動実行',
+                      ),
+                      
+                      _buildPowerShellFileInfo(
+                        'company_task_search.ps1',
+                        'タスク関連メール検索',
+                        '件名・本文からタスク関連メールを検索し、タスク情報を抽出します',
+                        'C:\\Apps\\',
+                        '手動実行',
+                      ),
+                      
+                      _buildPowerShellFileInfo(
+                        'compose_mail.ps1',
+                        'メール作成支援',
+                        'タスクから返信メールを作成する際の支援機能',
+                        'C:\\Apps\\',
+                        '手動実行',
+                      ),
+                      
+                      _buildPowerShellFileInfo(
+                        'find_sent.ps1',
+                        '送信メール検索',
+                        '送信済みメールの検索・確認機能',
+                        'C:\\Apps\\',
+                        '手動実行',
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.warning, color: Colors.orange, size: 16),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '重要な注意事項',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '• 管理者権限は不要（ユーザーレベルで実行可能）\n'
+                              '• すべてのファイルは C:\\Apps\\ に配置してください\n'
+                              '• ファイル名は正確に一致させる必要があります\n'
+                              '• 実行ポリシーが制限されている場合は手動で許可が必要です\n'
+                              '• 会社PCのセキュリティポリシーにより動作しない場合があります',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade700,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -2807,14 +3253,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           runSpacing: 8,
           children: [
             ElevatedButton.icon(
-              onPressed: _testGmailSearch,
-              icon: const Icon(Icons.search),
-              label: const Text('メール検索テスト'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
+                onPressed: _testGmailSearch,
+                icon: const Icon(Icons.search),
+                label: const Text('メール検索テスト'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
               ),
-            ),
             ElevatedButton.icon(
               onPressed: _generateTasksFromGmail,
               icon: const Icon(Icons.add_task),
@@ -2825,12 +3271,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             ElevatedButton.icon(
-              onPressed: _sendTestCompletionReport,
-              icon: const Icon(Icons.send),
-              label: const Text('完了報告テスト'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
+                onPressed: _sendTestCompletionReport,
+                icon: const Icon(Icons.send),
+                label: const Text('完了報告テスト'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  foregroundColor: Colors.white,
               ),
             ),
           ],
@@ -2882,7 +3328,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: 'Gmail API設定ガイド',
         icon: Icons.help_outline,
         iconColor: Colors.orange,
-        width: 600,
+        width: 700,
         height: 700,
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2997,8 +3443,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: 'Google Calendar設定ガイド',
         icon: Icons.calendar_today,
         iconColor: Colors.blue,
-        width: 600,
-        height: 700,
+        width: 700,
+        height: 800,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3016,17 +3462,92 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildGuideStep('3', 'Google Calendar APIを有効化'),
             const Text('「APIとサービス」→「ライブラリ」→「Google Calendar API」を検索して有効化'),
             const SizedBox(height: 12),
-            _buildGuideStep('4', 'サービスアカウントを作成'),
-            const Text('「APIとサービス」→「認証情報」→「認証情報を作成」→「サービスアカウント」'),
+            _buildGuideStep('4', 'OAuth2クライアントIDを作成'),
+            const Text('「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuth2クライアントID」→「デスクトップアプリケーション」'),
             const SizedBox(height: 12),
             _buildGuideStep('5', '認証情報ファイルをダウンロード'),
-            const Text('作成したサービスアカウントの「キー」タブからJSONファイルをダウンロード'),
+            const Text('作成したOAuth2クライアントIDの「ダウンロード」ボタンからJSONファイルをダウンロード'),
             const SizedBox(height: 12),
             _buildGuideStep('6', 'ファイルをアプリフォルダに配置'),
-            const Text('ダウンロードしたJSONファイルを「google_calendar_credentials.json」としてアプリフォルダに配置'),
+            const Text('ダウンロードしたJSONファイルを「oauth2_credentials.json」としてアプリフォルダに配置'),
             const SizedBox(height: 12),
             _buildGuideStep('7', 'OAuth2認証を実行'),
             const Text('アプリの「OAuth2認証を開始」ボタンをクリックして認証を完了'),
+            const SizedBox(height: 12),
+            
+            // トークンファイルの説明
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info, color: Colors.blue, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        '自動生成されるファイル',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'OAuth2認証完了後、アプリが自動的に「google_calendar_tokens.json」ファイルを生成します。',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'このファイルには以下の情報が含まれます：',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '• access_token: Google Calendar APIへのアクセス権限',
+                          style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
+                        ),
+                        Text(
+                          '• refresh_token: アクセストークンの更新用',
+                          style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
+                        ),
+                        Text(
+                          '• expires_at: トークンの有効期限',
+                          style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '※ このファイルは手動で編集する必要はありません。',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.blue.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [

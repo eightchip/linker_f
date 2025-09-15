@@ -132,10 +132,6 @@ class _VoiceControlWidgetState extends State<VoiceControlWidget>
         return '${command.target}を検索します';
       case VoiceCommandType.navigation:
         switch (command.target) {
-          case 'recent':
-            return '最近使ったリンクを表示します';
-          case 'favorites':
-            return 'お気に入りリンクを表示します';
           case 'settings':
             return '設定画面を開きます';
           default:
