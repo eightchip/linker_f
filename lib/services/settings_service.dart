@@ -48,6 +48,7 @@ class SettingsService {
   static const String _googleCalendarAutoSyncKey = 'googleCalendarAutoSync';
   static const String _googleCalendarBidirectionalSyncKey = 'googleCalendarBidirectionalSync';
   static const String _googleCalendarShowCompletedTasksKey = 'googleCalendarShowCompletedTasks';
+  static const String _gmailApiEnabledKey = 'gmailApiEnabled';
   static const String _gmailApiAccessTokenKey = 'gmailApiAccessToken';
 
   // デフォルト値
@@ -72,6 +73,7 @@ class SettingsService {
   static const bool _defaultGoogleCalendarAutoSync = false;
   static const bool _defaultGoogleCalendarBidirectionalSync = false;
   static const bool _defaultGoogleCalendarShowCompletedTasks = true;
+  static const bool _defaultGmailApiEnabled = false;
 
   /// 初期化（リトライ機能付き）
   Future<void> initialize() async {
@@ -559,5 +561,17 @@ class SettingsService {
     } else {
       await _settingsBox.delete(_gmailApiAccessTokenKey);
     }
+  }
+
+  // Gmail API関連の設定
+  
+  /// Gmail API連携が有効かどうか
+  bool get gmailApiEnabled {
+    return _settingsBox.get(_gmailApiEnabledKey, defaultValue: _defaultGmailApiEnabled);
+  }
+  
+  /// Gmail API連携の有効/無効を設定
+  Future<void> setGmailApiEnabled(bool value) async {
+    await _settingsBox.put(_gmailApiEnabledKey, value);
   }
 }

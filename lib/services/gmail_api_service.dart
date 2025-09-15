@@ -10,6 +10,11 @@ class GmailApiService {
   static const String _gmailApiBaseUrl = 'https://gmail.googleapis.com/gmail/v1';
   String? _accessToken;
   
+  // シングルトンインスタンス
+  static final GmailApiService _instance = GmailApiService._internal();
+  factory GmailApiService() => _instance;
+  GmailApiService._internal();
+  
   /// アクセストークンを設定
   void setAccessToken(String token) {
     _accessToken = token;
@@ -17,6 +22,38 @@ class GmailApiService {
   
   /// アクセストークンが設定されているかチェック
   bool get hasAccessToken => _accessToken != null && _accessToken!.isNotEmpty;
+  
+  /// Gmail API接続をテスト
+  Future<bool> testConnection(String accessToken) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_gmailApiBaseUrl/users/me/profile'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        // 接続テスト成功時にアクセストークンを設定
+        _accessToken = accessToken;
+        if (kDebugMode) {
+          print('Gmail API: 接続テスト成功、アクセストークンを設定しました');
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          print('Gmail API接続テスト失敗: ${response.statusCode} - ${response.body}');
+        }
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Gmail API接続テストエラー: $e');
+      }
+      return false;
+    }
+  }
   
   /// Gmailでタスク割り当てメールを検索
   Future<List<EmailTaskAssignment>> searchTaskAssignmentEmails() async {
@@ -29,13 +66,43 @@ class GmailApiService {
     
     try {
       // 過去24時間のメールを検索
-      final query = 'in:inbox newer_than:1d subject:(依頼 OR タスク OR お願い OR 業務 OR 作業 OR 手伝い)';
+      final queries = [
+        // 基本的な検索（すべてのメール）
+        'in:inbox newer_than:1d',
+        // 件名での検索
+        'in:inbox newer_than:1d subject:(依頼 OR タスク OR お願い OR 業務 OR 作業 OR 手伝い)',
+        // 本文での検索
+        'in:inbox newer_than:1d (依頼 OR タスク OR お願い OR 業務 OR 作業 OR 手伝い)',
+        // より具体的な検索
+        'in:inbox newer_than:1d "業務依頼"',
+        'in:inbox newer_than:1d "タスク"',
+        'in:inbox newer_than:1d "依頼"',
+        // テスト用の簡単な検索
+        'in:inbox newer_than:1d from:eightandchip@gmail.com',
+        'in:inbox newer_than:1d subject:業務依頼',
+      ];
       
-      // メールIDを取得
-      final emailIds = await _searchEmails(query);
-      if (emailIds.isEmpty) {
+      // 複数のクエリで検索
+      final allEmailIds = <String>{};
+      for (final query in queries) {
+        if (kDebugMode) {
+          print('Gmail API: 検索クエリ実行中: $query');
+        }
+        final emailIds = await _searchEmails(query);
+        if (kDebugMode) {
+          print('Gmail API: クエリ結果: ${emailIds.length}件のメールが見つかりました');
+        }
+        allEmailIds.addAll(emailIds);
+      }
+      
+      if (allEmailIds.isEmpty) {
+        if (kDebugMode) {
+          print('Gmail API: 検索条件に一致するメールが見つかりませんでした');
+        }
         return [];
       }
+      
+      final emailIds = allEmailIds.toList();
       
       // 各メールの詳細を取得
       final assignments = <EmailTaskAssignment>[];
@@ -59,6 +126,10 @@ class GmailApiService {
   Future<List<String>> _searchEmails(String query) async {
     final url = Uri.parse('$_gmailApiBaseUrl/users/me/messages?q=${Uri.encodeComponent(query)}');
     
+    if (kDebugMode) {
+      print('Gmail API: 検索URL: $url');
+    }
+    
     final response = await http.get(
       url,
       headers: {
@@ -67,10 +138,23 @@ class GmailApiService {
       },
     );
     
+    if (kDebugMode) {
+      print('Gmail API: 検索レスポンス: ${response.statusCode}');
+    }
+    
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final messages = data['messages'] as List? ?? [];
-      return messages.map((msg) => msg['id'] as String).toList();
+      final emailIds = messages.map((msg) => msg['id'] as String).toList();
+      
+      if (kDebugMode) {
+        print('Gmail API: 検索結果: ${emailIds.length}件のメールIDを取得');
+        if (emailIds.isNotEmpty) {
+          print('Gmail API: 最初のメールID: ${emailIds.first}');
+        }
+      }
+      
+      return emailIds;
     } else {
       if (kDebugMode) {
         print('Gmail API 検索レスポンスエラー: ${response.statusCode} - ${response.body}');
@@ -383,6 +467,36 @@ $notes
         print('Gmail API: 完了報告メール送信エラー: $e');
       }
       return false;
+    }
+  }
+  
+  /// Gmailで検索したメールから自動的にタスクを生成
+  Future<List<EmailTaskAssignment>> generateTasksFromEmails() async {
+    if (!hasAccessToken) {
+      if (kDebugMode) {
+        print('Gmail API: アクセストークンが設定されていません');
+      }
+      return [];
+    }
+    
+    try {
+      if (kDebugMode) {
+        print('Gmail API: メールからタスクを自動生成開始');
+      }
+      
+      // タスク割り当てメールを検索
+      final assignments = await searchTaskAssignmentEmails();
+      
+      if (kDebugMode) {
+        print('Gmail API: ${assignments.length}件のタスク割り当てメールを発見');
+      }
+      
+      return assignments;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Gmail API 自動タスク生成エラー: $e');
+      }
+      return [];
     }
   }
   

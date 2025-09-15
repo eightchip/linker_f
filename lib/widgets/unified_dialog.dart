@@ -25,9 +25,14 @@ class UnifiedDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: width,
-        height: height,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: width ?? 500,
+          maxHeight: height ?? 600,
+        ),
+        child: Container(
+          width: width,
+          height: height,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
@@ -94,6 +99,7 @@ class UnifiedDialog extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

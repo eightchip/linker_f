@@ -1988,7 +1988,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               minLines: 1,
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: isDark ? Colors.black : Colors.white,
+                                fillColor: Theme.of(context).colorScheme.surface,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   borderSide: BorderSide(
@@ -1999,7 +1999,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 contentPadding: const EdgeInsets.all(10),
                               ),
                               style: TextStyle(
-                                color: isDark ? Colors.white : Colors.black87,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 14,
                               ),
                             ),
@@ -2084,7 +2084,9 @@ class ColorPaletteSelector extends StatelessWidget {
               color: displayColor,
               shape: BoxShape.circle,
               border: Border.all(
-                color: selectedColor == color.value ? Colors.black : Colors.transparent,
+                color: selectedColor == color.value 
+                  ? (isDark ? Colors.white : Colors.black) 
+                  : Colors.transparent,
                 width: 2,
               ),
               boxShadow: isDark

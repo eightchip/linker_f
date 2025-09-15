@@ -21,6 +21,7 @@ import '../services/google_calendar_service.dart';
 import '../widgets/unified_dialog.dart';
 import '../services/snackbar_service.dart';
 import '../services/gmail_api_service.dart';
+import '../services/outlook_service.dart';
 import '../viewmodels/sync_status_provider.dart';
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {
@@ -45,6 +46,7 @@ class SettingsState {
   final bool googleCalendarAutoSync;
   final bool googleCalendarBidirectionalSync;
   final bool googleCalendarShowCompletedTasks;
+  final bool gmailApiEnabled;
 
   SettingsState({
     this.autoBackup = true,
@@ -59,6 +61,7 @@ class SettingsState {
     this.googleCalendarAutoSync = false,
     this.googleCalendarBidirectionalSync = false,
     this.googleCalendarShowCompletedTasks = true,
+    this.gmailApiEnabled = false,
   });
 
   SettingsState copyWith({
@@ -74,6 +77,7 @@ class SettingsState {
     bool? googleCalendarAutoSync,
     bool? googleCalendarBidirectionalSync,
     bool? googleCalendarShowCompletedTasks,
+    bool? gmailApiEnabled,
   }) {
     return SettingsState(
       autoBackup: autoBackup ?? this.autoBackup,
@@ -88,6 +92,7 @@ class SettingsState {
       googleCalendarAutoSync: googleCalendarAutoSync ?? this.googleCalendarAutoSync,
       googleCalendarBidirectionalSync: googleCalendarBidirectionalSync ?? this.googleCalendarBidirectionalSync,
       googleCalendarShowCompletedTasks: googleCalendarShowCompletedTasks ?? this.googleCalendarShowCompletedTasks,
+      gmailApiEnabled: gmailApiEnabled ?? this.gmailApiEnabled,
     );
   }
 }
@@ -115,6 +120,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         googleCalendarAutoSync: _service.googleCalendarAutoSync,
         googleCalendarBidirectionalSync: _service.googleCalendarBidirectionalSync,
         googleCalendarShowCompletedTasks: _service.googleCalendarShowCompletedTasks,
+        gmailApiEnabled: _service.gmailApiEnabled,
         isLoading: false,
       );
     } catch (e) {
@@ -176,6 +182,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(googleCalendarShowCompletedTasks: value);
   }
 
+  Future<void> updateGmailApiEnabled(bool value) async {
+    await _service.setGmailApiEnabled(value);
+    state = state.copyWith(gmailApiEnabled: value);
+  }
+
   Future<void> resetToDefaults() async {
     await _service.resetToDefaults();
     await _loadSettings();
@@ -229,7 +240,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     width: 250,
                     decoration: BoxDecoration(
                       border: Border(
-                        right: BorderSide(color: Colors.grey.shade300),
+                        right: BorderSide(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                        ),
                       ),
                     ),
                     child: _buildSettingsMenu(context, ref),
@@ -237,17 +250,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   // 右側: 設定内容
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: _buildSettingsContent(
-                        context, 
-                        ref, 
-                        settingsState, 
-                        settingsNotifier, 
-                        layoutSettings,
-                        currentDarkMode,
-                        currentAccentColor,
-                        currentFontSize,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 800),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: _buildSettingsContent(
+                            context, 
+                            ref, 
+                            settingsState, 
+                            settingsNotifier, 
+                            layoutSettings,
+                            currentDarkMode,
+                            currentAccentColor,
+                            currentFontSize,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -290,7 +308,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildMenuSection('連携', [
           _buildMenuItem(context, ref, 'Google Calendar', Icons.calendar_today, 'google_calendar'),
           _buildMenuItem(context, ref, 'Gmail API', Icons.email, 'gmail_api'),
-        ]),
+          _buildMenuItem(context, ref, 'Outlook', Icons.business, 'outlook'),
+        ], subtitle: '各連携機能には個別の設定が必要です'),
         _buildMenuSection('パフォーマンス', [
           _buildMenuItem(context, ref, 'キャッシュ管理', Icons.memory, 'cache'),
         ]),
@@ -301,19 +320,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildMenuSection(String title, List<Widget> children) {
+  Widget _buildMenuSection(String title, List<Widget> children, {String? subtitle}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         ...children,
@@ -375,7 +409,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           title,
           style: TextStyle(
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color: isSelected ? iconColor : Colors.black87,
+            color: isSelected ? iconColor : Theme.of(context).colorScheme.onSurface,
             fontSize: 14,
           ),
         ),
@@ -424,6 +458,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           return _buildGoogleCalendarSection(settingsState, settingsNotifier);
         case 'gmail_api':
           return _buildGmailApiSection(settingsState, settingsNotifier);
+        case 'outlook':
+          return _buildOutlookSection();
       case 'cache':
         return _buildCacheSection(ref);
       case 'reset':
@@ -519,7 +555,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: Color(color),
               borderRadius: BorderRadius.circular(8),
               border: isSelected 
-                ? Border.all(color: Colors.white, width: 3)
+                ? Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.white 
+                      : Colors.black, 
+                    width: 3
+                  )
                 : null,
               boxShadow: isSelected 
                 ? [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))]
@@ -875,12 +916,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 16),
                 
                 // 手動バックアップとフォルダを開くボタン
-                Row(
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
                   children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.backup),
-                        label: const Text('手動バックアップ実行'),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.backup),
+                      label: const Text('手動バックアップ実行'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
@@ -911,12 +953,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           }
                         },
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.folder_open),
-                        label: const Text('バックアップフォルダを開く'),
+                    
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.folder_open),
+                      label: const Text('バックアップフォルダを開く'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
@@ -945,7 +985,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           }
                         },
                       ),
-                    ),
                   ],
                 ),
                 
@@ -1007,48 +1046,92 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildSectionHeader('エクスポート/インポート', Icons.import_export),
         const SizedBox(height: 16),
         
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.upload),
-                  label: const Text('データをエクスポート'),
-                  onPressed: () => _exportData(context, ref),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.upload, size: 24),
+                        label: const Text('データをエクスポート', style: TextStyle(fontSize: 16)),
+                        onPressed: () => _exportData(context, ref),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.download, size: 24),
+                        label: const Text('データをインポート', style: TextStyle(fontSize: 16)),
+                        onPressed: () => _importData(context, ref),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'エクスポート/インポート機能',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            '• メモあり/なしを選択可能\n'
+                            '• アプリの現在のディレクトリに保存\n'
+                            '• 設定情報も含めてエクスポート\n'
+                            '• ファイルダイアログでインポート',
+                            style: TextStyle(
+                              fontSize: 14, 
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                
-                const SizedBox(height: 16),
-                
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.download),
-                  label: const Text('データをインポート'),
-                  onPressed: () => _importData(context, ref),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                const Text(
-                  'エクスポート/インポート機能',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '• メモあり/なしを選択可能\n'
-                  '• アプリの現在のディレクトリに保存\n'
-                  '• 設定情報も含めてエクスポート\n'
-                  '• ファイルダイアログでインポート',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -1058,22 +1141,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _exportData(BuildContext context, WidgetRef ref) async {
     // メモを含めるかどうかの選択ダイアログ
-    final includeMemos = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('エクスポート設定'),
-        content: const Text('メモを含めてエクスポートしますか？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('含めない'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('含める'),
-          ),
-        ],
-      ),
+    final includeMemos = await UnifiedDialogHelper.showConfirmDialog(
+      context,
+      title: 'エクスポート設定',
+      message: 'メモを含めてエクスポートしますか？',
+      confirmText: '含める',
+      cancelText: '含めない',
+      icon: Icons.upload,
     );
     
     if (includeMemos == null) return; // キャンセルされた場合
@@ -1111,35 +1185,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // 画面中央にエクスポート完了メッセージを表示
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 24),
-            SizedBox(width: 8),
-            Text('エクスポート完了'),
-          ],
-        ),
+      builder: (context) => UnifiedDialog(
+        title: 'エクスポート完了',
+        icon: Icons.check_circle,
+        iconColor: Colors.green,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('エクスポートしました:'),
-            SizedBox(height: 8),
-            Text(
-              'ファイル名: $fileName',
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'monospace',
-                backgroundColor: Colors.grey[100],
+            const Text('エクスポートしました:'),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'ファイル名: $fileName',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                ),
               ),
             ),
-            SizedBox(height: 4),
-            Text(
-              '保存場所: ${currentDir.path}',
-              style: TextStyle(
-                fontSize: 12,
-                fontFamily: 'monospace',
-                backgroundColor: Colors.grey[100],
+            const SizedBox(height: 4),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '保存場所: ${currentDir.path}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                ),
               ),
             ),
           ],
@@ -1147,19 +1231,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
+            style: AppButtonStyles.text(context),
+            child: const Text('OK'),
           ),
           ElevatedButton.icon(
             onPressed: () async {
               try {
                 final directory = file.parent;
                 await Process.run('explorer', [directory.path]);
+                Navigator.pop(context);
               } catch (e) {
                 // エラーハンドリング
               }
             },
-            icon: Icon(Icons.folder_open),
-            label: Text('フォルダを開く'),
+            icon: const Icon(Icons.folder_open),
+            label: const Text('フォルダを開く'),
+            style: AppButtonStyles.primary(context),
           ),
         ],
       ),
@@ -1204,25 +1291,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         // リンクのタスク状態を更新
         await ref.read(taskViewModelProvider.notifier).refreshLinkTaskStatus();
         
-        // SnackBarで通知
+        // 成功通知
         final hasTasks = data.containsKey('tasks');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(hasTasks 
-              ? 'リンクとタスクをインポートしました: ${file.path}'
-              : 'リンクをインポートしました: ${file.path}'),
-            duration: const Duration(seconds: 3),
-          ),
+        SnackBarService.showSuccess(
+          context,
+          hasTasks 
+            ? 'リンクとタスクをインポートしました: ${file.path}'
+            : 'リンクをインポートしました: ${file.path}',
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('インポートエラー: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
+      SnackBarService.showError(context, 'インポートエラー: $e');
     }
   }
 
@@ -1313,15 +1392,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                  Container(
                    padding: const EdgeInsets.all(8),
                    decoration: BoxDecoration(
-                     color: Colors.grey.shade50,
+                     color: Theme.of(context).colorScheme.surfaceVariant,
                      borderRadius: BorderRadius.circular(6),
-                     border: Border.all(color: Colors.grey.shade200),
+                     border: Border.all(
+                       color: Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                     ),
                    ),
                    child: Text(
                      'このボタンで通知音をテストできます。アプリが起動中の場合のみ音が再生されます。',
                      style: TextStyle(
                        fontSize: 11,
-                       color: Colors.grey.shade600,
+                       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                        fontStyle: FontStyle.italic,
                      ),
                    ),
@@ -1498,9 +1579,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: Theme.of(context).colorScheme.surfaceVariant,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3)
+            ),
           ),
           child: Row(
             children: [
@@ -1514,7 +1597,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Text(
                   description,
                   style: TextStyle(
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -1569,9 +1652,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: Theme.of(context).colorScheme.surfaceVariant,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3)
+            ),
           ),
           child: Row(
             children: [
@@ -1585,7 +1670,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Text(
                   description,
                   style: TextStyle(
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -1733,39 +1818,51 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                   ),
                   
-                  // OAuth2認証ボタン
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final googleCalendarService = GoogleCalendarService();
-                          final success = await googleCalendarService.startOAuth2Auth();
-                          if (success) {
-                            SnackBarService.showSuccess(
-                              context,
-                              'OAuth2認証が完了しました',
-                            );
-                          } else {
+                  // 設定方法とOAuth2認証ボタン
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _openGoogleCalendarSetupGuide,
+                        icon: const Icon(Icons.help_outline),
+                        label: const Text('設定方法を確認'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          try {
+                            final googleCalendarService = GoogleCalendarService();
+                            final success = await googleCalendarService.startOAuth2Auth();
+                            if (success) {
+                              SnackBarService.showSuccess(
+                                context,
+                                'OAuth2認証が完了しました',
+                              );
+                            } else {
+                              SnackBarService.showError(
+                                context,
+                                '認証の開始に失敗しました',
+                              );
+                            }
+                          } catch (e) {
                             SnackBarService.showError(
                               context,
-                              '認証の開始に失敗しました',
+                              'エラー: $e',
                             );
                           }
-                        } catch (e) {
-                          SnackBarService.showError(
-                            context,
-                            'エラー: $e',
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.login),
-                      label: const Text('OAuth2認証を開始'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
+                        },
+                        icon: const Icon(Icons.login),
+                        label: const Text('OAuth2認証を開始'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                   
                   const SizedBox(height: 8),
@@ -1842,45 +1939,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 16),
                   
                   // 設定情報
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              '設定方法',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '1. Google Cloud Consoleでプロジェクトを作成\n'
-                          '2. Calendar APIを有効化\n'
-                          '3. サービスアカウントを作成\n'
-                          '4. 認証情報ファイルをダウンロード\n'
-                          '5. ファイルをアプリフォルダに配置',
-                          style: TextStyle(
-                            color: Colors.blue.shade700,
-                            fontSize: 13,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ],
             ),
@@ -1914,9 +1972,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: Theme.of(context).colorScheme.surfaceVariant,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.3)
+            ),
           ),
           child: Row(
             children: [
@@ -1930,7 +1990,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Text(
                   description,
                   style: TextStyle(
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -2010,7 +2070,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: syncState.progressRatio,
-            backgroundColor: Colors.grey[300],
+            backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
             valueColor: AlwaysStoppedAnimation<Color>(
               syncState.hasError ? Colors.red : Colors.blue,
             ),
@@ -2066,7 +2126,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildSyncStatusIndicator(SyncStatus status) {
     switch (status) {
       case SyncStatus.idle:
-        return Icon(Icons.sync, color: Colors.grey[400], size: 20);
+        return Icon(
+          Icons.sync, 
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4), 
+          size: 20
+        );
       case SyncStatus.syncing:
         return SizedBox(
           width: 20,
@@ -2452,57 +2516,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Gmail API説明
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue[200]!),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.info, color: Colors.blue[700], size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Gmail API連携について',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Gmail APIを使用して、メール受信時の自動タスク生成と完了報告機能を利用できます。\n'
-                        '自分宛てのメールで「依頼」「タスク」「お願い」などのキーワードが含まれている場合、自動でタスクとして登録されます。',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.blue[700],
-                        ),
-                      ),
-                    ],
-                  ),
+                // Gmail API連携トグル
+                SwitchListTile(
+                  title: const Text('Gmail API連携'),
+                  subtitle: const Text('Gmail APIを使用してメール受信時の自動タスク生成と完了報告機能を利用します'),
+                  value: settingsState.gmailApiEnabled,
+                  onChanged: (value) {
+                    settingsNotifier.updateGmailApiEnabled(value);
+                  },
+                  secondary: const Icon(Icons.email),
                 ),
-                
                 const SizedBox(height: 16),
                 
-                // アクセストークン設定
-                _buildAccessTokenSection(),
+                // Gmail API説明（トグルがオンの時のみ表示）
+                if (settingsState.gmailApiEnabled) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info, color: Theme.of(context).colorScheme.primary, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Gmail API連携について',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Gmail APIを使用して、メール受信時の自動タスク生成と完了報告機能を利用できます。\n'
+                          '自分宛てのメールで「依頼」「タスク」「お願い」などのキーワードが含まれている場合、自動でタスクとして登録されます。',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 
-                const SizedBox(height: 16),
-                
-                // テスト機能
-                _buildTestSection(),
-                
-                const SizedBox(height: 16),
-                
-                // 設定情報
-                _buildGmailApiInfo(),
+                // アクセストークン設定（トグルがオンの時のみ表示）
+                if (settingsState.gmailApiEnabled) ...[
+                  _buildAccessTokenSection(),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // テスト機能
+                  _buildTestSection(),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // 設定情報
+                  _buildGmailApiInfo(),
+                ],
               ],
             ),
           ),
@@ -2548,7 +2627,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 prefixIcon: Icon(Icons.key),
               ),
               obscureText: true,
-              maxLines: 3,
+              maxLines: 1,
               onChanged: (value) {
                 // アクセストークンを保存
                 _saveGmailAccessToken(value);
@@ -2558,29 +2637,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 8),
             
             // アクセストークン取得ボタン
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _openGmailApiSetupGuide,
-                    icon: const Icon(Icons.help_outline),
-                    label: const Text('設定方法を確認'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                    ),
+                ElevatedButton.icon(
+                  onPressed: _openGmailApiSetupGuide,
+                  icon: const Icon(Icons.help_outline),
+                  label: const Text('設定方法を確認'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _testGmailConnection,
-                    icon: const Icon(Icons.wifi_protected_setup),
-                    label: const Text('接続テスト'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
+                ElevatedButton.icon(
+                  onPressed: _testGmailConnection,
+                  icon: const Icon(Icons.wifi_protected_setup),
+                  label: const Text('接続テスト'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ],
@@ -2588,6 +2664,127 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         );
       },
+    );
+  }
+
+  /// Outlook連携セクション
+  Widget _buildOutlookSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Outlook連携', Icons.business),
+        const SizedBox(height: 16),
+        
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 説明
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info, color: Theme.of(context).colorScheme.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Outlook連携について',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Outlook APIを使用して、メール受信時の自動タスク生成機能を利用できます。\n会社PCでのみ利用可能です。',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // 接続テストとタスク自動生成ボタン
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _testOutlookConnection,
+                      icon: const Icon(Icons.wifi_protected_setup),
+                      label: const Text('接続テスト'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _testOutlookSearch,
+                      icon: const Icon(Icons.search),
+                      label: const Text('メール検索テスト'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: _generateTasksFromOutlook,
+                      icon: const Icon(Icons.add_task),
+                      label: const Text('タスク自動生成'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Outlook設定情報
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Outlook設定情報',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '• 必要な権限: Outlook読み取り\n• 対応機能: メール受信監視、タスク自動生成\n• 検索対象: 件名に「依頼」「タスク」「お願い」等のキーワード\n• 監視間隔: 手動実行',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -2605,29 +2802,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: 8),
         
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _testGmailSearch,
-                icon: const Icon(Icons.search),
-                label: const Text('メール検索テスト'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
+            ElevatedButton.icon(
+              onPressed: _testGmailSearch,
+              icon: const Icon(Icons.search),
+              label: const Text('メール検索テスト'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _sendTestCompletionReport,
-                icon: const Icon(Icons.send),
-                label: const Text('完了報告テスト'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
-                ),
+            ElevatedButton.icon(
+              onPressed: _generateTasksFromGmail,
+              icon: const Icon(Icons.add_task),
+              label: const Text('タスク自動生成'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _sendTestCompletionReport,
+              icon: const Icon(Icons.send),
+              label: const Text('完了報告テスト'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
               ),
             ),
           ],
@@ -2673,18 +2876,225 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// Gmail API設定ガイドを開く
   void _openGmailApiSetupGuide() {
-    // TODO: Gmail API設定ガイドのURLを開く
-    SnackBarService.showInfo(context, 'Gmail API設定ガイドを開きます（実装予定）');
+    showDialog(
+      context: context,
+      builder: (context) => UnifiedDialog(
+        title: 'Gmail API設定ガイド',
+        icon: Icons.help_outline,
+        iconColor: Colors.orange,
+        width: 600,
+        height: 700,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Gmail APIを使用するための設定手順:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildGuideStep('1', 'Google Cloud Consoleにアクセス'),
+            const Text('https://console.cloud.google.com/'),
+            const SizedBox(height: 12),
+            _buildGuideStep('2', '新しいプロジェクトを作成または既存プロジェクトを選択'),
+            const SizedBox(height: 12),
+            _buildGuideStep('3', 'Gmail APIを有効化'),
+            const Text('「APIとサービス」→「ライブラリ」→「Gmail API」を検索して有効化'),
+            const SizedBox(height: 12),
+            _buildGuideStep('4', '認証情報を作成'),
+            const Text('「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuth 2.0 クライアント ID」'),
+            const SizedBox(height: 12),
+            _buildGuideStep('5', 'アクセストークンを取得'),
+            const Text('OAuth 2.0 Playground (https://developers.google.com/oauthplayground/) を使用'),
+            const Text('1. 左側で「Gmail API v1」→「https://www.googleapis.com/auth/gmail.readonly」を選択'),
+            const Text('2. 「Authorize APIs」をクリックしてGoogleアカウントで認証'),
+            const Text('3. 右側の「Exchange authorization code for tokens」をクリック'),
+            const Text('4. 生成された「Access token」をコピー'),
+            const SizedBox(height: 12),
+            _buildGuideStep('6', 'アクセストークンを入力'),
+            const Text('上記の「アクセストークン」フィールドに取得したトークンを入力'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: AppButtonStyles.text(context),
+            child: const Text('閉じる'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              try {
+                await Process.run('cmd', ['/c', 'start', 'https://console.cloud.google.com/']);
+                Navigator.pop(context);
+              } catch (e) {
+                SnackBarService.showError(context, 'ブラウザを開けませんでした: $e');
+              }
+            },
+            icon: const Icon(Icons.open_in_browser),
+            label: const Text('Google Cloud Consoleを開く'),
+            style: AppButtonStyles.primary(context),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: () async {
+              try {
+                await Process.run('cmd', ['/c', 'start', 'https://developers.google.com/oauthplayground/']);
+                Navigator.pop(context);
+              } catch (e) {
+                SnackBarService.showError(context, 'ブラウザを開けませんでした: $e');
+              }
+            },
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('OAuth 2.0 Playgroundを開く'),
+            style: AppButtonStyles.secondary(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuideStep(String number, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Google Calendar設定ガイドを開く
+  void _openGoogleCalendarSetupGuide() {
+    showDialog(
+      context: context,
+      builder: (context) => UnifiedDialog(
+        title: 'Google Calendar設定ガイド',
+        icon: Icons.calendar_today,
+        iconColor: Colors.blue,
+        width: 600,
+        height: 700,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Google Calendar APIを使用するための設定手順:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildGuideStep('1', 'Google Cloud Consoleにアクセス'),
+            const Text('https://console.cloud.google.com/'),
+            const SizedBox(height: 12),
+            _buildGuideStep('2', '新しいプロジェクトを作成または既存プロジェクトを選択'),
+            const SizedBox(height: 12),
+            _buildGuideStep('3', 'Google Calendar APIを有効化'),
+            const Text('「APIとサービス」→「ライブラリ」→「Google Calendar API」を検索して有効化'),
+            const SizedBox(height: 12),
+            _buildGuideStep('4', 'サービスアカウントを作成'),
+            const Text('「APIとサービス」→「認証情報」→「認証情報を作成」→「サービスアカウント」'),
+            const SizedBox(height: 12),
+            _buildGuideStep('5', '認証情報ファイルをダウンロード'),
+            const Text('作成したサービスアカウントの「キー」タブからJSONファイルをダウンロード'),
+            const SizedBox(height: 12),
+            _buildGuideStep('6', 'ファイルをアプリフォルダに配置'),
+            const Text('ダウンロードしたJSONファイルを「google_calendar_credentials.json」としてアプリフォルダに配置'),
+            const SizedBox(height: 12),
+            _buildGuideStep('7', 'OAuth2認証を実行'),
+            const Text('アプリの「OAuth2認証を開始」ボタンをクリックして認証を完了'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: AppButtonStyles.text(context),
+            child: const Text('閉じる'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              try {
+                await Process.run('cmd', ['/c', 'start', 'https://console.cloud.google.com/']);
+                Navigator.pop(context);
+              } catch (e) {
+                SnackBarService.showError(context, 'ブラウザを開けませんでした: $e');
+              }
+            },
+            icon: const Icon(Icons.open_in_browser),
+            label: const Text('Google Cloud Consoleを開く'),
+            style: AppButtonStyles.primary(context),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Gmail接続をテスト
   Future<void> _testGmailConnection() async {
     try {
-      final gmailApiService = GmailApiService();
-      // TODO: アクセストークンを設定
+      final settingsService = ref.read(settingsServiceProvider);
+      final accessToken = settingsService.gmailApiAccessToken;
       
-      SnackBarService.showInfo(context, 'Gmail接続テストを実行します（実装予定）');
+      if (accessToken == null || accessToken.isEmpty) {
+        SnackBarService.showError(context, 'アクセストークンが設定されていません。先にアクセストークンを入力してください。');
+        return;
+      }
+      
+      // ローディング表示
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // Gmail API接続テスト
+      final gmailApiService = GmailApiService();
+      final isConnected = await gmailApiService.testConnection(accessToken);
+      
+      // 接続テスト成功時にアクセストークンを設定
+      if (isConnected) {
+        gmailApiService.setAccessToken(accessToken);
+      }
+      
+      // ローディングを閉じる
+      Navigator.pop(context);
+      
+      if (isConnected) {
+        SnackBarService.showSuccess(context, 'Gmail API接続テストが成功しました！');
+      } else {
+        SnackBarService.showError(context, 'Gmail API接続テストが失敗しました。アクセストークンを確認してください。');
+      }
     } catch (e) {
+      // ローディングを閉じる（エラー時）
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
       SnackBarService.showError(context, 'Gmail接続テストエラー: $e');
     }
   }
@@ -2701,6 +3111,169 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     } catch (e) {
       SnackBarService.showError(context, 'Gmail検索テストエラー: $e');
+    }
+  }
+
+  /// Gmail APIからタスクを自動生成
+  Future<void> _generateTasksFromGmail() async {
+    try {
+      // ローディング表示
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // タスクビューモデルからGmail APIでタスクを生成
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final result = await taskViewModel.generateTasksFromGmail();
+      
+      // ローディングを閉じる
+      Navigator.pop(context);
+      
+      if (result['success']) {
+        final addedCount = result['addedCount'] as int;
+        final total = result['total'] as int;
+        
+        if (addedCount > 0) {
+          SnackBarService.showSuccess(
+            context, 
+            '${addedCount}件のタスクを自動生成しました（検索結果: ${total}件）'
+          );
+        } else {
+          SnackBarService.showInfo(
+            context, 
+            'タスク割り当てメールが見つかりませんでした'
+          );
+        }
+      } else {
+        SnackBarService.showError(
+          context, 
+          'タスク生成エラー: ${result['message']}'
+        );
+      }
+    } catch (e) {
+      // ローディングを閉じる（エラー時も）
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      SnackBarService.showError(context, 'タスク生成エラー: $e');
+    }
+  }
+
+  /// Outlook接続をテスト
+  Future<void> _testOutlookConnection() async {
+    try {
+      // ローディング表示
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // Outlook接続テスト
+      final outlookService = OutlookService();
+      final isConnected = await outlookService.testConnection();
+      
+      // ローディングを閉じる
+      Navigator.pop(context);
+      
+      if (isConnected) {
+        SnackBarService.showSuccess(context, 'Outlook接続テストが成功しました！');
+      } else {
+        SnackBarService.showError(context, 'Outlook接続テストが失敗しました。Outlookが起動しているか確認してください。');
+      }
+    } catch (e) {
+      // ローディングを閉じる（エラー時も）
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      SnackBarService.showError(context, 'Outlook接続テストエラー: $e');
+    }
+  }
+  
+  /// Outlookメール検索をテスト
+  Future<void> _testOutlookSearch() async {
+    try {
+      // ローディング表示
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // Outlookメール検索テスト
+      final outlookService = OutlookService();
+      final assignments = await outlookService.searchTaskAssignmentEmails();
+      
+      // ローディングを閉じる
+      Navigator.pop(context);
+      
+      SnackBarService.showSuccess(
+        context, 
+        'Outlook検索テスト完了: ${assignments.length}件のタスク割り当てメールを発見'
+      );
+    } catch (e) {
+      // ローディングを閉じる（エラー時も）
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      SnackBarService.showError(context, 'Outlook検索テストエラー: $e');
+    }
+  }
+  
+  /// Outlookからタスクを自動生成
+  Future<void> _generateTasksFromOutlook() async {
+    try {
+      // ローディング表示
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // タスクビューモデルからOutlookでタスクを生成
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final result = await taskViewModel.generateTasksFromOutlook();
+      
+      // ローディングを閉じる
+      Navigator.pop(context);
+      
+      if (result['success']) {
+        final addedCount = result['addedCount'] as int;
+        final total = result['total'] as int;
+        
+        if (addedCount > 0) {
+          SnackBarService.showSuccess(
+            context, 
+            '${addedCount}件のタスクを自動生成しました（検索結果: ${total}件）'
+          );
+        } else {
+          SnackBarService.showInfo(
+            context, 
+            'タスク割り当てメールが見つかりませんでした'
+          );
+        }
+      } else {
+        SnackBarService.showError(
+          context, 
+          'タスク生成エラー: ${result['message']}'
+        );
+      }
+    } catch (e) {
+      // ローディングを閉じる（エラー時も）
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      SnackBarService.showError(context, 'タスク生成エラー: $e');
     }
   }
 

@@ -7,9 +7,7 @@ import 'dart:io';
 import 'dart:async';
 import '../models/group.dart';
 import '../models/link_item.dart';
-import '../models/task_item.dart';
 import '../viewmodels/layout_settings_provider.dart';
-import '../viewmodels/task_viewmodel.dart';
 import 'home_screen.dart';
 import 'task_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -1319,32 +1317,6 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                              ),
                            ),
                          ),
-                         if (item.tags.isNotEmpty) ...[
-                           const SizedBox(height: 2),
-                           Wrap(
-                             spacing: 4,
-                             runSpacing: 2,
-                             children: item.tags.map((tag) => Container(
-                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                               decoration: BoxDecoration(
-                                 color: isDark ? Colors.blue.shade900.withValues(alpha: 0.3) : Colors.blue.shade50.withValues(alpha: 0.8),
-                                 borderRadius: BorderRadius.circular(8),
-                                 border: Border.all(
-                                   color: isDark ? Colors.blue.shade700.withValues(alpha: 0.5) : Colors.blue.shade200.withValues(alpha: 0.8),
-                                   width: 1,
-                                 ),
-                               ),
-                               child: Text(
-                                 tag,
-                                 style: TextStyle(
-                                   fontSize: (layoutSettings.linkItemFontSize - 2) * scale,
-                                   color: isDark ? Colors.blue.shade300 : Colors.blue.shade700,
-                                   fontWeight: FontWeight.w500,
-                                 ),
-                               ),
-                             )).toList(),
-                           ),
-                         ],
                        ],
                      ),
                    ),
