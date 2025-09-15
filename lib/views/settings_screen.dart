@@ -1639,14 +1639,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              const Text(
+              Text(
                 'リセット機能の詳細説明:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
                 const SizedBox(height: 16),
                 
             _buildGuideStep('1', '設定をデフォルトにリセット'),
-            const Text('以下の設定が初期値に戻ります:'),
+            Text(
+              '以下の設定が初期値に戻ります:',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
             const SizedBox(height: 8),
             _buildResetItem('テーマ設定', 'ダークモード: OFF、アクセントカラー: デフォルト'),
             _buildResetItem('通知設定', '通知: ON、通知音: ON'),
@@ -1655,7 +1661,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             
             _buildGuideStep('2', 'レイアウト設定をリセット'),
-            const Text('以下のレイアウト設定が初期値に戻ります:'),
+            Text(
+              '以下のレイアウト設定が初期値に戻ります:',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
             const SizedBox(height: 8),
             _buildResetItem('グリッド設定', 'カラム数: 4、間隔: デフォルト'),
             _buildResetItem('カード設定', 'サイズ: デフォルト、影: デフォルト'),
@@ -1663,7 +1672,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             
             _buildGuideStep('3', 'データの保持について'),
-            const Text('以下のデータは削除されません:'),
+            Text(
+              '以下のデータは削除されません:',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
             const SizedBox(height: 8),
             _buildResetItem('リンクデータ', 'すべてのリンク、グループ、メモが保持されます'),
             _buildResetItem('タスクデータ', 'すべてのタスク、サブタスク、進捗が保持されます'),
@@ -1671,7 +1683,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             
             _buildGuideStep('4', 'リセット後の動作'),
-            const Text('リセット後は以下のようになります:'),
+            Text(
+              'リセット後は以下のようになります:',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
             const SizedBox(height: 8),
             _buildResetItem('アプリ再起動', '設定変更を反映するため再起動が推奨されます'),
             _buildResetItem('設定確認', '設定画面で新しい設定値を確認できます'),
@@ -1696,11 +1711,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text('• ', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                 children: [
                   TextSpan(
                     text: '$title: ',
@@ -1709,9 +1724,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   TextSpan(text: description),
                 ],
               ),
+            ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
