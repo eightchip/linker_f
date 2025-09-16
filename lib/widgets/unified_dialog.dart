@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_button_styles.dart';
 
 /// 統一されたダイアログコンポーネント
 class UnifiedDialog extends StatelessWidget {
@@ -106,51 +107,6 @@ class UnifiedDialog extends StatelessWidget {
   }
 }
 
-/// 統一されたボタンスタイル
-class AppButtonStyles {
-  static ButtonStyle primary(BuildContext context) {
-    return ElevatedButton.styleFrom(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    );
-  }
-
-  static ButtonStyle danger(BuildContext context) {
-    return ElevatedButton.styleFrom(
-      backgroundColor: Colors.red.shade600,
-      foregroundColor: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    );
-  }
-
-  static ButtonStyle warning(BuildContext context) {
-    return ElevatedButton.styleFrom(
-      backgroundColor: Colors.orange.shade600,
-      foregroundColor: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    );
-  }
-
-  static ButtonStyle secondary(BuildContext context) {
-    return ElevatedButton.styleFrom(
-      backgroundColor: Theme.of(context).colorScheme.secondary,
-      foregroundColor: Theme.of(context).colorScheme.onSecondary,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    );
-  }
-
-  static ButtonStyle text(BuildContext context) {
-    return TextButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    );
-  }
-}
 
 /// 便利なダイアログ表示メソッド
 class UnifiedDialogHelper {

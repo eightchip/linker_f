@@ -1,59 +1,34 @@
-Param(
-    [Parameter(Mandatory = $true)][string]$Token
-)
+Param([Parameter(Mandatory=$true)][string]$Token)
 
 try {
-    # Outlookアプリケーションオブジェクトを作成
-    $ol = New-Object -ComObject Outlook.Application
-    $ns = $ol.GetNamespace("MAPI")
-    
-    # 送信済みフォルダを取得
+    $ol  = New-Object -ComObject Outlook.Application
+    $ns  = $ol.GetNamespace("MAPI")
     $sent = $ns.GetDefaultFolder([Microsoft.Office.Interop.Outlook.OlDefaultFolders]::olFolderSentMail)
     $items = $sent.Items
-    
-    # 送信日時でソート（新しい順）
     $items.Sort("[SentOn]", $true)
-    
-    # 件名にトークンを含むメールを検索
-    $searchFilter = "[Subject] Like '%$Token%'"
-    $matches = $items.Restrict($searchFilter)
-    
-    if ($matches.Count -gt 0) {
-        # 最初のマッチしたメールを表示
-        $matches.GetFirst().Display()
-        Write-Host "送信済みメールが見つかりました: $Token"
+
+    # 件名に含まれるケースを優先
+    $matches = $items.Restrict("[Subject] Like '%$Token%'")
+    if ($matches.Count -eq 0) {
+      # 本文に含まれる可能性にも対応（最小範囲で走査）
+      $c = 0
+      $found = $null
+      foreach ($it in $items) {
+        $c++
+        if ($c -gt 200) { break } # 負荷対策
+        try {
+          if ($it.HTMLBody -and $it.HTMLBody.Contains($Token)) { $found = $it; break }
+        } catch {}
+      }
+      if ($found) { $found.Display(); exit 0 }
+    } else {
+      $matches.GetFirst().Display(); exit 0
     }
-    else {
-        # メールが見つからない場合のメッセージ
-        [System.Windows.Forms.MessageBox]::Show(
-            "送信済みに見つかりませんでした：$Token",
-            "Outlook検索",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Information
-        )
-        Write-Host "送信済みメールが見つかりませんでした: $Token"
-    }
+
+    [System.Windows.Forms.MessageBox]::Show("送信済みから見つかりませんでした：$Token","Outlook検索")
+    exit 1
 }
 catch {
-    $errorMessage = $_.Exception.Message
-    Write-Error "Outlook 検索エラー: $errorMessage"
-    
-    # より詳細なエラー情報を出力
-    if ($_.Exception.InnerException) {
-        Write-Error "詳細エラー: $($_.Exception.InnerException.Message)"
-    }
-    
-    # Outlookがインストールされていない場合の特別なメッセージ
-    if ($errorMessage -like "*COM*" -or $errorMessage -like "*Outlook*") {
-        Write-Error "Outlookがインストールされていないか、正しく設定されていません。"
-        Write-Error "会社PCでOutlookを使用してください。"
-    }
-    
-    [System.Windows.Forms.MessageBox]::Show(
-        "検索中にエラーが発生しました：$errorMessage",
-        "Outlook検索エラー",
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.Forms.MessageBoxIcon]::Error
-    )
+    Write-Error "Outlook検索エラー: $($_.Exception.Message)"
     exit 1
 }

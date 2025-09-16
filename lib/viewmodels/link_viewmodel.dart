@@ -102,6 +102,11 @@ class LinkViewModel extends StateNotifier<LinkState> {
     }
   }
 
+  /// 外部からグループを強制更新するための公開メソッド
+  Future<void> refreshGroups() async {
+    await _loadGroups(forceUpdate: true);
+  }
+
   Future<void> _loadGroups({bool forceUpdate = false}) async {
     final groups = _repository.getAllGroups();
     final order = _repository.getGroupsOrder();

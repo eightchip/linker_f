@@ -10,65 +10,78 @@ class SnackBarService {
     IconData? icon,
     Color? iconColor,
   }) {
-    final overlay = Overlay.of(context);
-    late OverlayEntry overlayEntry;
+    try {
+      // ウィジェットがマウントされているかチェック
+      if (!context.mounted) return;
+      
+      final overlay = Overlay.of(context);
+      late OverlayEntry overlayEntry;
 
-    overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: MediaQuery.of(context).size.height * 0.4, // 画面の40%の位置
-        left: 20,
-        right: 20,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: BoxDecoration(
-              color: backgroundColor ?? Colors.green,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (icon != null) ...[
-                  Icon(
-                    icon,
-                    color: iconColor ?? Colors.white,
-                    size: 24,
+      overlayEntry = OverlayEntry(
+        builder: (context) => Positioned(
+          top: MediaQuery.of(context).size.height * 0.4, // 画面の40%の位置
+          left: 20,
+          right: 20,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: backgroundColor ?? Colors.green,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                  const SizedBox(width: 12),
                 ],
-                Expanded(
-                  child: Text(
-                    message,
-                    style: TextStyle(
-                      color: textColor ?? Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(
+                      icon,
+                      color: iconColor ?? Colors.white,
+                      size: 24,
                     ),
-                    textAlign: TextAlign.center,
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                        color: textColor ?? Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    overlay.insert(overlayEntry);
+      overlay.insert(overlayEntry);
 
-    // 指定された時間後に削除
-    Future.delayed(duration, () {
-      overlayEntry.remove();
-    });
+      // 指定された時間後に削除
+      Future.delayed(duration, () {
+        try {
+          overlayEntry.remove();
+        } catch (e) {
+          // オーバーレイの削除でエラーが発生した場合は無視
+          print('SnackBar overlay removal error: $e');
+        }
+      });
+    } catch (e) {
+      // オーバーレイの作成でエラーが発生した場合は無視
+      print('SnackBar creation error: $e');
+    }
   }
 
   // 成功メッセージ用

@@ -13,6 +13,7 @@ import '../services/email_monitor_service.dart';
 import '../models/email_contact.dart';
 import '../models/sent_mail_log.dart';
 import '../widgets/unified_dialog.dart';
+import '../widgets/app_button_styles.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
@@ -46,7 +47,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   // メール送信の設定
   bool _copyTitleToSubject = true;
   bool _copyMemoToBody = true;
-  String _selectedMailApp = 'gmail'; // 'gmail' | 'outlook'
+  String _selectedMailApp = 'outlook'; // 'gmail' | 'outlook' - デフォルトはOutlook
   
   // 連絡先選択
   List<EmailContact> _selectedContacts = [];
@@ -1030,10 +1031,21 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           
           const SizedBox(height: 16),
           
-          // 送信アプリ選択
+          // 送信アプリ選択（Outlook左デフォルト／Gmail右）
           Row(
             children: [
               const Text('送信アプリ: '),
+              Radio<String>(
+                value: 'outlook',
+                groupValue: _selectedMailApp,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedMailApp = value!;
+                  });
+                },
+              ),
+              const Text('Outlook（デスクトップ）'),
+              const SizedBox(width: 16),
               Radio<String>(
                 value: 'gmail',
                 groupValue: _selectedMailApp,
@@ -1044,28 +1056,62 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 },
               ),
               const Text('Gmail（Web）'),
-              const SizedBox(width: 16),
-              Radio<String>(
-                value: 'outlook',
-                groupValue: _selectedMailApp,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedMailApp = value!;
-                  });
-                },
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Outlook（デスクトップ）'),
-                  Text(
-                    '※会社PCでのみ利用可能',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.orange.shade700,
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // 各メーラー個別テストボタン
+          Row(
+            children: [
+              // Outlookテストボタン
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: _selectedMailApp == 'outlook' ? Colors.blue : Colors.grey.shade300,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    color: _selectedMailApp == 'outlook' ? Colors.blue.shade50 : Colors.grey.shade50,
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _testOutlookConnection(),
+                    icon: const Icon(Icons.business, size: 16),
+                    label: const Text('Outlookテスト'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: _selectedMailApp == 'outlook' ? Colors.blue : Colors.grey.shade600,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
                   ),
-                ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Gmailテストボタン
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: _selectedMailApp == 'gmail' ? Colors.red : Colors.grey.shade300,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    color: _selectedMailApp == 'gmail' ? Colors.red.shade50 : Colors.grey.shade50,
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _testGmailConnection(),
+                    icon: const Icon(Icons.mail, size: 16),
+                    label: const Text('Gmailテスト'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: _selectedMailApp == 'gmail' ? Colors.red : Colors.grey.shade600,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1108,14 +1154,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     label: const Text('メーラーを起動'),
                     style: AppButtonStyles.primary(context),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // テスト用ボタン
-                ElevatedButton.icon(
-                  onPressed: _sendTestMail,
-                  icon: const Icon(Icons.bug_report),
-                  label: const Text('テスト'),
-                  style: AppButtonStyles.warning(context),
                 ),
               ],
             ),
@@ -1188,7 +1226,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       await mailService.initialize();
       
       // UUIDを生成
-      final token = mailService.makeShortToken();
+      final token = mailService.makeToken();
       final finalSubject = '$subject [$token]';
       final finalBody = _createEnhancedMailBody(body, token);
       
@@ -1867,6 +1905,43 @@ ${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
       }
     } catch (e) {
       SnackBarService.showError(context, '履歴取得エラー: $e');
+    }
+  }
+
+  /// Outlook接続テスト
+  void _testOutlookConnection() async {
+    try {
+      final mailService = MailService();
+      await mailService.initialize();
+      
+      final isAvailable = await mailService.isOutlookAvailable();
+      if (isAvailable) {
+        SnackBarService.showSuccess(context, 'Outlook接続テスト成功');
+      } else {
+        SnackBarService.showError(context, 'Outlook接続テスト失敗: Outlookが利用できません');
+      }
+    } catch (e) {
+      SnackBarService.showError(context, 'Outlook接続テストエラー: $e');
+    }
+  }
+
+  /// Gmail接続テスト
+  void _testGmailConnection() async {
+    try {
+      final mailService = MailService();
+      await mailService.initialize();
+      
+      await mailService.launchGmail(
+        to: '',
+        cc: '',
+        bcc: '',
+        subject: 'Gmail接続テスト',
+        body: 'これはGmail接続テストです。',
+      );
+      
+      SnackBarService.showSuccess(context, 'Gmail接続テスト成功: Gmailが開きました');
+    } catch (e) {
+      SnackBarService.showError(context, 'Gmail接続テストエラー: $e');
     }
   }
 

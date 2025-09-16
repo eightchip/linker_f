@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../services/keyboard_shortcut_service.dart';
 import 'home_screen.dart';
+import '../main.dart';
 
 class LinkLauncherApp extends ConsumerStatefulWidget {
   const LinkLauncherApp({super.key});
@@ -12,13 +13,11 @@ class LinkLauncherApp extends ConsumerStatefulWidget {
 }
 
 class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-
   @override
   void initState() {
     super.initState();
-    // ナビゲーターキーを設定
-    KeyboardShortcutService.setNavigatorKey(_navigatorKey);
+    // グローバルなナビゲーターキーを設定
+    KeyboardShortcutService.setNavigatorKey(navigatorKey);
   }
 
   @override
@@ -28,7 +27,7 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
     final fontSize = ref.watch(fontSizeProvider);
     
     return MaterialApp(
-      navigatorKey: _navigatorKey,
+      navigatorKey: navigatorKey,
       title: 'Link Navigator',
       debugShowCheckedModeBanner: false,
       // ちらつきを防ぐための設定

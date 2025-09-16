@@ -23,6 +23,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdfx/pdfx.dart' as pdfx;
 import '../utils/favicon_service.dart';
 import '../widgets/unified_dialog.dart';
+import '../widgets/app_button_styles.dart';
 
 
 // ハイライト用のウィジェット

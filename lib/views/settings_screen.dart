@@ -14,11 +14,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
+import '../main.dart';
 import 'package:intl/intl.dart';
 import '../services/backup_service.dart';
 import '../repositories/link_repository.dart';
 import '../services/google_calendar_service.dart';
 import '../widgets/unified_dialog.dart';
+import '../widgets/app_button_styles.dart';
 import '../services/snackbar_service.dart';
 import '../services/gmail_api_service.dart';
 import '../services/outlook_service.dart';
@@ -291,15 +293,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ]),
         _buildMenuSection('データ', [
           _buildMenuItem(context, ref, 'バックアップ', Icons.backup, 'backup'),
-          _buildMenuItem(context, ref, 'エクスポート/インポート', Icons.import_export, 'export'),
         ]),
         _buildMenuSection('通知', [
           _buildMenuItem(context, ref, '通知設定', Icons.notifications, 'notifications'),
         ]),
         _buildMenuSection('連携', [
           _buildMenuItem(context, ref, 'Google Calendar', Icons.calendar_today, 'google_calendar'),
-          _buildMenuItem(context, ref, 'Gmail API', FontAwesomeIcons.envelope, 'gmail_api'),
           _buildMenuItem(context, ref, 'Outlook', FontAwesomeIcons.microsoft, 'outlook'),
+          _buildMenuItem(context, ref, 'Gmail API', FontAwesomeIcons.envelope, 'gmail_api'),
         ], subtitle: '各連携機能には個別の設定が必要です'),
         _buildMenuSection('その他', [
           _buildMenuItem(context, ref, 'リセット', Icons.restore, 'reset'),
@@ -445,9 +446,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       case 'item':
         return _buildItemSection(ref, layoutSettings);
       case 'backup':
-        return _buildBackupSection(settingsState, settingsNotifier);
-      case 'export':
-        return _buildExportSection(context, ref);
+        return _buildIntegratedBackupSection(context, ref, settingsState, settingsNotifier);
       case 'notifications':
         return _buildNotificationSection(settingsState, settingsNotifier);
         case 'google_calendar':
@@ -1105,6 +1104,536 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  /// バックアップフォルダを開く
+  Future<void> _openBackupFolder(BuildContext context) async {
+    try {
+      final backupService = IntegratedBackupService(
+        linkRepository: ref.read(linkRepositoryProvider),
+        settingsService: ref.read(settingsServiceProvider),
+        taskViewModel: ref.read(taskViewModelProvider.notifier),
+        ref: ref,
+      );
+      
+      final backupDir = await backupService.getBackupDirectory();
+      await Process.run('explorer.exe', [backupDir.path]);
+      
+      SnackBarService.showSuccess(context, 'バックアップフォルダを開きました');
+    } catch (e) {
+      SnackBarService.showError(context, 'フォルダを開けませんでした: $e');
+    }
+  }
+
+  Widget _buildIntegratedBackupSection(BuildContext context, WidgetRef ref, SettingsState state, SettingsNotifier notifier) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('データのバックアップ / エクスポート', Icons.backup),
+        const SizedBox(height: 16),
+        
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                    // 説明文
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info, color: Theme.of(context).colorScheme.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '保存先: ドキュメント/backups',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // 今すぐ保存ボタン
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showExportOptionsDialog(context, ref),
+                        icon: const Icon(Icons.save),
+                        label: const Text('今すぐ保存'),
+                        style: AppButtonStyles.primary(context),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // 保存先を開くボタン
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openBackupFolder(context),
+                        icon: const Icon(Icons.folder_open),
+                        label: const Text('保存先を開く'),
+                        style: AppButtonStyles.outlined(context),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // インポートボタン
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showImportOptionsDialog(context, ref),
+                  icon: const Icon(Icons.upload),
+                        label: const Text('インポート'),
+                        style: AppButtonStyles.outlined(context),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // 自動バックアップ設定
+                    SwitchListTile(
+                      title: const Text('自動バックアップ'),
+                      subtitle: const Text('定期的にデータをバックアップ'),
+                      value: state.autoBackup,
+                      onChanged: (value) => notifier.setAutoBackup(value),
+                    ),
+                    
+                    if (state.autoBackup) ...[
+                      const SizedBox(height: 16),
+                      Text('バックアップ間隔: ${state.backupInterval}日'),
+                      Slider(
+                        value: state.backupInterval.toDouble(),
+                        min: 1,
+                        max: 30,
+                        divisions: 29,
+                        label: '${state.backupInterval}日',
+                        onChanged: (value) => notifier.setBackupInterval(value.round()),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// エクスポートオプションダイアログを表示
+  void _showExportOptionsDialog(BuildContext context, WidgetRef ref) {
+    String selectedType = 'both'; // デフォルトは両方
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => UnifiedDialog(
+          title: 'エクスポートオプション',
+          icon: Icons.save,
+          iconColor: Colors.green,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('エクスポートするデータを選択してください:'),
+              const SizedBox(height: 16),
+              
+              RadioListTile<String>(
+                title: const Text('リンクのみ'),
+                subtitle: const Text('リンクデータのみをエクスポート'),
+                value: 'links',
+                groupValue: selectedType,
+                onChanged: (value) => setState(() => selectedType = value!),
+              ),
+              RadioListTile<String>(
+                title: const Text('タスクのみ'),
+                subtitle: const Text('タスクデータのみをエクスポート'),
+                value: 'tasks',
+                groupValue: selectedType,
+                onChanged: (value) => setState(() => selectedType = value!),
+              ),
+              RadioListTile<String>(
+                title: const Text('両方'),
+                subtitle: const Text('リンクとタスクの両方をエクスポート'),
+                value: 'both',
+                groupValue: selectedType,
+                onChanged: (value) => setState(() => selectedType = value!),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: AppButtonStyles.text(context),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _performExport(context, ref, selectedType);
+              },
+              style: AppButtonStyles.primary(context),
+              child: const Text('エクスポート'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// インポートオプションダイアログを表示
+  void _showImportOptionsDialog(BuildContext context, WidgetRef ref) {
+    String selectedType = 'both'; // デフォルトは両方
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => UnifiedDialog(
+          title: 'インポートオプション',
+          icon: Icons.upload,
+          iconColor: Colors.blue,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('インポートするデータを選択してください:'),
+              const SizedBox(height: 16),
+              
+              RadioListTile<String>(
+                title: const Text('リンクのみ'),
+                subtitle: const Text('リンクデータのみをインポート'),
+                value: 'links',
+                groupValue: selectedType,
+                onChanged: (value) => setState(() => selectedType = value!),
+              ),
+              RadioListTile<String>(
+                title: const Text('タスクのみ'),
+                subtitle: const Text('タスクデータのみをインポート'),
+                value: 'tasks',
+                groupValue: selectedType,
+                onChanged: (value) => setState(() => selectedType = value!),
+              ),
+              RadioListTile<String>(
+                title: const Text('両方'),
+                subtitle: const Text('リンクとタスクの両方をインポート'),
+                value: 'both',
+                groupValue: selectedType,
+                onChanged: (value) => setState(() => selectedType = value!),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: AppButtonStyles.text(context),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _performImport(context, ref, selectedType);
+              },
+              style: AppButtonStyles.primary(context),
+              child: const Text('インポート'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// エクスポートを実行
+  void _performExport(BuildContext context, WidgetRef ref, String type) async {
+    // 非同期処理を別メソッドで実行
+    _executeExport(type, ref);
+  }
+
+  /// エクスポート処理を実行（非同期処理を分離）
+  void _executeExport(String type, WidgetRef ref) async {
+    // グローバルなNavigatorKeyを使用してダイアログを表示
+    final globalContext = navigatorKey.currentContext;
+    if (globalContext == null) return;
+
+    // ローディングダイアログを表示
+    showDialog(
+      context: globalContext,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // IntegratedBackupServiceを使用してエクスポートを実行
+      final backupService = IntegratedBackupService(
+        linkRepository: ref.read(linkRepositoryProvider),
+        settingsService: ref.read(settingsServiceProvider),
+        taskViewModel: ref.read(taskViewModelProvider.notifier),
+        ref: ref,
+      );
+
+      final filePath = await backupService.exportData(
+        onlyLinks: type == 'links',
+        onlyTasks: type == 'tasks',
+      );
+
+      // ローディングを閉じる
+      Navigator.of(globalContext).pop();
+
+      // 結果を表示
+      String message = 'エクスポートが完了しました\n';
+      message += '保存先: $filePath';
+      
+      showDialog(
+        context: globalContext,
+        builder: (context) => UnifiedDialog(
+          title: 'エクスポート完了',
+          icon: Icons.check_circle,
+          iconColor: Colors.green,
+          content: Text(message),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: AppButtonStyles.primary(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // ローディングを閉じる
+      Navigator.of(globalContext).pop();
+      
+      // エラーダイアログを表示
+      showDialog(
+        context: globalContext,
+        builder: (context) => UnifiedDialog(
+          title: 'エクスポートエラー',
+          icon: Icons.error,
+          iconColor: Colors.red,
+          content: Text('エクスポートエラー: $e'),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: AppButtonStyles.primary(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  /// インポートを実行
+  void _performImport(BuildContext context, WidgetRef ref, String type) async {
+    try {
+      // ファイル選択ダイアログを開く
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        dialogTitle: 'インポートするファイルを選択',
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        
+        // 非同期処理を別メソッドで実行（ローディングも含む）
+        _executeImport(file, type, ref);
+      }
+    } catch (e) {
+      // ウィジェットがまだマウントされているかチェック
+      if (!mounted) return;
+      
+      // グローバルなNavigatorKeyを使用
+      final globalContext = navigatorKey.currentContext;
+      if (globalContext != null) {
+        showDialog(
+          context: globalContext,
+          builder: (context) => UnifiedDialog(
+            title: 'インポートエラー',
+            icon: Icons.error,
+            iconColor: Colors.red,
+            content: Text('インポートエラー: $e'),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: AppButtonStyles.primary(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  /// インポート処理を実行（非同期処理を分離）
+  void _executeImport(File file, String type, WidgetRef ref) async {
+    // グローバルなNavigatorKeyを使用してダイアログを表示
+    final globalContext = navigatorKey.currentContext;
+    if (globalContext == null) return;
+
+    // ローディングダイアログを表示
+    showDialog(
+      context: globalContext,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // IntegratedBackupServiceを使用してインポートを実行
+      final backupService = IntegratedBackupService(
+        linkRepository: ref.read(linkRepositoryProvider),
+        settingsService: ref.read(settingsServiceProvider),
+        taskViewModel: ref.read(taskViewModelProvider.notifier),
+        ref: ref,
+      );
+
+      final importResult = await backupService.importData(
+        file,
+        onlyLinks: type == 'links',
+        onlyTasks: type == 'tasks',
+      );
+
+      // ローディングを閉じる
+      Navigator.of(globalContext).pop();
+
+      // 結果をダイアログで表示（新しいUIを使用）
+
+      showDialog(
+        context: globalContext,
+        builder: (context) => UnifiedDialog(
+          title: 'インポート完了',
+          icon: Icons.check_circle,
+          iconColor: Colors.green,
+          width: 600,
+          height: 600,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 基本情報
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'インポートが完了しました',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('リンク: ${importResult.links.length}件'),
+                    Text('グループ: ${importResult.groups.length}件'),
+                    Text('タスク: ${importResult.tasks.length}件'),
+                  ],
+                ),
+              ),
+              
+              // 警告セクション
+              if (importResult.warnings.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  '警告 (${importResult.warnings.length}件):',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 300,
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: ScrollController(),
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: importResult.warnings.map((warning) => 
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              '• $warning',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade800,
+                              ),
+                            ),
+                          ),
+                        ).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: AppButtonStyles.primary(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // ローディングを閉じる
+      Navigator.of(globalContext).pop();
+      
+      // エラーダイアログを表示
+      showDialog(
+        context: globalContext,
+        builder: (context) => UnifiedDialog(
+          title: 'インポートエラー',
+          icon: Icons.error,
+          iconColor: Colors.red,
+          content: Text('インポート中にエラーが発生しました:\n\n$e'),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: AppButtonStyles.primary(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   Widget _buildExportSection(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1691,9 +2220,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildResetItem('アプリ再起動', '設定変更を反映するため再起動が推奨されます'),
             _buildResetItem('設定確認', '設定画面で新しい設定値を確認できます'),
             _buildResetItem('データ復元', 'エクスポート/インポート機能でデータを復元可能'),
-            ],
+              ],
+            ),
           ),
-        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -1710,7 +2239,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       padding: const EdgeInsets.only(left: 16, top: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      children: [
           Text('• ', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
           Expanded(
             child: RichText(
@@ -3460,10 +3989,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         iconColor: Colors.blue,
         width: 700,
         height: 800,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             const Text(
               'Google Calendar APIを使用するための設定手順:',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -3563,7 +4093,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
             ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(

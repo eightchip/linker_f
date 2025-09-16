@@ -24,9 +24,11 @@ import 'task_dialog.dart';
 import 'sub_task_dialog.dart';
 import '../widgets/mail_badge.dart';
 import '../services/mail_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/sent_mail_log.dart';
 import '../services/keyboard_shortcut_service.dart';
 import '../widgets/unified_dialog.dart';
+import '../widgets/app_button_styles.dart';
 import '../widgets/app_spacing.dart';
 
 class TaskScreen extends ConsumerStatefulWidget {
@@ -2952,42 +2954,280 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
     if (emailMatch != null) {
       final replyEmail = emailMatch.group(1)?.trim();
       if (replyEmail != null && replyEmail.isNotEmpty) {
-        // デフォルトメーラーで返信メールを作成
-        final subject = 'Re: ${task.title}';
-        final body = 'お疲れ様です。\n\n${task.title}についてご連絡いたします。\n\n';
-        
-        final mailtoUrl = 'mailto:$replyEmail?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
-        
-        try {
-          // Windowsのデフォルトメーラーを起動
-          Process.run('cmd', ['/c', 'start', mailtoUrl]);
-          SnackBarService.showSuccess(context, 'メーラーを起動しました');
-        } catch (e) {
-          SnackBarService.showError(context, 'メーラーの起動に失敗しました: $e');
-        }
+        // メーラー選択ダイアログを表示
+        _showMailerSelectionDialog(task, replyEmail);
       } else {
-        SnackBarService.showError(context, '返信先メールアドレスが見つかりません');
+        SnackBarService.showError(context, '返信先メールアドレスが無効です');
       }
     } else {
       SnackBarService.showError(context, '返信先メールアドレスが見つかりません');
     }
   }
+
+  /// メーラー選択ダイアログを表示
+  void _showMailerSelectionDialog(TaskItem task, String replyEmail) {
+    String selectedMailer = 'outlook'; // デフォルトは必ずOutlook
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          
+          return UnifiedDialog(
+            title: 'メーラー選択',
+            icon: Icons.email,
+            iconColor: Colors.blue,
+            width: 450,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('送信アプリ:'),
+                const SizedBox(height: 12),
+                
+                // メーラー選択（Outlook左デフォルト／Gmail右）
+                Row(
+                  children: [
+                    // Outlook選択（左、デフォルト）
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: selectedMailer == 'outlook' ? Colors.blue : Colors.grey.shade300,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          color: selectedMailer == 'outlook' ? Colors.blue.shade50 : Colors.white,
+                        ),
+                        child: RadioListTile<String>(
+                          title: const Text('Outlook'),
+                          subtitle: const Text('デスクトップ'),
+                          value: 'outlook',
+                          groupValue: selectedMailer,
+                          onChanged: (value) => setState(() => selectedMailer = value!),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          activeColor: Colors.blue,
+                          dense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Gmail選択（右）
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: selectedMailer == 'gmail' ? Colors.red : Colors.grey.shade300,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          color: selectedMailer == 'gmail' ? Colors.red.shade50 : Colors.white,
+                        ),
+                        child: RadioListTile<String>(
+                          title: const Text('Gmail'),
+                          subtitle: const Text('Web'),
+                          value: 'gmail',
+                          groupValue: selectedMailer,
+                          onChanged: (value) => setState(() => selectedMailer = value!),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          activeColor: Colors.red,
+                          dense: true,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // 各メーラー個別テストボタン
+              Row(
+                children: [
+                  // Outlookテストボタン
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: selectedMailer == 'outlook' ? Colors.blue : Colors.grey.shade300,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        color: selectedMailer == 'outlook' ? Colors.blue.shade50 : Colors.grey.shade50,
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: () => _testOutlookConnection(),
+                        icon: const Icon(Icons.business, size: 16),
+                        label: const Text('Outlookテスト'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: selectedMailer == 'outlook' ? Colors.blue : Colors.grey.shade600,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Gmailテストボタン
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: selectedMailer == 'gmail' ? Colors.red : Colors.grey.shade300,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        color: selectedMailer == 'gmail' ? Colors.red.shade50 : Colors.grey.shade50,
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: () => _testGmailConnection(),
+                        icon: const Icon(Icons.mail, size: 16),
+                        label: const Text('Gmailテスト'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: selectedMailer == 'gmail' ? Colors.red : Colors.grey.shade600,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: AppButtonStyles.text(context),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _sendReplyEmail(task, replyEmail, selectedMailer);
+              },
+              style: AppButtonStyles.primary(context),
+              child: const Text('送信'),
+            ),
+          ],
+        );
+        },
+      ),
+    );
+  }
+
+  /// 返信メールを送信
+  void _sendReplyEmail(TaskItem task, String replyEmail, String mailer) async {
+    try {
+      final subject = 'Re: ${task.title}';
+      final mailService = MailService();
+      
+      await mailService.sendMail(
+        taskId: task.id,
+        app: mailer,
+        to: replyEmail,
+        cc: '',
+        bcc: '',
+        subject: subject,
+        body: '', // HTMLテンプレートを使用
+        title: task.title,
+        due: task.dueDate?.toString(),
+        status: task.status.toString(),
+        memo: task.description,
+        links: [], // 必要に応じてリンクを追加
+      );
+      
+      SnackBarService.showSuccess(context, '${mailer == 'outlook' ? 'Outlook' : 'Gmail'}で返信メールを作成しました');
+    } catch (e) {
+      SnackBarService.showError(context, 'メール送信エラー: $e');
+    }
+  }
+
+  /// Outlook接続テスト
+  void _testOutlookConnection() async {
+    try {
+      final mailService = MailService();
+      final isAvailable = await mailService.isOutlookAvailable();
+      
+      if (isAvailable) {
+        SnackBarService.showSuccess(context, 'Outlook接続テスト成功');
+      } else {
+        SnackBarService.showError(context, 'Outlook接続テスト失敗');
+      }
+    } catch (e) {
+      SnackBarService.showError(context, 'Outlook接続テストエラー: $e');
+    }
+  }
+
+  /// Gmail接続テスト
+  void _testGmailConnection() async {
+    try {
+      const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=';
+      final uri = Uri.parse(gmailUrl);
+      
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+        SnackBarService.showSuccess(context, 'Gmail接続テスト成功');
+      } else {
+        SnackBarService.showError(context, 'Gmail接続テスト失敗');
+      }
+    } catch (e) {
+      SnackBarService.showError(context, 'Gmail接続テストエラー: $e');
+    }
+  }
   
   /// 関連メールを検索
-  void _searchRelatedEmails(TaskItem task) {
-    // 説明からメールIDを抽出
-    final description = task.description ?? '';
-    final emailIdMatch = RegExp(r'🔍 メールID: (.+)').firstMatch(description);
-    
-    if (emailIdMatch != null) {
-      final emailId = emailIdMatch.group(1)?.trim();
-      if (emailId != null && emailId.isNotEmpty) {
-        SnackBarService.showInfo(context, 'メールID: $emailId\nGmailでこのメールを検索できます');
+  void _searchRelatedEmails(TaskItem task) async {
+    try {
+      // 説明からメールIDを抽出
+      final description = task.description ?? '';
+      final emailIdMatch = RegExp(r'🔍 メールID: (.+)').firstMatch(description);
+      
+      if (emailIdMatch != null) {
+        final emailId = emailIdMatch.group(1)?.trim();
+        if (emailId != null && emailId.isNotEmpty) {
+          // タスクのソースに応じて検索方法を選択
+          if (task.id.startsWith('gmail_')) {
+            // Gmailの場合はGmailで検索
+            final gmailUrl = 'https://mail.google.com/mail/u/0/#search/$emailId';
+            if (await canLaunchUrl(Uri.parse(gmailUrl))) {
+              await launchUrl(Uri.parse(gmailUrl));
+              SnackBarService.showSuccess(context, 'Gmailでメールを検索中...');
+            } else {
+              SnackBarService.showError(context, 'Gmailを開けませんでした');
+            }
+          } else if (task.id.startsWith('outlook_')) {
+            // Outlookの場合はPowerShellスクリプトで検索
+            await _searchOutlookEmail(emailId);
+          } else {
+            SnackBarService.showInfo(context, 'メールID: $emailId\n手動でメールを検索してください');
+          }
+        } else {
+          SnackBarService.showError(context, 'メールIDが見つかりません');
+        }
       } else {
         SnackBarService.showError(context, 'メールIDが見つかりません');
       }
-    } else {
-      SnackBarService.showError(context, 'メールIDが見つかりません');
+    } catch (e) {
+      SnackBarService.showError(context, 'メール検索エラー: $e');
+    }
+  }
+
+  /// Outlookでメールを検索
+  Future<void> _searchOutlookEmail(String emailId) async {
+    try {
+      final mailService = MailService();
+      await mailService.initialize();
+      
+      final result = await mailService.searchSentMail(emailId);
+      if (result) {
+        SnackBarService.showSuccess(context, 'Outlookでメールを検索中...');
+      } else {
+        SnackBarService.showError(context, 'メールが見つかりませんでした');
+      }
+    } catch (e) {
+      SnackBarService.showError(context, 'Outlook検索エラー: $e');
     }
   }
   

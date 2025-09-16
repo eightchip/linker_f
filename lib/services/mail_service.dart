@@ -45,12 +45,49 @@ class MailService {
     }
   }
 
-  /// 短いトークンを生成
-  String makeShortToken() {
-    final ms = DateTime.now().millisecondsSinceEpoch;
-    final token = ms.toRadixString(36).toUpperCase();
-    // 最後の6文字を取得（LN-プレフィックスを含めて8文字）
-    return 'LN-${token.length >= 6 ? token.substring(token.length - 6) : token.padLeft(6, '0')}';
+  /// 短いトークンを生成（LN-XXXXXX形式）
+  String makeToken() {
+    final n = DateTime.now().millisecondsSinceEpoch;
+    return 'LN-${n.toRadixString(36).toUpperCase().substring(2, 8)}';
+  }
+
+  /// メール本文HTMLテンプレートを生成
+  String buildMailHtml({
+    required String title,
+    String? due,
+    String? status,
+    String? memo,
+    List<String>? links,
+    required String token,
+  }) {
+    String linkItem(String raw) {
+      final isUnc = raw.startsWith(r'\\');
+      final href = isUnc ? 'file://${raw.replaceAll(r'\', '/')}' : raw;
+      return '<li><a href="$href">$raw</a></li>';
+    }
+
+    final linksHtml = (links ?? []).isEmpty
+        ? ''
+        : '<p><b>関連資料:</b></p><ul>${(links!).map(linkItem).join()}</ul>';
+
+    final memoHtml = (memo ?? '').isEmpty
+        ? ''
+        : '<p><b>メモ:</b><br>${(memo!).replaceAll('\n', '<br>')}</p>';
+
+    return '''
+    <html><body style="font-family:Segoe UI,Meiryo;font-size:14px;">
+      <p><b>タスク:</b> $title</p>
+      ${due == null || due.isEmpty ? '' : '<p><b>期限:</b> $due</p>'}
+      ${status == null || status.isEmpty ? '' : '<p><b>ステータス:</b> $status</p>'}
+      $memoHtml
+      $linksHtml
+      <hr style="margin-top:16px;">
+      <p style="color:#6b7280;font-size:12px;">
+        送信ID: $token<br>
+        （このIDで送信済み検索ができます）
+      </p>
+    </body></html>
+    ''';
   }
 
   /// タスクIDに関連する送信ログを取得
@@ -386,7 +423,7 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
     required String subject,
     required String body,
   }) async {
-    final token = makeShortToken();
+    final token = makeToken();
     final finalSubject = '$subject [$token]';
     final finalBody = '$body\n\n---\n送信ID: $token';
 
@@ -462,10 +499,29 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
     required String bcc,
     required String subject,
     required String body,
+    String? title,
+    String? due,
+    String? status,
+    String? memo,
+    List<String>? links,
   }) async {
-    final token = makeShortToken();
+    final token = makeToken();
     final finalSubject = '$subject [$token]';
-    final finalBody = _createEnhancedBody(body, token);
+    
+    // HTMLテンプレートを使用する場合は、タスク情報から生成
+    String finalBody;
+    if (title != null) {
+      finalBody = buildMailHtml(
+        title: title,
+        due: due,
+        status: status,
+        memo: memo,
+        links: links,
+        token: token,
+      );
+    } else {
+      finalBody = _createEnhancedBody(body, token);
+    }
 
     try {
       if (app == 'gmail') {
@@ -587,6 +643,32 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
       if (kDebugMode) {
         print('連絡先抽出エラー: $e');
       }
+    }
+  }
+
+  /// Outlook送信済み検索
+  Future<bool> searchSentMail(String token) async {
+    try {
+      const scriptPath = r'C:\Apps\find_sent.ps1';
+      
+      final result = await Process.run('powershell.exe', [
+        '-ExecutionPolicy', 'Bypass',
+        '-File', scriptPath,
+        '-Token', token,
+      ]);
+
+      if (kDebugMode) {
+        print('Outlook送信済み検索結果: ${result.exitCode}');
+        print('Stdout: ${result.stdout}');
+        print('Stderr: ${result.stderr}');
+      }
+
+      return result.exitCode == 0;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Outlook送信済み検索エラー: $e');
+      }
+      return false;
     }
   }
 

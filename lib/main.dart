@@ -24,6 +24,8 @@ import 'services/google_calendar_service.dart';
 import 'services/email_monitor_service.dart';
 import 'repositories/link_repository.dart';
 
+// グローバルなNavigatorKey
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   try {

@@ -6,7 +6,7 @@ import '../models/email_task_assignment.dart';
 
 /// Outlook サービス
 class OutlookService {
-  static const String _scriptPath = r'C:\Apps\find_task_assignments_company_safe.ps1';
+  static const String _scriptPath = r'C:\Apps\company_task_search.ps1';
   
   /// PowerShellスクリプトを実行してOutlookからタスク割り当てメールを検索
   Future<List<EmailTaskAssignment>> searchTaskAssignmentEmails() async {
@@ -15,13 +15,21 @@ class OutlookService {
         print('Outlook Service: PowerShellスクリプトを実行中...');
       }
       
+      // スクリプトファイルの存在確認
+      final scriptFile = File(_scriptPath);
+      if (!await scriptFile.exists()) {
+        if (kDebugMode) {
+          print('Outlook Service: スクリプトファイルが見つかりません: $_scriptPath');
+        }
+        throw Exception('スクリプトファイルが見つかりません: $_scriptPath');
+      }
+      
       // PowerShellスクリプトを実行
       final result = await Process.run(
         'powershell.exe',
         [
           '-ExecutionPolicy', 'Bypass',
           '-File', _scriptPath,
-          '-OutputFile', 'task_assignments.json'
         ],
         workingDirectory: Directory.current.path,
       );
@@ -30,25 +38,41 @@ class OutlookService {
         if (kDebugMode) {
           print('Outlook Service: PowerShellスクリプト実行エラー: ${result.stderr}');
         }
-        return [];
+        throw Exception('PowerShellスクリプト実行エラー: ${result.stderr}');
       }
       
-      // 結果ファイルを読み込み
-      final outputFile = File('task_assignments.json');
-      if (!await outputFile.exists()) {
+      // PowerShellの出力を直接解析（JSONファイルではなく標準出力から）
+      final output = result.stdout.toString().trim();
+      if (kDebugMode) {
+        print('Outlook Service: PowerShell出力: $output');
+      }
+      
+      // JSON形式の出力を探す
+      final jsonMatch = RegExp(r'\{.*\}', multiLine: true, dotAll: true).firstMatch(output);
+      if (jsonMatch == null) {
         if (kDebugMode) {
-          print('Outlook Service: 出力ファイルが見つかりません');
+          print('Outlook Service: JSON出力が見つかりません');
         }
         return [];
       }
       
-      final jsonString = await outputFile.readAsString(encoding: utf8);
-      final List<dynamic> jsonList = jsonDecode(jsonString);
+      final jsonString = jsonMatch.group(0)!;
+      final jsonData = jsonDecode(jsonString);
       
+      // 成功フラグを確認
+      if (jsonData['success'] != true) {
+        if (kDebugMode) {
+          print('Outlook Service: スクリプトが失敗を報告: ${jsonData['error']}');
+        }
+        throw Exception('スクリプト実行失敗: ${jsonData['error']}');
+      }
+      
+      final List<dynamic> tasks = jsonData['tasks'] ?? [];
       final assignments = <EmailTaskAssignment>[];
-      for (final json in jsonList) {
+      
+      for (final taskJson in tasks) {
         try {
-          final assignment = EmailTaskAssignment.fromJson(json);
+          final assignment = EmailTaskAssignment.fromJson(taskJson);
           assignments.add(assignment);
         } catch (e) {
           if (kDebugMode) {
@@ -66,7 +90,7 @@ class OutlookService {
       if (kDebugMode) {
         print('Outlook Service エラー: $e');
       }
-      return [];
+      rethrow; // エラーを上位に伝播
     }
   }
   
@@ -77,25 +101,12 @@ class OutlookService {
         print('Outlook Service: 接続テスト開始');
       }
       
-      // PowerShellスクリプトを実行してテスト
+      // 専用の接続テストスクリプトを使用
       final result = await Process.run(
         'powershell.exe',
         [
           '-ExecutionPolicy', 'Bypass',
-          '-Command',
-          '''
-          try {
-            \$outlook = New-Object -ComObject Outlook.Application
-            \$namespace = \$outlook.GetNamespace("MAPI")
-            \$inbox = \$namespace.GetDefaultFolder(6)
-            Write-Host "Outlook接続成功"
-            [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null
-            exit 0
-          } catch {
-            Write-Host "Outlook接続失敗: \$(\$_.Exception.Message)"
-            exit 1
-          }
-          '''
+          '-File', r'C:\Apps\company_outlook_test.ps1',
         ],
         workingDirectory: Directory.current.path,
       );
@@ -104,6 +115,7 @@ class OutlookService {
       
       if (kDebugMode) {
         print('Outlook Service: 接続テスト結果: ${success ? "成功" : "失敗"}');
+        print('Outlook Service: 標準出力: ${result.stdout}');
         if (!success) {
           print('Outlook Service: エラー詳細: ${result.stderr}');
         }

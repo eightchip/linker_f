@@ -93,10 +93,13 @@ try {
         exit 0
     }
     
-    # 過去24時間のメールを検索
-    $searchDate = (Get-Date).AddDays(-1).ToString("yyyy-MM-dd")
+    # 過去7日間のメールを検索（期間を拡張）
+    $searchDate = (Get-Date).AddDays(-7).ToString("yyyy-MM-dd")
     $filter = "[ReceivedTime] >= '$searchDate'"
     $emails = $inbox.Items.Restrict($filter)
+    
+    Write-Host "検索期間: $searchDate 以降" -ForegroundColor Yellow
+    Write-Host "検索対象メール数: $($emails.Count)" -ForegroundColor Yellow
     
     $taskAssignments = @()
     $keywordPatterns = @(
@@ -104,21 +107,31 @@ try {
         "*task*", "*request*", "*assignment*"
     )
     
+    $processedCount = 0
     foreach ($email in $emails) {
         if ($email.Class -eq 43) {  # olMail
+            $processedCount++
             $subject = $email.Subject
             $body = $email.Body
             $senderName = $email.SenderName
             $senderEmail = $email.SenderEmailAddress
             $receivedTime = $email.ReceivedTime.ToString("yyyy-MM-dd HH:mm:ss")
             
+            Write-Host "処理中 ($processedCount): $subject" -ForegroundColor Gray
+            
             # キーワードマッチング
             $isTaskEmail = $false
+            $matchedPattern = ""
             foreach ($pattern in $keywordPatterns) {
                 if ($subject -like $pattern -or $body -like $pattern) {
                     $isTaskEmail = $true
+                    $matchedPattern = $pattern
                     break
                 }
+            }
+            
+            if ($isTaskEmail) {
+                Write-Host "マッチ: $subject (パターン: $matchedPattern)" -ForegroundColor Green
             }
             
             if ($isTaskEmail) {

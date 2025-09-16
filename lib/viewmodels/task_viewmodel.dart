@@ -30,6 +30,9 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   Box<TaskItem>? _taskBox;
   final _uuid = const Uuid();
 
+  // tasksプロパティを追加
+  List<TaskItem> get tasks => state;
+
   // _taskBoxの初期化を確実に行う
   Future<void> _initializeTaskBox() async {
     try {
@@ -1742,31 +1745,37 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
   
-  /// 2つのタスクが同じかどうかを判定（タイトルと日付で比較）
+  /// 2つのタスクが同じかどうかを判定（より厳密な判定）
   bool _isSameTask(TaskItem task1, TaskItem task2) {
-    // タイトルが同じ
+    // IDが同じ場合は完全に同じタスク
+    if (task1.id == task2.id) return true;
+    
+    // タイトルが異なる場合は別のタスク
     if (task1.title != task2.title) return false;
     
-    // 日付が同じ（期限日またはリマインダー時間）
+    // 作成日時が非常に近い場合（1分以内）は重複の可能性が高い
+    if (task1.createdAt != null && task2.createdAt != null) {
+      final timeDiff = task1.createdAt!.difference(task2.createdAt!).abs();
+      if (timeDiff.inMinutes <= 1) {
+        // さらに詳細な比較
+        if (task1.description == task2.description &&
+            task1.priority == task2.priority &&
+            task1.tags.toString() == task2.tags.toString()) {
+          return true;
+        }
+      }
+    }
+    
+    // 期限日が同じ場合
     if (task1.dueDate != null && task2.dueDate != null) {
       final dateDiff = task1.dueDate!.difference(task2.dueDate!).abs();
-      if (dateDiff.inDays <= 1) return true;
-    }
-    
-    if (task1.reminderTime != null && task2.reminderTime != null) {
-      final timeDiff = task1.reminderTime!.difference(task2.reminderTime!).abs();
-      if (timeDiff.inDays <= 1) return true;
-    }
-    
-    // 期限日とリマインダー時間の組み合わせ
-    if (task1.dueDate != null && task2.reminderTime != null) {
-      final dateDiff = task1.dueDate!.difference(task2.reminderTime!).abs();
-      if (dateDiff.inDays <= 1) return true;
-    }
-    
-    if (task1.reminderTime != null && task2.dueDate != null) {
-      final dateDiff = task1.reminderTime!.difference(task2.dueDate!).abs();
-      if (dateDiff.inDays <= 1) return true;
+      if (dateDiff.inDays <= 1) {
+        // 説明と優先度も同じ場合は重複とみなす
+        if (task1.description == task2.description &&
+            task1.priority == task2.priority) {
+          return true;
+        }
+      }
     }
     
     return false;
