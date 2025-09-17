@@ -68,25 +68,38 @@ class MailService {
 
     final linksHtml = (links ?? []).isEmpty
         ? ''
-        : '<p><b>関連資料:</b></p><ul>${(links!).map(linkItem).join()}</ul>';
+        : '<div style="margin: 15px 0;"><strong>関連資料:</strong><ul style="margin: 5px 0;">${(links!).map(linkItem).join()}</ul></div>';
 
     final memoHtml = (memo ?? '').isEmpty
         ? ''
-        : '<p><b>メモ:</b><br>${(memo!).replaceAll('\n', '<br>')}</p>';
+        : '<div style="margin: 15px 0;"><strong>メモ:</strong><br>${(memo!).replaceAll('\n', '<br>')}</div>';
 
     return '''
-    <html><body style="font-family:Segoe UI,Meiryo;font-size:14px;">
-      <p><b>タスク:</b> $title</p>
-      ${due == null || due.isEmpty ? '' : '<p><b>期限:</b> $due</p>'}
-      ${status == null || status.isEmpty ? '' : '<p><b>ステータス:</b> $status</p>'}
-      $memoHtml
-      $linksHtml
-      <hr style="margin-top:16px;">
-      <p style="color:#6b7280;font-size:12px;">
-        送信ID: $token<br>
-        （このIDで送信済み検索ができます）
-      </p>
-    </body></html>
+    <html>
+    <body style="font-family: 'Segoe UI', 'Meiryo', sans-serif; font-size: 14px; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background-color: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        
+        <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
+          <h2 style="color: #007bff; margin: 0; font-size: 18px;">📋 タスク情報</h2>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <div style="margin-bottom: 10px;"><strong>タスク:</strong> $title</div>
+          ${due == null || due.isEmpty ? '' : '<div style="margin-bottom: 10px;"><strong>期限:</strong> $due</div>'}
+          ${status == null || status.isEmpty ? '' : '<div style="margin-bottom: 10px;"><strong>ステータス:</strong> $status</div>'}
+        </div>
+        
+        $memoHtml
+        $linksHtml
+        
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef; font-size: 12px; color: #6c757d;">
+          <div style="display: inline-block; background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">Link Navigator</div>
+          <div>送信ID: $token</div>
+        </div>
+        
+      </div>
+    </body>
+    </html>
     ''';
   }
 
@@ -281,24 +294,11 @@ class MailService {
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📧 タスク管理アプリからのメール</h1>
-        </div>
         
         <div class="content">
             ${_formatBodyContent(body)}
         </div>
         
-        <div class="task-info">
-            <strong>📋 タスク情報</strong><br>
-            このメールはタスク管理システムから自動生成されました。
-        </div>
-        
-        <div class="footer">
-            <div class="app-badge">Link Navigator</div>
-            <p>このメールはタスク管理アプリから送信されました。</p>
-            <p>送信日時: ${DateTime.now().toString().split('.')[0]}</p>
-        </div>
     </div>
 </body>
 </html>
@@ -325,7 +325,7 @@ class MailService {
         .map((line) => '<p style="margin: 10px 0;">${line.trim()}</p>')
         .join('');
     
-    return paragraphs.isNotEmpty ? paragraphs : '<p>${escapedBody}</p>';
+    return paragraphs.isNotEmpty ? paragraphs : '<p>$escapedBody</p>';
   }
 
   /// 強化されたメール本文を作成
@@ -336,20 +336,15 @@ class MailService {
     final enhancedBody = '''
 ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。'}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+────────────────────────────────────────────────────────
 
-📧 メール情報
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📅 送信日時: $formattedTime
-🆔 送信ID: $token
-📱 送信元: Link Navigator (タスク管理アプリ)
+【メール情報】
+送信日時: $formattedTime
+送信ID: $token
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+────────────────────────────────────────────────────────
 
-このメールは Link Navigator タスク管理アプリから自動送信されました。
-返信や質問がございましたら、お気軽にお声かけください。
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このメールは Link Navigator アプリから送信されました。
 ''';
     
     return enhancedBody;
@@ -359,7 +354,7 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
   Future<void> openGmailSentSearch(String token) async {
     try {
       final url = Uri.parse('https://mail.google.com/mail/u/0/#search/'
-          '${Uri.encodeComponent('in:sent "' + token + '"')}');
+          '${Uri.encodeComponent('in:sent "$token"')}');
       
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);

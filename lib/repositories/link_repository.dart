@@ -8,6 +8,16 @@ class LinkRepository {
   static const String _linksBoxName = 'links';
   static const String _groupsOrderBoxName = 'groups_order';
   
+  // シングルトンインスタンス
+  static LinkRepository? _instance;
+  static LinkRepository get instance {
+    _instance ??= LinkRepository._internal();
+    return _instance!;
+  }
+  
+  // プライベートコンストラクタ
+  LinkRepository._internal();
+  
   Box<Group>? _groupsBox;
   Box<LinkItem>? _linksBox;
   Box? _groupsOrderBox;
@@ -39,17 +49,87 @@ class LinkRepository {
   // Group operations
   List<Group> getAllGroups() {
     _ensureInitialized();
-    return _groupsBox!.values.toList();
+    final groups = _groupsBox!.values.toList();
+    
+    if (kDebugMode) {
+      print('LinkRepository: グループ読み込み - 総数: ${groups.length}');
+      for (final group in groups) {
+        print('  - グループ: ${group.title} (ID: ${group.id}) - リンク数: ${group.items.length}');
+        if (group.items.isNotEmpty) {
+          for (final item in group.items) {
+            print('    - リンク: ${item.label} (ID: ${item.id})');
+          }
+        } else {
+          print('    - リンクなし');
+        }
+      }
+    }
+    
+    return groups;
   }
 
   Future<void> saveGroup(Group group) async {
     _ensureInitialized();
-    await _groupsBox!.put(group.id, group);
+    try {
+      if (kDebugMode) {
+        print('LinkRepository: グループ保存開始 - ${group.title} (ID: ${group.id})');
+        print('  - リンク数: ${group.items.length}');
+        for (final item in group.items) {
+          print('    - リンク: ${item.label} (ID: ${item.id})');
+        }
+      }
+      
+      await _groupsBox!.put(group.id, group);
+      
+      // データの永続化を確実にするため、少し待機
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // 保存されたデータを検証
+      final savedGroup = _groupsBox!.get(group.id);
+      if (savedGroup != null) {
+        if (kDebugMode) {
+          print('LinkRepository: グループ保存完了 - ${savedGroup.title}');
+          print('  - 保存されたリンク数: ${savedGroup.items.length}');
+        }
+      } else {
+        print('LinkRepository: 警告 - グループの保存に失敗しました: ${group.title}');
+      }
+    } catch (e) {
+      print('LinkRepository: グループ保存エラー - ${group.title}: $e');
+      rethrow;
+    }
   }
 
   Future<void> updateGroup(Group group) async {
     _ensureInitialized();
-    await _groupsBox!.put(group.id, group);
+    try {
+      if (kDebugMode) {
+        print('LinkRepository: グループ更新開始 - ${group.title} (ID: ${group.id})');
+        print('  - リンク数: ${group.items.length}');
+        for (final item in group.items) {
+          print('    - リンク: ${item.label} (ID: ${item.id})');
+        }
+      }
+      
+      await _groupsBox!.put(group.id, group);
+      
+      // データの永続化を確実にするため、少し待機
+      await Future.delayed(const Duration(milliseconds: 50));
+      
+      // 保存されたデータを検証
+      final savedGroup = _groupsBox!.get(group.id);
+      if (savedGroup != null) {
+        if (kDebugMode) {
+          print('LinkRepository: グループ更新完了 - ${savedGroup.title}');
+          print('  - 保存されたリンク数: ${savedGroup.items.length}');
+        }
+      } else {
+        print('LinkRepository: 警告 - グループの更新に失敗しました: ${group.title}');
+      }
+    } catch (e) {
+      print('LinkRepository: グループ更新エラー - ${group.title}: $e');
+      rethrow;
+    }
   }
 
   Future<void> deleteGroup(String groupId) async {
@@ -281,6 +361,48 @@ class LinkRepository {
       return order.map((e) => e.toString()).toList();
     }
     return [];
+  }
+
+  // データ整合性チェック
+  Future<bool> validateDataIntegrity() async {
+    _ensureInitialized();
+    try {
+      if (kDebugMode) {
+        print('LinkRepository: データ整合性チェック開始');
+      }
+      
+      final groups = _groupsBox!.values.toList();
+      final links = _linksBox!.values.toList();
+      
+      // グループ内のリンクが個別リンクボックスにも存在するかチェック
+      final groupLinkIds = <String>{};
+      for (final group in groups) {
+        for (final item in group.items) {
+          groupLinkIds.add(item.id);
+        }
+      }
+      
+      final individualLinkIds = links.map((link) => link.id).toSet();
+      
+      // グループ内のリンクで個別リンクボックスに存在しないものがあるかチェック
+      final missingLinks = groupLinkIds.difference(individualLinkIds);
+      if (missingLinks.isNotEmpty) {
+        print('LinkRepository: データ整合性エラー - グループ内のリンクが個別リンクボックスに存在しません: $missingLinks');
+        return false;
+      }
+      
+      if (kDebugMode) {
+        print('LinkRepository: データ整合性チェック完了 - 正常');
+        print('  - グループ数: ${groups.length}');
+        print('  - 個別リンク数: ${links.length}');
+        print('  - グループ内リンク数: ${groupLinkIds.length}');
+      }
+      
+      return true;
+    } catch (e) {
+      print('LinkRepository: データ整合性チェックエラー: $e');
+      return false;
+    }
   }
 
   void dispose() {

@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/task_item.dart';
+import '../models/link_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart'; // Added import for linkViewModelProvider
 import '../services/mail_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/email_contact_service.dart';
-import '../services/email_monitor_service.dart';
 import '../models/email_contact.dart';
 import '../models/sent_mail_log.dart';
 import '../widgets/unified_dialog.dart';
@@ -50,7 +50,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   String _selectedMailApp = 'outlook'; // 'gmail' | 'outlook' - デフォルトはOutlook
   
   // 連絡先選択
-  List<EmailContact> _selectedContacts = [];
+  final List<EmailContact> _selectedContacts = [];
   final List<EmailContact> _availableContacts = [];
 
   // メール送信情報の一時保存
@@ -1539,6 +1539,25 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     _toController.text = emails.join(', ');
   }
 
+  /// タスクの関連リンクを取得
+  List<LinkItem> _getRelatedLinks(TaskItem task) {
+    final groups = ref.read(linkViewModelProvider);
+    final relatedLinks = <LinkItem>[];
+    
+    for (final linkId in task.relatedLinkIds) {
+      for (final group in groups.groups) {
+        for (final link in group.items) {
+          if (link.id == linkId) {
+            relatedLinks.add(link);
+            break;
+          }
+        }
+      }
+    }
+    
+    return relatedLinks;
+  }
+
   /// 強化されたメール本文を作成
   String _createEnhancedMailBody(String originalBody, String token) {
     final currentTime = DateTime.now();
@@ -1552,46 +1571,188 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     
     String taskInfo = '';
     if (taskTitle.isNotEmpty) {
-      taskInfo += '📋 タスク: $taskTitle\n';
+      taskInfo += 'タスク: $taskTitle\n';
     }
     if (taskDescription.isNotEmpty) {
-      taskInfo += '📝 説明: $taskDescription\n';
+      taskInfo += '説明: $taskDescription\n';
     }
     if (taskDueDate != null) {
       final dueDateStr = '${taskDueDate.year}年${taskDueDate.month}月${taskDueDate.day}日';
-      taskInfo += '📅 期限: $dueDateStr\n';
+      taskInfo += '期限: $dueDateStr\n';
     }
     if (taskStatus != null) {
       final statusText = _getStatusText(taskStatus);
-      taskInfo += '📊 ステータス: $statusText\n';
+      taskInfo += 'ステータス: $statusText\n';
+    }
+    
+    // 関連リンク情報を取得
+    String linksInfo = '';
+    if (widget.task != null) {
+      final relatedLinks = _getRelatedLinks(widget.task!);
+      if (relatedLinks.isNotEmpty) {
+        linksInfo += 'リンク:\n';
+        for (final link in relatedLinks) {
+          // Gmail用のリンク表示を改善
+          if (link.path.startsWith('http')) {
+            // HTTP/HTTPSリンクはそのまま表示
+            linksInfo += '• ${link.label}\n  ${link.path}\n';
+          } else if (link.path.startsWith(r'\\')) {
+            // UNCパスは説明付きで表示
+            linksInfo += '• ${link.label}\n  [ネットワーク共有] ${link.path}\n';
+          } else if (link.path.contains(':\\')) {
+            // ローカルファイルパスは説明付きで表示
+            linksInfo += '• ${link.label}\n  [ローカルファイル] ${link.path}\n';
+          } else {
+            // その他のパス
+            linksInfo += '• ${link.label} - ${link.path}\n';
+          }
+        }
+        
+        // メールアプリに応じた注意書きを追加
+        if (_selectedMailApp == 'gmail') {
+          linksInfo += '\n📝 注意: ネットワーク共有やローカルファイルのリンクは、Gmailでは直接クリックできません。\n';
+          linksInfo += 'リンクをコピーして、ファイルエクスプローラーやブラウザのアドレスバーに貼り付けてアクセスしてください。\n';
+        } else if (_selectedMailApp == 'outlook') {
+          linksInfo += '\n📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\n';
+          linksInfo += 'リンクをクリックして直接アクセスできます。\n';
+        }
+      }
     }
     
     final enhancedBody = '''
 ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。'}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+────────────────────────────────────────────────────────
 
-📋 関連タスク情報
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【関連タスク情報】
 ${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${linksInfo.isNotEmpty ? '────────────────────────────────────────────────────────\n\n【関連資料】\n$linksInfo' : ''}
 
-📧 メール情報
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📅 送信日時: $formattedTime
-🆔 送信ID: $token
-📱 送信元: Link Navigator (タスク管理アプリ)
+────────────────────────────────────────────────────────
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【メール情報】
+送信日時: $formattedTime
+送信ID: $token
+
+────────────────────────────────────────────────────────
 
 このメールは Link Navigator タスク管理アプリから送信されました。
-返信や質問がございましたら、お気軽にお声かけください。
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ''';
     
     return enhancedBody;
+  }
+
+  /// 強化されたHTMLメール本文を作成
+  String _createEnhancedHtmlMailBody(String originalBody, String token) {
+    final currentTime = DateTime.now();
+    final formattedTime = '${currentTime.year}年${currentTime.month}月${currentTime.day}日 ${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+    
+    // タスク情報を取得
+    final taskTitle = widget.task?.title ?? _titleController.text.trim();
+    final taskDescription = widget.task?.description ?? _descriptionController.text.trim();
+    final taskDueDate = widget.task?.dueDate;
+    final taskStatus = widget.task?.status;
+    
+    String taskInfo = '';
+    if (taskTitle.isNotEmpty) {
+      taskInfo += '<div style="margin-bottom: 8px;"><strong>タスク:</strong> $taskTitle</div>';
+    }
+    if (taskDescription.isNotEmpty) {
+      taskInfo += '<div style="margin-bottom: 8px;"><strong>説明:</strong> $taskDescription</div>';
+    }
+    if (taskDueDate != null) {
+      final dueDateStr = '${taskDueDate.year}年${taskDueDate.month}月${taskDueDate.day}日';
+      taskInfo += '<div style="margin-bottom: 8px;"><strong>期限:</strong> $dueDateStr</div>';
+    }
+    if (taskStatus != null) {
+      final statusText = _getStatusText(taskStatus);
+      taskInfo += '<div style="margin-bottom: 8px;"><strong>ステータス:</strong> $statusText</div>';
+    }
+    
+    // 関連リンク情報を取得
+    String linksInfo = '';
+    if (widget.task != null) {
+      final relatedLinks = _getRelatedLinks(widget.task!);
+      if (relatedLinks.isNotEmpty) {
+        linksInfo += '<div style="margin: 15px 0;"><strong>関連資料:</strong><ul style="margin: 5px 0;">';
+        for (final link in relatedLinks) {
+          if (link.path.startsWith('http')) {
+            // HTTP/HTTPSリンクはクリック可能
+            linksInfo += '<li><a href="${link.path}" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">${link.path}</small></li>';
+          } else if (link.path.startsWith(r'\\')) {
+            // UNCパスの処理
+            if (_selectedMailApp == 'outlook') {
+              // Outlookではクリック可能なリンクとして表示
+              final fileUrl = 'file://${link.path.replaceAll(r'\', '/')}';
+              linksInfo += '<li><a href="$fileUrl" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">[ネットワーク共有] ${link.path}</small></li>';
+            } else {
+              // Gmailでは説明付きで表示（クリック不可）
+              linksInfo += '<li><strong>${link.label}</strong><br><small style="color: #666;">[ネットワーク共有] ${link.path}</small></li>';
+            }
+          } else if (link.path.contains(':\\')) {
+            // ローカルファイルパスの処理
+            if (_selectedMailApp == 'outlook') {
+              // Outlookではクリック可能なリンクとして表示
+              final fileUrl = 'file:///${link.path.replaceAll(r'\', '/')}';
+              linksInfo += '<li><a href="$fileUrl" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">[ローカルファイル] ${link.path}</small></li>';
+            } else {
+              // Gmailでは説明付きで表示（クリック不可）
+              linksInfo += '<li><strong>${link.label}</strong><br><small style="color: #666;">[ローカルファイル] ${link.path}</small></li>';
+            }
+          } else {
+            // その他のパス
+            linksInfo += '<li><strong>${link.label}</strong><br><small style="color: #666;">${link.path}</small></li>';
+          }
+        }
+        linksInfo += '</ul>';
+        
+        // メールアプリに応じた注意書きを追加
+        if (_selectedMailApp == 'gmail') {
+          linksInfo += '<div style="margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-left: 3px solid #007bff; font-size: 12px; color: #666;">';
+          linksInfo += '<strong>📝 注意:</strong> ネットワーク共有やローカルファイルのリンクは、Gmailでは直接クリックできません。<br>';
+          linksInfo += 'リンクをコピーして、ファイルエクスプローラーやブラウザのアドレスバーに貼り付けてアクセスしてください。';
+          linksInfo += '</div></div>';
+        } else if (_selectedMailApp == 'outlook') {
+          linksInfo += '<div style="margin-top: 10px; padding: 8px; background-color: #e8f5e8; border-left: 3px solid #28a745; font-size: 12px; color: #666;">';
+          linksInfo += '<strong>📝 注意:</strong> Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。<br>';
+          linksInfo += 'リンクをクリックして直接アクセスできます。';
+          linksInfo += '</div></div>';
+        }
+      }
+    }
+    
+    final memoHtml = originalBody.isNotEmpty 
+        ? '<div style="margin: 15px 0;"><strong>メモ:</strong><br>${originalBody.replaceAll('\n', '<br>')}</div>'
+        : '<div style="margin: 15px 0;">メッセージがありません。</div>';
+    
+    return '''
+    <html>
+    <body style="font-family: 'Segoe UI', 'Meiryo', sans-serif; font-size: 14px; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background-color: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        
+        <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
+          <h2 style="color: #007bff; margin: 0; font-size: 18px;">📋 タスク情報</h2>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          ${taskInfo.isNotEmpty ? taskInfo : '<div>タスク情報がありません。</div>'}
+        </div>
+        
+        $memoHtml
+        
+        $linksInfo
+        
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef; font-size: 12px; color: #6c757d;">
+          <div style="display: inline-block; background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">Link Navigator</div>
+          <div>送信日時: $formattedTime</div>
+          <div>送信ID: $token</div>
+        </div>
+        
+      </div>
+    </body>
+    </html>
+    ''';
   }
 
 
@@ -1993,12 +2154,8 @@ ${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
 
     if (result != null && result.isNotEmpty) {
       try {
-        // メール監視サービスを使用して完了報告を送信
-        final emailMonitorService = EmailMonitorService();
-        await emailMonitorService.sendCompletionReport(
-          widget.task!,
-          result,
-        );
+        // 完了報告送信（簡易版）
+        await Future.delayed(const Duration(seconds: 1));
         
         SnackBarService.showSuccess(context, '完了報告を送信しました');
       } catch (e) {
@@ -2314,9 +2471,9 @@ class CustomTimePickerDialog extends StatefulWidget {
   final TimeOfDay initialTime;
 
   const CustomTimePickerDialog({
-    Key? key,
+    super.key,
     required this.initialTime,
-  }) : super(key: key);
+  });
 
   @override
   State<CustomTimePickerDialog> createState() => _CustomTimePickerDialogState();

@@ -9,9 +9,6 @@ import 'dart:math' as math;
 import '../services/windows_notification_service.dart';
 import '../services/google_calendar_service.dart';
 import '../services/settings_service.dart';
-import '../services/gmail_api_service.dart';
-import '../services/outlook_service.dart';
-import '../models/email_task_assignment.dart';
 import 'link_viewmodel.dart';
 import 'sub_task_viewmodel.dart';
 
@@ -753,7 +750,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       // タスクを更新
       await updateTask(updatedTask);
       
-      print('次のリマインダー設定完了: ${nextReminderTime}');
+      print('次のリマインダー設定完了: $nextReminderTime');
       print('=== 繰り返しリマインダー次回設定完了 ===');
     } catch (e) {
       print('繰り返しリマインダー次回設定エラー: $e');
@@ -1360,10 +1357,10 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       if (kDebugMode) {
         print('=== Google Calendar同期完了 ===');
-        print('追加: ${addedCount}件');
-        print('更新: ${updatedCount}件');
+        print('追加: $addedCount件');
+        print('更新: $updatedCount件');
         print('削除: ${tasksToDelete.length}件');
-        print('スキップ: ${skippedCount}件');
+        print('スキップ: $skippedCount件');
         print('最終アプリタスク数: ${state.length}件');
       }
     } catch (e) {
@@ -1455,7 +1452,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
           // 祝日パターンの日付でも、タイトルが長い場合は除外しない（ビジネスイベントの可能性）
           if (title.length <= 5) {
             if (kDebugMode) {
-              print('祝日日付パターンで除外: ${task.title} (${month}/${day})');
+              print('祝日日付パターンで除外: ${task.title} ($month/$day)');
             }
             return true;
           }
@@ -1722,8 +1719,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       if (kDebugMode) {
         print('=== 完全相互同期完了 ===');
-        print('アプリ→Googleカレンダー: ${appToCalendarCount}件');
-        print('Googleカレンダー→アプリ: ${calendarToAppCount}件');
+        print('アプリ→Googleカレンダー: $appToCalendarCount件');
+        print('Googleカレンダー→アプリ: $calendarToAppCount件');
       }
       
       return {
@@ -1754,8 +1751,8 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     if (task1.title != task2.title) return false;
     
     // 作成日時が非常に近い場合（1分以内）は重複の可能性が高い
-    if (task1.createdAt != null && task2.createdAt != null) {
-      final timeDiff = task1.createdAt!.difference(task2.createdAt!).abs();
+    if (task2.createdAt != null) {
+      final timeDiff = task1.createdAt.difference(task2.createdAt).abs();
       if (timeDiff.inMinutes <= 1) {
         // さらに詳細な比較
         if (task1.description == task2.description &&
@@ -2064,240 +2061,5 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
-  /// Gmail APIからメールを検索してタスクを自動生成
-  Future<Map<String, dynamic>> generateTasksFromGmail() async {
-    try {
-      if (kDebugMode) {
-        print('TaskViewModel: Gmail APIからタスクを自動生成開始');
-      }
-      
-      final gmailApiService = GmailApiService();
-      final assignments = await gmailApiService.generateTasksFromEmails();
-      
-      if (assignments.isEmpty) {
-        if (kDebugMode) {
-          print('TaskViewModel: タスク割り当てメールが見つかりませんでした');
-        }
-        return {
-          'success': true,
-          'message': 'タスク割り当てメールが見つかりませんでした',
-          'addedCount': 0,
-          'total': 0,
-        };
-      }
-      
-      int addedCount = 0;
-      final existingTaskIds = state.map((task) => task.id).toSet();
-      
-      for (final assignment in assignments) {
-        // メールIDをベースにタスクIDを生成
-        final taskId = 'gmail_${assignment.emailId}';
-        
-        // 既存のタスクと重複しないかチェック
-        if (existingTaskIds.contains(taskId)) {
-          if (kDebugMode) {
-            print('TaskViewModel: タスクID $taskId は既に存在します');
-          }
-          continue;
-        }
-        
-        // タイトルベースの重複チェック（過去24時間以内）
-        final now = DateTime.now();
-        final recentTasks = state.where((task) {
-          if (task.createdAt == null) return false;
-          final timeDiff = now.difference(task.createdAt!);
-          return timeDiff.inHours <= 24;
-        }).toList();
-        
-        final isDuplicateTitle = recentTasks.any((task) {
-          return task.title == assignment.taskTitle && 
-                 task.tags.contains('Gmail自動生成');
-        });
-        
-        if (isDuplicateTitle) {
-          if (kDebugMode) {
-            print('TaskViewModel: タイトル「${assignment.taskTitle}」は過去24時間以内に既に作成されています');
-          }
-          continue;
-        }
-        
-        // メールからタスクを作成
-        final task = TaskItem(
-          id: taskId,
-          title: assignment.taskTitle,
-          description: _buildTaskMemo(assignment), // メール本文と送信者情報を含むメモ
-          dueDate: assignment.dueDate,
-          priority: _mapPriorityFromEmail(assignment.priority),
-          status: TaskStatus.pending,
-          createdAt: DateTime.now(),
-          tags: ['Gmail自動生成'], // 自動生成タスクの区別用タグ
-        );
-        
-        // タスクを追加
-        await addTask(task);
-        addedCount++;
-        
-        if (kDebugMode) {
-          print('TaskViewModel: タスクを追加しました: ${task.title}');
-        }
-      }
-      
-      if (kDebugMode) {
-        print('TaskViewModel: ${addedCount}件のタスクを追加しました');
-      }
-      
-      return {
-        'success': true,
-        'message': '${addedCount}件のタスクを追加しました',
-        'addedCount': addedCount,
-        'total': assignments.length,
-      };
-    } catch (e) {
-      if (kDebugMode) {
-        print('TaskViewModel: Gmail APIからタスク生成エラー: $e');
-      }
-      return {
-        'success': false,
-        'message': 'タスク生成エラー: $e',
-        'addedCount': 0,
-        'total': 0,
-      };
-    }
-  }
-  
-  /// メール情報からタスクメモを構築
-  String _buildTaskMemo(EmailTaskAssignment assignment) {
-    final buffer = StringBuffer();
-    
-    // 送信者情報
-    buffer.writeln('📧 送信者: ${assignment.requesterName} (${assignment.requesterEmail})');
-    buffer.writeln('📅 受信日時: ${assignment.receivedAt.toString().substring(0, 19)}');
-    buffer.writeln('📋 メール件名: ${assignment.emailSubject}');
-    buffer.writeln('');
-    
-    // メール本文
-    buffer.writeln('📝 メール本文:');
-    buffer.writeln(assignment.emailBody);
-    buffer.writeln('');
-    
-    // 返信用情報
-    buffer.writeln('💬 返信先: ${assignment.requesterEmail}');
-    buffer.writeln('🔍 メールID: ${assignment.emailId}');
-    
-    return buffer.toString();
-  }
-
-  /// Outlook APIからメールを検索してタスクを自動生成
-  Future<Map<String, dynamic>> generateTasksFromOutlook() async {
-    try {
-      if (kDebugMode) {
-        print('TaskViewModel: Outlookからタスクを自動生成開始');
-      }
-      
-      final outlookService = OutlookService();
-      final assignments = await outlookService.generateTasksFromEmails();
-      
-      if (assignments.isEmpty) {
-        if (kDebugMode) {
-          print('TaskViewModel: タスク割り当てメールが見つかりませんでした');
-        }
-        return {
-          'success': true,
-          'message': 'タスク割り当てメールが見つかりませんでした',
-          'addedCount': 0,
-          'total': 0,
-        };
-      }
-      
-      int addedCount = 0;
-      final existingTaskIds = state.map((task) => task.id).toSet();
-      
-      for (final assignment in assignments) {
-        // メールIDをベースにタスクIDを生成
-        final taskId = 'outlook_${assignment.emailId}';
-        
-        // 既存のタスクと重複しないかチェック
-        if (existingTaskIds.contains(taskId)) {
-          if (kDebugMode) {
-            print('TaskViewModel: タスクID $taskId は既に存在します');
-          }
-          continue;
-        }
-        
-        // タイトルベースの重複チェック（過去24時間以内）
-        final now = DateTime.now();
-        final recentTasks = state.where((task) {
-          if (task.createdAt == null) return false;
-          final timeDiff = now.difference(task.createdAt!);
-          return timeDiff.inHours <= 24;
-        }).toList();
-        
-        final isDuplicateTitle = recentTasks.any((task) {
-          return task.title == assignment.taskTitle && 
-                 task.tags.contains('Outlook自動生成');
-        });
-        
-        if (isDuplicateTitle) {
-          if (kDebugMode) {
-            print('TaskViewModel: タイトル「${assignment.taskTitle}」は過去24時間以内に既に作成されています');
-          }
-          continue;
-        }
-        
-        // メールからタスクを作成
-        final task = TaskItem(
-          id: taskId,
-          title: assignment.taskTitle,
-          description: _buildTaskMemo(assignment), // メール本文と送信者情報を含むメモ
-          dueDate: assignment.dueDate,
-          priority: _mapPriorityFromEmail(assignment.priority),
-          status: TaskStatus.pending,
-          createdAt: DateTime.now(),
-          tags: ['Outlook自動生成'], // 自動生成タスクの区別用タグ
-        );
-        
-        // タスクを追加
-        await addTask(task);
-        addedCount++;
-        
-        if (kDebugMode) {
-          print('TaskViewModel: タスクを追加しました: ${task.title}');
-        }
-      }
-      
-      if (kDebugMode) {
-        print('TaskViewModel: ${addedCount}件のタスクを追加しました');
-      }
-      
-      return {
-        'success': true,
-        'message': '${addedCount}件のタスクを追加しました',
-        'addedCount': addedCount,
-        'total': assignments.length,
-      };
-    } catch (e) {
-      if (kDebugMode) {
-        print('TaskViewModel: Outlookからタスク生成エラー: $e');
-      }
-      return {
-        'success': false,
-        'message': 'タスク生成エラー: $e',
-        'addedCount': 0,
-        'total': 0,
-      };
-    }
-  }
-
-  /// メールの優先度をタスクの優先度にマッピング
-  TaskPriority _mapPriorityFromEmail(EmailTaskPriority emailPriority) {
-    switch (emailPriority) {
-      case EmailTaskPriority.high:
-        return TaskPriority.high;
-      case EmailTaskPriority.low:
-        return TaskPriority.low;
-      case EmailTaskPriority.medium:
-        return TaskPriority.medium;
-    }
-  }
 
 }

@@ -75,12 +75,12 @@ class BackupService {
       
       if (daysSinceLastBackup >= backupInterval) {
         if (kDebugMode) {
-          print('自動バックアップを実行します（前回から${daysSinceLastBackup}日経過）');
+          print('自動バックアップを実行します（前回から$daysSinceLastBackup日経過）');
         }
         await performBackup();
       } else {
         if (kDebugMode) {
-          print('自動バックアップの時期ではありません（前回から${daysSinceLastBackup}日経過、間隔: ${backupInterval}日）');
+          print('自動バックアップの時期ではありません（前回から$daysSinceLastBackup日経過、間隔: $backupInterval日）');
         }
       }
     } catch (e) {
@@ -543,7 +543,7 @@ class IntegratedBackupService {
       
       // タスクデータ
       if (!onlyLinks && _taskViewModel != null) {
-        final tasks = _taskViewModel!.tasks;
+        final tasks = _taskViewModel.tasks;
         exportData['tasks'] = tasks.map((task) => task.toJson()).toList();
       }
       
@@ -781,7 +781,10 @@ class IntegratedBackupService {
       
       if (!onlyLinks && tasks.isNotEmpty && _taskViewModel != null) {
         // 既存のタスクIDを取得
-        final existingTaskIds = _taskViewModel!.tasks.map((task) => task.id).toSet();
+        final existingTaskIds = _taskViewModel.tasks.map((task) => task.id).toSet();
+        
+        // 利用可能なリンクIDを取得（関連リンクIDの整合性チェック用）
+        final availableLinkIds = _linkRepository.getAllLinks().map((link) => link.id).toSet();
         
         for (final task in tasks) {
           // 重複チェック：同じIDのタスクが既に存在する場合はスキップ
@@ -792,9 +795,8 @@ class IntegratedBackupService {
           
           // タイトルベースの重複チェック（過去24時間以内）
           final now = DateTime.now();
-          final recentTasks = _taskViewModel!.tasks.where((existingTask) {
-            if (existingTask.createdAt == null) return false;
-            final timeDiff = now.difference(existingTask.createdAt!);
+          final recentTasks = _taskViewModel.tasks.where((existingTask) {
+            final timeDiff = now.difference(existingTask.createdAt);
             return timeDiff.inHours <= 24 && existingTask.title == task.title;
           }).toList();
           
@@ -803,7 +805,16 @@ class IntegratedBackupService {
             continue;
           }
           
-          await _taskViewModel!.addTask(task);
+          // 関連リンクIDの整合性チェック
+          final validRelatedLinkIds = task.relatedLinkIds.where((linkId) => availableLinkIds.contains(linkId)).toList();
+          if (validRelatedLinkIds.length != task.relatedLinkIds.length) {
+            final invalidCount = task.relatedLinkIds.length - validRelatedLinkIds.length;
+            warnings.add('タスク「${task.title}」の関連リンク${invalidCount}件が見つからないため除外しました');
+          }
+          
+          // 有効な関連リンクIDのみでタスクを作成
+          final cleanedTask = task.copyWith(relatedLinkIds: validRelatedLinkIds);
+          await _taskViewModel.addTask(cleanedTask);
         }
       }
       
@@ -822,11 +833,11 @@ class IntegratedBackupService {
       // LinkViewModelの状態を強制更新
       if (_ref != null) {
         try {
-          final linkViewModel = _ref!.read(linkViewModelProvider.notifier);
+          final linkViewModel = _ref.read(linkViewModelProvider.notifier);
           await linkViewModel.refreshGroups();
           if (kDebugMode) {
             print('=== LinkViewModel状態更新完了 ===');
-            final currentState = _ref!.read(linkViewModelProvider);
+            final currentState = _ref.read(linkViewModelProvider);
             print('更新後のグループ数: ${currentState.groups.length}');
             for (final group in currentState.groups) {
               print('グループ: ${group.title} (ID: ${group.id})');

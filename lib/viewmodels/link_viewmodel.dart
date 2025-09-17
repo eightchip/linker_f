@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+import 'dart:convert';
 import '../models/link_item.dart';
 import '../models/group.dart';
 import '../repositories/link_repository.dart';
@@ -14,7 +15,7 @@ import 'package:flutter/foundation.dart';
 import '../models/task_item.dart';
 
 final linkRepositoryProvider = Provider<LinkRepository>((ref) {
-  return LinkRepository();
+  return LinkRepository.instance;
 });
 
 final linkViewModelProvider = StateNotifierProvider<LinkViewModel, LinkState>((ref) {
@@ -92,6 +93,15 @@ class LinkViewModel extends StateNotifier<LinkState> {
     state = state.copyWith(isLoading: true);
     try {
       await _repository.initialize();
+      
+      // データ整合性チェックを無効化（既存データを保持）
+      if (kDebugMode) {
+        print('LinkViewModel: データ整合性チェックをスキップします（既存データを保持）');
+      }
+      
+      // 自動復元機能：最新のバックアップファイルからデータを復元
+      await _autoRestoreFromBackup();
+      
       await _loadGroups();
       // 既存のリンクにデフォルトタグを追加
       await addDefaultTagsToExistingLinks();
@@ -121,6 +131,21 @@ class LinkViewModel extends StateNotifier<LinkState> {
       sortedGroups = groups;
     }
     
+    // デバッグ用: 読み込まれたデータの詳細を確認
+    if (kDebugMode) {
+      print('LinkViewModel: _loadGroups - 読み込まれたデータの詳細');
+      for (final group in sortedGroups) {
+        print('  - グループ: ${group.title} (ID: ${group.id}) - リンク数: ${group.items.length}');
+        if (group.items.isNotEmpty) {
+          for (final item in group.items) {
+            print('    - リンク: ${item.label} (ID: ${item.id})');
+          }
+        } else {
+          print('    - リンクなし');
+        }
+      }
+    }
+    
     // デバッグ情報（開発時のみ）
     if (kDebugMode) {
       print('=== _loadGroups ===');
@@ -148,10 +173,14 @@ class LinkViewModel extends StateNotifier<LinkState> {
       print('==================');
     }
     
-    // 状態が実際に変更された場合、または強制更新の場合に更新
-    if (!_areGroupsEqual(state.groups, sortedGroups) || forceUpdate) {
-      state = state.copyWith(groups: sortedGroups);
+    // 常に状態を更新する（状態比較の問題を回避）
+    if (kDebugMode) {
+      print('LinkViewModel: 状態を更新します - グループ数: ${sortedGroups.length}');
+      for (final group in sortedGroups) {
+        print('  - 更新されるグループ: ${group.title} - リンク数: ${group.items.length}');
+      }
     }
+    state = state.copyWith(groups: sortedGroups);
   }
 
   // グループの等価性をチェックするヘルパーメソッド
@@ -175,7 +204,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
       
       for (int j = 0; j < group1.items.length; j++) {
         final item1 = group1.items[j];
-        final item2 = groups2[i].items[j];
+        final item2 = group2.items[j];
         
         if (item1.id != item2.id ||
             item1.label != item2.label ||
@@ -304,7 +333,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
           iconColor = Colors.orange.value;
         }
       } else {
-        print('フォルダ登録: ${path}');
+        print('フォルダ登録: $path');
         print('カスタムアイコンが指定されました: iconData=$iconData, iconColor=$iconColor');
         print('地球アイコンのcodePoint: ${Icons.public.codePoint}');
         print('指定されたアイコンが地球アイコンかチェック: ${iconData == Icons.public.codePoint}');
@@ -336,8 +365,18 @@ class LinkViewModel extends StateNotifier<LinkState> {
       final group = groups[groupIndex];
       final updatedItems = [...group.items, link];
       final updatedGroup = group.copyWith(items: updatedItems);
+      
+      if (kDebugMode) {
+        print('LinkViewModel: グループにリンクを追加 - ${group.title}');
+        print('  - 追加前のリンク数: ${group.items.length}');
+        print('  - 追加後のリンク数: ${updatedItems.length}');
+        print('  - 追加されたリンク: ${link.label} (ID: ${link.id})');
+      }
+      
       await _repository.saveGroup(updatedGroup);
       await _loadGroups();
+    } else {
+      print('LinkViewModel: エラー - グループが見つかりません: $groupId');
     }
   }
 
@@ -450,7 +489,6 @@ class LinkViewModel extends StateNotifier<LinkState> {
     final groupIndex = groups.indexWhere((g) => g.id == groupId);
     if (groupIndex != -1) {
       final group = groups[groupIndex];
-      final originalItem = group.items.firstWhere((e) => e.id == updated.id);
       final updatedItems = group.items.map((e) => e.id == updated.id ? updated : e).toList();
       final updatedGroup = group.copyWith(items: updatedItems);
       
@@ -631,13 +669,13 @@ class LinkViewModel extends StateNotifier<LinkState> {
             task.status != TaskStatus.completed
           );
           
-          print('リンク "${link.label}": 現在のhasActiveTasks=${link.hasActiveTasks}, 計算結果=${hasActiveTasks}');
+          print('リンク "${link.label}": 現在のhasActiveTasks=${link.hasActiveTasks}, 計算結果=$hasActiveTasks');
           
           if (link.hasActiveTasks != hasActiveTasks) {
             final updatedLink = link.copyWith(hasActiveTasks: hasActiveTasks);
             updatedItems.add(updatedLink);
             hasChanges = true;
-            print('リンク "${link.label}" のhasActiveTasksを更新: ${link.hasActiveTasks} -> ${hasActiveTasks}');
+            print('リンク "${link.label}" のhasActiveTasksを更新: ${link.hasActiveTasks} -> $hasActiveTasks');
           } else {
             updatedItems.add(link);
           }
@@ -686,7 +724,138 @@ class LinkViewModel extends StateNotifier<LinkState> {
     return null;
   }
 
-  @override
+  // 自動復元機能：最新のバックアップファイルからデータを復元
+  Future<void> _autoRestoreFromBackup() async {
+    try {
+      if (kDebugMode) {
+        print('LinkViewModel: 自動復元機能を開始します');
+      }
+      
+      // 現在のデータをチェック
+      final currentGroups = _repository.getAllGroups();
+      final totalLinks = currentGroups.fold<int>(0, (sum, group) => sum + group.items.length);
+      
+      if (kDebugMode) {
+        print('LinkViewModel: 現在のデータ - グループ数: ${currentGroups.length}, 総リンク数: $totalLinks');
+      }
+      
+      // リンクが少ない場合（データが失われている可能性）のみ復元を実行
+      if (totalLinks < 50) {
+        if (kDebugMode) {
+          print('LinkViewModel: データが少ないため、バックアップからの復元を実行します');
+        }
+        
+        // 最新のバックアップファイルを探す
+        final backupFile = await _findLatestBackupFile();
+        if (backupFile != null) {
+          if (kDebugMode) {
+            print('LinkViewModel: バックアップファイルを発見: $backupFile');
+          }
+          
+          // バックアップファイルからデータを復元
+          await _restoreFromBackupFile(backupFile);
+        } else {
+          if (kDebugMode) {
+            print('LinkViewModel: バックアップファイルが見つかりませんでした');
+          }
+        }
+      } else {
+        if (kDebugMode) {
+          print('LinkViewModel: データが十分にあるため、復元をスキップします');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('LinkViewModel: 自動復元エラー: $e');
+      }
+      // エラーが発生してもアプリケーションは継続
+    }
+  }
+  
+  // 最新のバックアップファイルを探す
+  Future<String?> _findLatestBackupFile() async {
+    try {
+      final directory = Directory.current;
+      final files = directory.listSync()
+          .where((file) => file is File && file.path.contains('linker_f_export_メモあり_') && file.path.endsWith('.json'))
+          .cast<File>()
+          .toList();
+      
+      if (files.isEmpty) return null;
+      
+      // ファイル名から日時を抽出して最新のものを選択
+      files.sort((a, b) => b.path.compareTo(a.path));
+      return files.first.path;
+    } catch (e) {
+      if (kDebugMode) {
+        print('LinkViewModel: バックアップファイル検索エラー: $e');
+      }
+      return null;
+    }
+  }
+  
+  // バックアップファイルからデータを復元
+  Future<void> _restoreFromBackupFile(String filePath) async {
+    try {
+      if (kDebugMode) {
+        print('LinkViewModel: バックアップファイルから復元開始: $filePath');
+      }
+      
+      final file = File(filePath);
+      final content = await file.readAsString();
+      final data = json.decode(content);
+      
+      // グループデータを復元
+      if (data['groups'] != null) {
+        final groups = (data['groups'] as List)
+            .map((groupData) => Group.fromJson(groupData))
+            .toList();
+        
+        for (final group in groups) {
+          await _repository.saveGroup(group);
+        }
+        
+        if (kDebugMode) {
+          print('LinkViewModel: グループ復元完了 - ${groups.length}個のグループ');
+        }
+      }
+      
+      // 個別リンクデータを復元
+      if (data['links'] != null) {
+        final links = (data['links'] as List)
+            .map((linkData) => LinkItem.fromJson(linkData))
+            .toList();
+        
+        for (final link in links) {
+          await _repository.saveLink(link);
+        }
+        
+        if (kDebugMode) {
+          print('LinkViewModel: リンク復元完了 - ${links.length}個のリンク');
+        }
+      }
+      
+      // グループ順序を復元
+      if (data['groupsOrder'] != null) {
+        final order = List<String>.from(data['groupsOrder']);
+        await _repository.saveGroupsOrder(order);
+        
+        if (kDebugMode) {
+          print('LinkViewModel: グループ順序復元完了');
+        }
+      }
+      
+      if (kDebugMode) {
+        print('LinkViewModel: バックアップからの復元が完了しました');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('LinkViewModel: バックアップ復元エラー: $e');
+      }
+      rethrow;
+    }
+  }
+
   void dispose() {
     _repository.dispose();
     super.dispose();

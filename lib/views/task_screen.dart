@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
@@ -24,7 +26,6 @@ import 'task_dialog.dart';
 import 'sub_task_dialog.dart';
 import '../widgets/mail_badge.dart';
 import '../services/mail_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/sent_mail_log.dart';
 import '../services/keyboard_shortcut_service.dart';
 import '../widgets/unified_dialog.dart';
@@ -176,7 +177,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       if (mounted) {
         SnackBarService.showSuccess(
           context,
-            '${deletedCount}件のタスクを削除しました',
+            '$deletedCount件のタスクを削除しました',
         );
         }
       } catch (e) {
@@ -1077,17 +1078,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     )
                   else if (task.assignedTo != null)
                     // リマインドがない場合はタイトルの真下に依頼先・メモを表示
-                    HighlightedText(
-                      text: 'メモ: ${task.assignedTo}',
-                      highlight: (_userTypedSearch && _searchQuery.isNotEmpty) ? _searchQuery : null,
-                      style: TextStyle(
-                        color: Colors.blue[600],
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    _buildClickableMemoText(task.assignedTo!, task),
                 ],
               ),
             ),
@@ -2361,6 +2352,250 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       SnackBarService.showError(context, 'メーラーの起動に失敗しました: $e');
     }
   }
+
+  /// クリック可能なメモテキストを構築
+  Widget _buildClickableMemoText(String memoText, TaskItem task) {
+    // タスクの関連リンクを取得
+    final relatedLinks = _getRelatedLinks(task);
+    
+    // メモテキスト内のリンクパターンを検出
+    final linkPattern = RegExp(r'(\\\\[^\s]+|https?://[^\s]+|file://[^\s]+|C:\\[^\s]+)');
+    final matches = linkPattern.allMatches(memoText);
+    
+    // メモテキストと関連リンクの両方にリンクがある場合
+    if (matches.isNotEmpty || relatedLinks.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // メモテキストの表示
+          if (memoText.isNotEmpty)
+            RichText(
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              text: TextSpan(
+                children: matches.isNotEmpty 
+                    ? _buildTextSpans(memoText, matches)
+                    : [TextSpan(text: memoText)],
+                style: TextStyle(
+                  color: Colors.blue[600],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          
+          // 関連リンクの表示
+          if (relatedLinks.isNotEmpty) ...[
+            if (memoText.isNotEmpty) const SizedBox(height: 4),
+            _buildRelatedLinksDisplay(relatedLinks),
+          ],
+        ],
+      );
+    }
+    
+    // リンクがない場合は通常のテキスト表示
+    return HighlightedText(
+      text: memoText,
+      highlight: (_userTypedSearch && _searchQuery.isNotEmpty) ? _searchQuery : null,
+      style: TextStyle(
+        color: Colors.blue[600],
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  /// テキストスパンを構築（リンク部分をクリック可能にする）
+  List<TextSpan> _buildTextSpans(String text, Iterable<RegExpMatch> matches) {
+    final spans = <TextSpan>[];
+    int lastEnd = 0;
+    
+    for (final match in matches) {
+      // リンク前のテキスト
+      if (match.start > lastEnd) {
+        final beforeText = text.substring(lastEnd, match.start);
+        spans.add(TextSpan(text: beforeText));
+      }
+      
+      // リンク部分
+      final linkText = match.group(0)!;
+      spans.add(TextSpan(
+        text: linkText,
+        style: TextStyle(
+          color: Colors.blue[800],
+          decoration: TextDecoration.underline,
+          decorationColor: Colors.blue[800],
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () => _handleLinkTap(linkText),
+      ));
+      
+      lastEnd = match.end;
+    }
+    
+    // 最後のテキスト
+    if (lastEnd < text.length) {
+      final afterText = text.substring(lastEnd);
+      spans.add(TextSpan(text: afterText));
+    }
+    
+    return spans;
+  }
+
+  /// リンクタップを処理
+  void _handleLinkTap(String linkText) {
+    try {
+      if (linkText.startsWith('\\\\')) {
+        // UNCパスの場合
+        _openUncPath(linkText);
+      } else if (linkText.startsWith('http')) {
+        // URLの場合
+        _openUrl(linkText);
+      } else if (linkText.startsWith('file://')) {
+        // ファイルURLの場合
+        _openFileUrl(linkText);
+      } else if (linkText.contains(':\\')) {
+        // ローカルファイルパスの場合
+        _openLocalPath(linkText);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('リンクオープンエラー: $e');
+      }
+      SnackBarService.showError(context, 'リンクを開けませんでした: $linkText');
+    }
+  }
+
+  /// UNCパスを開く
+  void _openUncPath(String uncPath) {
+    try {
+      // UNCパスをfile://形式に変換
+      final fileUrl = 'file:///${uncPath.replaceAll('\\', '/')}';
+      _openFileUrl(fileUrl);
+    } catch (e) {
+      SnackBarService.showError(context, 'UNCパスを開けませんでした: $uncPath');
+    }
+  }
+
+  /// URLを開く
+  void _openUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        SnackBarService.showError(context, 'URLを開けませんでした: $url');
+      }
+    } catch (e) {
+      SnackBarService.showError(context, 'URLを開けませんでした: $url');
+    }
+  }
+
+  /// ファイルURLを開く
+  void _openFileUrl(String fileUrl) async {
+    try {
+      final uri = Uri.parse(fileUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        SnackBarService.showError(context, 'ファイルを開けませんでした: $fileUrl');
+      }
+    } catch (e) {
+      SnackBarService.showError(context, 'ファイルを開けませんでした: $fileUrl');
+    }
+  }
+
+  /// ローカルパスを開く
+  void _openLocalPath(String path) async {
+    try {
+      final uri = Uri.file(path);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        SnackBarService.showError(context, 'ファイルを開けませんでした: $path');
+      }
+    } catch (e) {
+      SnackBarService.showError(context, 'ファイルを開けませんでした: $path');
+    }
+  }
+
+  /// タスクの関連リンクを取得
+  List<LinkItem> _getRelatedLinks(TaskItem task) {
+    final groups = ref.read(linkViewModelProvider);
+    final relatedLinks = <LinkItem>[];
+    
+    for (final linkId in task.relatedLinkIds) {
+      for (final group in groups.groups) {
+        for (final link in group.items) {
+          if (link.id == linkId) {
+            relatedLinks.add(link);
+            break;
+          }
+        }
+      }
+    }
+    
+    return relatedLinks;
+  }
+
+  /// 関連リンクの表示を構築
+  Widget _buildRelatedLinksDisplay(List<LinkItem> links) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 関連リンクのヘッダー
+        Text(
+          '関連資料:',
+          style: TextStyle(
+            color: Colors.blue[700],
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 2),
+        
+        // リンク一覧
+        ...links.map((link) => Padding(
+          padding: const EdgeInsets.only(bottom: 2),
+          child: GestureDetector(
+            onTap: () => _openRelatedLink(link),
+            child: Text(
+              '• ${link.label}',
+              style: TextStyle(
+                color: Colors.blue[800],
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                decoration: TextDecoration.underline,
+                decorationColor: Colors.blue[800],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        )).toList(),
+      ],
+    );
+  }
+
+  /// 関連リンクを開く
+  void _openRelatedLink(LinkItem link) {
+    try {
+      final linkViewModel = ref.read(linkViewModelProvider.notifier);
+      linkViewModel.launchLink(link);
+      
+      SnackBarService.showSuccess(
+        context,
+        'リンク「${link.label}」を開きました',
+      );
+    } catch (e) {
+      SnackBarService.showError(
+        context,
+        'リンクを開けませんでした: ${link.label}',
+      );
+    }
+  }
   
 }
 
@@ -2503,7 +2738,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
                 ),
-                color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               ),
               child: Row(
                 children: [
@@ -2658,7 +2893,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
       decoration: BoxDecoration(
         color: isSelected 
             ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isSelected 
@@ -3267,5 +3502,6 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
       ),
     );
   }
+
   
 }

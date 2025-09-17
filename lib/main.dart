@@ -21,7 +21,6 @@ import 'services/migration_service.dart';
 import 'services/settings_service.dart';
 import 'services/backup_service.dart';
 import 'services/google_calendar_service.dart';
-import 'services/email_monitor_service.dart';
 import 'repositories/link_repository.dart';
 
 // グローバルなNavigatorKey
@@ -49,15 +48,6 @@ void main() async {
       print('通知サービス初期化エラー: $e');
     }
 
-    // メール監視サービス初期化
-    try {
-      print('メール監視サービス初期化開始');
-      await EmailMonitorService().startMonitoring();
-      print('メール監視サービス初期化完了');
-    } catch (e) {
-      print('メール監視サービス初期化エラー: $e');
-      print('メール監視サービスは無効化されましたが、アプリは正常に動作します');
-    }
     
     runApp(const ProviderScope(child: LinkLauncherApp()));
   } catch (e) {
@@ -76,13 +66,16 @@ Future<void> _initializeApp() async {
   // 段階1: Hive初期化
   await _initializeHive();
   
-  // 段階2: データマイグレーション
-  await _initializeDataMigration();
+  // 段階2: データマイグレーション（無効化）
+  // await _initializeDataMigration();
   
   // 段階3: 基本サービスの初期化
   await _initializeBasicServices();
   
-  // 段階4: 高度な機能の初期化（非同期）
+  // 段階4: LinkRepositoryの初期化
+  await _initializeLinkRepository();
+  
+  // 段階5: 高度な機能の初期化（非同期）
   _initializeAdvancedFeatures();
   
   print('アプリケーション初期化完了');
@@ -203,6 +196,21 @@ Future<void> _initializeBasicServices() async {
   }
 }
 
+// LinkRepositoryの初期化
+Future<void> _initializeLinkRepository() async {
+  try {
+    print('LinkRepository初期化開始');
+    
+    final linkRepository = LinkRepository.instance;
+    await linkRepository.initialize();
+    
+    print('LinkRepository初期化完了');
+  } catch (e) {
+    print('LinkRepository初期化エラー: $e');
+    rethrow; // LinkRepositoryの初期化エラーは致命的
+  }
+}
+
 // 高度な機能の初期化（非同期実行）
 void _initializeAdvancedFeatures() {
   // 非同期で実行してUIの起動をブロックしない
@@ -216,8 +224,7 @@ void _initializeAdvancedFeatures() {
       // 自動バックアップのチェックと実行
       try {
         final settingsService = SettingsService.instance;
-        final linkRepository = LinkRepository();
-        await linkRepository.initialize();
+        final linkRepository = LinkRepository.instance;
         
         // バックアップ完了時のコールバックを設定
         BackupService.setOnBackupCompleted((backupPath) {
@@ -283,7 +290,7 @@ Future<void> _initializeWindow() async {
     if (kDebugMode) {
       print('ディスプレイ数: ${displays.length}');
       print('選択したディスプレイサイズ: ${targetDisplay.size}');
-      print('ウィンドウサイズ: ${windowWidth}x${windowHeight}');
+      print('ウィンドウサイズ: ${windowWidth}x$windowHeight');
       print('ウィンドウ位置: ($windowX, $windowY)');
     }
 
@@ -483,7 +490,7 @@ void _startGoogleCalendarAutoSync(GoogleCalendarService googleCalendarService) {
   final settingsService = SettingsService.instance;
   final syncInterval = settingsService.googleCalendarSyncInterval;
   
-  print('Google Calendar自動同期を開始: ${syncInterval}分間隔');
+  print('Google Calendar自動同期を開始: $syncInterval分間隔');
   
   Timer.periodic(Duration(minutes: syncInterval), (timer) async {
     try {
