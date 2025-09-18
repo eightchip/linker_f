@@ -308,6 +308,7 @@ class TaskItem extends HiveObject {
     bool clearDueDate = false,
     bool clearReminderTime = false,
     bool clearAssignedTo = false,
+    bool clearDescription = false,
   }) {
     print('=== copyWith呼び出し ===');
     print('元のdueDate: ${this.dueDate}');
@@ -320,7 +321,7 @@ class TaskItem extends HiveObject {
     final result = TaskItem(
       id: id ?? this.id,
       title: title ?? this.title,
-      description: description ?? this.description,
+      description: clearDescription ? null : (description ?? this.description), // 説明の適切な処理
       dueDate: clearDueDate ? null : (dueDate ?? this.dueDate), // 期限日の適切な処理
       reminderTime: clearReminderTime ? null : (reminderTime ?? this.reminderTime), // リマインダー時間の適切な処理
       priority: priority ?? this.priority,

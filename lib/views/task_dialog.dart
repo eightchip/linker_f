@@ -70,6 +70,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   // メール機能の表示状態
   bool _isMailSectionExpanded = false;
   
+  // リマインダー機能の表示状態
+  bool _isReminderSectionExpanded = false;
+  
+  // サブタスク機能の表示状態
+  bool _isSubTaskSectionExpanded = false;
+  
   // メールテンプレート
   final List<Map<String, String>> _emailTemplates = [
     {
@@ -330,6 +336,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           clearDueDate: _dueDate == null && widget.task!.dueDate != null, // 期限日が削除された場合
           clearReminderTime: _reminderTime == null && widget.task!.reminderTime != null, // リマインダーが削除された場合
           clearAssignedTo: _assignedToController.text.trim().isEmpty && widget.task!.assignedTo != null, // 依頼先が削除された場合
+          clearDescription: _descriptionController.text.trim().isEmpty && widget.task!.description != null, // 説明が削除された場合
         );
         
         print('copyWith後のリマインダー時間: ${updatedTask.reminderTime}');
@@ -548,6 +555,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 TextFormField(
                   controller: _titleController,
                   enableInteractiveSelection: true,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'タイトル *',
                     filled: true,
@@ -587,253 +598,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
                 const SizedBox(height: 16),
                 
-                // 説明（改善版）
-                TextFormField(
-                  controller: _descriptionController,
-                  maxLines: 3,
-                  minLines: 1,
-                  enableInteractiveSelection: true,
-                  decoration: InputDecoration(
-                    labelText: '説明',
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.red.shade600, width: 2),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.red.shade600, width: 2.5),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                    hintText: 'タスクの詳細説明を入力してください',
-                    labelStyle: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // 期限日
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _selectDate(context, true),
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: '期限日',
-                            border: OutlineInputBorder(),
-                          ),
-                          child: Text(
-                            _dueDate != null
-                                ? DateFormat('yyyy/MM/dd').format(_dueDate!)
-                                : '期限日を選択',
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (_dueDate != null)
-                      IconButton(
-                        onPressed: () {
-                          print('=== 期限日クリアボタンクリック ===');
-                          print('クリア前の期限日: $_dueDate');
-                          
-                          setState(() {
-                            _dueDate = null;
-                          });
-                          
-                          print('クリア後の期限日: $_dueDate');
-                          print('期限日をクリアしました');
-                        },
-                        icon: const Icon(Icons.clear),
-                        tooltip: '期限日をクリア',
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                // リマインダー
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => _selectDate(context, false),
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'リマインダー日',
-                            border: OutlineInputBorder(),
-                          ),
-                          child: Text(
-                            _reminderTime != null
-                                ? DateFormat('yyyy/MM/dd').format(_reminderTime!)
-                                : 'リマインダー日を選択',
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: InkWell(
-                        onTap: _reminderTime != null ? () => _selectTime(context) : null,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'リマインダー時刻',
-                            border: OutlineInputBorder(),
-                          ),
-                          child: Text(
-                            _reminderTime != null
-                                ? DateFormat('HH:mm').format(_reminderTime!)
-                                : '時刻を選択',
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (_reminderTime != null)
-                      IconButton(
-                        onPressed: () {
-                          print('=== リマインダークリアボタンクリック ===');
-                          print('クリア前のリマインダー時間: $_reminderTime');
-                          print('クリア前の繰り返しリマインダー: $_isRecurringReminder');
-                          print('クリア前の繰り返しパターン: $_recurringReminderPattern');
-                          
-                          setState(() {
-                            _reminderTime = null;
-                            _isRecurringReminder = false;
-                            _recurringReminderPattern = '';
-                          });
-                          
-                          print('クリア後のリマインダー時間: $_reminderTime');
-                          print('クリア後の繰り返しリマインダー: $_isRecurringReminder');
-                          print('クリア後の繰り返しパターン: $_recurringReminderPattern');
-                          print('リマインダーをクリアしました');
-                        },
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'リマインダーをクリア',
-                      ),
-                  ],
-                ),
-                // リマインダー時間の詳細表示
-                if (_reminderTime != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.blue[200]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.schedule, color: Colors.blue[700], size: 16),
-                        const SizedBox(width: 8),
-                        Text(
-                          'リマインダー設定: ${DateFormat('yyyy/MM/dd HH:mm').format(_reminderTime!)}',
-                          style: TextStyle(
-                            color: Colors.blue[700],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                
-                // 優先度
-                DropdownButtonFormField<TaskPriority>(
-                  value: _priority,
-                  decoration: const InputDecoration(
-                    labelText: '優先度',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: TaskPriority.values.map((priority) {
-                    return DropdownMenuItem(
-                      value: priority,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: Color(_getPriorityColor(priority)),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(_getPriorityText(priority)),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _priority = value);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // ステータス選択
-                Row(
-                  children: [
-                    const Icon(Icons.flag, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    const Text('ステータス:', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: DropdownButtonFormField<TaskStatus>(
-                        value: _status,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        items: TaskStatus.values.map((status) {
-                          return DropdownMenuItem(
-                            value: status,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 12,
-                                  height: 12,
-                                  decoration: BoxDecoration(
-                                    color: Color(_getStatusColor(status)),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(_getStatusText(status)),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _status = value);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                // 依頼先（改善版）
+                // 依頼先やメモ（改善版）
                 TextFormField(
                   controller: _assignedToController,
                   maxLines: null, // 無制限
@@ -842,6 +607,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   enableInteractiveSelection: true, // カーソル移動改善
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                  ),
                   decoration: InputDecoration(
                     labelText: '依頼先やメモ',
                     filled: true,
@@ -882,49 +651,380 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
                 const SizedBox(height: 16),
                 
-                // 繰り返し設定
-                // 繰り返しタスク機能は削除（手動コピー機能を使用）
+                // 説明（改善版）
+                TextFormField(
+                  controller: _descriptionController,
+                  maxLines: 3,
+                  minLines: 1,
+                  enableInteractiveSelection: true,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: '説明',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 2.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    hintText: 'タスクの詳細説明を入力してください',
+                    labelStyle: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 
-                // 繰り返しリマインダー設定
+                // 期限日、優先度、ステータス（1行配置）
                 Row(
                   children: [
-                    Checkbox(
-                      value: _isRecurringReminder,
-                      onChanged: (value) {
-                        setState(() => _isRecurringReminder = value ?? false);
-                      },
+                    // 期限日
+                    Expanded(
+                      flex: 3,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => _selectDate(context, true),
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: '期限日',
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                                child: Text(
+                                  _dueDate != null
+                                      ? DateFormat('yyyy/MM/dd').format(_dueDate!)
+                                      : '期限日を選択',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (_dueDate != null)
+                            IconButton(
+                              onPressed: () {
+                                print('=== 期限日クリアボタンクリック ===');
+                                print('クリア前の期限日: $_dueDate');
+                                
+                                setState(() {
+                                  _dueDate = null;
+                                });
+                                
+                                print('クリア後の期限日: $_dueDate');
+                                print('期限日をクリアしました');
+                              },
+                              icon: const Icon(Icons.clear, size: 18),
+                              tooltip: '期限日をクリア',
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                              padding: EdgeInsets.zero,
+                            ),
+                        ],
+                      ),
                     ),
-                    const Text('繰り返しリマインダー'),
-                    if (_isRecurringReminder) ...[
-                      const SizedBox(width: 16),
-                      DropdownButton<String>(
-                        value: RecurringReminderPattern.allPatterns.contains(_recurringReminderPattern) 
-                            ? _recurringReminderPattern 
-                            : RecurringReminderPattern.fiveMinutes,
-                        items: RecurringReminderPattern.allPatterns.map((pattern) {
+                    const SizedBox(width: 12),
+                    
+                    // 優先度
+                    Expanded(
+                      flex: 2,
+                      child: DropdownButtonFormField<TaskPriority>(
+                        value: _priority,
+                        decoration: const InputDecoration(
+                          labelText: '優先度',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        isExpanded: true,
+                        items: TaskPriority.values.map((priority) {
                           return DropdownMenuItem(
-                            value: pattern,
-                            child: Text(RecurringReminderPattern.getDisplayName(pattern)),
+                            value: priority,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: Color(_getPriorityColor(priority)),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(_getPriorityText(priority)),
+                              ],
+                            ),
                           );
                         }).toList(),
                         onChanged: (value) {
                           if (value != null) {
-                            setState(() => _recurringReminderPattern = value);
+                            setState(() => _priority = value);
                           }
                         },
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // ステータス
+                    Expanded(
+                      flex: 2,
+                      child: DropdownButtonFormField<TaskStatus>(
+                        value: _status,
+                        decoration: const InputDecoration(
+                          labelText: 'ステータス',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        isExpanded: true,
+                        items: TaskStatus.values.map((status) {
+                          return DropdownMenuItem(
+                            value: status,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: Color(_getStatusColor(status)),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(_getStatusText(status)),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _status = value);
+                          }
+                        },
+                      ),
+                    ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                
+                // リマインダー機能（トグル）
+                InkWell(
+                  onTap: () => setState(() => _isReminderSectionExpanded = !_isReminderSectionExpanded),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          color: Colors.blue.shade600,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'リマインダー機能',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context).textTheme.bodyMedium?.color,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (_reminderTime != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              DateFormat('MM/dd HH:mm').format(_reminderTime!),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue.shade800,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          _isReminderSectionExpanded ? Icons.expand_less : Icons.expand_more,
+                          color: Colors.grey.shade600,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // リマインダー詳細（展開時のみ表示）
+                if (_isReminderSectionExpanded) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _selectDate(context, false),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'リマインダー日',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            child: Text(
+                              _reminderTime != null
+                                  ? DateFormat('yyyy/MM/dd').format(_reminderTime!)
+                                  : 'リマインダー日を選択',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
+                          onTap: _reminderTime != null ? () => _selectTime(context) : null,
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'リマインダー時刻',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            child: Text(
+                              _reminderTime != null
+                                  ? DateFormat('HH:mm').format(_reminderTime!)
+                                  : '時刻を選択',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (_reminderTime != null)
+                        IconButton(
+                          onPressed: () {
+                            print('=== リマインダークリアボタンクリック ===');
+                            print('クリア前のリマインダー時間: $_reminderTime');
+                            print('クリア前の繰り返しリマインダー: $_isRecurringReminder');
+                            print('クリア前の繰り返しパターン: $_recurringReminderPattern');
+                            
+                            setState(() {
+                              _reminderTime = null;
+                              _isRecurringReminder = false;
+                              _recurringReminderPattern = '';
+                            });
+                            
+                            print('クリア後のリマインダー時間: $_reminderTime');
+                            print('クリア後の繰り返しリマインダー: $_isRecurringReminder');
+                            print('クリア後の繰り返しパターン: $_recurringReminderPattern');
+                            print('リマインダーをクリアしました');
+                          },
+                          icon: const Icon(Icons.clear, size: 18),
+                          tooltip: 'リマインダーをクリア',
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          padding: EdgeInsets.zero,
+                        ),
+                    ],
+                  ),
+                  
+                  // 繰り返しリマインダー設定
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _isRecurringReminder,
+                        onChanged: (value) {
+                          setState(() => _isRecurringReminder = value ?? false);
+                        },
+                      ),
+                      const Text('繰り返しリマインダー'),
+                      if (_isRecurringReminder) ...[
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: RecurringReminderPattern.allPatterns.contains(_recurringReminderPattern) 
+                                ? _recurringReminderPattern 
+                                : RecurringReminderPattern.fiveMinutes,
+                            isExpanded: true,
+                            style: const TextStyle(fontSize: 14),
+                            items: RecurringReminderPattern.allPatterns.map((pattern) {
+                              return DropdownMenuItem(
+                                value: pattern,
+                                child: Text(
+                                  RecurringReminderPattern.getDisplayName(pattern),
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _recurringReminderPattern = value);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  
+                  // リマインダー時間の詳細表示
+                  if (_reminderTime != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.blue[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.schedule, color: Colors.blue[700], size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'リマインダー設定: ${DateFormat('yyyy/MM/dd HH:mm').format(_reminderTime!)}',
+                            style: TextStyle(
+                              color: Colors.blue[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+                const SizedBox(height: 16),
+                
                 // メモフィールドは削除
                 const SizedBox(height: 24),
                 
+  // サブタスク編集セクション（トグル）
+  const SizedBox(height: 16),
+  _buildSubTaskSectionToggle(),
+                
                 // メール送信セクション（アコーディオン）
                 _buildMailSectionAccordion(),
-
-  // サブタスク編集セクション
-  const SizedBox(height: 16),
-  _buildSubTaskSection(),
                 
                 // ボタン
                   Row(
@@ -961,6 +1061,78 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     ),
    ),
    );  
+  }
+
+  // サブタスク編集セクション（トグル版）
+  Widget _buildSubTaskSectionToggle() {
+    final subTasks = ref.watch(subTaskViewModelProvider)
+        .where((s) => s.parentTaskId == (widget.task?.id ?? ''))
+        .toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
+    
+    final hasSubTasks = subTasks.isNotEmpty;
+    
+    return Column(
+      children: [
+        // サブタスクヘッダー（トグル）
+        InkWell(
+          onTap: () => setState(() => _isSubTaskSectionExpanded = !_isSubTaskSectionExpanded),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.subdirectory_arrow_right,
+                  color: Colors.blue.shade600,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'サブタスク',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                ),
+                const Spacer(),
+                if (hasSubTasks)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${subTasks.where((s) => s.isCompleted).length}/${subTasks.length} 完了',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade800,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                Icon(
+                  _isSubTaskSectionExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: Colors.grey.shade600,
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        // サブタスク詳細（展開時のみ表示）
+        if (_isSubTaskSectionExpanded) ...[
+          const SizedBox(height: 12),
+          _buildSubTaskSection(),
+        ],
+      ],
+    );
   }
 
   // サブタスク編集セクション
@@ -1059,8 +1231,13 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     final minutes = int.tryParse(_subTaskMinutesController.text);
                     if (_editingSubTask == null) {
                       // 追加
+                      final title = _subTaskTitleController.text.trim();
+                      if (title.isEmpty) {
+                        SnackBarService.showError(context, 'サブタスクのタイトルは必須です');
+                        return;
+                      }
                       final newSub = vm.createSubTask(
-                        title: _subTaskTitleController.text.trim(),
+                        title: title,
                         description: null,
                         parentTaskId: widget.task!.id,
                         estimatedMinutes: minutes,
@@ -1069,8 +1246,13 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       await vm.addSubTask(newSub);
                     } else {
                       // 更新
+                      final title = _subTaskTitleController.text.trim();
+                      if (title.isEmpty) {
+                        SnackBarService.showError(context, 'サブタスクのタイトルは必須です');
+                        return;
+                      }
                       final updated = _editingSubTask!.copyWith(
-                        title: _subTaskTitleController.text.trim(),
+                        title: title,
                         estimatedMinutes: minutes,
                       );
                       await vm.updateSubTask(updated);
@@ -1312,6 +1494,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           // 宛先入力欄
           TextFormField(
             controller: _toController,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+            ),
             decoration: InputDecoration(
               labelText: 'To',
               filled: true,
