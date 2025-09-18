@@ -7,6 +7,8 @@ import '../models/task_item.dart';
 import '../models/link_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart'; // Added import for linkViewModelProvider
+import '../viewmodels/sub_task_viewmodel.dart';
+import '../models/sub_task.dart';
 import '../services/mail_service.dart';
 import '../services/snackbar_service.dart';
 import '../services/email_contact_service.dart';
@@ -38,16 +40,19 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _assignedToController = TextEditingController();
+  // サブタスク用
+  final _subTaskTitleController = TextEditingController();
+  final _subTaskMinutesController = TextEditingController();
+  SubTask? _editingSubTask;
   
   // メール送信用のコントローラー
   final _toController = TextEditingController();
-  final _ccController = TextEditingController();
-  final _bccController = TextEditingController();
   
   // メール送信の設定
   bool _copyTitleToSubject = true;
   bool _copyMemoToBody = true;
   String _selectedMailApp = 'outlook'; // 'gmail' | 'outlook' - デフォルトはOutlook
+  bool _includeSubtasksInMail = true; // メール本文にサブタスクを含める
   
   // 連絡先選択
   final List<EmailContact> _selectedContacts = [];
@@ -55,8 +60,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
 
   // メール送信情報の一時保存
   String? _pendingMailTo;
-  String? _pendingMailCc;
-  String? _pendingMailBcc;
   String? _pendingMailSubject;
   String? _pendingMailBody;
   String? _pendingMailApp;
@@ -134,9 +137,20 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         _initializeFromLink();
       }
     }
+    // 説明に混入した「リンク: ...」行を除去
+    _sanitizeDescription();
     
     // 連絡先リストを初期化
     _loadContacts();
+  }
+
+  void _sanitizeDescription() {
+    final text = _descriptionController.text;
+    if (text.isEmpty) return;
+    final cleaned = text.replaceAll(RegExp(r'^リンク:\s.*$', multiLine: true), '').trim();
+    if (cleaned != text) {
+      _descriptionController.text = cleaned;
+    }
   }
 
   // リンク情報から初期値を設定
@@ -146,7 +160,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       final link = linkViewModel.getLinkById(widget.relatedLinkId!);
       if (link != null) {
         _titleController.text = link.label;
-        _descriptionController.text = 'リンク: ${link.path}';
+        // 説明へリンク文字列を自動挿入しない（カード側の関連リンク表示に任せる）
         
         // デフォルトのリマインダー時間を設定（1時間後）
         _reminderTime = DateTime.now().add(const Duration(hours: 1));
@@ -163,9 +177,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     _titleController.dispose();
     _descriptionController.dispose();
     _assignedToController.dispose();
+    _subTaskTitleController.dispose();
+    _subTaskMinutesController.dispose();
     _toController.dispose();
-    _ccController.dispose();
-    _bccController.dispose();
     super.dispose();
   }
 
@@ -287,7 +301,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         print('_reminderTime == null: ${_reminderTime == null}');
         print('_dueDate == null: ${_dueDate == null}');
         
-        final updatedTask = widget.task!.copyWith(
+        // サブタスク統計は最新を維持する
+        final latestTask = ref.read(taskViewModelProvider).firstWhere(
+          (t) => t.id == widget.task!.id,
+          orElse: () => widget.task!,
+        );
+        final updatedTask = latestTask.copyWith(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim().isEmpty 
               ? null 
@@ -326,7 +345,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         print('リマインダー時間: ${updatedTask.reminderTime}');
         print('変更前のリマインダー時間: ${widget.task!.reminderTime}');
         
-        taskViewModel.updateTask(updatedTask);
+        await taskViewModel.updateTask(updatedTask);
+        // 念のためサブタスク統計を最新化
+        await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(updatedTask.id);
       } else {
         // 新規タスクの追加
         final task = taskViewModel.createTask(
@@ -354,7 +375,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         print('タスクリマインダー時間: ${task.reminderTime}');
         print('=== タスク作成ダイアログ完了 ===');
         
-        taskViewModel.addTask(task);
+        await taskViewModel.addTask(task);
         
         // 新規タスク作成時にメール送信情報が一時保存されている場合は、正しいタスクIDで保存
         if (_pendingMailLog != null) {
@@ -366,8 +387,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               taskId: task.id,
               app: _pendingMailLog!['app'],
               to: _pendingMailLog!['to'],
-              cc: _pendingMailLog!['cc'],
-              bcc: _pendingMailLog!['bcc'],
               subject: _pendingMailLog!['subject'],
               body: _pendingMailLog!['body'],
               token: _pendingMailLog!['token'],
@@ -478,15 +497,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         focusNode: FocusNode(),
         autofocus: true,
         onKeyEvent: (KeyEvent event) {
-          // モーダル内でのキーボード制御
-          if (event is KeyDownEvent) {
-            if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
-                event.logicalKey == LogicalKeyboardKey.arrowRight) {
-              // 左右矢印キーはモーダル内での操作として処理
-              // フォーカス移動やフィールド間の移動などに使用
-              _handleModalNavigation(event.logicalKey);
-              return; // イベントを消費して親の処理を防ぐ
-            }
+          // 入力時のキー操作はすべてテキスト入力に委ねる
+          if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+            Navigator.of(context).maybePop();
           }
         },
         child: Dialog(
@@ -531,12 +544,39 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   ),
                   const SizedBox(height: 24),
                 
-                // タイトル
+                // タイトル（改善版）
                 TextFormField(
                   controller: _titleController,
-                  decoration: const InputDecoration(
+                  enableInteractiveSelection: true,
+                  decoration: InputDecoration(
                     labelText: 'タイトル *',
-                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 2.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    labelStyle: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -545,7 +585,46 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     return null;
                   },
                 ),
-                // 説明フィールドは非表示（内部データとして保持）
+                const SizedBox(height: 16),
+                
+                // 説明（改善版）
+                TextFormField(
+                  controller: _descriptionController,
+                  maxLines: 3,
+                  minLines: 1,
+                  enableInteractiveSelection: true,
+                  decoration: InputDecoration(
+                    labelText: '説明',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 2.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    hintText: 'タスクの詳細説明を入力してください',
+                    labelStyle: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 
                 // 期限日
@@ -754,18 +833,51 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
                 const SizedBox(height: 16),
                 
-                // 依頼先
+                // 依頼先（改善版）
                 TextFormField(
                   controller: _assignedToController,
-                  maxLines: 4, // 複数行対応
-                  minLines: 2, // 最小2行
-                  textAlignVertical: TextAlignVertical.top, // テキストを上揃え
-                  decoration: const InputDecoration(
+                  maxLines: null, // 無制限
+                  minLines: 3, // 最小3行
+                  textAlignVertical: TextAlignVertical.top,
+                  enableInteractiveSelection: true, // カーソル移動改善
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
                     labelText: '依頼先やメモ',
-                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.shade600, width: 2.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                     hintText: '例: 佐藤さん\n\nメモや詳細情報をここに記入してください。\nテンプレートを使用した場合も、ここで内容を確認・編集できます。',
-                    alignLabelWithHint: true, // ラベルを上に配置
+                    alignLabelWithHint: true,
                     helperText: '※複数行での入力が可能です',
+                    labelStyle: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    helperStyle: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -809,6 +921,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 
                 // メール送信セクション（アコーディオン）
                 _buildMailSectionAccordion(),
+
+  // サブタスク編集セクション
+  const SizedBox(height: 16),
+  _buildSubTaskSection(),
                 
                 // ボタン
                   Row(
@@ -845,6 +961,191 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     ),
    ),
    );  
+  }
+
+  // サブタスク編集セクション
+  Widget _buildSubTaskSection() {
+    final subTasks = ref.watch(subTaskViewModelProvider)
+        .where((s) => s.parentTaskId == (widget.task?.id ?? ''))
+        .toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.subdirectory_arrow_right, color: Colors.blue),
+                const SizedBox(width: 8),
+                const Text('サブタスク', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (widget.task != null)
+                  Text('${subTasks.where((s)=>s.isCompleted).length}/${subTasks.length} 完了',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: _subTaskTitleController,
+                    decoration: InputDecoration(
+                      labelText: 'サブタスク名',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      ),
+                      labelStyle: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _subTaskMinutesController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: '推定(分)',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      ),
+                      labelStyle: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (widget.task == null) {
+                      SnackBarService.showInfo(context, '先にタスクを作成してください');
+                      return;
+                    }
+                    final vm = ref.read(subTaskViewModelProvider.notifier);
+                    final minutes = int.tryParse(_subTaskMinutesController.text);
+                    if (_editingSubTask == null) {
+                      // 追加
+                      final newSub = vm.createSubTask(
+                        title: _subTaskTitleController.text.trim(),
+                        description: null,
+                        parentTaskId: widget.task!.id,
+                        estimatedMinutes: minutes,
+                        notes: null,
+                      );
+                      await vm.addSubTask(newSub);
+                    } else {
+                      // 更新
+                      final updated = _editingSubTask!.copyWith(
+                        title: _subTaskTitleController.text.trim(),
+                        estimatedMinutes: minutes,
+                      );
+                      await vm.updateSubTask(updated);
+                      _editingSubTask = null;
+                    }
+                    _subTaskTitleController.clear();
+                    _subTaskMinutesController.clear();
+                    // 親統計更新
+                    await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(widget.task!.id);
+                    setState((){});
+                  },
+                  child: Text(_editingSubTask == null ? '追加' : '更新'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (widget.task == null)
+              const Text('※ タスク作成後にサブタスク編集が可能になります', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            if (widget.task != null)
+              ListView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: subTasks.length,
+                itemBuilder: (context, index) {
+                  final s = subTasks[index];
+                  return ListTile(
+                    dense: true,
+                    leading: Checkbox(
+                      value: s.isCompleted,
+                      onChanged: (_) async {
+                        final vm = ref.read(subTaskViewModelProvider.notifier);
+                        if (s.isCompleted) {
+                          await vm.uncompleteSubTask(s.id);
+                        } else {
+                          await vm.completeSubTask(s.id);
+                        }
+                        await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(widget.task!.id);
+                        setState((){});
+                      },
+                    ),
+                    title: Text(s.title, overflow: TextOverflow.ellipsis),
+                    subtitle: Row(children: [
+                      if (s.estimatedMinutes!=null)
+                        Text('推定: ${s.estimatedMinutes}分', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      if (s.completedAt!=null) ...[
+                        const SizedBox(width: 8),
+                        Text('完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                      ],
+                    ]),
+                    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () {
+                          _subTaskTitleController.text = s.title;
+                          _subTaskMinutesController.text = s.estimatedMinutes?.toString() ?? '';
+                          _editingSubTask = s;
+                          setState((){});
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () async {
+                          await ref.read(subTaskViewModelProvider.notifier).deleteSubTask(s.id);
+                          await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(widget.task!.id);
+                          setState((){});
+                        },
+                      ),
+                    ]),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   int _getPriorityColor(TaskPriority priority) {
@@ -987,6 +1288,17 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 contentPadding: EdgeInsets.zero,
                 dense: true,
               ),
+              CheckboxListTile(
+                value: _includeSubtasksInMail,
+                onChanged: (value) {
+                  setState(() {
+                    _includeSubtasksInMail = value ?? true;
+                  });
+                },
+                title: const Text('本文にサブタスクを含める'),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
             ],
           ),
           
@@ -1000,32 +1312,30 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           // 宛先入力欄
           TextFormField(
             controller: _toController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'To',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+              ),
+              prefixIcon: Icon(Icons.person, color: Colors.grey.shade600),
               hintText: '空でもメーラーが起動します',
               helperText: '※空の場合はメーラーで直接アドレスを指定できます',
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _ccController,
-            decoration: const InputDecoration(
-              labelText: 'Cc',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person_add),
-              hintText: '任意',
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _bccController,
-            decoration: const InputDecoration(
-              labelText: 'Bcc',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person_add_alt),
-              hintText: '任意',
+              labelStyle: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             ),
           ),
           
@@ -1210,8 +1520,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   Future<void> _sendMail() async {
     try {
       final to = _toController.text.trim();
-      final cc = _ccController.text.trim();
-      final bcc = _bccController.text.trim();
 
       // 件名と本文を構築
       String subject = _copyTitleToSubject ? _titleController.text.trim() : '';
@@ -1232,8 +1540,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       
       // メール送信情報を一時保存（UUID付き）
       _pendingMailTo = to;
-      _pendingMailCc = cc;
-      _pendingMailBcc = bcc;
       _pendingMailSubject = finalSubject;
       _pendingMailBody = finalBody;
       _pendingMailApp = _selectedMailApp;
@@ -1250,16 +1556,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       if (_selectedMailApp == 'gmail') {
         await mailService.launchGmail(
           to: to,
-          cc: cc,
-          bcc: bcc,
           subject: finalSubject,
           body: finalBody,
         );
       } else if (_selectedMailApp == 'outlook') {
         await mailService.launchOutlookDesktop(
           to: to,
-          cc: cc,
-          bcc: bcc,
           subject: finalSubject,
           body: finalBody,
         );
@@ -1323,8 +1625,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           'taskId': taskId,
           'app': _pendingMailApp!,
           'to': _pendingMailTo!,
-          'cc': _pendingMailCc ?? '',
-          'bcc': _pendingMailBcc ?? '',
           'subject': _pendingMailSubject!,
           'body': _pendingMailBody!,
           'token': token,
@@ -1339,8 +1639,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           taskId: taskId,
           app: _pendingMailApp!,
           to: _pendingMailTo!,
-          cc: _pendingMailCc ?? '',
-          bcc: _pendingMailBcc ?? '',
           subject: _pendingMailSubject!,
           body: _pendingMailBody!,
           token: token,
@@ -1362,8 +1660,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
 
       // 一時保存された情報をクリア
       _pendingMailTo = null;
-      _pendingMailCc = null;
-      _pendingMailBcc = null;
       _pendingMailSubject = null;
       _pendingMailBody = null;
       _pendingMailApp = null;
@@ -1576,6 +1872,32 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     if (taskDescription.isNotEmpty) {
       taskInfo += '説明: $taskDescription\n';
     }
+    
+    // サブタスク情報を追加（チェックONの時のみ）
+    String subtaskInfo = '';
+    print('デバッグ: _includeSubtasksInMail=$_includeSubtasksInMail');
+    print('デバッグ: widget.task != null=${widget.task != null}');
+    if (widget.task != null) {
+      print('デバッグ: widget.task!.hasSubTasks=${widget.task!.hasSubTasks}');
+      print('デバッグ: widget.task!.totalSubTasksCount=${widget.task!.totalSubTasksCount}');
+    }
+    if (_includeSubtasksInMail && widget.task != null) {
+      // サブタスク詳細リスト
+      final subtasks = ref.read(subTaskViewModelProvider)
+          .where((s) => s.parentTaskId == widget.task!.id)
+          .toList()
+        ..sort((a, b) => a.order.compareTo(b.order));
+      
+      if (subtasks.isNotEmpty) {
+        subtaskInfo += '\nサブタスク進捗: ${widget.task!.completedSubTasksCount}/${widget.task!.totalSubTasksCount}\n';
+      for (final s in subtasks) {
+        final mark = s.isCompleted ? '✅' : '⬜️';
+        final est = s.estimatedMinutes != null ? ' (${s.estimatedMinutes}分)' : '';
+        final done = s.completedAt != null ? '｜完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}' : '';
+        subtaskInfo += '- $mark ${s.title}$est$done\n';
+      }
+      }
+    }
     if (taskDueDate != null) {
       final dueDateStr = '${taskDueDate.year}年${taskDueDate.month}月${taskDueDate.day}日';
       taskInfo += '期限: $dueDateStr\n';
@@ -1626,6 +1948,7 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
 
 【関連タスク情報】
 ${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
+${subtaskInfo.isNotEmpty ? subtaskInfo : ''}
 
 ${linksInfo.isNotEmpty ? '────────────────────────────────────────────────────────\n\n【関連資料】\n$linksInfo' : ''}
 
@@ -1660,6 +1983,30 @@ ${linksInfo.isNotEmpty ? '──────────────────
     }
     if (taskDescription.isNotEmpty) {
       taskInfo += '<div style="margin-bottom: 8px;"><strong>説明:</strong> $taskDescription</div>';
+    }
+    
+    // サブタスク情報を追加（チェックONの時のみ）
+    String subtaskInfo = '';
+    if (_includeSubtasksInMail && widget.task != null) {
+      final subtasks = ref.read(subTaskViewModelProvider)
+          .where((s) => s.parentTaskId == widget.task!.id)
+          .toList()
+        ..sort((a, b) => a.order.compareTo(b.order));
+      
+      if (subtasks.isNotEmpty) {
+        final progress = '<div style="margin: 10px 0;"><strong>サブタスク進捗:</strong> ${widget.task!.completedSubTasksCount}/${widget.task!.totalSubTasksCount}</div>';
+      final items = subtasks.map((s) {
+        final mark = s.isCompleted ? '✅' : '⬜️';
+        final est = s.estimatedMinutes != null ? ' (${s.estimatedMinutes}分)' : '';
+        final done = s.completedAt != null ? '｜完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}' : '';
+        final safe = s.title
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;');
+        return '<li>$mark $safe$est$done</li>';
+      }).join();
+      subtaskInfo += '$progress<ul style="margin: 5px 0 10px 20px;">$items</ul>';
+      }
     }
     if (taskDueDate != null) {
       final dueDateStr = '${taskDueDate.year}年${taskDueDate.month}月${taskDueDate.day}日';
@@ -1737,6 +2084,7 @@ ${linksInfo.isNotEmpty ? '──────────────────
         
         <div style="margin-bottom: 20px;">
           ${taskInfo.isNotEmpty ? taskInfo : '<div>タスク情報がありません。</div>'}
+          ${subtaskInfo.isNotEmpty ? subtaskInfo : ''}
         </div>
         
         $memoHtml
@@ -1909,8 +2257,6 @@ ${linksInfo.isNotEmpty ? '──────────────────
       // テンプレートを適用
       setState(() {
         _toController.text = _toController.text.isNotEmpty ? _toController.text : '';
-        _ccController.text = _ccController.text.isNotEmpty ? _ccController.text : '';
-        _bccController.text = _bccController.text.isNotEmpty ? _bccController.text : '';
         
         // 件名と本文をテンプレートで更新（既存の内容がある場合は追加）
         final currentSubject = _titleController.text.trim();
@@ -2050,8 +2396,6 @@ ${linksInfo.isNotEmpty ? '──────────────────
         // 履歴から内容を再利用
         setState(() {
           _toController.text = selectedLog.to;
-          _ccController.text = selectedLog.cc;
-          _bccController.text = selectedLog.bcc;
           
           // 件名からトークンを除去して適用
           final subjectWithoutToken = selectedLog.subject.replaceAll(RegExp(r'\s*\[LN-[A-Z0-9]+\]'), '');

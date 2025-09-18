@@ -133,8 +133,8 @@ class MailService {
   /// Gmail Webでメール作成画面を起動
   Future<void> launchGmail({
     required String to,
-    required String cc,
-    required String bcc,
+    String cc = '',
+    String bcc = '',
     required String subject,
     required String body,
   }) async {
@@ -164,8 +164,8 @@ class MailService {
   /// Outlook デスクトップでメール作成画面を起動
   Future<void> launchOutlookDesktop({
     required String to,
-    required String cc,
-    required String bcc,
+    String cc = '',
+    String bcc = '',
     required String subject,
     required String body,
   }) async {
@@ -453,8 +453,8 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
     required String taskId,
     required String app, // 'gmail' | 'outlook'
     required String to,
-    required String cc,
-    required String bcc,
+    String cc = '',
+    String bcc = '',
     required String subject,
     required String body,
     required String token,
