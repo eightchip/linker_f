@@ -963,14 +963,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       onExit: (_) => setState(() => _hoveredTaskIds.remove(task.id)),
       child: AnimatedContainer(
         key: ValueKey(task.id),
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 300), // アニメーション時間を延長
+        curve: Curves.easeOutCubic, // より滑らかなカーブ
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: _isSelectionMode && isSelected 
             ? Theme.of(context).primaryColor.withValues(alpha: 0.15) 
             : isHovered
-              ? Theme.of(context).primaryColor.withValues(alpha: 0.05) // ホバー時に薄いアクセントカラー
+              ? Theme.of(context).primaryColor.withValues(alpha: 0.12) // ホバー時の背景色をより明るく
               : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -979,13 +979,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               : isHovered
                 ? Theme.of(context).primaryColor.withValues(alpha: 0.8)
                 : Theme.of(context).colorScheme.outline.withValues(alpha: 0.4), // 通常時の枠線を濃く
-            width: _isSelectionMode && isSelected ? 3 : isHovered ? 3 : 2, // 枠線の太さを増加
+            width: _isSelectionMode && isSelected ? 3 : isHovered ? 4 : 2, // ホバー時の枠線を太く
           ),
           boxShadow: [
             BoxShadow(
               color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15), // 通常時のシャドウを濃く
-              blurRadius: isHovered ? 16 : 10, // ホバー時のシャドウを強化
-              offset: Offset(0, isHovered ? 6 : 3), // ホバー時のオフセットを増加
+              blurRadius: isHovered ? 20 : 10, // ホバー時のシャドウをさらに強化
+              offset: Offset(0, isHovered ? 8 : 3), // ホバー時のオフセットを増加
             ),
             if (_isSelectionMode && isSelected)
               BoxShadow(
@@ -995,9 +995,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               ),
             if (isHovered && !_isSelectionMode)
               BoxShadow(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.15), // ホバー時のシャドウを強化
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.25), // ホバー時のシャドウをさらに強化
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            // 追加のグロー効果
+            if (isHovered && !_isSelectionMode)
+              BoxShadow(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                blurRadius: 32,
+                offset: const Offset(0, 12),
               ),
           ],
         ),

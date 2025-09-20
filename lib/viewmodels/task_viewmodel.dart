@@ -1438,31 +1438,60 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   DateTime? _calculateNextDueDate(DateTime? originalDueDate) {
     if (originalDueDate == null) return null;
     
-    // 常に翌月の同日を設定
     final now = DateTime.now();
-    try {
-      return DateTime(
-        now.year,
-        now.month + 1,
-        originalDueDate.day,
-        originalDueDate.hour,
-        originalDueDate.minute,
-      );
-    } catch (e) {
-      // 月の日数が異なる場合（例：1月31日→2月）は月末日を使用
-      final nextMonth = DateTime(now.year, now.month + 1);
-      final lastDayOfNextMonth = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
-      final adjustedDay = originalDueDate.day > lastDayOfNextMonth 
-          ? lastDayOfNextMonth 
-          : originalDueDate.day;
-      
-      return DateTime(
-        now.year,
-        now.month + 1,
-        adjustedDay,
-        originalDueDate.hour,
-        originalDueDate.minute,
-      );
+    
+    // 元の期限日が現在日時より後の場合は、さらに1か月後を設定
+    if (originalDueDate.isAfter(now)) {
+      try {
+        return DateTime(
+          originalDueDate.year,
+          originalDueDate.month + 1,
+          originalDueDate.day,
+          originalDueDate.hour,
+          originalDueDate.minute,
+        );
+      } catch (e) {
+        // 月の日数が異なる場合（例：1月31日→2月）は月末日を使用
+        final nextMonth = DateTime(originalDueDate.year, originalDueDate.month + 1);
+        final lastDayOfNextMonth = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
+        final adjustedDay = originalDueDate.day > lastDayOfNextMonth 
+            ? lastDayOfNextMonth 
+            : originalDueDate.day;
+        
+        return DateTime(
+          originalDueDate.year,
+          originalDueDate.month + 1,
+          adjustedDay,
+          originalDueDate.hour,
+          originalDueDate.minute,
+        );
+      }
+    } else {
+      // 元の期限日が現在日時より前の場合は、翌月の同日を設定
+      try {
+        return DateTime(
+          now.year,
+          now.month + 1,
+          originalDueDate.day,
+          originalDueDate.hour,
+          originalDueDate.minute,
+        );
+      } catch (e) {
+        // 月の日数が異なる場合（例：1月31日→2月）は月末日を使用
+        final nextMonth = DateTime(now.year, now.month + 1);
+        final lastDayOfNextMonth = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
+        final adjustedDay = originalDueDate.day > lastDayOfNextMonth 
+            ? lastDayOfNextMonth 
+            : originalDueDate.day;
+        
+        return DateTime(
+          now.year,
+          now.month + 1,
+          adjustedDay,
+          originalDueDate.hour,
+          originalDueDate.minute,
+        );
+      }
     }
   }
 
@@ -1470,31 +1499,60 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   DateTime? _calculateNextReminderTime(DateTime? originalReminderTime) {
     if (originalReminderTime == null) return null;
     
-    // 常に翌月の同日を設定
     final now = DateTime.now();
-    try {
-      return DateTime(
-        now.year,
-        now.month + 1,
-        originalReminderTime.day,
-        originalReminderTime.hour,
-        originalReminderTime.minute,
-      );
-    } catch (e) {
-      // 月の日数が異なる場合（例：1月31日→2月）は月末日を使用
-      final nextMonth = DateTime(now.year, now.month + 1);
-      final lastDayOfNextMonth = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
-      final adjustedDay = originalReminderTime.day > lastDayOfNextMonth 
-          ? lastDayOfNextMonth 
-          : originalReminderTime.day;
-      
-      return DateTime(
-        now.year,
-        now.month + 1,
-        adjustedDay,
-        originalReminderTime.hour,
-        originalReminderTime.minute,
-      );
+    
+    // 元のリマインダー時間が現在日時より後の場合は、さらに1か月後を設定
+    if (originalReminderTime.isAfter(now)) {
+      try {
+        return DateTime(
+          originalReminderTime.year,
+          originalReminderTime.month + 1,
+          originalReminderTime.day,
+          originalReminderTime.hour,
+          originalReminderTime.minute,
+        );
+      } catch (e) {
+        // 月の日数が異なる場合（例：1月31日→2月）は月末日を使用
+        final nextMonth = DateTime(originalReminderTime.year, originalReminderTime.month + 1);
+        final lastDayOfNextMonth = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
+        final adjustedDay = originalReminderTime.day > lastDayOfNextMonth 
+            ? lastDayOfNextMonth 
+            : originalReminderTime.day;
+        
+        return DateTime(
+          originalReminderTime.year,
+          originalReminderTime.month + 1,
+          adjustedDay,
+          originalReminderTime.hour,
+          originalReminderTime.minute,
+        );
+      }
+    } else {
+      // 元のリマインダー時間が現在日時より前の場合は、翌月の同日を設定
+      try {
+        return DateTime(
+          now.year,
+          now.month + 1,
+          originalReminderTime.day,
+          originalReminderTime.hour,
+          originalReminderTime.minute,
+        );
+      } catch (e) {
+        // 月の日数が異なる場合（例：1月31日→2月）は月末日を使用
+        final nextMonth = DateTime(now.year, now.month + 1);
+        final lastDayOfNextMonth = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
+        final adjustedDay = originalReminderTime.day > lastDayOfNextMonth 
+            ? lastDayOfNextMonth 
+            : originalReminderTime.day;
+        
+        return DateTime(
+          now.year,
+          now.month + 1,
+          adjustedDay,
+          originalReminderTime.hour,
+          originalReminderTime.minute,
+        );
+      }
     }
   }
 
