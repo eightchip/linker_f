@@ -1463,7 +1463,7 @@ class GoogleCalendarService {
         print('参加者数: ${attendees.length}');
         print('参加者詳細: $attendees');
         print('説明文の長さ: ${description.length}文字');
-        print('説明文プレビュー: ${description.length > 200 ? description.substring(0, 200) + "..." : description}');
+        print('説明文プレビュー: ${description.length > 200 ? "${description.substring(0, 200)}..." : description}');
         print('送信データ: ${jsonEncode(eventData)}');
         print('===============================');
       }
@@ -1806,11 +1806,11 @@ class GoogleCalendarService {
   String _getStatusColorId(TaskStatus status) {
     switch (status) {
       case TaskStatus.pending:
-        return '8'; // グラファイト（グレー）- 未着手
+        return '10'; // バジル（緑）- 未着手（目に留まりやすく）
       case TaskStatus.inProgress:
         return '7'; // ピーコック（青）- 進行中（画像のような鮮やかな青い色）
       case TaskStatus.completed:
-        return '10'; // バジル（緑）- 完了済み
+        return '8'; // グラファイト（グレー）- 完了済み（目立たない）
       case TaskStatus.cancelled:
         return '11'; // トマト（赤）- キャンセル
     }
@@ -1908,8 +1908,8 @@ class GoogleCalendarService {
       final hours = task.estimatedMinutes! ~/ 60;
       final minutes = task.estimatedMinutes! % 60;
       final timeText = hours > 0 
-          ? '⏱️ 推定時間: ${hours}時間${minutes > 0 ? '${minutes}分' : ''}'
-          : '⏱️ 推定時間: ${minutes}分';
+          ? '⏱️ 推定時間: $hours時間${minutes > 0 ? '$minutes分' : ''}'
+          : '⏱️ 推定時間: $minutes分';
       
       if (!parts.any((part) => part.contains('⏱️ 推定時間:'))) {
         parts.add(timeText);
@@ -2020,8 +2020,8 @@ class GoogleCalendarService {
         final hours = task.estimatedMinutes! ~/ 60;
         final minutes = task.estimatedMinutes! % 60;
         final timeText = hours > 0 
-            ? '⏱️ 推定時間: ${hours}時間${minutes > 0 ? '${minutes}分' : ''}'
-            : '⏱️ 推定時間: ${minutes}分';
+            ? '⏱️ 推定時間: $hours時間${minutes > 0 ? '$minutes分' : ''}'
+            : '⏱️ 推定時間: $minutes分';
         if (!essentialParts.any((part) => part.contains('⏱️ 推定時間:'))) {
           essentialParts.add(timeText);
         }
@@ -2767,13 +2767,13 @@ class GoogleCalendarService {
   TaskStatus _getStatusFromColorId(String colorId) {
     switch (colorId) {
       case '8': // グラファイト（グレー）
-        return TaskStatus.pending;
+        return TaskStatus.completed;
       case '7': // ピーコック（青）- 進行中
         return TaskStatus.inProgress;
       case '9': // ブルーベリー（青）- 進行中（旧設定との互換性）
         return TaskStatus.inProgress;
       case '10': // バジル（グリーン）
-        return TaskStatus.completed;
+        return TaskStatus.pending;
       case '11': // トマト（レッド）
         return TaskStatus.cancelled;
       default:
@@ -2976,9 +2976,9 @@ class GoogleCalendarService {
           
           print('=== 統計サマリー ===');
           print('総イベント数: ${events.length}件');
-          print('祝日除外: ${holidayCount}件');
-          print('ビジネスイベント: ${businessEventCount}件');
-          print('有効イベント: ${validEventCount}件');
+          print('祝日除外: $holidayCount件');
+          print('ビジネスイベント: $businessEventCount件');
+          print('有効イベント: $validEventCount件');
           print('==================');
           
           return events.cast<Map<String, dynamic>>().toList();

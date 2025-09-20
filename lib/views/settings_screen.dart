@@ -15,14 +15,17 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../main.dart';
+import 'link_launcher_app.dart';
 import 'package:intl/intl.dart';
 import '../services/backup_service.dart';
 import '../repositories/link_repository.dart';
 import '../services/google_calendar_service.dart';
 import '../widgets/unified_dialog.dart';
+import '../services/keyboard_shortcut_service.dart';
 import '../widgets/app_button_styles.dart';
 import '../services/snackbar_service.dart';
 import '../viewmodels/sync_status_provider.dart';
+import '../viewmodels/font_size_provider.dart';
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService.instance;
@@ -206,6 +209,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final currentDarkMode = ref.watch(darkModeProvider);
     final currentAccentColor = ref.watch(accentColorProvider);
     final currentFontSize = ref.watch(fontSizeProvider);
+    final currentTextColor = ref.watch(textColorProvider);
 
     return RawKeyboardListener(
       focusNode: FocusNode(),
@@ -487,6 +491,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const Text('アクセントカラー', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 _buildAccentColorGrid(context, ref, currentAccentColor),
+                
+                const SizedBox(height: 16),
+                
+                // 色の濃淡調整
+                _buildColorIntensitySlider(context, ref),
+                
+                const SizedBox(height: 16),
+                
+                // コントラスト調整
+                _buildColorContrastSlider(context, ref),
+                
+                const SizedBox(height: 16),
+                
+                // テキスト色設定
+                _buildTextColorSection(context, ref),
               ],
             ),
           ),
@@ -496,30 +515,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildAccentColorGrid(BuildContext context, WidgetRef ref, int currentColor) {
+    // 色系統を8種類に絞る
     final colorOptions = [
-      0xFF3B82F6, // 青（現在のデフォルト）
-      0xFFEF4444, // 赤
-      0xFF22C55E, // 緑
+      0xFF3B82F6, // ブルー
+      0xFFEF4444, // レッド
+      0xFF22C55E, // グリーン
       0xFFF59E42, // オレンジ
-      0xFF8B5CF6, // 紫
+      0xFF8B5CF6, // パープル
       0xFFEC4899, // ピンク
-      0xFFEAB308, // 黄
-      0xFF06B6D4, // 水色
-      0xFF92400E, // 茶色
+      0xFF06B6D4, // シアン
       0xFF64748B, // グレー
-      0xFF84CC16, // ライム
-      0xFF6366F1, // インディゴ
-      0xFF14B8A6, // ティール
-      0xFFFB923C, // ディープオレンジ
-      0xFF7C3AED, // ディープパープル
-      0xFFFBBF24, // アンバー
-      0xFF0EA5E9, // シアン
-      0xFFB45309, // ブラウン
-      0xFFB91C1C, // レッドブラウン
-      0xFF166534, // ダークグリーン
     ];
     final colorNames = [
-      'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'イエロー', 'シアン', 'ブラウン', 'グレー', 'ライム', 'インディゴ', 'ティール', 'ディープオレンジ', 'ディープパープル', 'アンバー', 'シアン', 'ブラウン', 'レッドブラウン', 'ダークグリーン'
+      'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'シアン', 'グレー'
     ];
 
     return GridView.builder(
@@ -571,6 +579,451 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildColorIntensitySlider(BuildContext context, WidgetRef ref) {
+    final colorIntensity = ref.watch(colorIntensityProvider);
+    final accentColor = ref.watch(accentColorProvider);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('色の濃淡', style: TextStyle(fontWeight: FontWeight.w500)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: _getAdjustedColor(accentColor, colorIntensity, ref.watch(colorContrastProvider)).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _getAdjustedColor(accentColor, colorIntensity, ref.watch(colorContrastProvider)),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                '${(colorIntensity * 100).round()}%',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _getAdjustedColor(accentColor, colorIntensity, ref.watch(colorContrastProvider)),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: _getAdjustedColor(accentColor, colorIntensity, ref.watch(colorContrastProvider)),
+            inactiveTrackColor: Colors.grey.shade300,
+            thumbColor: _getAdjustedColor(accentColor, colorIntensity, ref.watch(colorContrastProvider)),
+            overlayColor: _getAdjustedColor(accentColor, colorIntensity, ref.watch(colorContrastProvider)).withOpacity(0.2),
+          ),
+          child: Slider(
+            value: colorIntensity,
+            min: 0.3,
+            max: 2.0,
+            divisions: 17,
+            onChanged: (value) {
+              ref.read(colorIntensityProvider.notifier).state = value;
+            },
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('薄い', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text('標準', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text('濃い', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorContrastSlider(BuildContext context, WidgetRef ref) {
+    final colorContrast = ref.watch(colorContrastProvider);
+    final accentColor = ref.watch(accentColorProvider);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('コントラスト', style: TextStyle(fontWeight: FontWeight.w500)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: _getAdjustedColor(accentColor, ref.watch(colorIntensityProvider), colorContrast).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _getAdjustedColor(accentColor, ref.watch(colorIntensityProvider), colorContrast),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                '${(colorContrast * 100).round()}%',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _getAdjustedColor(accentColor, ref.watch(colorIntensityProvider), colorContrast),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: _getAdjustedColor(accentColor, ref.watch(colorIntensityProvider), colorContrast),
+            inactiveTrackColor: Colors.grey.shade300,
+            thumbColor: _getAdjustedColor(accentColor, ref.watch(colorIntensityProvider), colorContrast),
+            overlayColor: _getAdjustedColor(accentColor, ref.watch(colorIntensityProvider), colorContrast).withOpacity(0.2),
+          ),
+          child: Slider(
+            value: colorContrast,
+            min: 0.5,
+            max: 2.0,
+            divisions: 15,
+            onChanged: (value) {
+              ref.read(colorContrastProvider.notifier).state = value;
+            },
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('低', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text('標準', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text('高', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 色の濃淡とコントラストを調整した色を取得
+  Color _getAdjustedColor(int baseColor, double intensity, double contrast) {
+    final color = Color(baseColor);
+    
+    // 濃淡調整
+    final adjustedColor = Color.fromARGB(
+      color.alpha,
+      (color.red * intensity).clamp(0, 255).round(),
+      (color.green * intensity).clamp(0, 255).round(),
+      (color.blue * intensity).clamp(0, 255).round(),
+    );
+    
+    // コントラスト調整
+    final contrastColor = Color.fromARGB(
+      adjustedColor.alpha,
+      ((adjustedColor.red - 128) * contrast + 128).clamp(0, 255).round(),
+      ((adjustedColor.green - 128) * contrast + 128).clamp(0, 255).round(),
+      ((adjustedColor.blue - 128) * contrast + 128).clamp(0, 255).round(),
+    );
+    
+    return contrastColor;
+  }
+
+  // 背景色に適したコントラスト色を取得
+  Color _getContrastColor(Color backgroundColor) {
+    final luminance = backgroundColor.computeLuminance();
+    return luminance > 0.5 ? Colors.black : Colors.white;
+  }
+
+  Widget _buildTextColorSection(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('タスクリスト表示設定', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        const SizedBox(height: 8),
+        const Text(
+          'タスクリストとタスク編集画面で表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます',
+          style: TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const SizedBox(height: 16),
+        
+        // タイトル設定
+        _buildFieldSettings(
+          context, 
+          ref, 
+          'タイトル', 
+          titleTextColorProvider, 
+          titleFontSizeProvider, 
+          titleFontFamilyProvider,
+          'title'
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // メモ設定
+        _buildFieldSettings(
+          context, 
+          ref, 
+          '依頼先やメモ', 
+          memoTextColorProvider, 
+          memoFontSizeProvider, 
+          memoFontFamilyProvider,
+          'memo'
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // 説明設定
+        _buildFieldSettings(
+          context, 
+          ref, 
+          '説明', 
+          descriptionTextColorProvider, 
+          descriptionFontSizeProvider, 
+          descriptionFontFamilyProvider,
+          'description'
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFieldSettings(
+    BuildContext context, 
+    WidgetRef ref, 
+    String fieldName, 
+    StateProvider<int> colorProvider, 
+    StateProvider<double> fontSizeProvider, 
+    StateProvider<String> fontFamilyProvider,
+    String fieldKey
+  ) {
+    final currentColor = ref.watch(colorProvider);
+    final currentFontSize = ref.watch(fontSizeProvider);
+    final currentFontFamily = ref.watch(fontFamilyProvider);
+    final isDarkMode = ref.watch(darkModeProvider);
+    
+    // テキスト色の選択肢（10種類）- ダークモード対応
+    final textColorOptions = [
+      0xFF000000, // 黒（ライトモード用）
+      0xFFFFFFFF, // 白（ダークモード用）
+      0xFF3B82F6, // ブルー（両モード対応）
+      0xFFEF4444, // レッド（両モード対応）
+      0xFFF59E0B, // オレンジ（両モード対応）
+      0xFF10B981, // グリーン（両モード対応）
+      0xFF8B5CF6, // パープル（両モード対応）
+      0xFFEC4899, // ピンク（両モード対応）
+      0xFF6B7280, // グレー（両モード対応）
+      0xFFFBBF24, // イエロー（両モード対応）
+    ];
+    
+    final textColorNames = [
+      '黒', '白', 'ブルー', 'レッド', 'オレンジ', 
+      'グリーン', 'パープル', 'ピンク', 'グレー', 'イエロー'
+    ];
+
+    // フォントファミリーの選択肢
+    final fontFamilyOptions = [
+      '', // デフォルト
+      'Noto Sans JP',
+      'Hiragino Sans',
+      'Yu Gothic',
+      'Meiryo',
+      'MS Gothic',
+      'MS Mincho',
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$fieldName設定', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
+            
+            // テキスト色設定
+            const Text('テキスト色', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 5,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 1.2,
+              ),
+              itemCount: textColorOptions.length,
+              itemBuilder: (context, index) {
+                final color = textColorOptions[index];
+                final name = textColorNames[index];
+                final isSelected = color == currentColor;
+                
+                return InkWell(
+                  onTap: () async {
+                    ref.read(colorProvider.notifier).state = color;
+                    // 設定を保存
+                    final settingsService = SettingsService.instance;
+                    switch (fieldKey) {
+                      case 'title':
+                        await settingsService.setTitleTextColor(color);
+                        break;
+                      case 'memo':
+                        await settingsService.setMemoTextColor(color);
+                        break;
+                      case 'description':
+                        await settingsService.setDescriptionTextColor(color);
+                        break;
+                    }
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color(color),
+                      borderRadius: BorderRadius.circular(8),
+                      border: isSelected 
+                        ? Border.all(color: isDarkMode ? Colors.black : Colors.white, width: 3)
+                        : Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300, width: 1),
+                      boxShadow: isSelected 
+                        ? [BoxShadow(
+                            color: isDarkMode 
+                              ? Colors.blue.withOpacity(0.7) 
+                              : Colors.blue.withOpacity(0.5), 
+                            blurRadius: 4, 
+                            spreadRadius: 1
+                          )]
+                        : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          color: _getContrastColor(Color(color)),
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // フォントサイズ設定
+            const Text('フォントサイズ', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: currentFontSize,
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 15,
+                    onChanged: (value) async {
+                      ref.read(fontSizeProvider.notifier).state = value;
+                      // 設定を保存
+                      final settingsService = SettingsService.instance;
+                      switch (fieldKey) {
+                        case 'title':
+                          await settingsService.setTitleFontSize(value);
+                          break;
+                        case 'memo':
+                          await settingsService.setMemoFontSize(value);
+                          break;
+                        case 'description':
+                          await settingsService.setDescriptionFontSize(value);
+                          break;
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${(currentFontSize * 100).round()}%',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // フォントサイズのプレビュー
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
+              ),
+              child: Text(
+                'プレビュー: このテキストのサイズが${fieldName}に適用されます',
+                style: TextStyle(
+                  color: Color(ref.watch(colorProvider)),
+                  fontSize: 14 * ref.watch(fontSizeProvider),
+                  fontFamily: ref.watch(fontFamilyProvider).isEmpty 
+                      ? null 
+                      : ref.watch(fontFamilyProvider),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // フォントファミリー設定
+            const Text('フォントファミリー', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: currentFontFamily.isEmpty ? null : currentFontFamily,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              items: fontFamilyOptions.map((font) {
+                return DropdownMenuItem<String>(
+                  value: font.isEmpty ? null : font,
+                  child: Text(font.isEmpty ? 'デフォルト' : font),
+                );
+              }).toList(),
+              onChanged: (value) async {
+                final fontFamily = value ?? '';
+                ref.read(fontFamilyProvider.notifier).state = fontFamily;
+                // 設定を保存
+                final settingsService = SettingsService.instance;
+                switch (fieldKey) {
+                  case 'title':
+                    await settingsService.setTitleFontFamily(fontFamily);
+                    break;
+                  case 'memo':
+                    await settingsService.setMemoFontFamily(fontFamily);
+                    break;
+                  case 'description':
+                    await settingsService.setDescriptionFontFamily(fontFamily);
+                    break;
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            // フォントファミリーのプレビュー
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
+              ),
+              child: Text(
+                'フォントプレビュー: このテキストのフォントが${fieldName}に適用されます',
+                style: TextStyle(
+                  color: Color(ref.watch(colorProvider)),
+                  fontSize: 14 * ref.watch(fontSizeProvider),
+                  fontFamily: ref.watch(fontFamilyProvider).isEmpty 
+                      ? null 
+                      : ref.watch(fontFamilyProvider),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1195,7 +1648,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: () => _showImportOptionsDialog(context, ref),
+                        onPressed: () {
+                          print('=== メインインポートボタン押下 ===');
+                          print('================================');
+                          _showImportOptionsDialog(context, ref);
+                        },
                   icon: const Icon(Icons.upload),
                         label: const Text('インポート'),
                         style: AppButtonStyles.outlined(context),
@@ -1297,6 +1754,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// インポートオプションダイアログを表示
   void _showImportOptionsDialog(BuildContext context, WidgetRef ref) {
+    print('=== インポートオプションダイアログ表示 ===');
+    print('========================================');
+    
     String selectedType = 'both'; // デフォルトは両方
     
     showDialog(
@@ -1344,6 +1804,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             ElevatedButton(
               onPressed: () {
+                print('=== インポートボタン押下 ===');
+                print('selectedType: $selectedType');
+                print('==========================');
                 Navigator.pop(context);
                 _performImport(context, ref, selectedType);
               },
@@ -1440,6 +1903,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// インポートを実行
   void _performImport(BuildContext context, WidgetRef ref, String type) async {
+    print('=== _performImport呼び出し ===');
+    print('type: $type');
+    print('============================');
+    
     try {
       // ファイル選択ダイアログを開く
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -1447,12 +1914,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         allowedExtensions: ['json'],
         dialogTitle: 'インポートするファイルを選択',
       );
+      
+      print('=== ファイル選択結果 ===');
+      print('result: $result');
+      if (result != null) {
+        print('files.length: ${result.files.length}');
+        if (result.files.isNotEmpty) {
+          print('file.path: ${result.files.first.path}');
+        }
+      }
+      print('========================');
 
       if (result != null && result.files.single.path != null) {
         final file = File(result.files.single.path!);
         
+        print('=== _executeImport呼び出し前 ===');
+        print('file.path: ${file.path}');
+        print('type: $type');
+        print('==============================');
+        
         // 非同期処理を別メソッドで実行（ローディングも含む）
-        _executeImport(file, type, ref);
+        _executeImport(file, type, ref, context);
+      } else {
+        print('=== ファイル選択が無効 ===');
+        print('result: $result');
+        if (result != null) {
+          print('files.length: ${result.files.length}');
+          if (result.files.isNotEmpty) {
+            print('first file path: ${result.files.first.path}');
+          }
+        }
+        print('==========================');
       }
     } catch (e) {
       // ウィジェットがまだマウントされているかチェック
@@ -1482,10 +1974,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   /// インポート処理を実行（非同期処理を分離）
-  void _executeImport(File file, String type, WidgetRef ref) async {
+  void _executeImport(File file, String type, WidgetRef ref, BuildContext context) async {
+    print('=== _executeImportメソッド開始 ===');
+    print('file.path: ${file.path}');
+    print('type: $type');
+    print('================================');
+    
     // グローバルなNavigatorKeyを使用してダイアログを表示
-    final globalContext = navigatorKey.currentContext;
-    if (globalContext == null) return;
+    final globalNavigatorKey = KeyboardShortcutService.getNavigatorKey();
+    final globalContext = globalNavigatorKey?.currentContext;
+    if (globalContext == null) {
+      print('=== globalContextがnull ===');
+      print('==========================');
+      return;
+    }
+    
+    print('=== ローディングダイアログ表示 ===');
+    print('===============================');
 
     // ローディングダイアログを表示
     showDialog(
@@ -1497,6 +2002,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     try {
+      print('=== インポート処理開始 ===');
+      print('ファイル: ${file.path}');
+      print('タイプ: $type');
+      
       // IntegratedBackupServiceを使用してインポートを実行
       final backupService = IntegratedBackupService(
         linkRepository: ref.read(linkRepositoryProvider),
@@ -1511,9 +2020,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         onlyTasks: type == 'tasks',
       );
 
+      print('=== インポート結果 ===');
+      print('リンク数: ${importResult.links.length}');
+      print('タスク数: ${importResult.tasks.length}');
+      print('グループ数: ${importResult.groups.length}');
+      print('警告数: ${importResult.warnings.length}');
+      print('==================');
+
       // ローディングを閉じる
       Navigator.of(globalContext).pop();
 
+      print('=== ダイアログ表示開始 ===');
       // 結果をダイアログで表示（新しいUIを使用）
 
       showDialog(
@@ -1607,7 +2124,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       );
+      
+      print('=== ダイアログ表示完了 ===');
     } catch (e) {
+      print('=== インポートエラー ===');
+      print('エラー: $e');
+      print('==================');
+      
       // ローディングを閉じる
       Navigator.of(globalContext).pop();
       
@@ -2180,7 +2703,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
-            _buildResetItem('テーマ設定', 'ダークモード: OFF、アクセントカラー: デフォルト'),
+            _buildResetItem('テーマ設定', 'ダークモード: OFF、アクセントカラー: ブルー、濃淡: 100%、コントラスト: 100%'),
             _buildResetItem('通知設定', '通知: ON、通知音: ON'),
             _buildResetItem('連携設定', 'Google Calendar: OFF、Gmail API: OFF、Outlook: OFF'),
             _buildResetItem('バックアップ設定', '自動バックアップ: ON、間隔: 7日'),
@@ -2417,6 +2940,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ElevatedButton(
             onPressed: () {
               notifier.resetToDefaults();
+              // 新しい色設定もリセット
+              ref.read(accentColorProvider.notifier).state = 0xFF3B82F6; // ブルー
+              ref.read(colorIntensityProvider.notifier).state = 1.0; // 標準
+              ref.read(colorContrastProvider.notifier).state = 1.0; // 標準
               Navigator.of(context).pop();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

@@ -22,6 +22,7 @@ import 'services/settings_service.dart';
 import 'services/backup_service.dart';
 import 'services/google_calendar_service.dart';
 import 'repositories/link_repository.dart';
+import 'viewmodels/font_size_provider.dart';
 
 // グローバルなNavigatorKey
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -49,7 +50,15 @@ void main() async {
     }
 
     
-    runApp(const ProviderScope(child: LinkLauncherApp()));
+    runApp(ProviderScope(
+      child: Consumer(
+        builder: (context, ref, child) {
+          // アプリ起動時にプロバイダーを初期化
+          _initializeProviders(ref);
+          return const LinkLauncherApp();
+        },
+      ),
+    ));
   } catch (e) {
     print('アプリケーション初期化エラー: $e');
     // エラーが発生してもアプリケーションを起動
@@ -175,6 +184,34 @@ Future<void> _initializeDataMigration() async {
   } catch (e) {
     print('データマイグレーションエラー: $e');
     // データマイグレーションエラーは致命的でないため、継続
+  }
+}
+
+// プロバイダーの初期化
+void _initializeProviders(WidgetRef ref) {
+  try {
+    final settingsService = SettingsService.instance;
+    
+    // 設定値をプロバイダーに反映
+    ref.read(darkModeProvider.notifier).state = settingsService.darkMode;
+    ref.read(accentColorProvider.notifier).state = settingsService.accentColor;
+    ref.read(fontSizeProvider.notifier).state = settingsService.fontSize;
+    ref.read(textColorProvider.notifier).state = settingsService.textColor;
+    
+    // 各フィールドの設定値をプロバイダーに反映
+    ref.read(titleTextColorProvider.notifier).state = settingsService.titleTextColor;
+    ref.read(titleFontSizeProvider.notifier).state = settingsService.titleFontSize;
+    ref.read(titleFontFamilyProvider.notifier).state = settingsService.titleFontFamily;
+    ref.read(memoTextColorProvider.notifier).state = settingsService.memoTextColor;
+    ref.read(memoFontSizeProvider.notifier).state = settingsService.memoFontSize;
+    ref.read(memoFontFamilyProvider.notifier).state = settingsService.memoFontFamily;
+    ref.read(descriptionTextColorProvider.notifier).state = settingsService.descriptionTextColor;
+    ref.read(descriptionFontSizeProvider.notifier).state = settingsService.descriptionFontSize;
+    ref.read(descriptionFontFamilyProvider.notifier).state = settingsService.descriptionFontFamily;
+    
+    print('プロバイダー初期化完了');
+  } catch (e) {
+    print('プロバイダー初期化エラー: $e');
   }
 }
 

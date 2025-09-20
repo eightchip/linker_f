@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/task_item.dart';
+import '../models/sub_task.dart';
 import '../services/notification_service.dart';
 import 'dart:io';
 import 'dart:math' as math;
@@ -1061,12 +1062,25 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       final tasksData = data['tasks'] as List<dynamic>? ?? [];
       print('タスクデータ数: ${tasksData.length}');
       
-      final tasks = tasksData.map((json) {
-        print('タスクJSON: $json');
-        return TaskItem.fromJson(json);
-      }).toList();
+      // タスクのパースとバリデーション
+      final List<TaskItem> validTasks = [];
+      for (int i = 0; i < tasksData.length; i++) {
+        try {
+          final task = TaskItem.fromJson(tasksData[i]);
+          // 基本的なバリデーション
+          if (task.id.isNotEmpty && task.title.isNotEmpty) {
+            validTasks.add(task);
+            print('タスク追加: ${task.title} (ID: ${task.id})');
+          } else {
+            print('無効なタスクをスキップ: インデックス $i');
+          }
+        } catch (e) {
+          print('タスクパースエラー (インデックス $i): $e');
+          continue;
+        }
+      }
       
-      print('パースされたタスク数: ${tasks.length}');
+      print('有効なタスク数: ${validTasks.length}');
       
       // _taskBoxの初期化を確実に行う
       try {
@@ -1077,7 +1091,14 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         }
       } catch (initError) {
         print('_taskBox初期化エラー: $initError');
-        print('新しく_taskBoxを作成します');
+        // ボックスを閉じてから再初期化
+        try {
+          if (_taskBox != null && _taskBox!.isOpen) {
+            await _taskBox!.close();
+          }
+        } catch (closeError) {
+          print('ボックスクローズエラー: $closeError');
+        }
         _taskBox = await Hive.openBox<TaskItem>(_boxName);
         print('_taskBox新規作成完了');
       }
@@ -1087,15 +1108,21 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       print('既存タスクをクリアしました');
       
       // 新しいタスクを追加
-      for (final task in tasks) {
-        await _taskBox!.put(task.id, task);
-        print('タスクを保存: ${task.title} (ID: ${task.id})');
+      for (final task in validTasks) {
+        try {
+          await _taskBox!.put(task.id, task);
+          print('タスクを保存: ${task.title} (ID: ${task.id})');
+        } catch (e) {
+          print('タスク保存エラー: ${task.title} - $e');
+          continue;
+        }
       }
+      
       await _taskBox!.flush(); // データの永続化を確実にする
       
       // 状態を更新
-      state = tasks;
-      print('状態を更新しました: ${tasks.length}件');
+      state = validTasks;
+      print('状態を更新しました: ${validTasks.length}件');
       
       // データの永続化を確実にするため、少し待機
       await Future.delayed(const Duration(milliseconds: 100));
@@ -1103,7 +1130,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       // リンクのタスク状態を更新
       await _updateLinkTaskStatus();
       
-      print('=== タスクインポート完了: ${tasks.length}件 ===');
+      print('=== タスクインポート完了: ${validTasks.length}件 ===');
     } catch (e) {
       print('=== タスクデータインポートエラー: $e ===');
       print('エラーの詳細: ${e.toString()}');
@@ -1150,23 +1177,32 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     try {
       print('=== タスクコピー開始 ===');
       print('元タスク: ${originalTask.title}');
+      print('元タスクID: ${originalTask.id}');
+      print('元タスクhasSubTasks: ${originalTask.hasSubTasks}');
+      print('元タスクtotalSubTasksCount: ${originalTask.totalSubTasksCount}');
       print('元の期限日: ${originalTask.dueDate}');
       print('元のリマインダー時間: ${originalTask.reminderTime}');
+      print('newDueDate: $newDueDate');
+      print('newReminderTime: $newReminderTime');
+      print('newTitle: $newTitle');
+      print('keepRecurringReminder: $keepRecurringReminder');
       
       // 新しいタスクIDを生成
       final newTaskId = _uuid.v4();
       
-      // 新しいタスクを作成
+      // 新しいタスクを作成（編集モーダルの全内容をコピー）
       final newTask = TaskItem(
         id: newTaskId,
         title: newTitle ?? '${originalTask.title} (コピー)',
         description: originalTask.description,
+        assignedTo: originalTask.assignedTo, // 依頼先・メモをコピー
         dueDate: newDueDate ?? _calculateNextDueDate(originalTask.dueDate),
         reminderTime: newReminderTime ?? _calculateNextReminderTime(originalTask.reminderTime),
         priority: originalTask.priority,
-        status: TaskStatus.pending,
+        status: TaskStatus.pending, // ステータスは未着手にリセット
         tags: List<String>.from(originalTask.tags),
         relatedLinkId: originalTask.relatedLinkId,
+        relatedLinkIds: List<String>.from(originalTask.relatedLinkIds), // 関連リンクをコピー
         createdAt: DateTime.now(),
         estimatedMinutes: originalTask.estimatedMinutes,
         recurringReminderPattern: keepRecurringReminder ? originalTask.recurringReminderPattern : null,
@@ -1181,10 +1217,56 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       await _taskBox!.put(newTaskId, newTask);
       await _taskBox!.flush(); // データの永続化を確実にする
       
-      // 状態を更新
-      final updatedTasks = [...state, newTask];
-      updatedTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      state = updatedTasks;
+      // サブタスクをコピー（実際にサブタスクが存在するかチェック）
+      print('=== サブタスク存在チェック開始 ===');
+      print('チェック対象の元タスクID: ${originalTask.id}');
+      print('元タスクタイトル: ${originalTask.title}');
+      final hasActualSubTasks = await _hasSubTasks(originalTask.id);
+      print('=== サブタスク存在チェック完了 ===');
+      print('hasActualSubTasks結果: $hasActualSubTasks');
+      print('=== サブタスクコピーデバッグ ===');
+      print('originalTask.hasSubTasks: ${originalTask.hasSubTasks}');
+      print('hasActualSubTasks: $hasActualSubTasks');
+      print('originalTask.id: ${originalTask.id}');
+      print('===============================');
+      
+      // 元タスクにサブタスクがある場合、または実際にサブタスクが存在する場合はコピー
+      if (originalTask.hasSubTasks || hasActualSubTasks) {
+        // まず新しいタスクをstateに追加
+        final updatedTasks = [...state, newTask];
+        updatedTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        state = updatedTasks;
+        
+        // サブタスクをコピー
+        await _copySubTasks(originalTask.id, newTaskId);
+        
+        // サブタスク統計を更新した新しいタスクを取得
+        print('=== サブタスク統計更新開始 ===');
+        final updatedNewTask = await _getTaskWithUpdatedSubTaskStats(newTaskId);
+        print('updatedNewTask: $updatedNewTask');
+        if (updatedNewTask != null) {
+          print('サブタスク統計更新成功: hasSubTasks=${updatedNewTask.hasSubTasks}, totalSubTasksCount=${updatedNewTask.totalSubTasksCount}');
+          // 状態を更新（サブタスク統計が更新されたタスクを使用）
+          final finalTasks = [...state.where((t) => t.id != newTaskId), updatedNewTask];
+          finalTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          state = finalTasks;
+        } else {
+          print('サブタスク統計更新失敗、元のタスクを使用');
+        }
+        print('=== サブタスク統計更新完了 ===');
+      } else {
+        // サブタスクが存在しない場合でも、元タスクのサブタスク統計をリセット
+        final newTaskWithoutSubTasks = newTask.copyWith(
+          hasSubTasks: false,
+          totalSubTasksCount: 0,
+          completedSubTasksCount: 0,
+        );
+        
+        // 状態を更新
+        final updatedTasks = [...state, newTaskWithoutSubTasks];
+        updatedTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        state = updatedTasks;
+      }
       
       // リマインダーを設定
       if (newTask.reminderTime != null) {
@@ -1207,13 +1289,158 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
+  /// タスクにサブタスクが存在するかチェック
+  Future<bool> _hasSubTasks(String taskId) async {
+    try {
+      // 複数のボックス名を試す
+      final boxNames = ['sub_tasks', 'subtasks', 'SubTask'];
+      Box<SubTask>? subTaskBox;
+      
+      for (final boxName in boxNames) {
+        try {
+          subTaskBox = await Hive.openBox<SubTask>(boxName);
+          print('サブタスクボックス「$boxName」を開きました');
+          break;
+        } catch (e) {
+          print('ボックス「$boxName」を開けませんでした: $e');
+        }
+      }
+      
+      if (subTaskBox == null) {
+        print('サブタスクボックスを開けませんでした');
+        return false;
+      }
+      
+      final subTasks = subTaskBox.values
+          .where((subTask) => subTask.parentTaskId == taskId)
+          .toList();
+      
+      print('=== サブタスク存在チェック詳細 ===');
+      print('taskId: $taskId');
+      print('ボックス名: ${subTaskBox.name}');
+      print('全サブタスク数: ${subTaskBox.values.length}');
+      print('該当サブタスク数: ${subTasks.length}');
+      for (final subTask in subTasks) {
+        print('  - サブタスク: ${subTask.title} (parentTaskId: ${subTask.parentTaskId})');
+      }
+      print('===============================');
+      
+      // デバッグ: 全サブタスクのparentTaskIdを表示
+      print('=== 全サブタスクのparentTaskId ===');
+      for (final subTask in subTaskBox.values) {
+        print('  - サブタスク: ${subTask.title} (parentTaskId: ${subTask.parentTaskId})');
+      }
+      print('===================================');
+      
+      await subTaskBox.close();
+      return subTasks.isNotEmpty;
+    } catch (e) {
+      print('サブタスク存在チェックエラー: $e');
+      return false;
+    }
+  }
+
+  /// サブタスク統計を更新したタスクを取得
+  Future<TaskItem?> _getTaskWithUpdatedSubTaskStats(String taskId) async {
+    try {
+      print('_getTaskWithUpdatedSubTaskStats開始: taskId=$taskId');
+      final task = _taskBox!.get(taskId);
+      if (task == null) {
+        print('タスクが見つかりません: $taskId');
+        return null;
+      }
+      print('元のタスク: ${task.title}, hasSubTasks=${task.hasSubTasks}, totalSubTasksCount=${task.totalSubTasksCount}');
+      
+      // サブタスク統計を更新
+      await updateSubTaskStatistics(taskId);
+      
+      // 更新されたタスクを取得
+      final updatedTask = _taskBox!.get(taskId);
+      if (updatedTask != null) {
+        print('更新後のタスク: ${updatedTask.title}, hasSubTasks=${updatedTask.hasSubTasks}, totalSubTasksCount=${updatedTask.totalSubTasksCount}');
+      } else {
+        print('更新後のタスクが見つかりません');
+      }
+      return updatedTask;
+    } catch (e) {
+      print('サブタスク統計更新エラー: $e');
+      return null;
+    }
+  }
+
+  /// サブタスクをコピー
+  Future<void> _copySubTasks(String originalTaskId, String newTaskId) async {
+    try {
+      // 複数のボックス名を試す
+      final boxNames = ['sub_tasks', 'subtasks', 'SubTask'];
+      Box<SubTask>? subTaskBox;
+      
+      for (final boxName in boxNames) {
+        try {
+          subTaskBox = await Hive.openBox<SubTask>(boxName);
+          print('サブタスクコピー用ボックス「$boxName」を開きました');
+          break;
+        } catch (e) {
+          print('ボックス「$boxName」を開けませんでした: $e');
+        }
+      }
+      
+      if (subTaskBox == null) {
+        print('サブタスクボックスを開けませんでした');
+        return;
+      }
+      
+      final originalSubTasks = subTaskBox.values
+          .where((subTask) => subTask.parentTaskId == originalTaskId)
+          .toList();
+      
+      print('=== サブタスクコピー詳細 ===');
+      print('originalTaskId: $originalTaskId');
+      print('newTaskId: $newTaskId');
+      print('ボックス名: ${subTaskBox.name}');
+      print('元サブタスク数: ${originalSubTasks.length}');
+      for (final subTask in originalSubTasks) {
+        print('  - 元サブタスク: ${subTask.title} (parentTaskId: ${subTask.parentTaskId})');
+      }
+      print('==========================');
+      
+      for (final originalSubTask in originalSubTasks) {
+        final newSubTask = SubTask(
+          id: _uuid.v4(),
+          parentTaskId: newTaskId,
+          title: originalSubTask.title,
+          isCompleted: false, // サブタスクは未完了にリセット
+          createdAt: DateTime.now(), // 作成日時を追加
+          estimatedMinutes: originalSubTask.estimatedMinutes,
+          completedAt: null,
+          order: originalSubTask.order,
+        );
+        
+        await subTaskBox.put(newSubTask.id, newSubTask);
+        print('サブタスクをコピーしました: ${originalSubTask.title} -> ${newSubTask.title}');
+      }
+      
+      await subTaskBox.flush();
+      await subTaskBox.close();
+      
+      // SubTaskViewModelを更新
+      final subTaskViewModel = _ref.read(subTaskViewModelProvider.notifier);
+      await subTaskViewModel.waitForInitialization();
+      await subTaskViewModel.refreshSubTasks();
+      
+      print('サブタスクをコピーしました: ${originalSubTasks.length}個');
+    } catch (e) {
+      print('サブタスクコピーエラー: $e');
+    }
+  }
+
   // 次の期限日を計算
   DateTime? _calculateNextDueDate(DateTime? originalDueDate) {
     if (originalDueDate == null) return null;
     
-    // 現在時刻が元の期限日を過ぎている場合は、翌月の同日を設定
+    // 常に翌月の同日を設定
     final now = DateTime.now();
-    if (originalDueDate.isBefore(now)) {
+    try {
       return DateTime(
         now.year,
         now.month + 1,
@@ -1221,18 +1448,31 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         originalDueDate.hour,
         originalDueDate.minute,
       );
+    } catch (e) {
+      // 月の日数が異なる場合（例：1月31日→2月）は月末日を使用
+      final nextMonth = DateTime(now.year, now.month + 1);
+      final lastDayOfNextMonth = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
+      final adjustedDay = originalDueDate.day > lastDayOfNextMonth 
+          ? lastDayOfNextMonth 
+          : originalDueDate.day;
+      
+      return DateTime(
+        now.year,
+        now.month + 1,
+        adjustedDay,
+        originalDueDate.hour,
+        originalDueDate.minute,
+      );
     }
-    
-    return originalDueDate;
   }
 
   // 次のリマインダー時間を計算
   DateTime? _calculateNextReminderTime(DateTime? originalReminderTime) {
     if (originalReminderTime == null) return null;
     
-    // 現在時刻が元のリマインダー時間を過ぎている場合は、翌月の同日を設定
+    // 常に翌月の同日を設定
     final now = DateTime.now();
-    if (originalReminderTime.isBefore(now)) {
+    try {
       return DateTime(
         now.year,
         now.month + 1,
@@ -1240,9 +1480,22 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         originalReminderTime.hour,
         originalReminderTime.minute,
       );
+    } catch (e) {
+      // 月の日数が異なる場合（例：1月31日→2月）は月末日を使用
+      final nextMonth = DateTime(now.year, now.month + 1);
+      final lastDayOfNextMonth = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
+      final adjustedDay = originalReminderTime.day > lastDayOfNextMonth 
+          ? lastDayOfNextMonth 
+          : originalReminderTime.day;
+      
+      return DateTime(
+        now.year,
+        now.month + 1,
+        adjustedDay,
+        originalReminderTime.hour,
+        originalReminderTime.minute,
+      );
     }
-    
-    return originalReminderTime;
   }
 
   // Google Calendar同期関連のメソッド

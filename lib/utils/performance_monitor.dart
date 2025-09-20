@@ -316,6 +316,7 @@ class PerformanceReport {
   }
 
   /// レポートを文字列形式で出力
+  @override
   String toString() {
     final buffer = StringBuffer();
     buffer.writeln('=== パフォーマンスレポート ===');

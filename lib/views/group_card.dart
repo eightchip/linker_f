@@ -22,13 +22,13 @@ class HighlightedText extends StatelessWidget {
   final int? maxLines;
 
   const HighlightedText({
-    Key? key,
+    super.key,
     required this.text,
     this.highlight,
     this.style,
     this.overflow,
     this.maxLines,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -507,7 +507,7 @@ class GroupCard extends ConsumerStatefulWidget with IconBuilderMixin {
   final String? searchQuery;
 
   const GroupCard({
-    Key? key,
+    super.key,
     required this.group,
     required this.onToggleCollapse,
     required this.onDeleteGroup,
@@ -525,7 +525,7 @@ class GroupCard extends ConsumerStatefulWidget with IconBuilderMixin {
     this.onMoveLinkToGroup,
     required this.onShowMessage,
     this.searchQuery,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<GroupCard> createState() => _GroupCardState();
@@ -1037,14 +1037,14 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
           Expanded(
           child: items.isEmpty
               ? DragTarget<Map<String, dynamic>>(
-                  onWillAccept: (data) {
+                  onWillAcceptWithDetails: (data) {
                     if (data == null) return false;
-                    final fromGroupId = data['fromGroupId'] as String?;
+                    final fromGroupId = data.data['fromGroupId'] as String?;
                     return fromGroupId != widget.group.id;
                   },
-                  onAccept: (data) {
-                    final link = data['link'] as LinkItem;
-                    final fromGroupId = data['fromGroupId'] as String;
+                  onAcceptWithDetails: (data) {
+                    final link = data.data['link'] as LinkItem;
+                    final fromGroupId = data.data['fromGroupId'] as String;
                     if (widget.onMoveLinkToGroup != null) {
                       widget.onMoveLinkToGroup!(link, fromGroupId, widget.group.id);
                     }
@@ -1131,14 +1131,14 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
       ...filtered.where((l) => !l.isFavorite),
     ];
     return DragTarget<Map<String, dynamic>>(
-        onWillAccept: (data) {
+        onWillAcceptWithDetails: (data) {
           if (data == null) return false;
-          final fromGroupId = data['fromGroupId'] as String?;
+          final fromGroupId = data.data['fromGroupId'] as String?;
           return fromGroupId != widget.group.id;
         },
-        onAccept: (data) {
-          final link = data['link'] as LinkItem;
-          final fromGroupId = data['fromGroupId'] as String;
+        onAcceptWithDetails: (data) {
+          final link = data.data['link'] as LinkItem;
+          final fromGroupId = data.data['fromGroupId'] as String;
           if (widget.onMoveLinkToGroup != null) {
             widget.onMoveLinkToGroup!(link, fromGroupId, widget.group.id);
           }
@@ -1211,14 +1211,14 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
         ? (isDark ? Colors.amber.withValues(alpha: 0.25) : Colors.amber.withValues(alpha: 0.2))
         : (isDark ? Colors.grey.shade800.withValues(alpha: 0.3) : Colors.grey.shade50.withValues(alpha: 0.5));
     
-    bool _hovering = false;
+    bool hovering = false;
   return KeyedSubtree(
     key: key,
     child: Draggable<Map<String, dynamic>>(
       data: {'link': item, 'fromGroupId': widget.group.id},
       feedback: Material(
         color: Colors.transparent,
-        child: Container(
+        child: SizedBox(
           width: 320,
           child: Row(
                          children: [
@@ -1241,8 +1241,8 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
       ),
       child: StatefulBuilder(
         builder: (context, setState) => MouseRegion(
-          onEnter: (_) => setState(() => _hovering = true),
-          onExit: (_) => setState(() => _hovering = false),
+          onEnter: (_) => setState(() => hovering = true),
+          onExit: (_) => setState(() => hovering = false),
           child: GestureDetector(
             onTap: () => _launchLink(item),
             child: Consumer(
@@ -1321,7 +1321,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                      ),
                    ),
                    // 3. ボタン群（固定幅）
-                   Container(
+                   SizedBox(
                      width: 160 * scale, // 4つのボタン用に調整
                      child: Row(
                        mainAxisSize: MainAxisSize.min,

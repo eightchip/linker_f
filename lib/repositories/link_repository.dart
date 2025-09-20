@@ -288,20 +288,46 @@ class LinkRepository {
       if (kDebugMode) {
         print('グループデータ数: ${groupsData.length}');
       }
-      for (final groupData in groupsData) {
-        final group = Group.fromJson(groupData);
-        final fixedGroup = group.color == null
-          ? group.copyWith(color: 0xFF3B82F6) // デフォルト青
-          : group;
-        await _groupsBox!.put(fixedGroup.id, fixedGroup);
-        if (kDebugMode) {
-          print('グループ保存: ${fixedGroup.title} (ID: ${fixedGroup.id})');
-          // グループ内のリンクのフォールバックドメインを確認
-          for (final item in fixedGroup.items) {
-            if (item.faviconFallbackDomain != null) {
-              print('  - リンク "${item.label}": フォールバックドメイン = ${item.faviconFallbackDomain}');
+      
+      final List<Group> validGroups = [];
+      for (int i = 0; i < groupsData.length; i++) {
+        try {
+          final group = Group.fromJson(groupsData[i]);
+          final fixedGroup = group.color == null
+            ? group.copyWith(color: 0xFF3B82F6) // デフォルト青
+            : group;
+          
+          // 基本的なバリデーション
+          if (fixedGroup.id.isNotEmpty && fixedGroup.title.isNotEmpty) {
+            validGroups.add(fixedGroup);
+            if (kDebugMode) {
+              print('グループ追加: ${fixedGroup.title} (ID: ${fixedGroup.id})');
+            }
+          } else {
+            if (kDebugMode) {
+              print('無効なグループをスキップ: インデックス $i');
             }
           }
+        } catch (e) {
+          if (kDebugMode) {
+            print('グループパースエラー (インデックス $i): $e');
+          }
+          continue;
+        }
+      }
+      
+      // 有効なグループを保存
+      for (final group in validGroups) {
+        try {
+          await _groupsBox!.put(group.id, group);
+          if (kDebugMode) {
+            print('グループ保存: ${group.title} (ID: ${group.id})');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('グループ保存エラー: ${group.title} - $e');
+          }
+          continue;
         }
       }
       
@@ -310,14 +336,45 @@ class LinkRepository {
       if (kDebugMode) {
         print('リンクデータ数: ${linksData.length}');
       }
-      for (final linkData in linksData) {
-        final link = LinkItem.fromJson(linkData);
-        await _linksBox!.put(link.id, link);
-        if (kDebugMode) {
-          print('リンク保存: ${link.label} (ID: ${link.id})');
-          if (link.faviconFallbackDomain != null) {
-            print('  - フォールバックドメイン: ${link.faviconFallbackDomain}');
+      
+      final List<LinkItem> validLinks = [];
+      for (int i = 0; i < linksData.length; i++) {
+        try {
+          final link = LinkItem.fromJson(linksData[i]);
+          // 基本的なバリデーション
+          if (link.id.isNotEmpty && link.label.isNotEmpty) {
+            validLinks.add(link);
+            if (kDebugMode) {
+              print('リンク追加: ${link.label} (ID: ${link.id})');
+            }
+          } else {
+            if (kDebugMode) {
+              print('無効なリンクをスキップ: インデックス $i');
+            }
           }
+        } catch (e) {
+          if (kDebugMode) {
+            print('リンクパースエラー (インデックス $i): $e');
+          }
+          continue;
+        }
+      }
+      
+      // 有効なリンクを保存
+      for (final link in validLinks) {
+        try {
+          await _linksBox!.put(link.id, link);
+          if (kDebugMode) {
+            print('リンク保存: ${link.label} (ID: ${link.id})');
+            if (link.faviconFallbackDomain != null) {
+              print('  - フォールバックドメイン: ${link.faviconFallbackDomain}');
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('リンク保存エラー: ${link.label} - $e');
+          }
+          continue;
         }
       }
       

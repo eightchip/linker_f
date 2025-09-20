@@ -39,9 +39,9 @@ class VoiceControlService {
   factory VoiceControlService() => _instance;
   VoiceControlService._internal();
 
-  bool _isInitialized = false;
-  bool _isListening = false;
-  String _lastRecognizedText = '';
+  final bool _isInitialized = false;
+  final bool _isListening = false;
+  final String _lastRecognizedText = '';
   
   // コールバック関数
   Function(VoiceCommand)? onCommandRecognized;

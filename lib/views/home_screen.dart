@@ -35,13 +35,13 @@ class HighlightedText extends StatelessWidget {
   final int? maxLines;
 
   const HighlightedText({
-    Key? key,
+    super.key,
     required this.text,
     this.highlight,
     this.style,
     this.overflow,
     this.maxLines,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +144,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  bool _isDragOver = false;
+  final bool _isDragOver = false;
   String? draggingGroupId;
   Offset? draggingPosition;
   List<Group> _orderedGroups = [];
@@ -249,7 +249,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       
       // 詳細なデバッグ情報を出力
       print('=== ショートカット詳細デバッグ ===');
-      print('キー: ${key.keyLabel} (${key})');
+      print('キー: ${key.keyLabel} ($key)');
       print('修飾キー状態: Ctrl=$isControlPressed, Shift=$isShiftPressed, Alt=$isAltPressed, Meta=$isMetaPressed');
       print('イベントタイプ: ${event.runtimeType}');
       print('フォーカスノード: ${_shortcutFocusNode.hasFocus}');
@@ -1134,10 +1134,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       child: DragTarget<Group>(
-                        onWillAccept: (data) => data != null && data.id != group.id,
-                        onAccept: (data) async {
+                        onWillAcceptWithDetails: (data) => data != null && data.data.id != group.id,
+                        onAcceptWithDetails: (data) async {
                           final groups = ref.read(linkViewModelProvider).groups;
-                          final fromIndex = groups.indexWhere((g) => g.id == data.id);
+                          final fromIndex = groups.indexWhere((g) => g.id == data.data.id);
                           final toIndex = groups.indexWhere((g) => g.id == group.id);
                           if (fromIndex != -1 && toIndex != -1) {
                             final newOrder = List<Group>.from(groups);
@@ -1640,16 +1640,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
     if (_scaffoldBodyContext != null) {
       final overlay = Overlay.of(_scaffoldBodyContext!, rootOverlay: true);
-      if (overlay != null) {
-        overlay.insert(_jumpButtonOverlay!);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (_jumpButtonOverlay != null) {
-            _jumpButtonOverlay!.remove();
-            _jumpButtonOverlay = null;
-          }
-        });
-      }
-    }
+      overlay.insert(_jumpButtonOverlay!);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_jumpButtonOverlay != null) {
+          _jumpButtonOverlay!.remove();
+          _jumpButtonOverlay = null;
+        }
+      });
+        }
   }
 
   Widget _jumpButton(String label, IconData icon, VoidCallback onPressed) {
@@ -1760,7 +1758,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('PDFプレビュー'),
-          content: Container(
+          content: SizedBox(
             width: MediaQuery.of(context).size.width * 1.0, // 80% of screen width
             height: MediaQuery.of(context).size.height * 1.0, // 80% of screen height
             child: pdfx.PdfView(
@@ -2017,8 +2015,8 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
     String? title;
     try {
       final uri = Uri.parse(url);
-      final response = await Uri.base.resolve(url).isAbsolute
-        ? await Uri.parse(url).resolve('').toString() == url ? null : null
+      final response = Uri.base.resolve(url).isAbsolute
+        ? Uri.parse(url).resolve('').toString() == url ? null : null
         : null;
       // タイトル取得は簡易的に省略（本格実装はhttpパッケージでHTML取得＆<title>抽出）
       // ここではURLのホスト名をタイトル代わりに表示
@@ -2337,11 +2335,11 @@ class IconSelector extends StatefulWidget {
   final Function(IconData, Color) onIconSelected;
 
   const IconSelector({
-    Key? key,
+    super.key,
     required this.selectedIcon,
     required this.selectedIconColor,
     required this.onIconSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<IconSelector> createState() => _IconSelectorState();

@@ -77,7 +77,7 @@ class NotificationService {
       // WindowsではzonedScheduleが実装されていないため、
       // スケジュール通知は使用しない
       print('Windows環境ではスケジュール通知が使用できません: ${task.title}');
-      print('リマインダー時間: ${reminderTime}');
+      print('リマインダー時間: $reminderTime');
       
     } catch (e) {
       print('リマインダー設定エラー: $e');

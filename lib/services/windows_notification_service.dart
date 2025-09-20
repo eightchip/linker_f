@@ -305,8 +305,8 @@ class WindowsNotificationService {
       _scheduledTimers[task.id] = timer;
       
       print('リマインダー設定成功: ${task.title}');
-      print('現在時刻: ${now}');
-      print('通知予定時刻: ${reminderTime}');
+      print('現在時刻: $now');
+      print('通知予定時刻: $reminderTime');
       print('通知予定時間: ${duration.inMinutes}分後');
       print('=== タスクリマインダー設定完了 ===');
       

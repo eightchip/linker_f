@@ -16,6 +16,7 @@ import '../models/email_contact.dart';
 import '../models/sent_mail_log.dart';
 import '../widgets/unified_dialog.dart';
 import '../widgets/app_button_styles.dart';
+import '../viewmodels/font_size_provider.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
@@ -555,9 +556,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 TextFormField(
                   controller: _titleController,
                   enableInteractiveSelection: true,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
+                  style: TextStyle(
+                    color: Color(ref.watch(titleTextColorProvider)),
+                    fontSize: 16 * ref.watch(titleFontSizeProvider),
+                    fontFamily: ref.watch(titleFontFamilyProvider).isEmpty 
+                        ? null 
+                        : ref.watch(titleFontFamilyProvider),
                   ),
                   decoration: InputDecoration(
                     labelText: 'タイトル *',
@@ -607,9 +611,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   enableInteractiveSelection: true, // カーソル移動改善
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
+                  style: TextStyle(
+                    color: Color(ref.watch(memoTextColorProvider)),
+                    fontSize: 16 * ref.watch(memoFontSizeProvider),
+                    fontFamily: ref.watch(memoFontFamilyProvider).isEmpty 
+                        ? null 
+                        : ref.watch(memoFontFamilyProvider),
                   ),
                   decoration: InputDecoration(
                     labelText: '依頼先やメモ',
@@ -657,9 +664,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   maxLines: 3,
                   minLines: 1,
                   enableInteractiveSelection: true,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
+                  style: TextStyle(
+                    color: Color(ref.watch(descriptionTextColorProvider)),
+                    fontSize: 16 * ref.watch(descriptionFontSizeProvider),
+                    fontFamily: ref.watch(descriptionFontFamilyProvider).isEmpty 
+                        ? null 
+                        : ref.watch(descriptionFontFamilyProvider),
                   ),
                   decoration: InputDecoration(
                     labelText: '説明',
@@ -1494,8 +1504,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           // 宛先入力欄
           TextFormField(
             controller: _toController,
-            style: const TextStyle(
-              color: Colors.black,
+            style: TextStyle(
+              color: Color(ref.watch(textColorProvider)),
               fontSize: 16,
             ),
             decoration: InputDecoration(
@@ -1527,41 +1537,55 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           
           const SizedBox(height: 16),
           
-          // 送信アプリ選択（Outlook左デフォルト／Gmail右）
-          Row(
+          // 送信アプリ選択（縦並びでレイアウト）
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('送信アプリ: '),
-              Radio<String>(
-                value: 'outlook',
-                groupValue: _selectedMailApp,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedMailApp = value!;
-                  });
-                },
+              const Text('送信アプリ:'),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Radio<String>(
+                    value: 'outlook',
+                    groupValue: _selectedMailApp,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedMailApp = value!;
+                      });
+                    },
+                  ),
+                  const Expanded(
+                    child: Text('Outlook（デスクトップ）'),
+                  ),
+                ],
               ),
-              const Text('Outlook（デスクトップ）'),
-              const SizedBox(width: 16),
-              Radio<String>(
-                value: 'gmail',
-                groupValue: _selectedMailApp,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedMailApp = value!;
-                  });
-                },
+              Row(
+                children: [
+                  Radio<String>(
+                    value: 'gmail',
+                    groupValue: _selectedMailApp,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedMailApp = value!;
+                      });
+                    },
+                  ),
+                  const Expanded(
+                    child: Text('Gmail（Web）'),
+                  ),
+                ],
               ),
-              const Text('Gmail（Web）'),
             ],
           ),
           
           const SizedBox(height: 12),
           
-          // 各メーラー個別テストボタン
-          Row(
+          // 各メーラー個別テストボタン（縦並びでレイアウト）
+          Column(
             children: [
               // Outlookテストボタン
-              Expanded(
+              SizedBox(
+                width: double.infinity,
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -1584,9 +1608,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(height: 8),
               // Gmailテストボタン
-              Expanded(
+              SizedBox(
+                width: double.infinity,
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(
@@ -1861,6 +1886,34 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       
       // メール送信後のコールバックを実行
       widget.onMailSent?.call();
+      
+      // タスク画面のUIを強制更新（メールバッジ表示のため）
+      if (widget.task != null) {
+        print('=== メールバッジ表示更新開始 ===');
+        print('タスクID: ${widget.task!.id}');
+        
+        // タスク画面の状態を更新（stateを直接更新）
+        final currentTasks = ref.read(taskViewModelProvider);
+        ref.read(taskViewModelProvider.notifier).state = [...currentTasks];
+        
+        // さらに、メールバッジの表示を強制更新するため、少し遅延して再度更新
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            final updatedTasks = ref.read(taskViewModelProvider);
+            ref.read(taskViewModelProvider.notifier).state = [...updatedTasks];
+            print('メールバッジ表示更新完了');
+          }
+        });
+        
+        // さらに遅延して最終更新
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          if (mounted) {
+            final finalTasks = ref.read(taskViewModelProvider);
+            ref.read(taskViewModelProvider.notifier).state = [...finalTasks];
+            print('メールバッジ最終更新完了');
+          }
+        });
+      }
     } catch (e) {
       SnackBarService.showError(context, 'メール送信完了記録エラー: $e');
     }

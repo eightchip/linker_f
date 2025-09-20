@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:tray_manager/tray_manager.dart';
 
 class SystemTrayService {

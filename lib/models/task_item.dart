@@ -398,11 +398,11 @@ class TaskItem extends HiveObject {
   int get statusColor {
     switch (status) {
       case TaskStatus.pending:
-        return 0xFF757575; // グレー
+        return 0xFF4CAF50; // 緑
       case TaskStatus.inProgress:
         return 0xFF2196F3; // 青
       case TaskStatus.completed:
-        return 0xFF4CAF50; // 緑
+        return 0xFF757575; // グレー
       case TaskStatus.cancelled:
         return 0xFFF44336; // 赤
     }

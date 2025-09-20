@@ -27,6 +27,11 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
     }
   }
 
+  // サブタスクを再読み込みするパブリックメソッド
+  Future<void> refreshSubTasks() async {
+    await _loadSubTasks();
+  }
+
   Future<void> _initializeSubTaskBox() async {
     try {
       print('=== SubTaskViewModel初期化開始 ===');

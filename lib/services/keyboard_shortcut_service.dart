@@ -13,6 +13,11 @@ class KeyboardShortcutService {
     _navigatorKey = navigatorKey;
   }
   
+  // ナビゲーターキーを取得
+  static GlobalKey<NavigatorState>? getNavigatorKey() {
+    return _navigatorKey;
+  }
+  
   /// キーボードショートカットを処理
   static bool handleKeyEvent(KeyEvent event) {
     if (event is KeyDownEvent) {

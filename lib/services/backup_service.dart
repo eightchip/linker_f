@@ -850,6 +850,13 @@ class IntegratedBackupService {
         }
       }
       
+      print('=== IntegratedBackupService インポート完了 ===');
+      print('リンク数: ${links.length}');
+      print('タスク数: ${tasks.length}');
+      print('グループ数: ${savedGroups.length}');
+      print('警告数: ${warnings.length}');
+      print('==========================================');
+      
       return ImportResult(
         links: links,
         tasks: tasks,
@@ -857,6 +864,10 @@ class IntegratedBackupService {
         warnings: warnings,
       );
     } catch (e) {
+      print('=== IntegratedBackupService インポートエラー ===');
+      print('エラー: $e');
+      print('==========================================');
+      
       ErrorHandler.logError('統合インポート', e);
       // エラーの詳細を含むImportResultを返す
       return ImportResult(

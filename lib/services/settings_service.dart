@@ -48,11 +48,31 @@ class SettingsService {
   static const String _googleCalendarShowCompletedTasksKey = 'googleCalendarShowCompletedTasks';
   static const String _gmailApiEnabledKey = 'gmailApiEnabled';
   static const String _gmailApiAccessTokenKey = 'gmailApiAccessToken';
+  static const String _textColorKey = 'textColor';
+  static const String _titleTextColorKey = 'titleTextColor';
+  static const String _titleFontSizeKey = 'titleFontSize';
+  static const String _titleFontFamilyKey = 'titleFontFamily';
+  static const String _memoTextColorKey = 'memoTextColor';
+  static const String _memoFontSizeKey = 'memoFontSize';
+  static const String _memoFontFamilyKey = 'memoFontFamily';
+  static const String _descriptionTextColorKey = 'descriptionTextColor';
+  static const String _descriptionFontSizeKey = 'descriptionFontSize';
+  static const String _descriptionFontFamilyKey = 'descriptionFontFamily';
 
   // デフォルト値
   static const bool _defaultDarkMode = false;
   static const double _defaultFontSize = 1.0;
   static const int _defaultAccentColor = 0xFF3B82F6;
+  static const int _defaultTextColor = 0xFF000000;
+  static const int _defaultTitleTextColor = 0xFF000000;
+  static const double _defaultTitleFontSize = 1.0;
+  static const String _defaultTitleFontFamily = '';
+  static const int _defaultMemoTextColor = 0xFF000000;
+  static const double _defaultMemoFontSize = 1.0;
+  static const String _defaultMemoFontFamily = '';
+  static const int _defaultDescriptionTextColor = 0xFF000000;
+  static const double _defaultDescriptionFontSize = 1.0;
+  static const String _defaultDescriptionFontFamily = '';
   static const double _defaultWindowWidth = 800.0;
   static const double _defaultWindowHeight = 600.0;
   static const double _defaultWindowX = 100.0;
@@ -206,6 +226,36 @@ class SettingsService {
     if (!_settingsBox.containsKey(_notificationSoundKey)) {
       await _settingsBox.put(_notificationSoundKey, _defaultNotificationSound);
     }
+    if (!_settingsBox.containsKey(_textColorKey)) {
+      await _settingsBox.put(_textColorKey, _defaultTextColor);
+    }
+    if (!_settingsBox.containsKey(_titleTextColorKey)) {
+      await _settingsBox.put(_titleTextColorKey, _defaultTitleTextColor);
+    }
+    if (!_settingsBox.containsKey(_titleFontSizeKey)) {
+      await _settingsBox.put(_titleFontSizeKey, _defaultTitleFontSize);
+    }
+    if (!_settingsBox.containsKey(_titleFontFamilyKey)) {
+      await _settingsBox.put(_titleFontFamilyKey, _defaultTitleFontFamily);
+    }
+    if (!_settingsBox.containsKey(_memoTextColorKey)) {
+      await _settingsBox.put(_memoTextColorKey, _defaultMemoTextColor);
+    }
+    if (!_settingsBox.containsKey(_memoFontSizeKey)) {
+      await _settingsBox.put(_memoFontSizeKey, _defaultMemoFontSize);
+    }
+    if (!_settingsBox.containsKey(_memoFontFamilyKey)) {
+      await _settingsBox.put(_memoFontFamilyKey, _defaultMemoFontFamily);
+    }
+    if (!_settingsBox.containsKey(_descriptionTextColorKey)) {
+      await _settingsBox.put(_descriptionTextColorKey, _defaultDescriptionTextColor);
+    }
+    if (!_settingsBox.containsKey(_descriptionFontSizeKey)) {
+      await _settingsBox.put(_descriptionFontSizeKey, _defaultDescriptionFontSize);
+    }
+    if (!_settingsBox.containsKey(_descriptionFontFamilyKey)) {
+      await _settingsBox.put(_descriptionFontFamilyKey, _defaultDescriptionFontFamily);
+    }
   }
 
   // ==================== 基本設定 ====================
@@ -226,6 +276,66 @@ class SettingsService {
   int get accentColor => _settingsBox.get(_accentColorKey, defaultValue: _defaultAccentColor) as int;
   Future<void> setAccentColor(int value) async {
     await _settingsBox.put(_accentColorKey, value);
+  }
+
+  /// テキスト色設定
+  int get textColor => _settingsBox.get(_textColorKey, defaultValue: _defaultTextColor) as int;
+  Future<void> setTextColor(int value) async {
+    await _settingsBox.put(_textColorKey, value);
+  }
+
+  /// タイトルテキスト色設定
+  int get titleTextColor => _settingsBox.get(_titleTextColorKey, defaultValue: _defaultTitleTextColor) as int;
+  Future<void> setTitleTextColor(int value) async {
+    await _settingsBox.put(_titleTextColorKey, value);
+  }
+
+  /// タイトルフォントサイズ設定
+  double get titleFontSize => _settingsBox.get(_titleFontSizeKey, defaultValue: _defaultTitleFontSize) as double;
+  Future<void> setTitleFontSize(double value) async {
+    await _settingsBox.put(_titleFontSizeKey, value);
+  }
+
+  /// タイトルフォントファミリー設定
+  String get titleFontFamily => _settingsBox.get(_titleFontFamilyKey, defaultValue: _defaultTitleFontFamily) as String;
+  Future<void> setTitleFontFamily(String value) async {
+    await _settingsBox.put(_titleFontFamilyKey, value);
+  }
+
+  /// メモテキスト色設定
+  int get memoTextColor => _settingsBox.get(_memoTextColorKey, defaultValue: _defaultMemoTextColor) as int;
+  Future<void> setMemoTextColor(int value) async {
+    await _settingsBox.put(_memoTextColorKey, value);
+  }
+
+  /// メモフォントサイズ設定
+  double get memoFontSize => _settingsBox.get(_memoFontSizeKey, defaultValue: _defaultMemoFontSize) as double;
+  Future<void> setMemoFontSize(double value) async {
+    await _settingsBox.put(_memoFontSizeKey, value);
+  }
+
+  /// メモフォントファミリー設定
+  String get memoFontFamily => _settingsBox.get(_memoFontFamilyKey, defaultValue: _defaultMemoFontFamily) as String;
+  Future<void> setMemoFontFamily(String value) async {
+    await _settingsBox.put(_memoFontFamilyKey, value);
+  }
+
+  /// 説明テキスト色設定
+  int get descriptionTextColor => _settingsBox.get(_descriptionTextColorKey, defaultValue: _defaultDescriptionTextColor) as int;
+  Future<void> setDescriptionTextColor(int value) async {
+    await _settingsBox.put(_descriptionTextColorKey, value);
+  }
+
+  /// 説明フォントサイズ設定
+  double get descriptionFontSize => _settingsBox.get(_descriptionFontSizeKey, defaultValue: _defaultDescriptionFontSize) as double;
+  Future<void> setDescriptionFontSize(double value) async {
+    await _settingsBox.put(_descriptionFontSizeKey, value);
+  }
+
+  /// 説明フォントファミリー設定
+  String get descriptionFontFamily => _settingsBox.get(_descriptionFontFamilyKey, defaultValue: _defaultDescriptionFontFamily) as String;
+  Future<void> setDescriptionFontFamily(String value) async {
+    await _settingsBox.put(_descriptionFontFamilyKey, value);
   }
 
   // ==================== ウィンドウ設定 ====================

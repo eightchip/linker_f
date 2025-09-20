@@ -267,12 +267,12 @@ class _VoiceControlWidgetState extends State<VoiceControlWidget>
           child: FloatingActionButton(
             onPressed: _toggleListening,
             backgroundColor: _colorAnimation.value,
+            tooltip: _isListening ? '音声認識停止' : '音声認識開始',
             child: Icon(
               _isListening ? Icons.mic : Icons.mic_none,
               color: Colors.white,
               size: 28,
             ),
-            tooltip: _isListening ? '音声認識停止' : '音声認識開始',
           ),
         );
       },
