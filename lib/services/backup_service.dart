@@ -547,12 +547,14 @@ class IntegratedBackupService {
         exportData['tasks'] = tasks.map((task) => task.toJson()).toList();
       }
       
-      // 設定データ
+      // 設定データ（UI設定を含む）
       exportData['settings'] = {
         'autoBackup': _settingsService.autoBackup,
         'backupInterval': _settingsService.backupInterval,
         'darkMode': _settingsService.darkMode,
         'accentColor': _settingsService.accentColor,
+        // UI設定を追加
+        'uiSettings': _settingsService.exportUISettings(),
       };
       
       final file = File(filePath);
@@ -820,6 +822,45 @@ class IntegratedBackupService {
       
       // 実際に保存されたグループのみを返す
       final savedGroups = groups.take(savedGroupsCount).toList();
+      
+      // 設定データの復元（UI設定を含む）
+      if (v2Data['settings'] != null) {
+        try {
+          final settingsData = v2Data['settings'] as Map<String, dynamic>;
+          
+          // 基本設定の復元
+          if (settingsData.containsKey('autoBackup')) {
+            await _settingsService.setAutoBackup(settingsData['autoBackup']);
+          }
+          if (settingsData.containsKey('backupInterval')) {
+            await _settingsService.setBackupInterval(settingsData['backupInterval']);
+          }
+          if (settingsData.containsKey('darkMode')) {
+            await _settingsService.setDarkMode(settingsData['darkMode']);
+          }
+          if (settingsData.containsKey('accentColor')) {
+            await _settingsService.setAccentColor(settingsData['accentColor']);
+          }
+          
+          // UI設定の復元
+          if (settingsData.containsKey('uiSettings')) {
+            final uiSettings = settingsData['uiSettings'] as Map<String, dynamic>;
+            await _settingsService.importUISettings(uiSettings);
+            if (kDebugMode) {
+              print('UI設定を復元しました');
+            }
+          }
+          
+          if (kDebugMode) {
+            print('設定データを復元しました');
+          }
+        } catch (e) {
+          warnings.add('設定データの復元でエラーが発生しました: $e');
+          if (kDebugMode) {
+            print('設定復元エラー: $e');
+          }
+        }
+      }
       
       if (kDebugMode) {
         print('=== インポート結果サマリー ===');

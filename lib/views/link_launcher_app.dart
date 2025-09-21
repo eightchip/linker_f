@@ -25,33 +25,33 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
   Color _getAdjustedColor(int baseColor, double intensity, double contrast) {
     final color = Color(baseColor);
     
-    // 濃淡調整
-    final adjustedColor = Color.fromARGB(
-      color.alpha,
-      (color.red * intensity).clamp(0, 255).round(),
-      (color.green * intensity).clamp(0, 255).round(),
-      (color.blue * intensity).clamp(0, 255).round(),
-    );
+    // HSL色空間に変換
+    final hsl = HSLColor.fromColor(color);
     
-    // コントラスト調整
-    final contrastColor = Color.fromARGB(
-      adjustedColor.alpha,
-      ((adjustedColor.red - 128) * contrast + 128).clamp(0, 255).round(),
-      ((adjustedColor.green - 128) * contrast + 128).clamp(0, 255).round(),
-      ((adjustedColor.blue - 128) * contrast + 128).clamp(0, 255).round(),
-    );
+    // 濃淡調整: 明度を調整（0.5〜1.5の範囲で0.2〜0.8の明度にマッピング）
+    final adjustedLightness = (0.2 + (intensity - 0.5) * 0.6).clamp(0.1, 0.9);
     
-    return contrastColor;
+    // コントラスト調整: 彩度を調整（0.7〜1.5の範囲で0.3〜1.0の彩度にマッピング）
+    final adjustedSaturation = (0.3 + (contrast - 0.7) * 0.875).clamp(0.1, 1.0);
+    
+    // 調整された色を返す
+    return HSLColor.fromAHSL(
+      color.alpha / 255.0,
+      hsl.hue,
+      adjustedSaturation,
+      adjustedLightness,
+    ).toColor();
   }
+
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = ref.watch(darkModeProvider);
     final accentColor = ref.watch(accentColorProvider);
-    final colorIntensity = ref.watch(colorIntensityProvider);
-    final colorContrast = ref.watch(colorContrastProvider);
     final fontSize = ref.watch(fontSizeProvider);
     final textColor = ref.watch(textColorProvider);
+    final colorIntensity = ref.watch(colorIntensityProvider);
+    final colorContrast = ref.watch(colorContrastProvider);
     
     // 調整されたアクセントカラーを計算
     final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
@@ -78,7 +78,7 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
           seedColor: adjustedAccentColor,
           brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC), // 元の白い背景色に固定
         cardTheme: const CardThemeData(
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -103,7 +103,7 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
           seedColor: adjustedAccentColor,
           brightness: Brightness.dark,
         ),
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        scaffoldBackgroundColor: const Color(0xFF0F172A), // 元の黒い背景色に固定
         cardTheme: const CardThemeData(
           elevation: 2,
           shape: RoundedRectangleBorder(

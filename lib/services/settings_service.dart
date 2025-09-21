@@ -49,6 +49,8 @@ class SettingsService {
   static const String _gmailApiEnabledKey = 'gmailApiEnabled';
   static const String _gmailApiAccessTokenKey = 'gmailApiAccessToken';
   static const String _textColorKey = 'textColor';
+  static const String _colorIntensityKey = 'colorIntensity';
+  static const String _colorContrastKey = 'colorContrast';
   static const String _titleTextColorKey = 'titleTextColor';
   static const String _titleFontSizeKey = 'titleFontSize';
   static const String _titleFontFamilyKey = 'titleFontFamily';
@@ -58,12 +60,30 @@ class SettingsService {
   static const String _descriptionTextColorKey = 'descriptionTextColor';
   static const String _descriptionFontSizeKey = 'descriptionFontSize';
   static const String _descriptionFontFamilyKey = 'descriptionFontFamily';
+  
+  // UIカスタマイズ設定キー
+  static const String _cardBorderRadiusKey = 'cardBorderRadius';
+  static const String _cardElevationKey = 'cardElevation';
+  static const String _cardPaddingKey = 'cardPadding';
+  static const String _buttonBorderRadiusKey = 'buttonBorderRadius';
+  static const String _buttonElevationKey = 'buttonElevation';
+  static const String _inputBorderRadiusKey = 'inputBorderRadius';
+  static const String _inputBorderWidthKey = 'inputBorderWidth';
+  static const String _animationDurationKey = 'animationDuration';
+  static const String _hoverEffectIntensityKey = 'hoverEffectIntensity';
+  static const String _shadowIntensityKey = 'shadowIntensity';
+  static const String _gradientIntensityKey = 'gradientIntensity';
+  static const String _uiDensityKey = 'uiDensity';
+  static const String _iconSizeKey = 'iconSize';
+  static const String _spacingKey = 'spacing';
 
   // デフォルト値
   static const bool _defaultDarkMode = false;
   static const double _defaultFontSize = 1.0;
   static const int _defaultAccentColor = 0xFF3B82F6;
   static const int _defaultTextColor = 0xFF000000;
+  static const double _defaultColorIntensity = 1.0;
+  static const double _defaultColorContrast = 1.0;
   static const int _defaultTitleTextColor = 0xFF000000;
   static const double _defaultTitleFontSize = 1.0;
   static const String _defaultTitleFontFamily = '';
@@ -73,6 +93,23 @@ class SettingsService {
   static const int _defaultDescriptionTextColor = 0xFF000000;
   static const double _defaultDescriptionFontSize = 1.0;
   static const String _defaultDescriptionFontFamily = '';
+  
+  // UIカスタマイズデフォルト値
+  static const double _defaultCardBorderRadius = 16.0;
+  static const double _defaultCardElevation = 2.0;
+  static const double _defaultCardPadding = 16.0;
+  static const double _defaultButtonBorderRadius = 12.0;
+  static const double _defaultButtonElevation = 1.0;
+  static const double _defaultInputBorderRadius = 12.0;
+  static const double _defaultInputBorderWidth = 1.5;
+  static const int _defaultAnimationDuration = 300; // ミリ秒
+  static const double _defaultHoverEffectIntensity = 0.1;
+  static const double _defaultShadowIntensity = 0.15;
+  static const double _defaultGradientIntensity = 0.05;
+  static const double _defaultUiDensity = 1.0;
+  static const double _defaultIconSize = 24.0;
+  static const double _defaultSpacing = 8.0;
+  
   static const double _defaultWindowWidth = 800.0;
   static const double _defaultWindowHeight = 600.0;
   static const double _defaultWindowX = 100.0;
@@ -178,6 +215,9 @@ class SettingsService {
       await _defaultSettingsBox.put(_darkModeKey, _defaultDarkMode);
       await _defaultSettingsBox.put(_fontSizeKey, _defaultFontSize);
       await _defaultSettingsBox.put(_accentColorKey, _defaultAccentColor);
+      await _defaultSettingsBox.put(_textColorKey, _defaultTextColor);
+      await _defaultSettingsBox.put(_colorIntensityKey, _defaultColorIntensity);
+      await _defaultSettingsBox.put(_colorContrastKey, _defaultColorContrast);
       await _defaultSettingsBox.put(_windowWidthKey, _defaultWindowWidth);
       await _defaultSettingsBox.put(_windowHeightKey, _defaultWindowHeight);
       await _defaultSettingsBox.put(_windowXKey, _defaultWindowX);
@@ -282,6 +322,18 @@ class SettingsService {
   int get textColor => _settingsBox.get(_textColorKey, defaultValue: _defaultTextColor) as int;
   Future<void> setTextColor(int value) async {
     await _settingsBox.put(_textColorKey, value);
+  }
+
+  /// 色の濃淡設定
+  double get colorIntensity => _settingsBox.get(_colorIntensityKey, defaultValue: _defaultColorIntensity) as double;
+  Future<void> setColorIntensity(double value) async {
+    await _settingsBox.put(_colorIntensityKey, value);
+  }
+
+  /// コントラスト設定
+  double get colorContrast => _settingsBox.get(_colorContrastKey, defaultValue: _defaultColorContrast) as double;
+  Future<void> setColorContrast(double value) async {
+    await _settingsBox.put(_colorContrastKey, value);
   }
 
   /// タイトルテキスト色設定
@@ -647,5 +699,243 @@ class SettingsService {
   /// Gmail API連携の有効/無効を設定
   Future<void> setGmailApiEnabled(bool value) async {
     await _settingsBox.put(_gmailApiEnabledKey, value);
+  }
+
+  // UIカスタマイズ設定のgetterとsetter
+  
+  /// カードの角丸半径
+  double get cardBorderRadius {
+    return _settingsBox.get(_cardBorderRadiusKey, defaultValue: _defaultCardBorderRadius);
+  }
+  
+  /// カードの角丸半径を設定
+  Future<void> setCardBorderRadius(double value) async {
+    await _settingsBox.put(_cardBorderRadiusKey, value);
+  }
+  
+  /// カードの影の強さ
+  double get cardElevation {
+    return _settingsBox.get(_cardElevationKey, defaultValue: _defaultCardElevation);
+  }
+  
+  /// カードの影の強さを設定
+  Future<void> setCardElevation(double value) async {
+    await _settingsBox.put(_cardElevationKey, value);
+  }
+  
+  /// カードのパディング
+  double get cardPadding {
+    return _settingsBox.get(_cardPaddingKey, defaultValue: _defaultCardPadding);
+  }
+  
+  /// カードのパディングを設定
+  Future<void> setCardPadding(double value) async {
+    await _settingsBox.put(_cardPaddingKey, value);
+  }
+  
+  /// ボタンの角丸半径
+  double get buttonBorderRadius {
+    return _settingsBox.get(_buttonBorderRadiusKey, defaultValue: _defaultButtonBorderRadius);
+  }
+  
+  /// ボタンの角丸半径を設定
+  Future<void> setButtonBorderRadius(double value) async {
+    await _settingsBox.put(_buttonBorderRadiusKey, value);
+  }
+  
+  /// ボタンの影の強さ
+  double get buttonElevation {
+    return _settingsBox.get(_buttonElevationKey, defaultValue: _defaultButtonElevation);
+  }
+  
+  /// ボタンの影の強さを設定
+  Future<void> setButtonElevation(double value) async {
+    await _settingsBox.put(_buttonElevationKey, value);
+  }
+  
+  /// 入力フィールドの角丸半径
+  double get inputBorderRadius {
+    return _settingsBox.get(_inputBorderRadiusKey, defaultValue: _defaultInputBorderRadius);
+  }
+  
+  /// 入力フィールドの角丸半径を設定
+  Future<void> setInputBorderRadius(double value) async {
+    await _settingsBox.put(_inputBorderRadiusKey, value);
+  }
+  
+  /// 入力フィールドの枠線の太さ
+  double get inputBorderWidth {
+    return _settingsBox.get(_inputBorderWidthKey, defaultValue: _defaultInputBorderWidth);
+  }
+  
+  /// 入力フィールドの枠線の太さを設定
+  Future<void> setInputBorderWidth(double value) async {
+    await _settingsBox.put(_inputBorderWidthKey, value);
+  }
+  
+  /// アニメーションの持続時間（ミリ秒）
+  int get animationDuration {
+    return _settingsBox.get(_animationDurationKey, defaultValue: _defaultAnimationDuration);
+  }
+  
+  /// アニメーションの持続時間を設定
+  Future<void> setAnimationDuration(int value) async {
+    await _settingsBox.put(_animationDurationKey, value);
+  }
+  
+  /// ホバー効果の強さ
+  double get hoverEffectIntensity {
+    return _settingsBox.get(_hoverEffectIntensityKey, defaultValue: _defaultHoverEffectIntensity);
+  }
+  
+  /// ホバー効果の強さを設定
+  Future<void> setHoverEffectIntensity(double value) async {
+    await _settingsBox.put(_hoverEffectIntensityKey, value);
+  }
+  
+  /// 影の強さ
+  double get shadowIntensity {
+    return _settingsBox.get(_shadowIntensityKey, defaultValue: _defaultShadowIntensity);
+  }
+  
+  /// 影の強さを設定
+  Future<void> setShadowIntensity(double value) async {
+    await _settingsBox.put(_shadowIntensityKey, value);
+  }
+  
+  /// グラデーションの強さ
+  double get gradientIntensity {
+    return _settingsBox.get(_gradientIntensityKey, defaultValue: _defaultGradientIntensity);
+  }
+  
+  /// グラデーションの強さを設定
+  Future<void> setGradientIntensity(double value) async {
+    await _settingsBox.put(_gradientIntensityKey, value);
+  }
+  
+  /// UI密度
+  double get uiDensity {
+    return _settingsBox.get(_uiDensityKey, defaultValue: _defaultUiDensity);
+  }
+  
+  /// UI密度を設定
+  Future<void> setUiDensity(double value) async {
+    await _settingsBox.put(_uiDensityKey, value);
+  }
+  
+  /// アイコンサイズ
+  double get iconSize {
+    return _settingsBox.get(_iconSizeKey, defaultValue: _defaultIconSize);
+  }
+  
+  /// アイコンサイズを設定
+  Future<void> setIconSize(double value) async {
+    await _settingsBox.put(_iconSizeKey, value);
+  }
+  
+  /// 要素間のスペーシング
+  double get spacing {
+    return _settingsBox.get(_spacingKey, defaultValue: _defaultSpacing);
+  }
+  
+  /// 要素間のスペーシングを設定
+  Future<void> setSpacing(double value) async {
+    await _settingsBox.put(_spacingKey, value);
+  }
+  
+  /// 全UI設定をリセット（デフォルト値に戻す）
+  Future<void> resetAllUISettings() async {
+    await _settingsBox.put(_cardBorderRadiusKey, _defaultCardBorderRadius);
+    await _settingsBox.put(_cardElevationKey, _defaultCardElevation);
+    await _settingsBox.put(_cardPaddingKey, _defaultCardPadding);
+    await _settingsBox.put(_buttonBorderRadiusKey, _defaultButtonBorderRadius);
+    await _settingsBox.put(_buttonElevationKey, _defaultButtonElevation);
+    await _settingsBox.put(_inputBorderRadiusKey, _defaultInputBorderRadius);
+    await _settingsBox.put(_inputBorderWidthKey, _defaultInputBorderWidth);
+    await _settingsBox.put(_animationDurationKey, _defaultAnimationDuration);
+    await _settingsBox.put(_hoverEffectIntensityKey, _defaultHoverEffectIntensity);
+    await _settingsBox.put(_shadowIntensityKey, _defaultShadowIntensity);
+    await _settingsBox.put(_gradientIntensityKey, _defaultGradientIntensity);
+    await _settingsBox.put(_uiDensityKey, _defaultUiDensity);
+    await _settingsBox.put(_iconSizeKey, _defaultIconSize);
+    await _settingsBox.put(_spacingKey, _defaultSpacing);
+  }
+  
+  /// UI設定をエクスポート（JSON形式）
+  Map<String, dynamic> exportUISettings() {
+    return {
+      // 基本UI設定
+      'darkMode': darkMode,
+      'accentColor': accentColor,
+      'fontSize': fontSize,
+      'textColor': textColor,
+      'colorIntensity': colorIntensity,
+      'colorContrast': colorContrast,
+      
+      // 個別テキスト設定
+      'titleTextColor': titleTextColor,
+      'titleFontSize': titleFontSize,
+      'titleFontFamily': titleFontFamily,
+      'memoTextColor': memoTextColor,
+      'memoFontSize': memoFontSize,
+      'memoFontFamily': memoFontFamily,
+      'descriptionTextColor': descriptionTextColor,
+      'descriptionFontSize': descriptionFontSize,
+      'descriptionFontFamily': descriptionFontFamily,
+      
+      // カスタマイズUI設定
+      'cardBorderRadius': cardBorderRadius,
+      'cardElevation': cardElevation,
+      'cardPadding': cardPadding,
+      'buttonBorderRadius': buttonBorderRadius,
+      'buttonElevation': buttonElevation,
+      'inputBorderRadius': inputBorderRadius,
+      'inputBorderWidth': inputBorderWidth,
+      'animationDuration': animationDuration,
+      'hoverEffectIntensity': hoverEffectIntensity,
+      'shadowIntensity': shadowIntensity,
+      'gradientIntensity': gradientIntensity,
+      'uiDensity': uiDensity,
+      'iconSize': iconSize,
+      'spacing': spacing,
+    };
+  }
+  
+  /// UI設定をインポート（JSON形式）
+  Future<void> importUISettings(Map<String, dynamic> settings) async {
+    // 基本UI設定
+    if (settings.containsKey('darkMode')) await setDarkMode(settings['darkMode']);
+    if (settings.containsKey('accentColor')) await setAccentColor(settings['accentColor']);
+    if (settings.containsKey('fontSize')) await setFontSize(settings['fontSize']);
+    if (settings.containsKey('textColor')) await setTextColor(settings['textColor']);
+    if (settings.containsKey('colorIntensity')) await setColorIntensity(settings['colorIntensity']);
+    if (settings.containsKey('colorContrast')) await setColorContrast(settings['colorContrast']);
+    
+    // 個別テキスト設定
+    if (settings.containsKey('titleTextColor')) await setTitleTextColor(settings['titleTextColor']);
+    if (settings.containsKey('titleFontSize')) await setTitleFontSize(settings['titleFontSize']);
+    if (settings.containsKey('titleFontFamily')) await setTitleFontFamily(settings['titleFontFamily']);
+    if (settings.containsKey('memoTextColor')) await setMemoTextColor(settings['memoTextColor']);
+    if (settings.containsKey('memoFontSize')) await setMemoFontSize(settings['memoFontSize']);
+    if (settings.containsKey('memoFontFamily')) await setMemoFontFamily(settings['memoFontFamily']);
+    if (settings.containsKey('descriptionTextColor')) await setDescriptionTextColor(settings['descriptionTextColor']);
+    if (settings.containsKey('descriptionFontSize')) await setDescriptionFontSize(settings['descriptionFontSize']);
+    if (settings.containsKey('descriptionFontFamily')) await setDescriptionFontFamily(settings['descriptionFontFamily']);
+    
+    // カスタマイズUI設定
+    if (settings.containsKey('cardBorderRadius')) await setCardBorderRadius(settings['cardBorderRadius']);
+    if (settings.containsKey('cardElevation')) await setCardElevation(settings['cardElevation']);
+    if (settings.containsKey('cardPadding')) await setCardPadding(settings['cardPadding']);
+    if (settings.containsKey('buttonBorderRadius')) await setButtonBorderRadius(settings['buttonBorderRadius']);
+    if (settings.containsKey('buttonElevation')) await setButtonElevation(settings['buttonElevation']);
+    if (settings.containsKey('inputBorderRadius')) await setInputBorderRadius(settings['inputBorderRadius']);
+    if (settings.containsKey('inputBorderWidth')) await setInputBorderWidth(settings['inputBorderWidth']);
+    if (settings.containsKey('animationDuration')) await setAnimationDuration(settings['animationDuration']);
+    if (settings.containsKey('hoverEffectIntensity')) await setHoverEffectIntensity(settings['hoverEffectIntensity']);
+    if (settings.containsKey('shadowIntensity')) await setShadowIntensity(settings['shadowIntensity']);
+    if (settings.containsKey('gradientIntensity')) await setGradientIntensity(settings['gradientIntensity']);
+    if (settings.containsKey('uiDensity')) await setUiDensity(settings['uiDensity']);
+    if (settings.containsKey('iconSize')) await setIconSize(settings['iconSize']);
+    if (settings.containsKey('spacing')) await setSpacing(settings['spacing']);
   }
 }

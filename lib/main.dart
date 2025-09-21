@@ -23,6 +23,7 @@ import 'services/backup_service.dart';
 import 'services/google_calendar_service.dart';
 import 'repositories/link_repository.dart';
 import 'viewmodels/font_size_provider.dart';
+import 'viewmodels/ui_customization_provider.dart';
 
 // グローバルなNavigatorKey
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -53,8 +54,10 @@ void main() async {
     runApp(ProviderScope(
       child: Consumer(
         builder: (context, ref, child) {
-          // アプリ起動時にプロバイダーを初期化
-          _initializeProviders(ref);
+          // プロバイダーの初期化をここで実行
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await _initializeProviders(ref);
+          });
           return const LinkLauncherApp();
         },
       ),
@@ -184,34 +187,6 @@ Future<void> _initializeDataMigration() async {
   } catch (e) {
     print('データマイグレーションエラー: $e');
     // データマイグレーションエラーは致命的でないため、継続
-  }
-}
-
-// プロバイダーの初期化
-void _initializeProviders(WidgetRef ref) {
-  try {
-    final settingsService = SettingsService.instance;
-    
-    // 設定値をプロバイダーに反映
-    ref.read(darkModeProvider.notifier).state = settingsService.darkMode;
-    ref.read(accentColorProvider.notifier).state = settingsService.accentColor;
-    ref.read(fontSizeProvider.notifier).state = settingsService.fontSize;
-    ref.read(textColorProvider.notifier).state = settingsService.textColor;
-    
-    // 各フィールドの設定値をプロバイダーに反映
-    ref.read(titleTextColorProvider.notifier).state = settingsService.titleTextColor;
-    ref.read(titleFontSizeProvider.notifier).state = settingsService.titleFontSize;
-    ref.read(titleFontFamilyProvider.notifier).state = settingsService.titleFontFamily;
-    ref.read(memoTextColorProvider.notifier).state = settingsService.memoTextColor;
-    ref.read(memoFontSizeProvider.notifier).state = settingsService.memoFontSize;
-    ref.read(memoFontFamilyProvider.notifier).state = settingsService.memoFontFamily;
-    ref.read(descriptionTextColorProvider.notifier).state = settingsService.descriptionTextColor;
-    ref.read(descriptionFontSizeProvider.notifier).state = settingsService.descriptionFontSize;
-    ref.read(descriptionFontFamilyProvider.notifier).state = settingsService.descriptionFontFamily;
-    
-    print('プロバイダー初期化完了');
-  } catch (e) {
-    print('プロバイダー初期化エラー: $e');
   }
 }
 
@@ -389,6 +364,52 @@ Future<void> _migrateFromOneDrive(Directory newDataDir) async {
     }
   } catch (e) {
     print('OneDriveデータ移行エラー: $e');
+  }
+}
+
+/// プロバイダーの初期化
+Future<void> _initializeProviders(WidgetRef ref) async {
+  try {
+    final settingsService = SettingsService.instance;
+    
+    // 設定サービスの初期化を待機
+    int retryCount = 0;
+    const maxRetries = 10;
+    const retryDelay = Duration(milliseconds: 100);
+    
+    while (!settingsService.isInitialized && retryCount < maxRetries) {
+      await Future.delayed(retryDelay);
+      retryCount++;
+    }
+    
+    if (!settingsService.isInitialized) {
+      return;
+    }
+    
+    // 設定値をプロバイダーに反映
+    ref.read(darkModeProvider.notifier).state = settingsService.darkMode;
+    ref.read(accentColorProvider.notifier).state = settingsService.accentColor;
+    ref.read(fontSizeProvider.notifier).state = settingsService.fontSize;
+    ref.read(textColorProvider.notifier).state = settingsService.textColor;
+    ref.read(colorIntensityProvider.notifier).state = settingsService.colorIntensity;
+    ref.read(colorContrastProvider.notifier).state = settingsService.colorContrast;
+    
+    // 個別テキスト設定の初期化
+    ref.read(titleTextColorProvider.notifier).state = settingsService.titleTextColor;
+    ref.read(titleFontSizeProvider.notifier).state = settingsService.titleFontSize;
+    ref.read(titleFontFamilyProvider.notifier).state = settingsService.titleFontFamily;
+    ref.read(memoTextColorProvider.notifier).state = settingsService.memoTextColor;
+    ref.read(memoFontSizeProvider.notifier).state = settingsService.memoFontSize;
+    ref.read(memoFontFamilyProvider.notifier).state = settingsService.memoFontFamily;
+    ref.read(descriptionTextColorProvider.notifier).state = settingsService.descriptionTextColor;
+    ref.read(descriptionFontSizeProvider.notifier).state = settingsService.descriptionFontSize;
+    ref.read(descriptionFontFamilyProvider.notifier).state = settingsService.descriptionFontFamily;
+    
+    // UI設定Providerの初期化
+    final uiNotifier = ref.read(uiCustomizationProvider.notifier);
+    uiNotifier.refreshSettings();
+  } catch (e) {
+    // エラーが発生してもアプリケーションは継続
   }
 }
 

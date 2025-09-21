@@ -510,23 +510,32 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             Navigator.of(context).maybePop();
           }
         },
-        child: Dialog(
-        child: Container(
-          width: 500,
+        child: AnimatedScale(
+          scale: 1.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutBack,
+          child: Dialog(
+            child: Container(
+          width: 520, // 幅を少し広く
           constraints: const BoxConstraints(maxHeight: 800),
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(28), // パディングを増やして余裕のあるレイアウトに
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24), // 角丸を大きくしてモダンな印象に
             border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-              width: 1.5,
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
@@ -566,30 +575,30 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   decoration: InputDecoration(
                     labelText: 'タイトル *',
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      borderRadius: BorderRadius.circular(16), // 角丸を大きく
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2.5),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
                     ),
                     errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(color: Colors.red.shade600, width: 2),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(color: Colors.red.shade600, width: 2.5),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                     labelStyle: TextStyle(
-                      color: Colors.grey.shade700,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -621,25 +630,25 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   decoration: InputDecoration(
                     labelText: '依頼先やメモ',
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      borderRadius: BorderRadius.circular(16), // 角丸を大きく
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2.5),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
                     ),
                     errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(color: Colors.red.shade600, width: 2),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(color: Colors.red.shade600, width: 2.5),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -647,7 +656,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     alignLabelWithHint: true,
                     helperText: '※複数行での入力が可能です',
                     labelStyle: TextStyle(
-                      color: Colors.grey.shade700,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       fontWeight: FontWeight.w600,
                     ),
                     helperStyle: TextStyle(
@@ -674,31 +683,31 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   decoration: InputDecoration(
                     labelText: '説明',
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      borderRadius: BorderRadius.circular(16), // 角丸を大きく
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2.5),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
                     ),
                     errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(color: Colors.red.shade600, width: 2),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(color: Colors.red.shade600, width: 2.5),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                     hintText: 'タスクの詳細説明を入力してください',
                     labelStyle: TextStyle(
-                      color: Colors.grey.shade700,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1070,7 +1079,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       ),
     ),
    ),
-   );  
+   ),
+   );
   }
 
   // サブタスク編集セクション（トグル版）
@@ -1180,7 +1190,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     decoration: InputDecoration(
                       labelText: 'サブタスク名',
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
@@ -1194,7 +1204,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
                       ),
                       labelStyle: TextStyle(
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         fontWeight: FontWeight.w600,
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1209,7 +1219,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     decoration: InputDecoration(
                       labelText: '推定(分)',
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Theme.of(context).colorScheme.surface,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
@@ -1223,7 +1233,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
                       ),
                       labelStyle: TextStyle(
-                        color: Colors.grey.shade700,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         fontWeight: FontWeight.w600,
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1972,11 +1982,11 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         
         // よく使われる連絡先
         if (_availableContacts.isNotEmpty) ...[
-          const Text(
+          Text(
             'よく使われる連絡先:',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
           const SizedBox(height: 4),
@@ -1996,10 +2006,14 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       contact.name,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isSelected ? Colors.white : null,
+                        color: isSelected 
+                          ? Theme.of(context).colorScheme.onPrimary 
+                          : Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    backgroundColor: isSelected ? Colors.blue : Colors.grey.shade200,
+                    backgroundColor: isSelected 
+                      ? Theme.of(context).primaryColor 
+                      : Theme.of(context).colorScheme.surface,
                     onPressed: () {
                       setState(() {
                         if (isSelected) {

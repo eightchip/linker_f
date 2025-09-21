@@ -12,20 +12,16 @@ import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/task_viewmodel.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
-import '../main.dart';
-import 'link_launcher_app.dart';
 import 'package:intl/intl.dart';
 import '../services/backup_service.dart';
-import '../repositories/link_repository.dart';
+import '../services/keyboard_shortcut_service.dart';
 import '../services/google_calendar_service.dart';
 import '../widgets/unified_dialog.dart';
-import '../services/keyboard_shortcut_service.dart';
 import '../widgets/app_button_styles.dart';
 import '../services/snackbar_service.dart';
 import '../viewmodels/sync_status_provider.dart';
-import '../viewmodels/font_size_provider.dart';
+import '../viewmodels/ui_customization_provider.dart';
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService.instance;
@@ -209,7 +205,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final currentDarkMode = ref.watch(darkModeProvider);
     final currentAccentColor = ref.watch(accentColorProvider);
     final currentFontSize = ref.watch(fontSizeProvider);
-    final currentTextColor = ref.watch(textColorProvider);
 
     return RawKeyboardListener(
       focusNode: FocusNode(),
@@ -282,16 +277,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildSettingsMenu(BuildContext context, WidgetRef ref) {
     return ListView(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(12), // パディングを増やして余裕のあるレイアウトに
       children: [
         _buildMenuSection('外観', [
-          _buildMenuItem(context, ref, 'テーマ設定', Icons.palette, 'theme'),
-          _buildMenuItem(context, ref, 'フォント設定', Icons.text_fields, 'font'),
+          _buildMenuItem(context, ref, 'テーマ設定', Icons.palette, 'theme', '全画面共通'),
+          _buildMenuItem(context, ref, 'フォント設定', Icons.text_fields, 'font', '全画面共通'),
+          _buildMenuItem(context, ref, 'UIカスタマイズ', Icons.tune, 'ui_customization', '全画面共通'),
         ]),
         _buildMenuSection('レイアウト', [
-          _buildMenuItem(context, ref, 'グリッド設定', Icons.grid_view, 'grid'),
-          _buildMenuItem(context, ref, 'カード設定', Icons.view_agenda, 'card'),
-          _buildMenuItem(context, ref, 'アイテム設定', Icons.link, 'item'),
+          _buildMenuItem(context, ref, 'グリッド設定', Icons.grid_view, 'grid', 'リンク画面'),
+          _buildMenuItem(context, ref, 'カード設定', Icons.view_agenda, 'card', 'リンク・タスク画面'),
+          _buildMenuItem(context, ref, 'アイテム設定', Icons.link, 'item', 'リンク画面'),
         ]),
         _buildMenuSection('データ', [
           _buildMenuItem(context, ref, 'バックアップ', Icons.backup, 'backup'),
@@ -347,7 +343,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, WidgetRef ref, String title, IconData icon, String section) {
+  Widget _buildMenuItem(BuildContext context, WidgetRef ref, String title, IconData icon, String section, [String? scope]) {
     final currentSection = ref.watch(settingsSectionProvider);
     final isSelected = currentSection == section;
     
@@ -358,6 +354,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           return const Color(0xFF4CAF50); // 緑
         case 'font':
           return const Color(0xFF2196F3); // 青
+        case 'ui_customization':
+          return const Color(0xFF673AB7); // ディープパープル
         case 'grid':
           return const Color(0xFFFF9800); // オレンジ
         case 'card':
@@ -385,14 +383,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     
     final iconColor = getIconColor();
     
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: isSelected ? iconColor.withOpacity(0.1) : null,
-        borderRadius: BorderRadius.circular(8),
-        border: isSelected ? Border.all(color: iconColor.withOpacity(0.3), width: 1) : null,
-      ),
-      child: ListTile(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), // 縦のマージンを増やす
+        decoration: BoxDecoration(
+          color: isSelected ? iconColor.withOpacity(0.15) : null, // 選択時の背景色を少し濃く
+          borderRadius: BorderRadius.circular(12), // 角丸を大きく
+          border: isSelected ? Border.all(color: iconColor.withOpacity(0.4), width: 1.5) : null, // 選択時の枠線を太く
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: iconColor.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ] : null,
+        ),
+        child: ListTile(
         leading: icon.fontFamily == 'FontAwesome'
           ? FaIcon(
               icon,
@@ -404,22 +413,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           color: isSelected ? iconColor : iconColor.withOpacity(0.7),
           size: 20,
         ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color: isSelected ? iconColor : Theme.of(context).colorScheme.onSurface,
-            fontSize: 14,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? iconColor : Theme.of(context).colorScheme.onSurface,
+                fontSize: 14,
+              ),
+            ),
+            if (scope != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                scope,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isSelected 
+                    ? iconColor.withOpacity(0.8)
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ],
         ),
         selected: isSelected,
         onTap: () {
           ref.read(settingsSectionProvider.notifier).state = section;
         },
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12), // 角丸を大きく
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // パディングを増やす
+        ),
       ),
     );
   }
@@ -439,9 +468,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     switch (currentSection) {
       case 'theme':
         return _buildThemeSection(context, ref, currentDarkMode, currentAccentColor);
-      case 'font':
-        return _buildFontSection(context, ref, currentFontSize, settingsState, settingsNotifier);
-      case 'grid':
+        case 'font':
+          return _buildFontSection(context, ref, currentFontSize, settingsState, settingsNotifier);
+        case 'ui_customization':
+          return _buildUICustomizationSection(context, ref);
+        case 'grid':
         return _buildGridSection(ref, layoutSettings);
       case 'card':
         return _buildCardSection(ref, layoutSettings);
@@ -481,8 +512,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: const Text('ダークモード'),
                   subtitle: const Text('ダークテーマを使用'),
                   value: currentDarkMode,
-                  onChanged: (value) {
+                  onChanged: (value) async {
                     ref.read(darkModeProvider.notifier).state = value;
+                    await SettingsService.instance.setDarkMode(value);
                   },
                 ),
                 
@@ -546,8 +578,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final isSelected = color == currentColor;
         
         return InkWell(
-          onTap: () {
+          onTap: () async {
             ref.read(accentColorProvider.notifier).state = color;
+            await SettingsService.instance.setAccentColor(color);
           },
           child: Container(
             decoration: BoxDecoration(
@@ -624,11 +657,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           child: Slider(
             value: colorIntensity,
-            min: 0.3,
-            max: 2.0,
-            divisions: 17,
-            onChanged: (value) {
+            min: 0.5,
+            max: 1.5,
+            divisions: 20,
+            onChanged: (value) async {
               ref.read(colorIntensityProvider.notifier).state = value;
+              await SettingsService.instance.setColorIntensity(value);
             },
           ),
         ),
@@ -686,11 +720,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           child: Slider(
             value: colorContrast,
-            min: 0.5,
-            max: 2.0,
-            divisions: 15,
-            onChanged: (value) {
+            min: 0.7,
+            max: 1.5,
+            divisions: 16,
+            onChanged: (value) async {
               ref.read(colorContrastProvider.notifier).state = value;
+              await SettingsService.instance.setColorContrast(value);
             },
           ),
         ),
@@ -710,23 +745,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Color _getAdjustedColor(int baseColor, double intensity, double contrast) {
     final color = Color(baseColor);
     
-    // 濃淡調整
-    final adjustedColor = Color.fromARGB(
-      color.alpha,
-      (color.red * intensity).clamp(0, 255).round(),
-      (color.green * intensity).clamp(0, 255).round(),
-      (color.blue * intensity).clamp(0, 255).round(),
-    );
+    // HSL色空間に変換
+    final hsl = HSLColor.fromColor(color);
     
-    // コントラスト調整
-    final contrastColor = Color.fromARGB(
-      adjustedColor.alpha,
-      ((adjustedColor.red - 128) * contrast + 128).clamp(0, 255).round(),
-      ((adjustedColor.green - 128) * contrast + 128).clamp(0, 255).round(),
-      ((adjustedColor.blue - 128) * contrast + 128).clamp(0, 255).round(),
-    );
+    // 濃淡調整: 明度を調整（0.5〜1.5の範囲で0.2〜0.8の明度にマッピング）
+    final adjustedLightness = (0.2 + (intensity - 0.5) * 0.6).clamp(0.1, 0.9);
     
-    return contrastColor;
+    // コントラスト調整: 彩度を調整（0.7〜1.5の範囲で0.3〜1.0の彩度にマッピング）
+    final adjustedSaturation = (0.3 + (contrast - 0.7) * 0.875).clamp(0.1, 1.0);
+    
+    // 調整された色を返す
+    return HSLColor.fromAHSL(
+      color.alpha / 255.0,
+      hsl.hue,
+      adjustedSaturation,
+      adjustedLightness,
+    ).toColor();
   }
 
   // 背景色に適したコントラスト色を取得
@@ -1027,6 +1061,722 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  /// UIカスタマイズセクションを構築
+  Widget _buildUICustomizationSection(BuildContext context, WidgetRef ref) {
+    final uiState = ref.watch(uiCustomizationProvider);
+    final uiNotifier = ref.read(uiCustomizationProvider.notifier);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('UIカスタマイズ', Icons.tune),
+        const SizedBox(height: 16),
+        
+        // リアルタイムプレビューセクション（固定表示）
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.visibility,
+                      color: Theme.of(context).primaryColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'リアルタイムプレビュー',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'ライブ',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildPreviewSection(context, uiState),
+                const SizedBox(height: 12),
+                // 現在の設定値を表示
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '角丸: ${uiState.cardBorderRadius.toStringAsFixed(1)}px | '
+                          '影: ${(uiState.shadowIntensity * 100).toStringAsFixed(0)}% | '
+                          'パディング: ${uiState.cardPadding.toStringAsFixed(1)}px',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // 設定項目をスクロール可能なエリアに配置
+        SizedBox(
+          height: 500, // 固定の高さを設定（プレビューを見ながら設定できる高さ）
+          child: Scrollbar(
+            thumbVisibility: true,
+            trackVisibility: true,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+        
+        // カード設定
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.view_agenda,
+                      color: const Color(0xFF9C27B0),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'カード設定',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF9C27B0).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF9C27B0).withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        'リンク・タスク画面',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: const Color(0xFF9C27B0),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'カードの見た目と動作を調整します。角丸半径、影の強さ、パディングを変更できます。',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // カードの角丸半径
+                _buildSliderSetting(
+                  '角丸半径: ${uiState.cardBorderRadius.toStringAsFixed(1)}px',
+                  uiState.cardBorderRadius,
+                  4.0,
+                  32.0,
+                  (value) => uiNotifier.setCardBorderRadius(value),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // カードの影の強さ
+                _buildSliderSetting(
+                  '影の強さ: ${uiState.cardElevation.toStringAsFixed(1)}',
+                  uiState.cardElevation,
+                  0.0,
+                  8.0,
+                  (value) => uiNotifier.setCardElevation(value),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // カードのパディング
+                _buildSliderSetting(
+                  'パディング: ${uiState.cardPadding.toStringAsFixed(1)}px',
+                  uiState.cardPadding,
+                  8.0,
+                  32.0,
+                  (value) => uiNotifier.setCardPadding(value),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // ボタン設定
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.touch_app,
+                      color: const Color(0xFF2196F3),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'ボタン設定',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2196F3).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF2196F3).withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        '全画面共通',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: const Color(0xFF2196F3),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'ボタンの見た目を調整します。角丸半径と影の強さを変更できます。',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // ボタンの角丸半径
+                _buildSliderSetting(
+                  '角丸半径: ${uiState.buttonBorderRadius.toStringAsFixed(1)}px',
+                  uiState.buttonBorderRadius,
+                  4.0,
+                  24.0,
+                  (value) => uiNotifier.setButtonBorderRadius(value),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // ボタンの影の強さ
+                _buildSliderSetting(
+                  '影の強さ: ${uiState.buttonElevation.toStringAsFixed(1)}',
+                  uiState.buttonElevation,
+                  0.0,
+                  6.0,
+                  (value) => uiNotifier.setButtonElevation(value),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // 入力フィールド設定
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.edit,
+                      color: const Color(0xFF4CAF50),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '入力フィールド設定',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        '全画面共通',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: const Color(0xFF4CAF50),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'テキスト入力欄の見た目を調整します。角丸半径と枠線の太さを変更できます。',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // 入力フィールドの角丸半径
+                _buildSliderSetting(
+                  '角丸半径: ${uiState.inputBorderRadius.toStringAsFixed(1)}px',
+                  uiState.inputBorderRadius,
+                  4.0,
+                  24.0,
+                  (value) => uiNotifier.setInputBorderRadius(value),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 入力フィールドの枠線の太さ
+                _buildSliderSetting(
+                  '枠線の太さ: ${uiState.inputBorderWidth.toStringAsFixed(1)}px',
+                  uiState.inputBorderWidth,
+                  0.5,
+                  4.0,
+                  (value) => uiNotifier.setInputBorderWidth(value),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // アニメーション・エフェクト設定
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'アニメーション・エフェクト設定',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // アニメーションの持続時間
+                _buildSliderSetting(
+                  'アニメーション時間: ${uiState.animationDuration}ms',
+                  uiState.animationDuration.toDouble(),
+                  100.0,
+                  1000.0,
+                  (value) => uiNotifier.setAnimationDuration(value.round()),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // ホバー効果の強さ
+                _buildSliderSetting(
+                  'ホバー効果: ${(uiState.hoverEffectIntensity * 100).toStringAsFixed(0)}%',
+                  uiState.hoverEffectIntensity,
+                  0.0,
+                  0.3,
+                  (value) => uiNotifier.setHoverEffectIntensity(value),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 影の強さ
+                _buildSliderSetting(
+                  '影の強さ: ${(uiState.shadowIntensity * 100).toStringAsFixed(0)}%',
+                  uiState.shadowIntensity,
+                  0.0,
+                  0.5,
+                  (value) => uiNotifier.setShadowIntensity(value),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // グラデーションの強さ
+                _buildSliderSetting(
+                  'グラデーション: ${(uiState.gradientIntensity * 100).toStringAsFixed(0)}%',
+                  uiState.gradientIntensity,
+                  0.0,
+                  0.2,
+                  (value) => uiNotifier.setGradientIntensity(value),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // 全般設定
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '全般設定',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // UI密度
+                _buildSliderSetting(
+                  'UI密度: ${(uiState.uiDensity * 100).toStringAsFixed(0)}%',
+                  uiState.uiDensity,
+                  0.5,
+                  2.0,
+                  (value) => uiNotifier.setUiDensity(value),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // アイコンサイズ
+                _buildSliderSetting(
+                  'アイコンサイズ: ${uiState.iconSize.toStringAsFixed(1)}px',
+                  uiState.iconSize,
+                  16.0,
+                  48.0,
+                  (value) => uiNotifier.setIconSize(value),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 要素間のスペーシング
+                _buildSliderSetting(
+                  'スペーシング: ${uiState.spacing.toStringAsFixed(1)}px',
+                  uiState.spacing,
+                  4.0,
+                  24.0,
+                  (value) => uiNotifier.setSpacing(value),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 24),
+        
+        // リセットボタン
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => UnifiedDialog(
+                      title: '設定をリセット',
+                      icon: Icons.restore,
+                      iconColor: Colors.orange,
+                      content: const Text('すべてのUI設定をデフォルト値にリセットしますか？\nこの操作は取り消せません。'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('キャンセル'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('リセット'),
+                        ),
+                      ],
+                    ),
+                  );
+                  
+                  if (confirmed == true) {
+                    await uiNotifier.resetAllSettings();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('UI設定をリセットしました'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.restore),
+                label: const Text('設定をリセット'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// プレビューセクションを構築
+  Widget _buildPreviewSection(BuildContext context, UICustomizationState uiState) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDarkMode 
+          ? Theme.of(context).colorScheme.surfaceContainerHighest
+          : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(uiState.cardBorderRadius),
+        border: Border.all(
+          color: isDarkMode 
+            ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+            : Colors.grey.shade300,
+        ),
+      ),
+      child: Column(
+        children: [
+          // カードプレビュー
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(uiState.cardPadding),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(uiState.cardBorderRadius),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(uiState.shadowIntensity),
+                  blurRadius: uiState.cardElevation * 4,
+                  offset: Offset(0, uiState.cardElevation * 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'サンプルカード',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'これはカードのプレビューです。設定を変更するとリアルタイムで反映されます。',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                
+                // ボタンプレビュー
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(uiState.buttonBorderRadius),
+                        ),
+                        elevation: uiState.buttonElevation,
+                      ),
+                      child: const Text('サンプルボタン'),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton(
+                      onPressed: () {},
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(uiState.buttonBorderRadius),
+                        ),
+                        side: BorderSide(
+                          width: uiState.inputBorderWidth,
+                          color: isDarkMode 
+                            ? Theme.of(context).colorScheme.outline.withOpacity(0.5)
+                            : Colors.grey.shade400,
+                        ),
+                      ),
+                      child: const Text('アウトラインボタン'),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // 入力フィールドプレビュー
+                TextFormField(
+                  decoration: InputDecoration(
+                    hintText: 'サンプル入力フィールド',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(uiState.inputBorderRadius),
+                      borderSide: BorderSide(
+                        width: uiState.inputBorderWidth,
+                        color: isDarkMode 
+                          ? Theme.of(context).colorScheme.outline.withOpacity(0.5)
+                          : Colors.grey.shade400,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(uiState.inputBorderRadius),
+                      borderSide: BorderSide(
+                        width: uiState.inputBorderWidth,
+                        color: isDarkMode 
+                          ? Theme.of(context).colorScheme.outline.withOpacity(0.5)
+                          : Colors.grey.shade400,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(uiState.inputBorderRadius),
+                      borderSide: BorderSide(
+                        width: uiState.inputBorderWidth,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// スライダー設定ウィジェットを構築
+  Widget _buildSliderSetting(
+    String label,
+    double value,
+    double min,
+    double max,
+    Function(double) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).primaryColor.withOpacity(0.3),
+                ),
+              ),
+              child: Text(
+                value.toStringAsFixed(1),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: Theme.of(context).primaryColor,
+            inactiveTrackColor: Theme.of(context).primaryColor.withOpacity(0.3),
+            thumbColor: Theme.of(context).primaryColor,
+            overlayColor: Theme.of(context).primaryColor.withOpacity(0.2),
+            valueIndicatorColor: Theme.of(context).primaryColor,
+            valueIndicatorTextStyle: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: ((max - min) / 0.1).round(),
+            onChanged: onChanged,
+            label: value.toStringAsFixed(1),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFontSection(BuildContext context, WidgetRef ref, double currentFontSize, SettingsState settingsState, SettingsNotifier settingsNotifier) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1047,8 +1797,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   max: 2.0,
                   divisions: 15,
                   label: '${(currentFontSize * 100).round()}%',
-                  onChanged: (value) {
+                  onChanged: (value) async {
                     ref.read(fontSizeProvider.notifier).state = value;
+                    await SettingsService.instance.setFontSize(value);
                   },
                 ),
                 
@@ -1391,168 +2142,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildBackupSection(SettingsState state, SettingsNotifier notifier) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('バックアップ設定', Icons.backup),
-        const SizedBox(height: 16),
-        
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 自動バックアップ設定
-                _buildSwitchWithDescription(
-                  title: '自動バックアップ',
-                  description: '定期的にアプリのデータを自動的にバックアップします。データの損失を防ぎ、他のPCでも同じ設定を利用できます。',
-                  value: state.autoBackup,
-                  onChanged: notifier.setAutoBackup,
-                ),
-                
-                if (state.autoBackup) ...[
-                  const SizedBox(height: 16),
-                  _buildSettingItemWithDescription(
-                    title: 'バックアップ間隔',
-                    value: '${state.backupInterval}日',
-                    description: 'バックアップを実行する間隔を設定します。頻繁にバックアップすると安全性が向上しますが、ストレージ容量を多く使用します。',
-                    slider: Slider(
-                      value: state.backupInterval.toDouble(),
-                      min: 1,
-                      max: 30,
-                      divisions: 29,
-                      label: '${state.backupInterval}日',
-                      onChanged: (value) => notifier.setBackupInterval(value.round()),
-                    ),
-                  ),
-                ],
-                
-                const SizedBox(height: 16),
-                
-                // 手動バックアップとフォルダを開くボタン
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: [
-                    ElevatedButton.icon(
-                        icon: const Icon(Icons.backup),
-                        label: const Text('手動バックアップ実行'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () async {
-                          try {
-                            // 手動バックアップを実行
-                            final linkRepository = LinkRepository.instance;
-                            
-                            final backupService = BackupService(
-                              linkRepository: linkRepository,
-                              settingsService: ref.read(settingsServiceProvider),
-                            );
-                            final backupFile = await backupService.performManualBackup();
-                            
-                            if (backupFile != null) {
-                              SnackBarService.showSuccess(
-                                context,
-                                '手動バックアップが完了しました: ${backupFile.path}',
-                              );
-                            }
-                          } catch (e) {
-                            SnackBarService.showError(
-                              context,
-                              'バックアップエラー: $e',
-                            );
-                          }
-                        },
-                      ),
-                    
-                    ElevatedButton.icon(
-                        icon: const Icon(Icons.folder_open),
-                        label: const Text('バックアップフォルダを開く'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () async {
-                          try {
-                            final appDocDir = await getApplicationDocumentsDirectory();
-                            final backupDir = Directory('${appDocDir.path}/backups');
-                            
-                            if (await backupDir.exists()) {
-                              // Windowsでエクスプローラーを開く
-                              await Process.run('explorer', [backupDir.path]);
-                            } else {
-                              // フォルダが存在しない場合は作成してから開く
-                              await backupDir.create(recursive: true);
-                              await Process.run('explorer', [backupDir.path]);
-                            }
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('フォルダを開けませんでした: $e'),
-                                backgroundColor: Colors.orange,
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                        },
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // バックアップの詳細説明
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.info_outline, color: Colors.blue.shade600, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'バックアップの詳細',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade800,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '• 自動バックアップ: アプリ起動時にチェックし、設定された間隔で実行\n'
-                        '• 保存場所: %APPDATA%/linker_f/backups/\n'
-                        '• ファイル形式: JSON（リンク、タスク、設定を含む）\n'
-                        '• 最大保存数: 10個（古いものは自動削除）\n'
-                        '• 手動バックアップ: 上記の「手動バックアップ実行」ボタンで実行可能\n'
-                        '• 手動エクスポート: 設定画面から「データをエクスポート」で実行可能',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade700,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   /// バックアップフォルダを開く
   Future<void> _openBackupFolder(BuildContext context) async {
@@ -1827,9 +2416,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// エクスポート処理を実行（非同期処理を分離）
   void _executeExport(String type, WidgetRef ref) async {
+    print('=== エクスポート開始 ===');
+    print('type: $type');
+    print('====================');
+    
     // グローバルなNavigatorKeyを使用してダイアログを表示
-    final globalContext = navigatorKey.currentContext;
-    if (globalContext == null) return;
+    final keyboardNavigatorKey = KeyboardShortcutService.getNavigatorKey();
+    final globalContext = keyboardNavigatorKey?.currentContext;
+    if (globalContext == null) {
+      print('エラー: globalContextがnullです');
+      print('keyboardNavigatorKey: $keyboardNavigatorKey');
+      print('keyboardNavigatorKey?.currentState: ${keyboardNavigatorKey?.currentState}');
+      return;
+    }
 
     // ローディングダイアログを表示
     showDialog(
@@ -1841,6 +2440,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     try {
+      print('=== IntegratedBackupService作成開始 ===');
+      
       // IntegratedBackupServiceを使用してエクスポートを実行
       final backupService = IntegratedBackupService(
         linkRepository: ref.read(linkRepositoryProvider),
@@ -1848,11 +2449,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         taskViewModel: ref.read(taskViewModelProvider.notifier),
         ref: ref,
       );
+      
+      print('=== IntegratedBackupService作成完了 ===');
+      print('=== エクスポート実行開始 ===');
+      print('onlyLinks: ${type == 'links'}');
+      print('onlyTasks: ${type == 'tasks'}');
 
       final filePath = await backupService.exportData(
         onlyLinks: type == 'links',
         onlyTasks: type == 'tasks',
       );
+      
+      print('=== エクスポート実行完了 ===');
+      print('filePath: $filePath');
 
       // ローディングを閉じる
       Navigator.of(globalContext).pop();
@@ -1878,6 +2487,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
     } catch (e) {
+      print('=== エクスポートエラー ===');
+      print('エラー: $e');
+      print('スタックトレース: ${StackTrace.current}');
+      print('=======================');
+      
       // ローディングを閉じる
       Navigator.of(globalContext).pop();
       
@@ -1951,7 +2565,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (!mounted) return;
       
       // グローバルなNavigatorKeyを使用
-      final globalContext = navigatorKey.currentContext;
+      final keyboardNavigatorKey = KeyboardShortcutService.getNavigatorKey();
+      final globalContext = keyboardNavigatorKey?.currentContext;
       if (globalContext != null) {
         showDialog(
           context: globalContext,
@@ -2154,105 +2769,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Widget _buildExportSection(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('エクスポート/インポート', Icons.import_export),
-        const SizedBox(height: 16),
-        
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500),
-            child: Card(
-          child: Padding(
-                padding: const EdgeInsets.all(24),
-            child: Column(
-                  mainAxisSize: MainAxisSize.min,
-              children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.upload, size: 24),
-                        label: const Text('データをエクスポート', style: TextStyle(fontSize: 16)),
-                  onPressed: () => _exportData(context, ref),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.download, size: 24),
-                        label: const Text('データをインポート', style: TextStyle(fontSize: 16)),
-                  onPressed: () => _importData(context, ref),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                  'エクスポート/インポート機能',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Theme.of(context).colorScheme.onSurface,
-                ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                  '• メモあり/なしを選択可能\n'
-                  '• アプリの現在のディレクトリに保存\n'
-                  '• 設定情報も含めてエクスポート\n'
-                  '• ファイルダイアログでインポート',
-                            style: TextStyle(
-                              fontSize: 14, 
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Future<void> _exportData(BuildContext context, WidgetRef ref) async {
     // メモを含めるかどうかの選択ダイアログ
@@ -2531,6 +3047,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
 
+
   Widget _buildResetSection(BuildContext context, SettingsNotifier notifier, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2590,6 +3107,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
+                        icon: const Icon(Icons.tune, size: 24),
+                        label: const Text('UI設定をリセット', style: TextStyle(fontSize: 16)),
+                        onPressed: () async {
+                          final uiNotifier = ref.read(uiCustomizationProvider.notifier);
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => UnifiedDialog(
+                              title: 'UI設定をリセット',
+                              icon: Icons.warning_amber_rounded,
+                              iconColor: Colors.orange,
+                              content: const Text(
+                                'すべてのUIカスタマイズ設定をデフォルト値にリセットします。\n\n'
+                                'この操作は取り消せません。\n'
+                                '本当に実行しますか？',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('キャンセル'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orange,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('リセット実行'),
+                                ),
+                              ],
+                            ),
+                          );
+                          
+                          if (confirmed == true) {
+                            await uiNotifier.resetAllSettings();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('UI設定をリセットしました'),
+                                  backgroundColor: Colors.green,
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
                         icon: const Icon(Icons.help_outline, size: 24),
                         label: const Text('リセット機能の詳細', style: TextStyle(fontSize: 16)),
                         onPressed: () => _openResetDetailsGuide(context),
@@ -2631,6 +3209,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Text(
                             '• 設定リセット: テーマ、通知、連携設定など\n'
                             '• レイアウトリセット: グリッドサイズ、カード設定など\n'
+                            '• UI設定リセット: カード、ボタン、入力フィールドのカスタマイズ設定\n'
                             '• データは保持: リンク、タスク、メモは削除されません\n'
                             '• 詳細は「リセット機能の詳細」ボタンで確認',
                             style: TextStyle(
@@ -3135,16 +3714,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     
                     // 同期間隔設定
                     _buildSliderSetting(
-                      title: '同期間隔',
-                      description: 'Google Calendarとの同期間隔を設定します',
-                      value: settingsState.googleCalendarSyncInterval.toDouble(),
-                      min: 15,
-                      max: 240,
-                      divisions: 15,
-                      onChanged: (value) {
+                      '同期間隔: ${settingsState.googleCalendarSyncInterval}分',
+                      settingsState.googleCalendarSyncInterval.toDouble(),
+                      15,
+                      240,
+                      (value) {
                         settingsNotifier.setGoogleCalendarSyncInterval(value.round());
                       },
-                      formatValue: (value) => '${value.round()}分',
                     ),
                   ],
                   
@@ -3355,79 +3931,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildSliderSetting({
-    required String title,
-    required String description,
-    required double value,
-    required double min,
-    required double max,
-    required int divisions,
-    required ValueChanged<double> onChanged,
-    required String Function(double) formatValue,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.3)
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.blue.shade600,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  description,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          divisions: divisions,
-          onChanged: onChanged,
-          label: formatValue(value),
-        ),
-        Center(
-          child: Text(
-            formatValue(value),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.blue.shade700,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   /// 同期状態表示セクション
   Widget _buildSyncStatusSection(WidgetRef ref) {

@@ -17,7 +17,10 @@ class EmailContactService {
     if (_box == null) {
       _box = await Hive.openBox<EmailContact>(_boxName);
       
-      // 初回起動時にデフォルト連絡先を追加
+      // 既存のサンプル連絡先を削除
+      await _removeSampleContacts();
+      
+      // 初回起動時にデフォルト連絡先を追加（現在は空）
       if (_box!.isEmpty) {
         await _initializeDefaultContacts();
       }
@@ -28,31 +31,30 @@ class EmailContactService {
     }
   }
   
-  /// デフォルトの連絡先を初期化
+  /// デフォルトの連絡先を初期化（サンプル連絡先は削除）
   Future<void> _initializeDefaultContacts() async {
-    final defaultContacts = [
-      EmailContact(
-        id: const Uuid().v4(),
-        name: 'サンプル連絡先1',
-        email: 'contact1@example.com',
-        organization: 'サンプル会社',
-        createdAt: DateTime.now(),
-        lastUsedAt: DateTime.now(),
-        useCount: 0,
-      ),
-      EmailContact(
-        id: const Uuid().v4(),
-        name: 'サンプル連絡先2',
-        email: 'contact2@example.com',
-        organization: 'テスト会社',
-        createdAt: DateTime.now(),
-        lastUsedAt: DateTime.now(),
-        useCount: 0,
-      ),
-    ];
+    // 既存のサンプル連絡先を削除
+    await _removeSampleContacts();
     
-    for (final contact in defaultContacts) {
-      await _box!.put(contact.id, contact);
+    if (kDebugMode) {
+      print('デフォルト連絡先の初期化をスキップ（サンプル連絡先削除）');
+    }
+  }
+
+  /// サンプル連絡先を削除
+  Future<void> _removeSampleContacts() async {
+    if (_box == null) return;
+    
+    final sampleContacts = _box!.values.where((contact) => 
+      contact.name.contains('サンプル') || 
+      contact.email.contains('example.com')
+    ).toList();
+    
+    for (final contact in sampleContacts) {
+      await _box!.delete(contact.id);
+      if (kDebugMode) {
+        print('サンプル連絡先を削除: ${contact.name}');
+      }
     }
   }
 

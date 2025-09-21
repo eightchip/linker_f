@@ -29,6 +29,7 @@ import '../services/mail_service.dart';
 import '../models/sent_mail_log.dart';
 import '../services/keyboard_shortcut_service.dart';
 import '../viewmodels/font_size_provider.dart';
+import '../viewmodels/ui_customization_provider.dart';
 import '../widgets/unified_dialog.dart';
 import '../widgets/app_button_styles.dart';
 import '../widgets/app_spacing.dart';
@@ -49,6 +50,28 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   bool _showFilters = false; // フィルター表示/非表示の切り替え
   final FocusNode _appBarMenuFocusNode = FocusNode();
   late FocusNode _searchFocusNode;
+
+  // 色の濃淡とコントラストを調整した色を取得
+  Color _getAdjustedColor(int baseColor, double intensity, double contrast) {
+    final color = Color(baseColor);
+    
+    // HSL色空間に変換
+    final hsl = HSLColor.fromColor(color);
+    
+    // 濃淡調整: 明度を調整（0.5〜1.5の範囲で0.2〜0.8の明度にマッピング）
+    final adjustedLightness = (0.2 + (intensity - 0.5) * 0.6).clamp(0.1, 0.9);
+    
+    // コントラスト調整: 彩度を調整（0.7〜1.5の範囲で0.3〜1.0の彩度にマッピング）
+    final adjustedSaturation = (0.3 + (contrast - 0.7) * 0.875).clamp(0.1, 1.0);
+    
+    // 調整された色を返す
+    return HSLColor.fromAHSL(
+      color.alpha / 255.0,
+      hsl.hue,
+      adjustedSaturation,
+      adjustedLightness,
+    ).toColor();
+  }
   
   // フォーカス
   final FocusNode _rootKeyFocus = FocusNode(debugLabel: 'rootKeys');
@@ -261,6 +284,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     final tasks = ref.watch(taskViewModelProvider);
     final taskViewModel = ref.read(taskViewModelProvider.notifier);
     final statistics = taskViewModel.getTaskStatistics();
+    
+    // アクセントカラーの調整色を取得
+    final accentColor = ref.watch(accentColorProvider);
+    final colorIntensity = ref.watch(colorIntensityProvider);
+    final colorContrast = ref.watch(colorContrastProvider);
+    final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
 
     // フィルタリング
     final filteredTasks = _getFilteredTasks(tasks);
@@ -277,10 +306,29 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           _handleKeyEvent(e);
         },
         child: Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.98),
           appBar: AppBar(
             title: _isSelectionMode 
               ? Text('${_selectedTaskIds.length}件選択中')
-              : const Text('タスク管理'),
+              : Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      ),
+                      child: const Icon(
+                        Icons.task_alt,
+                        color: Colors.green,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('タスク管理'),
+                  ],
+                ),
             leading: _isSelectionMode 
               ? IconButton(
                   onPressed: _toggleSelectionMode,
@@ -357,6 +405,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     Icon(Icons.download, color: Colors.green),
                     SizedBox(width: 8),
                     Text('CSV出力'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Text('設定'),
                   ],
                 ),
               ),
@@ -957,35 +1015,49 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     
     final isHovered = _hoveredTaskIds.contains(task.id);
     
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hoveredTaskIds.add(task.id)),
-      onExit: (_) => setState(() => _hoveredTaskIds.remove(task.id)),
-      child: AnimatedContainer(
+    // UIカスタマイズ設定を取得
+    final uiState = ref.watch(uiCustomizationProvider);
+    
+    // アクセントカラーの調整色を取得
+    final accentColor = ref.watch(accentColorProvider);
+    final colorIntensity = ref.watch(colorIntensityProvider);
+    final colorContrast = ref.watch(colorContrastProvider);
+    final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
+    
+    return Tooltip(
+      message: 'タスクをクリックして編集',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hoveredTaskIds.add(task.id)),
+        onExit: (_) => setState(() => _hoveredTaskIds.remove(task.id)),
+        child: AnimatedContainer(
         key: ValueKey(task.id),
-        duration: const Duration(milliseconds: 300), // アニメーション時間を延長
+        duration: Duration(milliseconds: uiState.animationDuration), // UIカスタマイズのアニメーション時間
         curve: Curves.easeOutCubic, // より滑らかなカーブ
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        margin: EdgeInsets.symmetric(
+          horizontal: uiState.spacing * 1.5, 
+          vertical: uiState.spacing
+        ), // UIカスタマイズのスペーシング
         decoration: BoxDecoration(
           color: _isSelectionMode && isSelected 
             ? Theme.of(context).primaryColor.withValues(alpha: 0.15) 
             : isHovered
-              ? Theme.of(context).primaryColor.withValues(alpha: 0.12) // ホバー時の背景色をより明るく
-              : Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+              ? Theme.of(context).primaryColor.withValues(alpha: uiState.hoverEffectIntensity) // UIカスタマイズのホバー効果
+              : Theme.of(context).colorScheme.surface, // 元のカード背景色に戻す
+          borderRadius: BorderRadius.circular(uiState.cardBorderRadius), // UIカスタマイズの角丸半径
           border: Border.all(
             color: _isSelectionMode && isSelected
               ? Theme.of(context).primaryColor.withValues(alpha: 0.6)
               : isHovered
                 ? Theme.of(context).primaryColor.withValues(alpha: 0.8)
-                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.4), // 通常時の枠線を濃く
-            width: _isSelectionMode && isSelected ? 3 : isHovered ? 4 : 2, // ホバー時の枠線を太く
+                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
+            width: _isSelectionMode && isSelected ? 3 : isHovered ? 4 : 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15), // 通常時のシャドウを濃く
-              blurRadius: isHovered ? 20 : 10, // ホバー時のシャドウをさらに強化
-              offset: Offset(0, isHovered ? 8 : 3), // ホバー時のオフセットを増加
+              color: Theme.of(context).colorScheme.shadow.withValues(alpha: uiState.shadowIntensity), // UIカスタマイズの影の強さ
+              blurRadius: isHovered ? uiState.cardElevation * 8 : uiState.cardElevation * 4, // UIカスタマイズの影の強さ
+              offset: Offset(0, isHovered ? uiState.cardElevation * 4 : uiState.cardElevation * 2),
             ),
             if (_isSelectionMode && isSelected)
               BoxShadow(
@@ -995,16 +1067,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               ),
             if (isHovered && !_isSelectionMode)
               BoxShadow(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.25), // ホバー時のシャドウをさらに強化
-                blurRadius: 24,
-                offset: const Offset(0, 10),
+                color: Theme.of(context).primaryColor.withValues(alpha: uiState.shadowIntensity * 1.5),
+                blurRadius: uiState.cardElevation * 12,
+                offset: Offset(0, uiState.cardElevation * 5),
               ),
             // 追加のグロー効果
             if (isHovered && !_isSelectionMode)
               BoxShadow(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                blurRadius: 32,
-                offset: const Offset(0, 12),
+                color: Theme.of(context).primaryColor.withValues(alpha: uiState.gradientIntensity),
+                blurRadius: uiState.cardElevation * 16,
+                offset: Offset(0, uiState.cardElevation * 6),
               ),
           ],
         ),
@@ -1015,6 +1087,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           ],
         ),
       ),
+     ),
     );
   }
   
@@ -1027,8 +1100,20 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             (task.description != null && task.description!.isNotEmpty) ||
             task.relatedLinkIds.isNotEmpty;
         
+        // UIカスタマイズ設定を取得
+        final uiState = ref.watch(uiCustomizationProvider);
+        
+        // アクセントカラーの調整色を取得
+        final accentColor = ref.watch(accentColorProvider);
+        final colorIntensity = ref.watch(colorIntensityProvider);
+        final colorContrast = ref.watch(colorContrastProvider);
+        final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
+        
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: uiState.cardPadding, 
+            vertical: uiState.cardPadding * 0.75
+          ), // UIカスタマイズのパディング
           leading: _isSelectionMode 
             ? Checkbox(
                 value: isSelected,
@@ -1519,6 +1604,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         break;
       case 'export':
         _exportTasksToCsv();
+        break;
+      case 'settings':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SettingsScreen(),
+          ),
+        );
         break;
       case 'test_notification':
         _showTestNotification();

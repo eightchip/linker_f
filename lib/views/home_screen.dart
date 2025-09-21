@@ -154,6 +154,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _searchQuery = '';
   LinkType? _selectedLinkTypeFilter; // リンクタイプフィルター
   bool _tutorialShown = false;
+
+  // 色の濃淡とコントラストを調整した色を取得
+  Color _getAdjustedColor(int baseColor, double intensity, double contrast) {
+    final color = Color(baseColor);
+    
+    // HSL色空間に変換
+    final hsl = HSLColor.fromColor(color);
+    
+    // 濃淡調整: 明度を調整（0.5〜1.5の範囲で0.2〜0.8の明度にマッピング）
+    final adjustedLightness = (0.2 + (intensity - 0.5) * 0.6).clamp(0.1, 0.9);
+    
+    // コントラスト調整: 彩度を調整（0.7〜1.5の範囲で0.3〜1.0の彩度にマッピング）
+    final adjustedSaturation = (0.3 + (contrast - 0.7) * 0.875).clamp(0.1, 1.0);
+    
+    // 調整された色を返す
+    return HSLColor.fromAHSL(
+      color.alpha / 255.0,
+      hsl.hue,
+      adjustedSaturation,
+      adjustedLightness,
+    ).toColor();
+  }
   List<String> _availableTags = []; // 利用可能なタグ一覧
   // 表示モード管理
 
@@ -550,6 +572,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final error = linkState.error;
     final isDarkMode = ref.watch(darkModeProvider);
     final accentColor = ref.watch(accentColorProvider);
+    final colorIntensity = ref.watch(colorIntensityProvider);
+    final colorContrast = ref.watch(colorContrastProvider);
+    
+    // 調整されたアクセントカラーを計算
+    final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
     
     // 検索フィルタ適用
     List<Group> displayGroups = groups;
@@ -626,11 +653,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onKeyEvent: _handleShortcut,
             autofocus: true,
             child: Scaffold(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
               appBar: AppBar(
-                title: Text(
-                  'Link Navigator',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
+                title: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                      ),
+                      child: const Icon(
+                        Icons.link,
+                        color: Colors.blue,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Link Navigator',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
+                    ),
+                  ],
                 ),
                 backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
                 foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
@@ -872,7 +917,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               FloatingActionButton(
                                 mini: true,
                                 heroTag: 'jumpToTop',
-                                backgroundColor: Color(accentColor).withValues(alpha: 0.85),
+                                backgroundColor: adjustedAccentColor.withValues(alpha: 0.85),
                                 foregroundColor: Colors.white,
                                 onPressed: () {
                                   if (_scrollController.hasClients) {
@@ -889,7 +934,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               FloatingActionButton(
                                 mini: true,
                                 heroTag: 'jumpToBottom',
-                                backgroundColor: Color(accentColor).withValues(alpha: 0.85),
+                                backgroundColor: adjustedAccentColor.withValues(alpha: 0.85),
                                 foregroundColor: Colors.white,
                                 onPressed: () {
                                   if (_scrollController.hasClients) {
@@ -1802,6 +1847,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       .toList();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = ref.read(accentColorProvider);
+    final colorIntensity = ref.read(colorIntensityProvider);
+    final colorContrast = ref.read(colorContrastProvider);
+    final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
     final memoControllers = <String, TextEditingController>{};
     for (final entry in memoLinks) {
       memoControllers[entry.value.id] = TextEditingController(text: entry.value.memo ?? '');
@@ -1832,7 +1880,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               width: 6,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: Color(accentColor),
+                                color: adjustedAccentColor,
                                 borderRadius: BorderRadius.circular(3),
                               ),
                             ),
@@ -1870,7 +1918,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   borderSide: BorderSide(
-                                    color: Color(accentColor).withValues(alpha: isDark ? 0.7 : 0.5),
+                                    color: adjustedAccentColor.withValues(alpha: isDark ? 0.7 : 0.5),
                                     width: 2,
                                   ),
                                 ),
