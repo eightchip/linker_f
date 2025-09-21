@@ -3258,11 +3258,11 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
           ],
         ),
         children: [
-          // デバッグ用: グループのアイテム数を表示
+          // グループのアイテム数を表示
           Container(
             padding: const EdgeInsets.all(8),
             color: Colors.yellow.withValues(alpha: 0.3),
-            child: Text('デバッグ: ${group.items.length}個のリンク'),
+            child: Text('リンク一覧: ${group.items.length}個'),
           ),
           // 実際のリンクアイテム
           ...group.items.map((link) => _buildLinkItem(link, theme)).toList(),
