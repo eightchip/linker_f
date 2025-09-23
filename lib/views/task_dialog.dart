@@ -2196,24 +2196,16 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     
     final enhancedBody = '''
 ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。'}
-
 ────────────────────────────────────────────────────────
-
 【関連タスク情報】
 ${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
 ${subtaskInfo.isNotEmpty ? subtaskInfo : ''}
-
 ${linksInfo.isNotEmpty ? '────────────────────────────────────────────────────────\n\n【関連資料】\n$linksInfo' : ''}
-
 ────────────────────────────────────────────────────────
-
 【メール情報】
 送信日時: $formattedTime
 送信ID: $token
-
 ────────────────────────────────────────────────────────
-
-このメールは Link Navigator タスク管理アプリから送信されました。
 ''';
     
     return enhancedBody;
@@ -2284,21 +2276,29 @@ ${linksInfo.isNotEmpty ? '──────────────────
             // UNCパスの処理
             if (_selectedMailApp == 'outlook') {
               // Outlookではクリック可能なリンクとして表示
-              final fileUrl = 'file://${link.path.replaceAll(r'\', '/')}';
-              linksInfo += '<li><a href="$fileUrl" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">[ネットワーク共有] ${link.path}</small></li>';
+              final encodedPath = Uri.encodeComponent(link.path);
+              final fileUrl1 = 'file:///$encodedPath';
+              final fileUrl2 = 'file://${link.path.replaceAll(r'\', '/')}';
+              linksInfo += '<li style="margin-bottom: 8px;"><a href="$fileUrl1" style="color: #007bff; text-decoration: underline;">${link.label}</a><br>';
+              linksInfo += '<small style="color: #666;">[ネットワーク共有] ${link.path}</small><br>';
+              if (link.path.length > 100) {
+                linksInfo += '<a href="$fileUrl2" style="color: #6c757d; text-decoration: underline; font-size: 11px;">[代替リンク]</a> ';
+              }
+              linksInfo += '<small style="color: #999; font-size: 11px;">※ リンクが機能しない場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください</small></li>';
             } else {
               // Gmailでは説明付きで表示（クリック不可）
-              linksInfo += '<li><strong>${link.label}</strong><br><small style="color: #666;">[ネットワーク共有] ${link.path}</small></li>';
+              linksInfo += '<li style="margin-bottom: 8px;"><strong>${link.label}</strong><br><small style="color: #666;">[ネットワーク共有] ${link.path}</small></li>';
             }
           } else if (link.path.contains(':\\')) {
             // ローカルファイルパスの処理
             if (_selectedMailApp == 'outlook') {
               // Outlookではクリック可能なリンクとして表示
-              final fileUrl = 'file:///${link.path.replaceAll(r'\', '/')}';
-              linksInfo += '<li><a href="$fileUrl" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">[ローカルファイル] ${link.path}</small></li>';
+              final encodedPath = Uri.encodeComponent(link.path);
+              final fileUrl = 'file:///$encodedPath';
+              linksInfo += '<li style="margin-bottom: 8px;"><a href="$fileUrl" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">[ローカルファイル] ${link.path}</small></li>';
             } else {
               // Gmailでは説明付きで表示（クリック不可）
-              linksInfo += '<li><strong>${link.label}</strong><br><small style="color: #666;">[ローカルファイル] ${link.path}</small></li>';
+              linksInfo += '<li style="margin-bottom: 8px;"><strong>${link.label}</strong><br><small style="color: #666;">[ローカルファイル] ${link.path}</small></li>';
             }
           } else {
             // その他のパス
@@ -2316,7 +2316,8 @@ ${linksInfo.isNotEmpty ? '──────────────────
         } else if (_selectedMailApp == 'outlook') {
           linksInfo += '<div style="margin-top: 10px; padding: 8px; background-color: #e8f5e8; border-left: 3px solid #28a745; font-size: 12px; color: #666;">';
           linksInfo += '<strong>📝 注意:</strong> Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。<br>';
-          linksInfo += 'リンクをクリックして直接アクセスできます。';
+          linksInfo += 'リンクをクリックして直接アクセスできます。<br>';
+          linksInfo += '<strong>※ 長いパスでリンクが途中で切れる場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください。</strong>';
           linksInfo += '</div></div>';
         }
       }
