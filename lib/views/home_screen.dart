@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 
 import '../viewmodels/link_viewmodel.dart';
+import '../viewmodels/ui_customization_provider.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../viewmodels/layout_settings_provider.dart';
 import '../models/group.dart';
@@ -658,7 +659,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 title: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(8 * ref.watch(uiDensityProvider)),
                       decoration: BoxDecoration(
                         color: Colors.blue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
@@ -785,7 +786,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         preferredSize: Size.fromHeight(_availableTags.isNotEmpty ? 90.0 : 62.0),
                         child: Container(
                           height: _availableTags.isNotEmpty ? 90.0 : 62.0,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                          padding: EdgeInsets.symmetric(horizontal: 12 * ref.watch(uiDensityProvider), vertical: 2 * ref.watch(uiDensityProvider)),
                           child: Column(
                             children: [
                               // 検索テキストフィールドとラジオボタンを横並びに配置
@@ -1577,12 +1578,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Create your first group to get started',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[500],
-            ),
+          Consumer(
+            builder: (context, ref, child) {
+              final uiDensity = ref.watch(uiDensityProvider);
+              return Text(
+                'Create your first group to get started',
+                style: TextStyle(
+                  fontSize: 16 * uiDensity,
+                  color: Colors.grey[500],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -1896,7 +1902,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 style: TextStyle(
                                   color: isDark ? Colors.white : Colors.black,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 16 * ref.watch(uiDensityProvider),
                                   decoration: TextDecoration.underline,
                                 ),
                               ),

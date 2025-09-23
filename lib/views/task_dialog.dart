@@ -7,6 +7,7 @@ import '../models/task_item.dart';
 import '../models/link_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart'; // Added import for linkViewModelProvider
+import '../viewmodels/ui_customization_provider.dart';
 import '../viewmodels/sub_task_viewmodel.dart';
 import '../models/sub_task.dart';
 import '../services/mail_service.dart';
@@ -518,7 +519,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             child: Container(
           width: 520, // 幅を少し広く
           constraints: const BoxConstraints(maxHeight: 800),
-          padding: const EdgeInsets.all(28), // パディングを増やして余裕のあるレイアウトに
+          padding: EdgeInsets.all(28 * ref.watch(uiDensityProvider)), // パディングを増やして余裕のあるレイアウトに
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(24), // 角丸を大きくしてモダンな印象に
@@ -567,7 +568,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   enableInteractiveSelection: true,
                   style: TextStyle(
                     color: Color(ref.watch(titleTextColorProvider)),
-                    fontSize: 16 * ref.watch(titleFontSizeProvider),
+                    fontSize: 16 * ref.watch(titleFontSizeProvider) * ref.watch(uiDensityProvider),
                     fontFamily: ref.watch(titleFontFamilyProvider).isEmpty 
                         ? null 
                         : ref.watch(titleFontFamilyProvider),

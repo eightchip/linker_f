@@ -871,7 +871,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$fieldName設定', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('$fieldName設定', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16 * ref.watch(uiDensityProvider))),
             const SizedBox(height: 12),
             
             // テキスト色設定

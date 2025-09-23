@@ -313,7 +313,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               : Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(8 * ref.watch(uiDensityProvider)),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
@@ -542,7 +542,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       ? Colors.grey.withValues(alpha: 0.1)
                       : Colors.blue.withValues(alpha: 0.1),
                   foregroundColor: _expandedTaskIds.isEmpty ? Colors.grey : Colors.blue,
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8 * ref.watch(uiDensityProvider)),
                   minimumSize: const Size(32, 32),
                   maximumSize: const Size(32, 32),
                 ),
@@ -3219,7 +3219,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8 * ref.watch(uiDensityProvider)),
               decoration: BoxDecoration(
                 color: _getGroupColor(group).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
@@ -3260,7 +3260,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
         children: [
           // グループのアイテム数を表示
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8 * ref.watch(uiDensityProvider)),
             color: Colors.yellow.withValues(alpha: 0.3),
             child: Text('リンク一覧: ${group.items.length}個'),
           ),
@@ -3339,7 +3339,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                     children: [
                       // アイコン（リンク画面と同じロジック）
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(8 * ref.watch(uiDensityProvider)),
                         decoration: BoxDecoration(
                           color: _getLinkIconColor(link).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
@@ -3409,7 +3409,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                       
                       // 選択状態インジケーター
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(8 * ref.watch(uiDensityProvider)),
                         decoration: BoxDecoration(
                           color: isSelected 
                               ? theme.colorScheme.primary
