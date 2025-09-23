@@ -611,11 +611,11 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
                 const SizedBox(height: 16),
                 
-                // 依頼先やメモ（改善版）
+                // 本文
                 TextFormField(
                   controller: _assignedToController,
-                  maxLines: null, // 無制限
-                  minLines: 3, // 最小3行
+                  maxLines: 4, // 最大4行
+                  minLines: 1, // 最小1行
                   textAlignVertical: TextAlignVertical.top,
                   enableInteractiveSelection: true, // カーソル移動改善
                   keyboardType: TextInputType.multiline,
@@ -628,7 +628,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         : ref.watch(memoFontFamilyProvider),
                   ),
                   decoration: InputDecoration(
-                    labelText: '依頼先やメモ',
+                    labelText: '本文',
                     filled: true,
                     fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
@@ -667,7 +667,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
                 const SizedBox(height: 16),
                 
-                // 説明（改善版）
+                // 説明
                 TextFormField(
                   controller: _descriptionController,
                   maxLines: 3,
@@ -681,7 +681,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         : ref.watch(descriptionFontFamilyProvider),
                   ),
                   decoration: InputDecoration(
-                    labelText: '説明',
+                    labelText: '依頼先への説明',
                     filled: true,
                     fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
