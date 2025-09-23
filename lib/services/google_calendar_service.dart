@@ -1361,37 +1361,30 @@ class GoogleCalendarService {
         'totalSubTasksCount': task.totalSubTasksCount.toString(),
       };
       
-      // サブタスクの詳細データを保存
-      if (task.hasSubTasks && task.totalSubTasksCount > 0) {
-        final subtaskDetails = _getSubTaskDetails(task.id);
-        print('=== エクスポート時サブタスク詳細取得 ===');
-        print('タスク: ${task.title}');
-        print('hasSubTasks: ${task.hasSubTasks}');
-        print('totalSubTasksCount: ${task.totalSubTasksCount}');
-        print('取得されたサブタスク数: ${subtaskDetails.length}');
-        
-        if (subtaskDetails.isNotEmpty) {
-          final subtasksJson = subtaskDetails.map((subtask) => {
-            'id': subtask.id,
-            'title': subtask.title,
-            'description': subtask.description ?? '',
-            'isCompleted': subtask.isCompleted,
-            'order': subtask.order,
-          }).toList();
-          createExtendedProps['subtasks'] = jsonEncode(subtasksJson);
-          print('サブタスク詳細をextendedPropertiesに保存: ${subtasksJson.length}件');
-          print('保存されたサブタスクJSON: ${jsonEncode(subtasksJson)}');
-        } else {
-          print('サブタスク詳細が空です');
-        }
-        print('=== エクスポート時サブタスク詳細取得完了 ===');
+      // サブタスクの詳細データを保存（実際のデータで判断）
+      final subtaskDetails = _getSubTaskDetails(task.id);
+      print('=== エクスポート時サブタスク詳細取得 ===');
+      print('タスク: ${task.title}');
+      print('hasSubTasks: ${task.hasSubTasks}');
+      print('totalSubTasksCount: ${task.totalSubTasksCount}');
+      print('取得されたサブタスク数: ${subtaskDetails.length}');
+      
+      if (subtaskDetails.isNotEmpty) {
+        final subtasksJson = subtaskDetails.map((subtask) => {
+          'id': subtask.id,
+          'title': subtask.title,
+          'description': subtask.description ?? '',
+          'isCompleted': subtask.isCompleted,
+          'order': subtask.order,
+          'estimatedMinutes': subtask.estimatedMinutes,
+        }).toList();
+        createExtendedProps['subtasks'] = jsonEncode(subtasksJson);
+        print('サブタスク詳細をextendedPropertiesに保存: ${subtasksJson.length}件');
+        print('保存されたサブタスクJSON: ${jsonEncode(subtasksJson)}');
       } else {
-        print('=== エクスポート時サブタスクなし ===');
-        print('タスク: ${task.title}');
-        print('hasSubTasks: ${task.hasSubTasks}');
-        print('totalSubTasksCount: ${task.totalSubTasksCount}');
-        print('=== エクスポート時サブタスクなし完了 ===');
+        print('サブタスク詳細が空です');
       }
+      print('=== エクスポート時サブタスク詳細取得完了 ===');
       
       eventData['extendedProperties'] = {
         'private': createExtendedProps
@@ -1583,37 +1576,30 @@ class GoogleCalendarService {
         'totalSubTasksCount': task.totalSubTasksCount.toString(),
       };
       
-      // サブタスクの詳細データを保存
-      if (task.hasSubTasks && task.totalSubTasksCount > 0) {
-        final subtaskDetails = _getSubTaskDetails(task.id);
-        print('=== 更新時サブタスク詳細取得 ===');
-        print('タスク: ${task.title}');
-        print('hasSubTasks: ${task.hasSubTasks}');
-        print('totalSubTasksCount: ${task.totalSubTasksCount}');
-        print('取得されたサブタスク数: ${subtaskDetails.length}');
-        
-        if (subtaskDetails.isNotEmpty) {
-          final subtasksJson = subtaskDetails.map((subtask) => {
-            'id': subtask.id,
-            'title': subtask.title,
-            'description': subtask.description ?? '',
-            'isCompleted': subtask.isCompleted,
-            'order': subtask.order,
-          }).toList();
-          updateExtendedProps['subtasks'] = jsonEncode(subtasksJson);
-          print('サブタスク詳細をextendedPropertiesに保存（更新）: ${subtasksJson.length}件');
-          print('保存されたサブタスクJSON: ${jsonEncode(subtasksJson)}');
-        } else {
-          print('サブタスク詳細が空です');
-        }
-        print('=== 更新時サブタスク詳細取得完了 ===');
+      // サブタスクの詳細データを保存（実際のデータで判断）
+      final subtaskDetails = _getSubTaskDetails(task.id);
+      print('=== 更新時サブタスク詳細取得 ===');
+      print('タスク: ${task.title}');
+      print('hasSubTasks: ${task.hasSubTasks}');
+      print('totalSubTasksCount: ${task.totalSubTasksCount}');
+      print('取得されたサブタスク数: ${subtaskDetails.length}');
+      
+      if (subtaskDetails.isNotEmpty) {
+        final subtasksJson = subtaskDetails.map((subtask) => {
+          'id': subtask.id,
+          'title': subtask.title,
+          'description': subtask.description ?? '',
+          'isCompleted': subtask.isCompleted,
+          'order': subtask.order,
+          'estimatedMinutes': subtask.estimatedMinutes,
+        }).toList();
+        updateExtendedProps['subtasks'] = jsonEncode(subtasksJson);
+        print('サブタスク詳細をextendedPropertiesに保存（更新）: ${subtasksJson.length}件');
+        print('保存されたサブタスクJSON: ${jsonEncode(subtasksJson)}');
       } else {
-        print('=== 更新時サブタスクなし ===');
-        print('タスク: ${task.title}');
-        print('hasSubTasks: ${task.hasSubTasks}');
-        print('totalSubTasksCount: ${task.totalSubTasksCount}');
-        print('=== 更新時サブタスクなし完了 ===');
+        print('サブタスク詳細が空です');
       }
+      print('=== 更新時サブタスク詳細取得完了 ===');
       
       eventData['extendedProperties'] = {
         'private': updateExtendedProps
@@ -1922,8 +1908,19 @@ class GoogleCalendarService {
     print('task.totalSubTasksCount: ${task.totalSubTasksCount}');
     print('task.completedSubTasksCount: ${task.completedSubTasksCount}');
     
-    if (task.hasSubTasks && task.totalSubTasksCount > 0) {
-      final subtaskProgressText = '📋 サブタスク進捗: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了';
+    // サブタスクの詳細を取得して表示（実際のデータで判断）
+    final subtaskDetails = _getSubTaskDetails(task.id);
+    print('=== サブタスク詳細構築 ===');
+    print('取得されたサブタスク数: ${subtaskDetails.length}');
+    for (final subtask in subtaskDetails) {
+      print('サブタスク: ${subtask.title} (完了: ${subtask.isCompleted})');
+    }
+    
+    if (subtaskDetails.isNotEmpty) {
+      // サブタスク進捗を計算（実際のデータから）
+      final completedCount = subtaskDetails.where((s) => s.isCompleted).length;
+      final totalCount = subtaskDetails.length;
+      final subtaskProgressText = '📋 サブタスク進捗: $completedCount/$totalCount 完了';
       print('サブタスク進捗テキスト: $subtaskProgressText');
       
       // 古いサブタスク進捗を削除
@@ -1933,37 +1930,30 @@ class GoogleCalendarService {
       // 新しいサブタスク進捗を追加
       parts.add(subtaskProgressText);
       print('新しいサブタスク進捗を追加しました');
-        
-      // サブタスクの詳細を取得して表示
-      final subtaskDetails = _getSubTaskDetails(task.id);
-      print('=== サブタスク詳細構築 ===');
-      print('取得されたサブタスク数: ${subtaskDetails.length}');
-      for (final subtask in subtaskDetails) {
-        print('サブタスク: ${subtask.title} (完了: ${subtask.isCompleted})');
-      }
       
-      if (subtaskDetails.isNotEmpty) {
-        // 古いサブタスク詳細を削除
-        parts.removeWhere((part) => part.contains('📝 サブタスク詳細:'));
-        parts.removeWhere((part) => part.startsWith('  ✖') || part.startsWith('  ✅'));
-        print('古いサブタスク詳細を削除しました');
-        
-        // 新しいサブタスク詳細を追加
-        parts.add('');
-        parts.add('📝 サブタスク詳細:');
-        for (final subtask in subtaskDetails) {
-          final statusIcon = subtask.isCompleted ? '✅' : '✖';
-          parts.add('  $statusIcon ${subtask.title}');
-          if (subtask.description != null && subtask.description!.isNotEmpty) {
-            parts.add('     ${subtask.description!}');
-          }
+      // 古いサブタスク詳細を削除
+      parts.removeWhere((part) => part.contains('📝 サブタスク詳細:'));
+      parts.removeWhere((part) => part.startsWith('  ✖') || part.startsWith('  ✅'));
+      print('古いサブタスク詳細を削除しました');
+      
+      // 新しいサブタスク詳細を追加
+      parts.add('');
+      parts.add('📝 サブタスク詳細:');
+      for (final subtask in subtaskDetails) {
+        final statusIcon = subtask.isCompleted ? '✅' : '✖';
+        parts.add('  $statusIcon ${subtask.title}');
+        if (subtask.description != null && subtask.description!.isNotEmpty) {
+          parts.add('     ${subtask.description!}');
         }
-        print('新しいサブタスク詳細を追加しました');
+        if (subtask.estimatedMinutes != null && subtask.estimatedMinutes! > 0) {
+          parts.add('     ⏱️ 推定時間: ${subtask.estimatedMinutes}分');
+        }
       }
-      print('=== サブタスク詳細構築完了 ===');
+      print('新しいサブタスク詳細を追加しました');
     } else {
-      print('サブタスク条件に合致しませんでした');
+      print('サブタスクが存在しません');
     }
+    print('=== サブタスク詳細構築完了 ===');
     print('=== サブタスク詳細情報構築完了 ===');
     
     // 優先度情報（古いものを削除してから新しいものを追加）
@@ -2028,25 +2018,26 @@ class GoogleCalendarService {
       }
       
       // サブタスク情報（短縮版）
-      if (task.hasSubTasks && task.totalSubTasksCount > 0) {
-        final subtaskProgressText = '📋 サブタスク: ${task.completedSubTasksCount}/${task.totalSubTasksCount} 完了';
+      // サブタスクの詳細を取得して表示（実際のデータで判断）
+      final subtaskDetails = _getSubTaskDetails(task.id);
+      if (subtaskDetails.isNotEmpty) {
+        final completedCount = subtaskDetails.where((s) => s.isCompleted).length;
+        final totalCount = subtaskDetails.length;
+        final subtaskProgressText = '📋 サブタスク: $completedCount/$totalCount 完了';
         if (!essentialParts.any((part) => part.contains('📋 サブタスク:'))) {
           essentialParts.add(subtaskProgressText);
           
           // 最初の3つのサブタスクのみ表示
-          final subtaskDetails = _getSubTaskDetails(task.id);
-          if (subtaskDetails.isNotEmpty) {
-            essentialParts.add('');
-            essentialParts.add('📝 サブタスク詳細:');
-            final maxSubTasks = subtaskDetails.length > 3 ? 3 : subtaskDetails.length;
-            for (int i = 0; i < maxSubTasks; i++) {
-              final subtask = subtaskDetails[i];
-              final statusIcon = subtask.isCompleted ? '✅' : '✖';
-              essentialParts.add('  $statusIcon ${subtask.title}');
-            }
-            if (subtaskDetails.length > 3) {
-              essentialParts.add('  ...他${subtaskDetails.length - 3}件');
-            }
+          essentialParts.add('');
+          essentialParts.add('📝 サブタスク詳細:');
+          final maxSubTasks = subtaskDetails.length > 3 ? 3 : subtaskDetails.length;
+          for (int i = 0; i < maxSubTasks; i++) {
+            final subtask = subtaskDetails[i];
+            final statusIcon = subtask.isCompleted ? '✅' : '✖';
+            essentialParts.add('  $statusIcon ${subtask.title}');
+          }
+          if (subtaskDetails.length > 3) {
+            essentialParts.add('  ...他${subtaskDetails.length - 3}件');
           }
         }
       }
