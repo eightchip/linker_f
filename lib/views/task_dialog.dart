@@ -118,6 +118,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       print('タスクタイトル: ${widget.task!.title}');
       print('元の期限日: ${widget.task!.dueDate}');
       print('元のリマインダー時間: ${widget.task!.reminderTime}');
+      print('関連リンクID数: ${widget.task!.relatedLinkIds.length}');
+      print('関連リンクID: ${widget.task!.relatedLinkIds}');
       
       _titleController.text = widget.task!.title;
       _descriptionController.text = widget.task!.description ?? '';
@@ -335,6 +337,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           reminderCount: _reminderTime == null ? 0 : widget.task!.reminderCount,
           // Google CalendarイベントIDを保持
           googleCalendarEventId: widget.task!.googleCalendarEventId,
+          // 関連リンクIDを保持
+          relatedLinkIds: latestTask.relatedLinkIds,
           clearDueDate: _dueDate == null && widget.task!.dueDate != null, // 期限日が削除された場合
           clearReminderTime: _reminderTime == null && widget.task!.reminderTime != null, // リマインダーが削除された場合
           clearAssignedTo: _assignedToController.text.trim().isEmpty && widget.task!.assignedTo != null, // 依頼先が削除された場合
@@ -2094,15 +2098,37 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     final groups = ref.read(linkViewModelProvider);
     final relatedLinks = <LinkItem>[];
     
+    if (kDebugMode) {
+      print('=== 関連リンク取得開始 ===');
+      print('タスクID: ${task.id}');
+      print('関連リンクID数: ${task.relatedLinkIds.length}');
+      print('関連リンクID: ${task.relatedLinkIds}');
+      print('リンクグループ数: ${groups.groups.length}');
+    }
+    
     for (final linkId in task.relatedLinkIds) {
+      bool found = false;
       for (final group in groups.groups) {
         for (final link in group.items) {
           if (link.id == linkId) {
             relatedLinks.add(link);
+            found = true;
+            if (kDebugMode) {
+              print('関連リンク発見: ${link.label} (${link.id})');
+            }
             break;
           }
         }
+        if (found) break;
       }
+      if (!found && kDebugMode) {
+        print('関連リンクが見つかりません: $linkId');
+      }
+    }
+    
+    if (kDebugMode) {
+      print('取得された関連リンク数: ${relatedLinks.length}');
+      print('=== 関連リンク取得完了 ===');
     }
     
     return relatedLinks;
@@ -2281,14 +2307,14 @@ ${linksInfo.isNotEmpty ? '──────────────────
               final fileUrl1 = 'file:///$encodedPath';
               final fileUrl2 = 'file://${link.path.replaceAll(r'\', '/')}';
               linksInfo += '<li style="margin-bottom: 8px;"><a href="$fileUrl1" style="color: #007bff; text-decoration: underline;">${link.label}</a><br>';
-              linksInfo += '<small style="color: #666;">[ネットワーク共有] ${link.path}</small><br>';
+              linksInfo += '<small style="color: #666;">${link.path}</small><br>';
               if (link.path.length > 100) {
                 linksInfo += '<a href="$fileUrl2" style="color: #6c757d; text-decoration: underline; font-size: 11px;">[代替リンク]</a> ';
               }
               linksInfo += '<small style="color: #999; font-size: 11px;">※ リンクが機能しない場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください</small></li>';
             } else {
               // Gmailでは説明付きで表示（クリック不可）
-              linksInfo += '<li style="margin-bottom: 8px;"><strong>${link.label}</strong><br><small style="color: #666;">[ネットワーク共有] ${link.path}</small></li>';
+              linksInfo += '<li style="margin-bottom: 8px;"><strong>${link.label}</strong><br><small style="color: #666;">${link.path}</small></li>';
             }
           } else if (link.path.contains(':\\')) {
             // ローカルファイルパスの処理
@@ -2296,10 +2322,10 @@ ${linksInfo.isNotEmpty ? '──────────────────
               // Outlookではクリック可能なリンクとして表示
               final encodedPath = Uri.encodeComponent(link.path);
               final fileUrl = 'file:///$encodedPath';
-              linksInfo += '<li style="margin-bottom: 8px;"><a href="$fileUrl" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">[ローカルファイル] ${link.path}</small></li>';
+              linksInfo += '<li style="margin-bottom: 8px;"><a href="$fileUrl" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">${link.path}</small></li>';
             } else {
               // Gmailでは説明付きで表示（クリック不可）
-              linksInfo += '<li style="margin-bottom: 8px;"><strong>${link.label}</strong><br><small style="color: #666;">[ローカルファイル] ${link.path}</small></li>';
+              linksInfo += '<li style="margin-bottom: 8px;"><strong>${link.label}</strong><br><small style="color: #666;">${link.path}</small></li>';
             }
           } else {
             // その他のパス
@@ -2403,6 +2429,7 @@ ${linksInfo.isNotEmpty ? '──────────────────
       // タスクを更新
       final updatedTask = widget.task!.copyWith(
         notes: updatedNotes,
+        relatedLinkIds: widget.task!.relatedLinkIds, // 関連リンクIDを保持
       );
       
       await taskViewModel.updateTask(updatedTask);

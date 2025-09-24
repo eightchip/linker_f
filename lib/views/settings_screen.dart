@@ -1523,6 +1523,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   24.0,
                   (value) => uiNotifier.setSpacing(value),
                 ),
+                
+                const SizedBox(height: 16),
+                
+                // 自動コントラスト最適化
+                _buildSwitchSetting(
+                  '自動コントラスト最適化',
+                  'ダークモードでテキストの視認性を自動調整',
+                  uiState.autoContrastOptimization,
+                  (value) => uiNotifier.setAutoContrastOptimization(value),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // ダークモードコントラストブースト
+                _buildSliderSetting(
+                  'ダークモードコントラストブースト: ${(uiState.darkModeContrastBoost * 100).toStringAsFixed(0)}%',
+                  uiState.darkModeContrastBoost,
+                  1.0,
+                  2.0,
+                  (value) => uiNotifier.setDarkModeContrastBoost(value),
+                ),
               ],
             ),
           ),
@@ -1710,6 +1731,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// スイッチ設定ウィジェットを構築
+  Widget _buildSwitchSetting(
+    String title,
+    String subtitle,
+    bool value,
+    Function(bool) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: Theme.of(context).primaryColor,
+            ),
+          ],
+        ),
+      ],
     );
   }
 

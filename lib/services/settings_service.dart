@@ -76,6 +76,8 @@ class SettingsService {
   static const String _uiDensityKey = 'uiDensity';
   static const String _iconSizeKey = 'iconSize';
   static const String _spacingKey = 'spacing';
+  static const String _autoContrastOptimizationKey = 'autoContrastOptimization';
+  static const String _darkModeContrastBoostKey = 'darkModeContrastBoost';
 
   // デフォルト値
   static const bool _defaultDarkMode = false;
@@ -109,6 +111,8 @@ class SettingsService {
   static const double _defaultUiDensity = 1.0;
   static const double _defaultIconSize = 24.0;
   static const double _defaultSpacing = 8.0;
+  static const bool _defaultAutoContrastOptimization = true;
+  static const double _defaultDarkModeContrastBoost = 1.2;
   
   static const double _defaultWindowWidth = 800.0;
   static const double _defaultWindowHeight = 600.0;
@@ -842,6 +846,26 @@ class SettingsService {
   Future<void> setSpacing(double value) async {
     await _settingsBox.put(_spacingKey, value);
   }
+
+  /// 自動コントラスト最適化
+  bool get autoContrastOptimization {
+    return _settingsBox.get(_autoContrastOptimizationKey, defaultValue: _defaultAutoContrastOptimization);
+  }
+
+  /// 自動コントラスト最適化を設定
+  Future<void> setAutoContrastOptimization(bool value) async {
+    await _settingsBox.put(_autoContrastOptimizationKey, value);
+  }
+
+  /// ダークモードコントラストブースト
+  double get darkModeContrastBoost {
+    return _settingsBox.get(_darkModeContrastBoostKey, defaultValue: _defaultDarkModeContrastBoost);
+  }
+
+  /// ダークモードコントラストブーストを設定
+  Future<void> setDarkModeContrastBoost(double value) async {
+    await _settingsBox.put(_darkModeContrastBoostKey, value);
+  }
   
   /// 全UI設定をリセット（デフォルト値に戻す）
   Future<void> resetAllUISettings() async {
@@ -859,6 +883,8 @@ class SettingsService {
     await _settingsBox.put(_uiDensityKey, _defaultUiDensity);
     await _settingsBox.put(_iconSizeKey, _defaultIconSize);
     await _settingsBox.put(_spacingKey, _defaultSpacing);
+    await _settingsBox.put(_autoContrastOptimizationKey, _defaultAutoContrastOptimization);
+    await _settingsBox.put(_darkModeContrastBoostKey, _defaultDarkModeContrastBoost);
   }
   
   /// UI設定をエクスポート（JSON形式）
@@ -898,6 +924,8 @@ class SettingsService {
       'uiDensity': uiDensity,
       'iconSize': iconSize,
       'spacing': spacing,
+      'autoContrastOptimization': autoContrastOptimization,
+      'darkModeContrastBoost': darkModeContrastBoost,
     };
   }
   
@@ -937,5 +965,7 @@ class SettingsService {
     if (settings.containsKey('uiDensity')) await setUiDensity(settings['uiDensity']);
     if (settings.containsKey('iconSize')) await setIconSize(settings['iconSize']);
     if (settings.containsKey('spacing')) await setSpacing(settings['spacing']);
+    if (settings.containsKey('autoContrastOptimization')) await setAutoContrastOptimization(settings['autoContrastOptimization']);
+    if (settings.containsKey('darkModeContrastBoost')) await setDarkModeContrastBoost(settings['darkModeContrastBoost']);
   }
 }

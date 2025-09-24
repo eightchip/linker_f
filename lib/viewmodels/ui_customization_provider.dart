@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 import '../services/settings_service.dart';
 
 /// UIカスタマイズ設定のProvider
@@ -26,6 +27,8 @@ class UICustomizationNotifier extends StateNotifier<UICustomizationState> {
       uiDensity: _settingsService.uiDensity,
       iconSize: _settingsService.iconSize,
       spacing: _settingsService.spacing,
+      autoContrastOptimization: _settingsService.autoContrastOptimization,
+      darkModeContrastBoost: _settingsService.darkModeContrastBoost,
     );
   }
 
@@ -113,6 +116,18 @@ class UICustomizationNotifier extends StateNotifier<UICustomizationState> {
     state = state.copyWith(spacing: value);
   }
 
+  /// 自動コントラスト最適化を設定
+  Future<void> setAutoContrastOptimization(bool value) async {
+    await _settingsService.setAutoContrastOptimization(value);
+    state = state.copyWith(autoContrastOptimization: value);
+  }
+
+  /// ダークモードコントラストブーストを設定
+  Future<void> setDarkModeContrastBoost(double value) async {
+    await _settingsService.setDarkModeContrastBoost(value);
+    state = state.copyWith(darkModeContrastBoost: value);
+  }
+
   /// 全UI設定をリセット
   Future<void> resetAllSettings() async {
     await _settingsService.resetAllUISettings();
@@ -141,6 +156,8 @@ class UICustomizationState {
   final double uiDensity;
   final double iconSize;
   final double spacing;
+  final bool autoContrastOptimization;
+  final double darkModeContrastBoost;
 
   const UICustomizationState({
     required this.cardBorderRadius,
@@ -157,6 +174,8 @@ class UICustomizationState {
     required this.uiDensity,
     required this.iconSize,
     required this.spacing,
+    required this.autoContrastOptimization,
+    required this.darkModeContrastBoost,
   });
 
   factory UICustomizationState.initial() {
@@ -175,6 +194,8 @@ class UICustomizationState {
       uiDensity: 1.0,
       iconSize: 24.0,
       spacing: 8.0,
+      autoContrastOptimization: true,
+      darkModeContrastBoost: 1.2,
     );
   }
 
@@ -193,6 +214,8 @@ class UICustomizationState {
     double? uiDensity,
     double? iconSize,
     double? spacing,
+    bool? autoContrastOptimization,
+    double? darkModeContrastBoost,
   }) {
     return UICustomizationState(
       cardBorderRadius: cardBorderRadius ?? this.cardBorderRadius,
@@ -209,6 +232,8 @@ class UICustomizationState {
       uiDensity: uiDensity ?? this.uiDensity,
       iconSize: iconSize ?? this.iconSize,
       spacing: spacing ?? this.spacing,
+      autoContrastOptimization: autoContrastOptimization ?? this.autoContrastOptimization,
+      darkModeContrastBoost: darkModeContrastBoost ?? this.darkModeContrastBoost,
     );
   }
 }
@@ -233,3 +258,102 @@ final gradientIntensityProvider = Provider<double>((ref) => ref.watch(uiCustomiz
 final uiDensityProvider = Provider<double>((ref) => ref.watch(uiCustomizationProvider).uiDensity);
 final iconSizeProvider = Provider<double>((ref) => ref.watch(uiCustomizationProvider).iconSize);
 final spacingProvider = Provider<double>((ref) => ref.watch(uiCustomizationProvider).spacing);
+final autoContrastOptimizationProvider = Provider<bool>((ref) => ref.watch(uiCustomizationProvider).autoContrastOptimization);
+final darkModeContrastBoostProvider = Provider<double>((ref) => ref.watch(uiCustomizationProvider).darkModeContrastBoost);
+
+/// ダークモードでの自動コントラスト最適化された色を取得
+Color getOptimizedColorForDarkMode(
+  Color baseColor,
+  Color backgroundColor,
+  bool isDarkMode,
+  bool autoOptimization,
+  double contrastBoost,
+) {
+  if (!isDarkMode || !autoOptimization) {
+    return baseColor;
+  }
+
+  // 背景色の明度を計算
+  final bgLuminance = backgroundColor.computeLuminance();
+  
+  // ベース色の明度を計算
+  final baseLuminance = baseColor.computeLuminance();
+  
+  // コントラスト比を計算
+  final contrastRatio = (baseLuminance + 0.05) / (bgLuminance + 0.05);
+  
+  // 最小コントラスト比（WCAG AA準拠）
+  const minContrastRatio = 4.5;
+  
+  if (contrastRatio >= minContrastRatio) {
+    return baseColor;
+  }
+  
+  // HSL色空間に変換
+  final hsl = HSLColor.fromColor(baseColor);
+  
+  // 明度を調整してコントラストを向上
+  double adjustedLightness = hsl.lightness;
+  
+  if (bgLuminance < 0.5) {
+    // ダーク背景の場合、テキストを明るくする
+    adjustedLightness = (adjustedLightness * contrastBoost).clamp(0.0, 1.0);
+  } else {
+    // ライト背景の場合、テキストを暗くする
+    adjustedLightness = (adjustedLightness / contrastBoost).clamp(0.0, 1.0);
+  }
+  
+  // 彩度も微調整（色の鮮やかさを保持しつつ視認性を向上）
+  double adjustedSaturation = hsl.saturation;
+  if (adjustedLightness > 0.8 || adjustedLightness < 0.2) {
+    adjustedSaturation = (adjustedSaturation * 0.9).clamp(0.0, 1.0);
+  }
+  
+  return HSLColor.fromAHSL(
+    hsl.alpha,
+    hsl.hue,
+    adjustedSaturation,
+    adjustedLightness,
+  ).toColor();
+}
+
+/// テキスト色の自動最適化
+Color getOptimizedTextColor(
+  Color baseColor,
+  Color backgroundColor,
+  bool isDarkMode,
+  bool autoOptimization,
+  double contrastBoost,
+) {
+  return getOptimizedColorForDarkMode(
+    baseColor,
+    backgroundColor,
+    isDarkMode,
+    autoOptimization,
+    contrastBoost,
+  );
+}
+
+/// アクセント色の自動最適化
+Color getOptimizedAccentColor(
+  Color baseColor,
+  Color backgroundColor,
+  bool isDarkMode,
+  bool autoOptimization,
+  double contrastBoost,
+) {
+  if (!isDarkMode || !autoOptimization) {
+    return baseColor;
+  }
+  
+  // アクセント色は少し控えめに調整
+  final adjustedBoost = contrastBoost * 0.8;
+  
+  return getOptimizedColorForDarkMode(
+    baseColor,
+    backgroundColor,
+    isDarkMode,
+    autoOptimization,
+    adjustedBoost,
+  );
+}
