@@ -2200,10 +2200,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             linksInfo += '• ${link.label}\n  ${link.path}\n';
           } else if (link.path.startsWith(r'\\')) {
             // UNCパスは説明付きで表示
-            linksInfo += '• ${link.label}\n  [ネットワーク共有] ${link.path}\n';
+            linksInfo += '• ${link.label}\n  ${link.path}\n';
           } else if (link.path.contains(':\\')) {
             // ローカルファイルパスは説明付きで表示
-            linksInfo += '• ${link.label}\n  [ローカルファイル] ${link.path}\n';
+            linksInfo += '• ${link.label}\n  ${link.path}\n';
           } else {
             // その他のパス
             linksInfo += '• ${link.label} - ${link.path}\n';
