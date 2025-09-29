@@ -120,16 +120,48 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       print('元のリマインダー時間: ${widget.task!.reminderTime}');
       print('関連リンクID数: ${widget.task!.relatedLinkIds.length}');
       print('関連リンクID: ${widget.task!.relatedLinkIds}');
+      print('関連リンクIDが空かどうか: ${widget.task!.relatedLinkIds.isEmpty}');
+      print('関連リンクIDがnullかどうか: ${widget.task!.relatedLinkIds == null}');
       
-      _titleController.text = widget.task!.title;
-      _descriptionController.text = widget.task!.description ?? '';
-      _assignedToController.text = widget.task!.assignedTo ?? '';
-      _dueDate = widget.task!.dueDate;
-      _reminderTime = widget.task!.reminderTime;
-      _priority = widget.task!.priority;
-      _status = widget.task!.status;
-      _isRecurringReminder = widget.task!.isRecurringReminder;
-      _recurringReminderPattern = widget.task!.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
+      // データ移行: 古いrelatedLinkIdから新しいrelatedLinkIdsに移行
+      if (widget.task!.relatedLinkIds.isEmpty && widget.task!.relatedLinkId != null && widget.task!.relatedLinkId!.isNotEmpty) {
+        print('=== データ移行: 古いrelatedLinkIdから新しいrelatedLinkIdsに移行 ===');
+        print('古いrelatedLinkId: ${widget.task!.relatedLinkId}');
+        
+        final taskViewModel = ref.read(taskViewModelProvider.notifier);
+        final migratedTask = widget.task!.copyWith(
+          relatedLinkIds: [widget.task!.relatedLinkId!],
+          relatedLinkId: null, // 古いフィールドをクリア
+        );
+        
+        await taskViewModel.updateTask(migratedTask);
+        print('データ移行完了: ${migratedTask.relatedLinkIds}');
+        
+        // 移行後のデータで再初期化
+        _titleController.text = migratedTask.title;
+        _descriptionController.text = migratedTask.description ?? '';
+        _assignedToController.text = migratedTask.assignedTo ?? '';
+        _dueDate = migratedTask.dueDate;
+        _reminderTime = migratedTask.reminderTime;
+        _priority = migratedTask.priority;
+        _status = migratedTask.status;
+        _isRecurringReminder = migratedTask.isRecurringReminder;
+        _recurringReminderPattern = migratedTask.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
+        
+        print('移行後の関連リンクID数: ${migratedTask.relatedLinkIds.length}');
+        print('移行後の関連リンクID: ${migratedTask.relatedLinkIds}');
+      } else {
+        // 通常の初期化処理
+        _titleController.text = widget.task!.title;
+        _descriptionController.text = widget.task!.description ?? '';
+        _assignedToController.text = widget.task!.assignedTo ?? '';
+        _dueDate = widget.task!.dueDate;
+        _reminderTime = widget.task!.reminderTime;
+        _priority = widget.task!.priority;
+        _status = widget.task!.status;
+        _isRecurringReminder = widget.task!.isRecurringReminder;
+        _recurringReminderPattern = widget.task!.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
+      }
       
       print('初期化後の期限日: $_dueDate');
       print('初期化後のリマインダー時間: $_reminderTime');
@@ -348,6 +380,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         print('copyWith後のリマインダー時間: ${updatedTask.reminderTime}');
         print('copyWith後の期限日: ${updatedTask.dueDate}');
         print('copyWith後のGoogle CalendarイベントID: ${updatedTask.googleCalendarEventId}');
+        print('copyWith後の関連リンクID数: ${updatedTask.relatedLinkIds.length}');
+        print('copyWith後の関連リンクID: ${updatedTask.relatedLinkIds}');
         print('新しいリマインダー時間: ${updatedTask.reminderTime}');
         print('新しい期限日: ${updatedTask.dueDate}');
         print('リマインダーがクリアされた: ${widget.task!.reminderTime != null && updatedTask.reminderTime == null}');
@@ -2101,9 +2135,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     if (kDebugMode) {
       print('=== 関連リンク取得開始 ===');
       print('タスクID: ${task.id}');
+      print('タスクタイトル: ${task.title}');
       print('関連リンクID数: ${task.relatedLinkIds.length}');
       print('関連リンクID: ${task.relatedLinkIds}');
+      print('関連リンクIDが空かどうか: ${task.relatedLinkIds.isEmpty}');
       print('リンクグループ数: ${groups.groups.length}');
+      print('全リンク数: ${groups.groups.fold(0, (sum, group) => sum + group.items.length)}');
     }
     
     for (final linkId in task.relatedLinkIds) {
@@ -2123,6 +2160,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       }
       if (!found && kDebugMode) {
         print('関連リンクが見つかりません: $linkId');
+        print('利用可能なリンクID: ${groups.groups.expand((group) => group.items.map((link) => link.id)).toList()}');
       }
     }
     
@@ -2215,8 +2253,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           linksInfo += '\n📝 注意: ネットワーク共有やローカルファイルのリンクは、Gmailでは直接クリックできません。\n';
           linksInfo += 'リンクをコピーして、ファイルエクスプローラーやブラウザのアドレスバーに貼り付けてアクセスしてください。\n';
         } else if (_selectedMailApp == 'outlook') {
-          linksInfo += '\n📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\n';
-          linksInfo += 'リンクをクリックして直接アクセスできます。\n';
+          linksInfo += '\n📝 注意: Outlookでは、複数のリンク形式を提供しています。\n';
+          linksInfo += 'いずれかのリンクをクリックしてアクセスしてください。\n';
+          linksInfo += '※ リンクが機能しない場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください。\n';
         }
       }
     }
@@ -2302,16 +2341,23 @@ ${linksInfo.isNotEmpty ? '──────────────────
           } else if (link.path.startsWith(r'\\')) {
             // UNCパスの処理
             if (_selectedMailApp == 'outlook') {
-              // Outlookではクリック可能なリンクとして表示
-              final encodedPath = Uri.encodeComponent(link.path);
+              // Outlook用の複数のリンク形式を提供
+              final uncPath = link.path;
+              final encodedPath = Uri.encodeComponent(uncPath);
               final fileUrl1 = 'file:///$encodedPath';
-              final fileUrl2 = 'file://${link.path.replaceAll(r'\', '/')}';
-              linksInfo += '<li style="margin-bottom: 8px;"><a href="$fileUrl1" style="color: #007bff; text-decoration: underline;">${link.label}</a><br>';
-              linksInfo += '<small style="color: #666;">${link.path}</small><br>';
-              if (link.path.length > 100) {
-                linksInfo += '<a href="$fileUrl2" style="color: #6c757d; text-decoration: underline; font-size: 11px;">[代替リンク]</a> ';
-              }
-              linksInfo += '<small style="color: #999; font-size: 11px;">※ リンクが機能しない場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください</small></li>';
+              final fileUrl2 = 'file://${uncPath.replaceAll(r'\', '/')}';
+              final fileUrl3 = 'file:///${uncPath.replaceAll(r'\', '/')}';
+              
+              linksInfo += '<li style="margin-bottom: 12px;">';
+              linksInfo += '<div style="margin-bottom: 4px;"><strong>${link.label}</strong></div>';
+              linksInfo += '<div style="margin-bottom: 6px;">';
+              linksInfo += '<a href="$fileUrl1" style="color: #007bff; text-decoration: underline; margin-right: 8px;">[リンク1]</a>';
+              linksInfo += '<a href="$fileUrl2" style="color: #007bff; text-decoration: underline; margin-right: 8px;">[リンク2]</a>';
+              linksInfo += '<a href="$fileUrl3" style="color: #007bff; text-decoration: underline;">[リンク3]</a>';
+              linksInfo += '</div>';
+              linksInfo += '<div style="background-color: #f8f9fa; padding: 6px; border-radius: 4px; font-family: monospace; font-size: 11px; color: #666; word-break: break-all;">${uncPath}</div>';
+              linksInfo += '<div style="margin-top: 4px; font-size: 10px; color: #999;">※ いずれかのリンクをクリックしてください。機能しない場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください。</div>';
+              linksInfo += '</li>';
             } else {
               // Gmailでは説明付きで表示（クリック不可）
               linksInfo += '<li style="margin-bottom: 8px;"><strong>${link.label}</strong><br><small style="color: #666;">${link.path}</small></li>';
@@ -2319,10 +2365,23 @@ ${linksInfo.isNotEmpty ? '──────────────────
           } else if (link.path.contains(':\\')) {
             // ローカルファイルパスの処理
             if (_selectedMailApp == 'outlook') {
-              // Outlookではクリック可能なリンクとして表示
-              final encodedPath = Uri.encodeComponent(link.path);
-              final fileUrl = 'file:///$encodedPath';
-              linksInfo += '<li style="margin-bottom: 8px;"><a href="$fileUrl" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">${link.path}</small></li>';
+              // Outlook用の複数のリンク形式を提供
+              final localPath = link.path;
+              final encodedPath = Uri.encodeComponent(localPath);
+              final fileUrl1 = 'file:///$encodedPath';
+              final fileUrl2 = 'file:///${localPath.replaceAll(r'\', '/')}';
+              final fileUrl3 = 'file://${localPath.replaceAll(r'\', '/')}';
+              
+              linksInfo += '<li style="margin-bottom: 12px;">';
+              linksInfo += '<div style="margin-bottom: 4px;"><strong>${link.label}</strong></div>';
+              linksInfo += '<div style="margin-bottom: 6px;">';
+              linksInfo += '<a href="$fileUrl1" style="color: #007bff; text-decoration: underline; margin-right: 8px;">[リンク1]</a>';
+              linksInfo += '<a href="$fileUrl2" style="color: #007bff; text-decoration: underline; margin-right: 8px;">[リンク2]</a>';
+              linksInfo += '<a href="$fileUrl3" style="color: #007bff; text-decoration: underline;">[リンク3]</a>';
+              linksInfo += '</div>';
+              linksInfo += '<div style="background-color: #f8f9fa; padding: 6px; border-radius: 4px; font-family: monospace; font-size: 11px; color: #666; word-break: break-all;">${localPath}</div>';
+              linksInfo += '<div style="margin-top: 4px; font-size: 10px; color: #999;">※ いずれかのリンクをクリックしてください。機能しない場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください。</div>';
+              linksInfo += '</li>';
             } else {
               // Gmailでは説明付きで表示（クリック不可）
               linksInfo += '<li style="margin-bottom: 8px;"><strong>${link.label}</strong><br><small style="color: #666;">${link.path}</small></li>';
@@ -2342,9 +2401,9 @@ ${linksInfo.isNotEmpty ? '──────────────────
           linksInfo += '</div></div>';
         } else if (_selectedMailApp == 'outlook') {
           linksInfo += '<div style="margin-top: 10px; padding: 8px; background-color: #e8f5e8; border-left: 3px solid #28a745; font-size: 12px; color: #666;">';
-          linksInfo += '<strong>📝 注意:</strong> Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。<br>';
-          linksInfo += 'リンクをクリックして直接アクセスできます。<br>';
-          linksInfo += '<strong>※ 長いパスでリンクが途中で切れる場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください。</strong>';
+          linksInfo += '<strong>📝 注意:</strong> Outlookでは、複数のリンク形式を提供しています。<br>';
+          linksInfo += 'いずれかのリンクをクリックしてアクセスしてください。<br>';
+          linksInfo += '<strong>※ リンクが機能しない場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください。</strong>';
           linksInfo += '</div></div>';
         }
       }
