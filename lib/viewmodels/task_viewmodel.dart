@@ -21,7 +21,12 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   final Ref _ref;
   
   TaskViewModel(this._ref) : super([]) {
-    _initializeTaskBox();
+    print('🚨 TaskViewModel作成');
+    // 非同期初期化を即座に実行
+    _initializeTaskBox().catchError((error) {
+      print('🚨 TaskViewModel初期化エラー: $error');
+      state = [];
+    });
   }
 
   static const String _boxName = 'tasks';
@@ -30,13 +35,20 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
 
   // tasksプロパティを追加
   List<TaskItem> get tasks => state;
+  
+  // 手動でタスクを再読み込み
+  Future<void> forceReloadTasks() async {
+    print('🚨🚨🚨 手動タスク再読み込み開始 🚨🚨🚨');
+    await _loadTasks();
+    print('🚨🚨🚨 手動タスク再読み込み完了: ${state.length}件 🚨🚨🚨');
+  }
 
   // _taskBoxの初期化を確実に行う
   Future<void> _initializeTaskBox() async {
     try {
-      print('=== TaskViewModel初期化開始 ===');
+      print('🚨 TaskViewModel初期化開始');
       _taskBox = await Hive.openBox<TaskItem>(_boxName);
-      print('_taskBox初期化完了');
+      print('🚨 Hiveボックス初期化完了');
       
       // WindowsNotificationServiceのコールバックを設定
       WindowsNotificationService.setTaskViewModelUpdateCallback((updatedTask) {
@@ -59,6 +71,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       });
       
       await _loadTasks();
+      print('🚨 TaskViewModel初期化完了');
     } catch (e) {
       print('TaskViewModel初期化エラー: $e');
       state = [];
@@ -67,35 +80,29 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
 
   Future<void> _loadTasks() async {
     try {
-      print('=== _loadTasks開始 ===');
+      print('🚨 タスク読み込み開始');
       if (_taskBox == null || !_taskBox!.isOpen) {
-        print('_taskBoxを新規作成中...');
         _taskBox = await Hive.openBox<TaskItem>(_boxName);
-        print('_taskBox作成完了');
       }
       
-      print('データベースからタスクを読み込み中...');
       final tasks = _taskBox!.values.toList();
       tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
-      print('読み込まれたタスク数: ${tasks.length}');
+      print('🚨 読み込まれたタスク数: ${tasks.length}');
+      
+      // リンク保持機能の検証と修正（簡略化）
       for (int i = 0; i < tasks.length; i++) {
         final task = tasks[i];
-        print('読み込みタスク[$i]: ${task.title} (ID: ${task.id})');
+        if (task.relatedLinkIds.isEmpty && task.relatedLinkId != null) {
+          final restoredTask = task.copyWith(relatedLinkIds: [task.relatedLinkId!]);
+          tasks[i] = restoredTask;
+          await _taskBox?.put(task.id, restoredTask);
+        }
       }
       
       state = tasks;
-      print('状態を更新しました');
-      
-      // 起動時に祝日タスクを自動削除（初期化時のみ）
-      print('祝日タスク削除チェック開始...');
       await _removeHolidayTasksOnStartup();
-      print('祝日タスク削除チェック完了');
-      
-      if (kDebugMode) {
-        print('=== タスク読み込み完了 ===');
-        print('最終的なタスク数: ${state.length}');
-      }
+      print('🚨 タスク読み込み完了: ${state.length}件');
     } catch (e) {
       print('❌ _loadTasksエラー: $e');
       print('エラーの詳細: ${e.toString()}');
@@ -533,8 +540,15 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         state[taskIndex] = updatedTask;
         await _taskBox?.put(taskId, updatedTask);
         
+        // データベースの整合性を確保
+        await _taskBox?.flush();
+        
         // リンクのタスク状態を更新
         await refreshLinkTaskStatus();
+        
+        if (kDebugMode) {
+          print('✅ リンク追加完了: タスク「${task.title}」にリンク「$linkId」を追加');
+        }
       }
     }
   }
@@ -560,8 +574,15 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         state[taskIndex] = updatedTask;
         await _taskBox?.put(taskId, updatedTask);
         
+        // データベースの整合性を確保
+        await _taskBox?.flush();
+        
         // リンクのタスク状態を更新
         await refreshLinkTaskStatus();
+        
+        if (kDebugMode) {
+          print('✅ リンク削除完了: タスク「${task.title}」からリンク「$linkId」を削除');
+        }
       }
     }
   }
@@ -2062,18 +2083,16 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     if (task1.title != task2.title) return false;
     
     // 作成日時が非常に近い場合（1分以内）は重複の可能性が高い
-    if (task2.createdAt != null) {
-      final timeDiff = task1.createdAt.difference(task2.createdAt).abs();
-      if (timeDiff.inMinutes <= 1) {
-        // さらに詳細な比較
-        if (task1.description == task2.description &&
-            task1.priority == task2.priority &&
-            task1.tags.toString() == task2.tags.toString()) {
-          return true;
-        }
+    final timeDiff = task1.createdAt.difference(task2.createdAt).abs();
+    if (timeDiff.inMinutes <= 1) {
+      // さらに詳細な比較
+      if (task1.description == task2.description &&
+          task1.priority == task2.priority &&
+          task1.tags.toString() == task2.tags.toString()) {
+        return true;
       }
     }
-    
+      
     // 期限日が同じ場合
     if (task1.dueDate != null && task2.dueDate != null) {
       final dateDiff = task1.dueDate!.difference(task2.dueDate!).abs();

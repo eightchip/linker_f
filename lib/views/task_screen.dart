@@ -86,7 +86,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   // タスクごとの詳細展開状態
   Set<String> _expandedTaskIds = {};
   // タスクごとのホバー状態
-  Set<String> _hoveredTaskIds = {};
+  final Set<String> _hoveredTaskIds = {};
 
   @override
   void initState() {
@@ -280,10 +280,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('build呼び出し: _searchQuery="$_searchQuery"');
-    final tasks = ref.watch(taskViewModelProvider);
+    print('🚨 TaskScreen build開始');
+    
+    // TaskViewModelの作成を強制
     final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    final tasks = ref.watch(taskViewModelProvider);
     final statistics = taskViewModel.getTaskStatistics();
+    
+    // 重要な情報のみ出力
+    print('🚨 タスク数: ${tasks.length}');
     
     // アクセントカラーの調整色を取得
     final accentColor = ref.watch(accentColorProvider);
@@ -293,6 +298,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
     // フィルタリング
     final filteredTasks = _getFilteredTasks(tasks);
+    
+    // 重要な情報のみ出力
+    if (tasks.isNotEmpty) {
+      print('🚨 フィルタリング後: ${filteredTasks.length}件表示');
+    } else {
+      print('🚨 タスクが存在しません！');
+    }
 
     return KeyboardShortcutWidget(
       child: KeyboardListener(
@@ -446,6 +458,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     Icon(Icons.timer, color: Colors.red),
                     SizedBox(width: 8),
                     Text('1分後リマインダーテスト'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'reset_filters',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('フィルターリセット'),
                   ],
                 ),
               ),
@@ -1622,7 +1644,49 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       case 'test_reminder_1min':
         _showTestReminderInOneMinute();
         break;
+      case 'reset_filters':
+        _resetFilters();
+        break;
+      case 'reload_tasks':
+        _reloadTasks();
+        break;
     }
+  }
+
+  /// タスクを再読み込み
+  void _reloadTasks() async {
+    print('🚨 手動タスク再読み込み開始');
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    await taskViewModel.forceReloadTasks();
+    setState(() {});
+    print('🚨 手動タスク再読み込み完了');
+  }
+
+  /// フィルターをリセット
+  void _resetFilters() {
+    print('🔄 フィルターリセット開始');
+    print('リセット前: _filterStatuses=$_filterStatuses, _filterPriority=$_filterPriority, _searchQuery="$_searchQuery"');
+    
+    setState(() {
+      _filterStatuses = {'all'};
+      _filterPriority = 'all';
+      _searchQuery = '';
+      _searchController.clear();
+    });
+    
+    print('リセット後: _filterStatuses=$_filterStatuses, _filterPriority=$_filterPriority, _searchQuery="$_searchQuery"');
+    
+    _saveFilterSettings();
+    
+    // スナックバーで通知
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('フィルターをリセットしました'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    
+    print('🔄 フィルターリセット完了');
   }
 
   void _handleTaskAction(String action, TaskItem task) {
@@ -2025,6 +2089,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   
   // フィルタリング処理を別メソッドに分離
   List<TaskItem> _getFilteredTasks(List<TaskItem> tasks) {
+    print('=== フィルタリング開始 ===');
+    print('全タスク数: ${tasks.length}');
+    print('フィルター状態: $_filterStatuses');
+    print('優先度フィルター: $_filterPriority');
+    print('検索クエリ: "$_searchQuery"');
+    
     final filteredTasks = tasks.where((task) {
       // ステータスフィルター（複数選択対応）
       if (!_filterStatuses.contains('all')) {
@@ -2036,6 +2106,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           statusMatch = true;
         }
         if (_filterStatuses.contains('completed') && task.status == TaskStatus.completed) {
+          statusMatch = true;
+        }
+        if (_filterStatuses.contains('cancelled') && task.status == TaskStatus.cancelled) {
           statusMatch = true;
         }
         if (!statusMatch) return false;
@@ -2083,6 +2156,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
       return true;
     }).toList();
+
+    print('フィルタリング後タスク数: ${filteredTasks.length}');
+    print('=== フィルタリング完了 ===');
 
                     // 選択された並び替え方法に基づいてソート（第3順位まで対応）
           filteredTasks.sort((a, b) {
@@ -2950,7 +3026,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-        )).toList(),
+        )),
       ],
     );
   }
@@ -3265,7 +3341,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
             child: Text('リンク一覧: ${group.items.length}個'),
           ),
           // 実際のリンクアイテム
-          ...group.items.map((link) => _buildLinkItem(link, theme)).toList(),
+          ...group.items.map((link) => _buildLinkItem(link, theme)),
         ],
       ),
     );

@@ -24,32 +24,37 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       reminderTime: fields[4] as DateTime?,
       priority: fields[5] as TaskPriority,
       status: fields[6] as TaskStatus,
-      tags: (fields[7] as List).cast<String>(),
+      tags: fields[7] != null ? (fields[7] as List).cast<String>() : <String>[],
       relatedLinkId: fields[8] as String?,
+      relatedLinkIds: fields[26] != null ? (fields[26] as List).cast<String>() : <String>[],
       createdAt: fields[9] as DateTime,
       completedAt: fields[10] as DateTime?,
       estimatedMinutes: fields[11] as int?,
       notes: fields[12] as String?,
-      isRecurring: fields[13] as bool,
+      isRecurring: fields[13] as bool? ?? false,
       recurringPattern: fields[14] as String?,
-      isRecurringReminder: fields[15] as bool,
+      isRecurringReminder: fields[15] as bool? ?? false,
       recurringReminderPattern: fields[16] as String?,
       nextReminderTime: fields[17] as DateTime?,
       reminderCount: fields[18] as int,
-      hasSubTasks: fields[19] as bool,
+      hasSubTasks: fields[19] as bool? ?? false,
       completedSubTasksCount: fields[20] as int,
       totalSubTasksCount: fields[21] as int,
       assignedTo: fields[22] as String?,
       source: fields[23] as String?,
       externalId: fields[24] as String?,
       googleCalendarEventId: fields[25] as String?,
+      isTeamTask: fields[27] as bool? ?? false,
+      createdBy: fields[28] as String?,
+      originalEmailId: fields[29] as String?,
+      originalEmailSubject: fields[30] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TaskItem obj) {
     writer
-      ..writeByte(26)
+      ..writeByte(31)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -68,6 +73,8 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       ..write(obj.tags)
       ..writeByte(8)
       ..write(obj.relatedLinkId)
+      ..writeByte(26)
+      ..write(obj.relatedLinkIds)
       ..writeByte(9)
       ..write(obj.createdAt)
       ..writeByte(10)
@@ -101,7 +108,15 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       ..writeByte(24)
       ..write(obj.externalId)
       ..writeByte(25)
-      ..write(obj.googleCalendarEventId);
+      ..write(obj.googleCalendarEventId)
+      ..writeByte(27)
+      ..write(obj.isTeamTask)
+      ..writeByte(28)
+      ..write(obj.createdBy)
+      ..writeByte(29)
+      ..write(obj.originalEmailId)
+      ..writeByte(30)
+      ..write(obj.originalEmailSubject);
   }
 
   @override

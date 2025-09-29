@@ -208,7 +208,11 @@ class BackupService {
       }
 
       final jsonString = await backupFile.readAsString();
-      final backupData = jsonDecode(jsonString) as Map<String, dynamic>;
+      final backupDataRaw = jsonDecode(jsonString);
+      if (backupDataRaw is! Map) {
+        throw Exception('バックアップデータの形式が正しくありません');
+      }
+      final backupData = Map<String, dynamic>.from(backupDataRaw);
       
       // バックアップデータの検証
       if (!_validateBackupData(backupData)) {
@@ -270,7 +274,11 @@ class BackupService {
       for (final file in files) {
         try {
           final jsonString = await file.readAsString();
-          final backupData = jsonDecode(jsonString) as Map<String, dynamic>;
+          final backupDataRaw = jsonDecode(jsonString);
+          if (backupDataRaw is! Map) {
+            continue; // 無効なファイルはスキップ
+          }
+          final backupData = Map<String, dynamic>.from(backupDataRaw);
           
           final createdAt = DateTime.parse(backupData['createdAt'] as String);
           final backupType = backupData['backupType'] as String? ?? 'unknown';
@@ -315,7 +323,11 @@ class BackupService {
       for (final file in files) {
         try {
           final jsonString = await file.readAsString();
-          final backupData = jsonDecode(jsonString) as Map<String, dynamic>;
+          final backupDataRaw = jsonDecode(jsonString);
+          if (backupDataRaw is! Map) {
+            continue; // 無効なファイルはスキップ
+          }
+          final backupData = Map<String, dynamic>.from(backupDataRaw);
           
           totalSize += (await file.length()).toInt();
           
@@ -811,7 +823,7 @@ class IntegratedBackupService {
           final validRelatedLinkIds = task.relatedLinkIds.where((linkId) => availableLinkIds.contains(linkId)).toList();
           if (validRelatedLinkIds.length != task.relatedLinkIds.length) {
             final invalidCount = task.relatedLinkIds.length - validRelatedLinkIds.length;
-            warnings.add('タスク「${task.title}」の関連リンク${invalidCount}件が見つからないため除外しました');
+            warnings.add('タスク「${task.title}」の関連リンク$invalidCount件が見つからないため除外しました');
           }
           
           // 有効な関連リンクIDのみでタスクを作成
@@ -826,7 +838,15 @@ class IntegratedBackupService {
       // 設定データの復元（UI設定を含む）
       if (v2Data['settings'] != null) {
         try {
-          final settingsData = v2Data['settings'] as Map<String, dynamic>;
+          final settingsDataRaw = v2Data['settings'];
+          if (settingsDataRaw is! Map) {
+            warnings.add('設定データの形式が正しくありません');
+            if (kDebugMode) {
+              print('設定データの形式エラー: ${settingsDataRaw.runtimeType}');
+            }
+            return ImportResult(links: links, tasks: tasks, groups: savedGroups, warnings: warnings);
+          }
+          final settingsData = Map<String, dynamic>.from(settingsDataRaw);
           
           // 基本設定の復元
           if (settingsData.containsKey('autoBackup')) {
@@ -844,10 +864,19 @@ class IntegratedBackupService {
           
           // UI設定の復元
           if (settingsData.containsKey('uiSettings')) {
-            final uiSettings = settingsData['uiSettings'] as Map<String, dynamic>;
-            await _settingsService.importUISettings(uiSettings);
-            if (kDebugMode) {
-              print('UI設定を復元しました');
+            final uiSettingsData = settingsData['uiSettings'];
+            if (uiSettingsData is Map) {
+              // Map<dynamic, dynamic> を Map<String, dynamic> に安全に変換
+              final uiSettings = Map<String, dynamic>.from(uiSettingsData);
+              await _settingsService.importUISettings(uiSettings);
+              if (kDebugMode) {
+                print('UI設定を復元しました');
+              }
+            } else {
+              warnings.add('UI設定の形式が正しくありません');
+              if (kDebugMode) {
+                print('UI設定の形式エラー: ${uiSettingsData.runtimeType}');
+              }
             }
           }
           
