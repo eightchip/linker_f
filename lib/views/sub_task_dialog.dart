@@ -10,10 +10,10 @@ class SubTaskDialog extends ConsumerStatefulWidget {
   final String parentTaskTitle;
 
   const SubTaskDialog({
-    Key? key,
+    super.key,
     required this.parentTaskId,
     required this.parentTaskTitle,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<SubTaskDialog> createState() => _SubTaskDialogState();

@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'dart:io' show Platform;
-import '../models/link_item.dart';
 
 /// 音声コマンドの種類
 enum VoiceCommandType {

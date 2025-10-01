@@ -50,7 +50,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   final _toController = TextEditingController();
   
   // メール送信の設定
-  bool _copyTitleToSubject = true;
   bool _copyMemoToBody = true;
   String _selectedMailApp = 'outlook'; // 'gmail' | 'outlook' - デフォルトはOutlook
   bool _includeSubtasksInMail = true; // メール本文にサブタスクを含める
@@ -1473,17 +1472,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           Column(
             children: [
               CheckboxListTile(
-                value: _copyTitleToSubject,
-                onChanged: (value) {
-                  setState(() {
-                    _copyTitleToSubject = value ?? true;
-                  });
-                },
-                title: const Text('件名にタイトルをコピー'),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-              ),
-              CheckboxListTile(
                 value: _copyMemoToBody,
                 onChanged: (value) {
                   setState(() {
@@ -1747,7 +1735,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       final to = _toController.text.trim();
 
       // 件名と本文を構築
-      String subject = _copyTitleToSubject ? _titleController.text.trim() : '';
+      String subject = _titleController.text.trim(); // デフォルトでタイトルを件名に
       String body = _copyMemoToBody ? _assignedToController.text.trim() : '';
       
       // 件名が空の場合はデフォルトの件名を設定

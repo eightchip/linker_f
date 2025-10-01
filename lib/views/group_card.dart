@@ -1038,7 +1038,6 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
           child: items.isEmpty
               ? DragTarget<Map<String, dynamic>>(
                   onWillAcceptWithDetails: (data) {
-                    if (data == null) return false;
                     final fromGroupId = data.data['fromGroupId'] as String?;
                     return fromGroupId != widget.group.id;
                   },
@@ -1132,7 +1131,6 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
     ];
     return DragTarget<Map<String, dynamic>>(
         onWillAcceptWithDetails: (data) {
-          if (data == null) return false;
           final fromGroupId = data.data['fromGroupId'] as String?;
           return fromGroupId != widget.group.id;
         },

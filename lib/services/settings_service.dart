@@ -598,10 +598,8 @@ class SettingsService {
       final fontSize = this.fontSize;
       final accentColor = this.accentColor;
       
-      return darkMode is bool && 
-             fontSize is double && 
-             fontSize > 0 && 
-             accentColor is int;
+      return fontSize is double && 
+             fontSize > 0;
     } catch (e) {
       if (kDebugMode) {
         print('設定の検証エラー: $e');

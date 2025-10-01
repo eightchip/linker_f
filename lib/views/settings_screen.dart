@@ -989,7 +989,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
               ),
               child: Text(
-                'プレビュー: このテキストのサイズが${fieldName}に適用されます',
+                'プレビュー: このテキストのサイズが$fieldNameに適用されます',
                 style: TextStyle(
                   color: Color(ref.watch(colorProvider)),
                   fontSize: 14 * ref.watch(fontSizeProvider),
@@ -1045,7 +1045,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
               ),
               child: Text(
-                'フォントプレビュー: このテキストのフォントが${fieldName}に適用されます',
+                'フォントプレビュー: このテキストのフォントが$fieldNameに適用されます',
                 style: TextStyle(
                   color: Color(ref.watch(colorProvider)),
                   fontSize: 14 * ref.watch(fontSizeProvider),

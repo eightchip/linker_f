@@ -314,36 +314,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         print('✅ Ctrl+Shift+S 検出: 設定画面を開く');
         _showSettingsScreen(context);
       }
-      // ⑧3点ドットメニュー (Ctrl+M): メニューを表示
-      else if (key == LogicalKeyboardKey.keyM && isControlPressed) {
-        print('✅ Ctrl+M 検出: 3点ドットメニューを表示');
-        _showPopupMenu(context);
-      }
       // ⑨右矢印キー: 3点ドットメニューを表示
       else if (key == LogicalKeyboardKey.arrowRight) {
         print('✅ 右矢印キー 検出: 3点ドットメニューを表示');
         _showPopupMenu(context);
       }
       
-      // 新しいキーボードショートカット
-      // Ctrl+Shift+L: グローバルタスク作成
-      else if (key == LogicalKeyboardKey.keyL && isControlPressed && isShiftPressed) {
-        print('✅ Ctrl+Shift+L 検出: グローバルタスク作成');
-        _showTaskScreen(context);
-      }
-      
-      // Ctrl+2: タスク画面に移動
-      else if (key == LogicalKeyboardKey.digit2 && isControlPressed) {
-        print('✅ Ctrl+2 検出: タスク画面に移動');
-        _showTaskScreen(context);
-      }
       
       
-      // Ctrl+G: 次の検索結果
-      else if (key == LogicalKeyboardKey.keyG && isControlPressed) {
-        print('✅ Ctrl+G 検出: 次の検索結果に移動');
-        // 検索結果のナビゲーション実装
-      }
+      
 
       // F1: ヘルプを表示
       else if (key == LogicalKeyboardKey.f1) {
@@ -537,16 +516,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _ShortcutItem('Ctrl+F', '検索バーを開く'),
               _ShortcutItem('Ctrl+T', 'タスク管理'),
               _ShortcutItem('Ctrl+E', 'メモ一括編集'),
-              _ShortcutItem('Ctrl+M', '3点ドットメニュー'),
               _ShortcutItem('→', '3点ドットメニュー'),
               _ShortcutItem('F1', 'ショートカットキー'),
               _ShortcutItem('Ctrl+Shift+S', '設定画面'),
               _ShortcutItem('Escape', '検索バーを閉じる'),
               _ShortcutItem('Tab', 'タグ選択を切り替え'),
               Divider(),
-              _ShortcutItem('Ctrl+Shift+L', 'グローバルタスク作成'),
-              _ShortcutItem('Ctrl+2', 'タスク画面に移動'),
-              _ShortcutItem('Ctrl+G', '次の検索結果に移動'),
             ],
           ),
         ),
@@ -1180,7 +1155,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       child: DragTarget<Group>(
-                        onWillAcceptWithDetails: (data) => data != null && data.data.id != group.id,
+                        onWillAcceptWithDetails: (data) => data.data.id != group.id,
                         onAcceptWithDetails: (data) async {
                           final groups = ref.read(linkViewModelProvider).groups;
                           final fromIndex = groups.indexWhere((g) => g.id == data.data.id);

@@ -26,11 +26,6 @@ class KeyboardShortcutService {
       final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
       final isAltPressed = HardwareKeyboard.instance.isAltPressed;
       
-      // Ctrl+Shift+L: グローバルタスク作成
-      if (isCtrlPressed && isShiftPressed && logicalKey == LogicalKeyboardKey.keyL) {
-        _handleGlobalTaskCreation();
-        return true;
-      }
       
       // Ctrl+N: 新規タスク作成
       if (isCtrlPressed && !isShiftPressed && logicalKey == LogicalKeyboardKey.keyN) {
@@ -62,11 +57,6 @@ class KeyboardShortcutService {
         return true;
       }
       
-      // Ctrl+2: タスク画面
-      if (isCtrlPressed && !isShiftPressed && logicalKey == LogicalKeyboardKey.digit2) {
-        _handleNavigateToScreen(1);
-        return true;
-      }
       
       // Ctrl+3: カレンダー画面
       if (isCtrlPressed && !isShiftPressed && logicalKey == LogicalKeyboardKey.digit3) {
@@ -80,32 +70,11 @@ class KeyboardShortcutService {
         return true;
       }
       
-      // Ctrl+G: 次の検索結果
-      if (isCtrlPressed && !isShiftPressed && logicalKey == LogicalKeyboardKey.keyG) {
-        _handleNextSearchResult();
-        return true;
-      }
     }
     
     return false;
   }
   
-  /// グローバルタスク作成
-  static void _handleGlobalTaskCreation() {
-    if (kDebugMode) {
-      print('グローバルタスク作成ショートカットが押されました');
-    }
-    
-    // アプリを前面に表示
-    _bringAppToFront();
-    
-    // タスク作成ダイアログを表示
-    final context = _navigatorKey.currentContext;
-    if (context != null) {
-      // タスク画面に移動してからタスク作成ダイアログを表示
-      _showTaskCreationDialog(context);
-    }
-  }
   
   /// 新規タスク作成
   static void _handleNewTask() {
@@ -183,17 +152,6 @@ class KeyboardShortcutService {
     }
   }
   
-  /// 次の検索結果
-  static void _handleNextSearchResult() {
-    if (kDebugMode) {
-      print('次の検索結果ショートカットが押されました');
-    }
-    
-    final context = _navigatorKey.currentContext;
-    if (context != null) {
-      _navigateToNextSearchResult(context);
-    }
-  }
   
   /// アプリを前面に表示
   static void _bringAppToFront() {

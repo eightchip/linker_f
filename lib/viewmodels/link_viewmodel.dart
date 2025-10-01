@@ -856,6 +856,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
     }
   }
 
+  @override
   void dispose() {
     _repository.dispose();
     super.dispose();
