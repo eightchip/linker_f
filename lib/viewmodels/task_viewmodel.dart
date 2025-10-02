@@ -280,6 +280,64 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
+  /// 指定されたリンクIDを参照しているタスクからそのリンクIDを削除
+  Future<void> removeLinkIdFromTasks(String linkId) async {
+    try {
+      print('🔗 リンクID削除開始: $linkId');
+      
+      if (_taskBox == null || !_taskBox!.isOpen) {
+        await _loadTasks();
+      }
+      
+      bool hasChanges = false;
+      final updatedTasks = <TaskItem>[];
+      
+      for (final task in state) {
+        bool taskUpdated = false;
+        List<String> updatedLinkIds = List.from(task.relatedLinkIds);
+        
+        // 古い形式のリンクIDをチェック
+        if (task.relatedLinkId == linkId) {
+          final updatedTask = task.copyWith(relatedLinkId: null);
+          updatedTasks.add(updatedTask);
+          taskUpdated = true;
+          hasChanges = true;
+          print('🔗 古い形式のリンクIDを削除: ${task.title}');
+        }
+        // 新しい形式のリンクIDをチェック
+        else if (updatedLinkIds.contains(linkId)) {
+          updatedLinkIds.remove(linkId);
+          final updatedTask = task.copyWith(relatedLinkIds: updatedLinkIds);
+          updatedTasks.add(updatedTask);
+          taskUpdated = true;
+          hasChanges = true;
+          print('🔗 新しい形式のリンクIDを削除: ${task.title}');
+        }
+        
+        if (!taskUpdated) {
+          updatedTasks.add(task);
+        }
+      }
+      
+      if (hasChanges) {
+        // データベースを更新
+        for (final task in updatedTasks) {
+          await _taskBox!.put(task.id, task);
+        }
+        await _taskBox!.flush();
+        
+        // 状態を更新
+        state = updatedTasks;
+        
+        print('🔗 リンクID削除完了: $linkId');
+      } else {
+        print('🔗 削除対象のリンクIDを持つタスクが見つかりませんでした: $linkId');
+      }
+    } catch (e) {
+      print('🔗 リンクID削除エラー: $e');
+    }
+  }
+
   Future<void> updateTask(TaskItem task) async {
     try {
       if (_taskBox == null || !_taskBox!.isOpen) {

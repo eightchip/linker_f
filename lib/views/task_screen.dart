@@ -3309,9 +3309,9 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         Text(
-                          '選択されたリンク: ${_selectedLinkIds.length}個（既存: ${_currentExistingLinkCount}個）',
+                          '選択されたリンク: ${_getValidSelectedLinkCount()}個（既存: ${_currentExistingLinkCount}個）',
                           style: TextStyle(
-                            color: _selectedLinkIds.isNotEmpty 
+                            color: _getValidSelectedLinkCount() > 0 
                                 ? theme.colorScheme.primary
                                 : theme.colorScheme.outline,
                             fontWeight: FontWeight.w600,
@@ -3337,7 +3337,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: (_selectedLinkIds.isNotEmpty || _hasExistingLinksChanged()) ? _saveLinkAssociations : null,
+                        onPressed: (_getValidSelectedLinkCount() > 0 || _hasExistingLinksChanged()) ? _saveLinkAssociations : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primary,
                           foregroundColor: theme.colorScheme.onPrimary,
@@ -3364,6 +3364,11 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
     final existingLinks = <Widget>[];
     
     for (final linkId in widget.task.relatedLinkIds) {
+      // 削除されたリンクIDはスキップ
+      if (_removedLinkIds.contains(linkId)) {
+        continue;
+      }
+      
       // リンクを検索
       LinkItem? link;
       Group? parentGroup;
@@ -3484,9 +3489,62 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
     return existingLinks;
   }
 
-  /// 現在の既存リンク数を取得（削除されたリンクを除く）
+  /// 有効な選択されたリンク数を取得（削除されていないリンクのみ）
+  int _getValidSelectedLinkCount() {
+    final linkGroups = ref.read(linkViewModelProvider);
+    int validCount = 0;
+    
+    for (final linkId in _selectedLinkIds) {
+      // 削除されたリンクIDはスキップ
+      if (_removedLinkIds.contains(linkId)) {
+        continue;
+      }
+      
+      // 実際にリンクが存在するかチェック
+      bool linkExists = false;
+      for (final group in linkGroups.groups) {
+        for (final link in group.items) {
+          if (link.id == linkId) {
+            linkExists = true;
+            break;
+          }
+        }
+        if (linkExists) break;
+      }
+      
+      if (linkExists) {
+        validCount++;
+      }
+    }
+    
+    return validCount;
+  }
+
+  /// 現在の既存リンク数を取得（実際に存在するリンクのみ）
   int get _currentExistingLinkCount {
-    return widget.task.relatedLinkIds.length - _removedLinkIds.length;
+    final linkGroups = ref.read(linkViewModelProvider);
+    int validLinkCount = 0;
+    
+    for (final linkId in widget.task.relatedLinkIds) {
+      if (!_removedLinkIds.contains(linkId)) {
+        // リンクが実際に存在するかチェック
+        bool linkExists = false;
+        for (final group in linkGroups.groups) {
+          for (final link in group.items) {
+            if (link.id == linkId) {
+              linkExists = true;
+              break;
+            }
+          }
+          if (linkExists) break;
+        }
+        if (linkExists) {
+          validLinkCount++;
+        }
+      }
+    }
+    
+    return validLinkCount;
   }
 
   /// 既存リンクに変更があったかチェック

@@ -13,6 +13,7 @@ import 'dart:ffi' as ffi;
 import 'package:win32/win32.dart';
 import 'package:flutter/foundation.dart';
 import '../models/task_item.dart';
+import 'task_viewmodel.dart';
 
 final linkRepositoryProvider = Provider<LinkRepository>((ref) {
   return LinkRepository.instance;
@@ -20,7 +21,7 @@ final linkRepositoryProvider = Provider<LinkRepository>((ref) {
 
 final linkViewModelProvider = StateNotifierProvider<LinkViewModel, LinkState>((ref) {
   final repository = ref.watch(linkRepositoryProvider);
-  return LinkViewModel(repository);
+  return LinkViewModel(repository, ref);
 });
 
 class LinkState {
@@ -50,8 +51,9 @@ class LinkState {
 class LinkViewModel extends StateNotifier<LinkState> {
   final LinkRepository _repository;
   final _uuid = Uuid();
+  final Ref _ref;
 
-  LinkViewModel(this._repository) : super(LinkState()) {
+  LinkViewModel(this._repository, this._ref) : super(LinkState()) {
     _initialize();
   }
 
@@ -381,7 +383,19 @@ class LinkViewModel extends StateNotifier<LinkState> {
   }
 
   Future<void> removeLinkFromGroup(String groupId, String linkId) async {
+    print('🔗 リンク削除開始: $linkId (グループ: $groupId)');
+    
+    // リンクを削除
     await _repository.deleteLink(linkId);
+    
+    // タスクからもリンクIDを削除
+    try {
+      final taskViewModel = _ref.read(taskViewModelProvider.notifier);
+      await taskViewModel.removeLinkIdFromTasks(linkId);
+      print('🔗 タスクからのリンクID削除完了: $linkId');
+    } catch (e) {
+      print('🔗 タスクからのリンクID削除エラー: $e');
+    }
     
     final groups = state.groups;
     final groupIndex = groups.indexWhere((g) => g.id == groupId);
@@ -391,6 +405,7 @@ class LinkViewModel extends StateNotifier<LinkState> {
       final updatedGroup = group.copyWith(items: updatedItems);
       await _repository.saveGroup(updatedGroup);
       await _loadGroups();
+      print('🔗 リンク削除完了: $linkId');
     }
   }
 
