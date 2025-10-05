@@ -3451,23 +3451,34 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
         existingLinks.add(
           Container(
             margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                width: 1.5,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                // リンクアイコン
-                Icon(
-                  Icons.link,
-                  color: theme.colorScheme.primary,
-                  size: 20,
+                // リンクアイコン（リンク管理画面と同じロジック）
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _buildFaviconOrIconForExisting(link, theme),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 
                 // リンク情報
                 Expanded(
@@ -3476,35 +3487,62 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                     children: [
                       Text(
                         link.label,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        link.path,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        child: Text(
+                          link.path,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                            fontFamily: 'monospace',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       if (parentGroup != null) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _getGroupColor(parentGroup).withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            parentGroup.title,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: _getGroupColor(parentGroup),
-                              fontWeight: FontWeight.w500,
+                            color: _getGroupColor(parentGroup).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _getGroupColor(parentGroup).withValues(alpha: 0.3),
+                              width: 1,
                             ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: _getGroupColor(parentGroup),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                parentGroup.title,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: _getGroupColor(parentGroup),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -3513,17 +3551,28 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                 ),
                 
                 // 削除ボタン
-                IconButton(
-                  onPressed: () => _removeLinkFromTask(linkId),
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: theme.colorScheme.error,
-                    size: 20,
+                Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.errorContainer.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.error.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
-                  tooltip: 'このリンクを削除',
-                  style: IconButton.styleFrom(
-                    backgroundColor: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-                    foregroundColor: theme.colorScheme.error,
+                  child: IconButton(
+                    onPressed: () => _removeLinkFromTask(linkId),
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: theme.colorScheme.error,
+                      size: 22,
+                    ),
+                    tooltip: 'このリンクを削除',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: theme.colorScheme.error,
+                      padding: const EdgeInsets.all(8),
+                    ),
                   ),
                 ),
               ],
@@ -3909,7 +3958,26 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
           );
       }
 
-  /// Faviconまたはデフォルトアイコンを表示（リンク管理画面と同じロジック）
+  /// 既存リンク用のFaviconまたはデフォルトアイコンを表示（リンク管理画面と同じロジック）
+  Widget _buildFaviconOrIconForExisting(LinkItem link, ThemeData theme) {
+    // リンク管理画面と同じアイコン表示ロジックを使用
+    if (link.type == LinkType.url) {
+      return UrlPreviewWidget(
+        url: link.path, 
+        isDark: theme.brightness == Brightness.dark,
+        fallbackDomain: link.faviconFallbackDomain,
+      );
+    } else if (link.type == LinkType.file) {
+      return FilePreviewWidget(
+        path: link.path,
+        isDark: theme.brightness == Brightness.dark,
+      );
+    } else {
+      // フォルダの場合
+      return _buildLinkIcon(link, size: 20);
+    }
+  }
+
   Widget _buildFaviconOrIcon(LinkItem link, ThemeData theme) {
     // リンク管理画面と同じアイコン表示ロジックを使用
     if (link.type == LinkType.url) {
