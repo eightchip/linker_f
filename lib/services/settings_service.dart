@@ -82,7 +82,7 @@ class SettingsService {
   // デフォルト値
   static const bool _defaultDarkMode = false;
   static const double _defaultFontSize = 1.0;
-  static const int _defaultAccentColor = 0xFF3B82F6;
+  static const int _defaultAccentColor = 0xFF1E40AF; // 鮮明なブルー色
   static const int _defaultTextColor = 0xFF000000;
   static const double _defaultColorIntensity = 1.0;
   static const double _defaultColorContrast = 1.0;

@@ -547,26 +547,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildAccentColorGrid(BuildContext context, WidgetRef ref, int currentColor) {
-    // 色系統を8種類に絞る
+    // 色系統を10種類に拡張、より明確に区別できる色に変更
     final colorOptions = [
-      0xFF3B82F6, // ブルー
-      0xFFEF4444, // レッド
-      0xFF22C55E, // グリーン
-      0xFFF59E42, // オレンジ
-      0xFF8B5CF6, // パープル
-      0xFFEC4899, // ピンク
-      0xFF06B6D4, // シアン
-      0xFF64748B, // グレー
+      0xFF1E40AF, // ブルー（鮮明な青）
+      0xFFDC2626, // レッド（濃い赤）
+      0xFF16A34A, // グリーン（濃い緑）
+      0xFFEA580C, // オレンジ（濃いオレンジ）
+      0xFF7C3AED, // パープル（濃い紫）
+      0xFFDB2777, // ピンク（濃いピンク）
+      0xFF0891B2, // シアン（濃い青緑）
+      0xFF4B5563, // グレー（暗いグレー）
+      0xFF059669, // エメラルド（濃い緑青）
+      0xFFCA8A04, // イエロー（濃い黄色）
     ];
     final colorNames = [
-      'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'シアン', 'グレー'
+      'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'シアン', 'グレー', 'エメラルド', 'イエロー'
     ];
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
+        crossAxisCount: 5, // 5列で10色を2行表示
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
         childAspectRatio: 2.5,

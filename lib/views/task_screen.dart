@@ -1178,11 +1178,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               const SizedBox(width: 6),
               Expanded(
                 child: _searchQuery.isNotEmpty
-                    ? HighlightedText(
+                      ? HighlightedText(
                         text: task.title,
                         highlight: _searchQuery,
                         style: TextStyle(
-                          color: Color(ref.watch(titleTextColorProvider)),
+                          color: _getTaskTitleColor(),
                           decoration: task.status == TaskStatus.completed 
                               ? TextDecoration.lineThrough 
                               : null,
@@ -1196,7 +1196,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     : Text(
                         task.title,
                         style: TextStyle(
-                          color: Color(ref.watch(titleTextColorProvider)),
+                          color: _getTaskTitleColor(),
                           decoration: task.status == TaskStatus.completed 
                               ? TextDecoration.lineThrough 
                               : null,
@@ -3077,6 +3077,20 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       );
     }
   }
+
+  /// タスクタイトルの文字色を取得（ダークモード対応）
+  Color _getTaskTitleColor() {
+    final isDarkMode = ref.watch(darkModeProvider);
+    final customColor = Color(ref.watch(titleTextColorProvider));
+    
+    // ダークモードの場合は自動的に白、ライトモードの場合はカスタム色または黒
+    if (isDarkMode) {
+      return Colors.white;
+    } else {
+      // カスタム色が設定されている場合はそれを使用、デフォルトは黒
+      return customColor.value == 0xFF000000 ? Colors.black : customColor;
+    }
+  }
   
 }
 
@@ -3891,54 +3905,24 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
           );
       }
 
-  /// Faviconまたはデフォルトアイコンを表示
+  /// Faviconまたはデフォルトアイコンを表示（リンク管理画面と同じロジック）
   Widget _buildFaviconOrIcon(LinkItem link, ThemeData theme) {
-    // URLからドメインを抽出
-    final uri = Uri.tryParse(link.path);
-    if (uri != null && uri.host.isNotEmpty) {
-      return Container(
-        width: 16,
-        height: 16,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(2),
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.3),
-            width: 0.5,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: Image.network(
-            'https://www.google.com/s2/favicons?domain=${uri.host}&sz=16',
-            width: 16,
-            height: 16,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(
-                _getLinkTypeIcon(link.path),
-                color: theme.colorScheme.primary,
-                size: 16,
-              );
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Icon(
-                _getLinkTypeIcon(link.path),
-                color: theme.colorScheme.primary,
-                size: 16,
-              );
-            },
-          ),
-        ),
+    // リンク管理画面と同じアイコン表示ロジックを使用
+    if (link.type == LinkType.url) {
+      return UrlPreviewWidget(
+        url: link.path, 
+        isDark: theme.brightness == Brightness.dark,
+        fallbackDomain: link.faviconFallbackDomain,
       );
+    } else if (link.type == LinkType.file) {
+      return FilePreviewWidget(
+        path: link.path,
+        isDark: theme.brightness == Brightness.dark,
+      );
+    } else {
+      // フォルダの場合
+      return _buildLinkIcon(link, size: 12);
     }
-    
-    // URLでない場合はファイルタイプに応じたアイコン
-    return Icon(
-      _getLinkTypeIcon(link.path),
-      color: theme.colorScheme.primary,
-      size: 16,
-    );
   }
 
   /// リンクの詳細ツールチップを表示

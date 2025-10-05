@@ -4,7 +4,7 @@ final fontSizeProvider = StateProvider<double>((ref) => 1.0);
 
 final darkModeProvider = StateProvider<bool>((ref) => false);
 
-final accentColorProvider = StateProvider<int>((ref) => 0xFF3B82F6);
+final accentColorProvider = StateProvider<int>((ref) => 0xFF1E40AF); // 鮮明なブルー色
 
 // 色の濃淡調整（0.0-2.0、1.0が標準）
 final colorIntensityProvider = StateProvider<double>((ref) => 1.0);
