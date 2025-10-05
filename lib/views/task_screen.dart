@@ -1845,48 +1845,48 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     // 実際に存在するリンクがあるかチェック
     final hasValidLinks = _hasValidLinks(task);
     
+    print('🔗 リンクボタン表示チェック: ${task.title}');
+    print('🔗 タスクID: ${task.id}');
+    print('🔗 リンクID数: ${task.relatedLinkIds.length}');
+    print('🔗 有効なリンク: $hasValidLinks');
+    
+    
     if (!hasValidLinks) {
+      print('🔗 無効なリンクのため、link_offアイコンを表示');
       return IconButton(
-        icon: const Icon(Icons.link_off, size: 16, color: Colors.grey),
+        icon: const Icon(Icons.link_off, size: 20, color: Colors.grey),
         onPressed: () => _showLinkAssociationDialog(task),
         tooltip: 'リンクを関連付け',
       );
     }
     
-    return PopupMenuButton<String>(
-      icon: Stack(
-        children: [
-          const Icon(Icons.link, size: 16),
-          if (task.relatedLinkIds.length > 1)
-            Positioned(
-              right: -2,
-              top: -2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: BoxDecoration(
-                  color: Colors.orange,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                constraints: const BoxConstraints(
-                  minWidth: 12,
-                  minHeight: 12,
-                ),
-                child: Text(
-                  '${task.relatedLinkIds.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-        ],
-      ),
-      tooltip: '関連リンクを開く',
-      onSelected: (value) => _handleLinkAction(value, task),
-      itemBuilder: (context) {
+    // 有効なリンク数を正確に計算（根本修正）
+    int validLinkCount = 0;
+    
+    // 新しい形式のリンクIDをチェック（実際に存在するリンクのみ）
+    for (final linkId in task.relatedLinkIds) {
+      final label = _getLinkLabel(linkId);
+      if (label != null) {
+        validLinkCount++;
+      }
+    }
+    
+    // 古い形式のリンクもチェック（重複しないように）
+    if (task.relatedLinkId != null && task.relatedLinkId!.isNotEmpty) {
+      final label = _getLinkLabel(task.relatedLinkId!);
+      if (label != null && !task.relatedLinkIds.contains(task.relatedLinkId)) {
+        validLinkCount++;
+      }
+    }
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.link, size: 20),
+          tooltip: '関連リンクを開く',
+          onSelected: (value) => _handleLinkAction(value, task),
+          itemBuilder: (context) {
         final items = <PopupMenuEntry<String>>[];
         
         // 各リンクを開くオプション（実際に存在するリンクのみ）
@@ -1936,38 +1936,114 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         ]);
         
         return items;
-      },
+          },
+        ),
+        if (validLinkCount > 0)
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.transparent,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _showLinkAssociationDialog(task),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade600,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orange.shade600.withValues(alpha: 0.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 24,
+                        ),
+                        child: Text(
+                          '$validLinkCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            height: 1.0,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
   
   /// リンクのラベルを取得
   String? _getLinkLabel(String linkId) {
     final groups = ref.read(linkViewModelProvider);
+    print('🔗 _getLinkLabel 検索開始: $linkId');
+    print('🔗 利用可能なグループ数: ${groups.groups.length}');
     
     for (final group in groups.groups) {
+      print('🔗 グループ "${group.title}" のアイテム数: ${group.items.length}');
       for (final link in group.items) {
         if (link.id == linkId) {
+          print('🔗 リンクが見つかりました: ${link.label}');
           return link.label;
         }
       }
     }
+    print('🔗 リンクが見つかりませんでした: $linkId');
     return null;
   }
 
   /// タスクに有効なリンクがあるかチェック
   bool _hasValidLinks(TaskItem task) {
-    // 古い形式のリンクIDをチェック
-    if (task.relatedLinkId != null && task.relatedLinkId!.isNotEmpty) {
-      return _getLinkLabel(task.relatedLinkId!) != null;
-    }
+    print('🔗 _hasValidLinks チェック: ${task.title}');
+    print('🔗 古い形式のリンクID: ${task.relatedLinkId}');
+    print('🔗 新しい形式のリンクID: ${task.relatedLinkIds}');
     
-    // 新しい形式のリンクIDをチェック
+    // 新しい形式のリンクIDをチェック（優先）
     for (final linkId in task.relatedLinkIds) {
-      if (_getLinkLabel(linkId) != null) {
+      final label = _getLinkLabel(linkId);
+      print('🔗 リンクID $linkId のラベル: $label');
+      if (label != null) {
+        print('🔗 有効なリンクが見つかりました');
         return true;
       }
     }
     
+    // 古い形式のリンクIDをチェック（フォールバック）
+    if (task.relatedLinkId != null && task.relatedLinkId!.isNotEmpty) {
+      final label = _getLinkLabel(task.relatedLinkId!);
+      print('🔗 古い形式のリンクラベル: $label');
+      if (label != null) {
+        print('🔗 古い形式で有効なリンクが見つかりました');
+        return true;
+      }
+    }
+    
+    print('🔗 有効なリンクが見つかりませんでした');
     return false;
   }
   
@@ -3026,18 +3102,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 関連リンクのヘッダー
-        Text(
-          '関連資料:',
-          style: TextStyle(
-            color: Colors.blue[700],
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 2),
-        
-        // リンク一覧
+        // リンク一覧（「関連資料:」ヘッダーを削除）
         ...links.map((link) => Padding(
           padding: const EdgeInsets.only(bottom: 2),
           child: GestureDetector(
