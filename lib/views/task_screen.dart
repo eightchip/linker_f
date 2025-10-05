@@ -1294,56 +1294,60 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   print('===============================');
                   
                   if (task.hasSubTasks || task.totalSubTasksCount > 0) {
-                    return IconButton(
-                  icon: Stack(
-                    children: [
-                      Icon(
-                        Icons.subdirectory_arrow_right, 
-                        size: 20,
-                        color: Colors.blue.shade600,
+                    return Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.transparent,
                       ),
-                      Positioned(
-                        right: -4,
-                        top: -4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade600,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.blue.shade600.withValues(alpha: 0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => _showTaskDialog(task: task),
+                          child: Stack(
+                            children: [
+                              Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade600,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.blue.shade600.withValues(alpha: 0.4),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 24,
+                                  ),
+                                  child: Text(
+                                    '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.0,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 20,
-                          ),
-                          child: Text(
-                            '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              height: 1.0,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.visible,
-                          ),
                         ),
                       ),
-                    ],
-                  ),
-                  onPressed: () => _showTaskDialog(task: task),
-                  tooltip: 'サブタスク編集',
                     );
                   } else {
                     return const SizedBox.shrink();
