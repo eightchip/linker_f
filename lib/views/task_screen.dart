@@ -1295,7 +1295,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   
                   if (task.hasSubTasks || task.totalSubTasksCount > 0) {
                     return Container(
-                      width: 60,
+                      width: 65,
                       height: 32,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
