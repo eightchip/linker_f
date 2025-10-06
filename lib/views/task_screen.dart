@@ -1296,7 +1296,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   if (task.hasSubTasks || task.totalSubTasksCount > 0) {
                     return Container(
                       width: 60,
-                      height: 40,
+                      height: 32,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         color: Colors.transparent,
@@ -1327,7 +1327,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                                     ],
                                   ),
                                   constraints: const BoxConstraints(
-                                    minWidth: 55,
+                                    minWidth: 60,
                                     minHeight: 32,
                                   ),
                                   child: Center(
