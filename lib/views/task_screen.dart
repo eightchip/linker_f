@@ -334,7 +334,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                       child: const Icon(
                         Icons.task_alt,
                         color: Colors.green,
-                        size: 20,
+                        size: 16,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1222,7 +1222,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                     children: [
                       Icon(
                         Icons.group,
-                        size: 12,
+                        size: 16,
                         color: Colors.blue[700],
                       ),
                       const SizedBox(width: 4),
@@ -1295,8 +1295,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   
                   if (task.hasSubTasks || task.totalSubTasksCount > 0) {
                     return Container(
-                      width: 50,
-                      height: 50,
+                      width: 60,
+                      height: 40,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         color: Colors.transparent,
@@ -1310,7 +1310,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                             children: [
                               Center(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.blue.shade600,
                                     borderRadius: BorderRadius.circular(12),
@@ -1327,20 +1327,22 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                                     ],
                                   ),
                                   constraints: const BoxConstraints(
-                                    minWidth: 36,
-                                    minHeight: 24,
+                                    minWidth: 55,
+                                    minHeight: 32,
                                   ),
-                                  child: Text(
-                                    '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.0,
+                                  child: Center(
+                                    child: Text(
+                                      '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.0,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.visible,
                                     ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.visible,
                                   ),
                                 ),
                               ),
@@ -1854,7 +1856,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     if (!hasValidLinks) {
       print('🔗 無効なリンクのため、link_offアイコンを表示');
       return IconButton(
-        icon: const Icon(Icons.link_off, size: 20, color: Colors.grey),
+        icon: const Icon(Icons.link_off, size: 16, color: Colors.grey),
         onPressed: () => _showLinkAssociationDialog(task),
         tooltip: 'リンクを関連付け',
       );
@@ -1879,123 +1881,71 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       }
     }
     
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.link, size: 20),
-          tooltip: '関連リンクを開く',
-          onSelected: (value) => _handleLinkAction(value, task),
-          itemBuilder: (context) {
-        final items = <PopupMenuEntry<String>>[];
-        
-        // 各リンクを開くオプション（実際に存在するリンクのみ）
-        int validLinkIndex = 1;
-        for (int i = 0; i < task.relatedLinkIds.length; i++) {
-          final linkId = task.relatedLinkIds[i];
-          final linkLabel = _getLinkLabel(linkId);
-          
-          // リンクが実際に存在する場合のみ表示
-          if (linkLabel != null) {
-            items.add(PopupMenuItem(
-              value: 'open_$linkId',
-              child: Row(
-                children: [
-                  const Icon(Icons.open_in_new, size: 16),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
+    // リンクバッジがある場合はバッジのみ表示、ない場合はlink_offアイコン表示
+    if (validLinkCount > 0) {
+      return Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.transparent,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => _showLinkAssociationDialog(task),
+            child: Stack(
+              children: [
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade600,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.shade600.withValues(alpha: 0.4),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 24,
+                    ),
                     child: Text(
-                      linkLabel,
-                      overflow: TextOverflow.ellipsis,
+                      '$validLinkCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        height: 1.0,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
                     ),
                   ),
-                ],
-              ),
-            ));
-            validLinkIndex++;
-          }
-        }
-        
-        // 実際に存在するリンクがある場合のみ区切り線とリンク管理を表示
-        if (items.isNotEmpty) {
-          items.add(const PopupMenuDivider());
-        }
-        
-        // リンク管理オプション
-        items.addAll([
-          const PopupMenuItem(
-            value: 'manage_links',
-            child: Row(
-              children: [
-                Icon(Icons.link, color: Colors.blue),
-                SizedBox(width: 8),
-                Text('リンク管理', style: TextStyle(color: Colors.blue)),
+                ),
               ],
             ),
           ),
-        ]);
-        
-        return items;
-          },
         ),
-        if (validLinkCount > 0)
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.transparent,
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => _showLinkAssociationDialog(task),
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade600,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.orange.shade600.withValues(alpha: 0.4),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 36,
-                          minHeight: 24,
-                        ),
-                        child: Text(
-                          '$validLinkCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            height: 1.0,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.visible,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
+      );
+    } else {
+      // リンクがない場合はlink_offアイコンを表示
+      return IconButton(
+        icon: const Icon(Icons.link_off, size: 16, color: Colors.grey),
+        onPressed: () => _showLinkAssociationDialog(task),
+        tooltip: 'リンクを関連付け',
+      );
+    }
   }
   
   /// リンクのラベルを取得
@@ -3102,26 +3052,40 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // リンク一覧（「関連資料:」ヘッダーを削除）
+        // リンク一覧（アイコン付きで表示）
         ...links.map((link) => Padding(
-          padding: const EdgeInsets.only(bottom: 2),
+          padding: const EdgeInsets.only(bottom: 4),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
               if (onAnyLinkTap != null) onAnyLinkTap();
               _openRelatedLink(link);
             },
-            child: Text(
-              '• ${link.label}',
-              style: TextStyle(
-                color: Colors.blue[800],
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                decoration: TextDecoration.underline,
-                decorationColor: Colors.blue[800],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Row(
+              children: [
+                // リンクアイコン（リンク管理画面と同じロジック）
+                Container(
+                  width: 16,
+                  height: 16,
+                  child: _buildFaviconOrIcon(link, Theme.of(context)),
+                ),
+                const SizedBox(width: 8),
+                // リンクラベル
+                Expanded(
+                  child: Text(
+                    link.label,
+                    style: TextStyle(
+                      color: Colors.blue[800],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.blue[800],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
         )),
@@ -3158,6 +3122,91 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     } else {
       // カスタム色が設定されている場合はそれを使用、デフォルトは黒
       return customColor.value == 0xFF000000 ? Colors.black : customColor;
+    }
+  }
+
+  Widget _buildFaviconOrIcon(LinkItem link, ThemeData theme) {
+    // リンク管理画面と同じアイコン表示ロジックを使用
+    if (link.type == LinkType.url) {
+      return UrlPreviewWidget(
+        url: link.path, 
+        isDark: theme.brightness == Brightness.dark,
+        fallbackDomain: link.faviconFallbackDomain,
+      );
+    } else if (link.type == LinkType.file) {
+      return FilePreviewWidget(
+        path: link.path,
+        isDark: theme.brightness == Brightness.dark,
+      );
+    } else {
+      // フォルダの場合 - リンク管理画面と同じロジック
+      if (link.iconData != null) {
+        return Icon(
+          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
+          color: link.iconColor != null ? Color(link.iconColor!) : Colors.orange,
+          size: 16,
+        );
+      } else {
+        return Icon(
+          Icons.folder,
+          color: Colors.orange,
+          size: 16,
+        );
+      }
+    }
+  }
+
+  Color _getLinkIconColor(LinkItem link) {
+    if (link.iconColor != null) {
+      return Color(link.iconColor!);
+    } else {
+      switch (link.type) {
+        case LinkType.url:
+          return Colors.blue;
+        case LinkType.file:
+          return Colors.green;
+        case LinkType.folder:
+          return Colors.orange;
+      }
+    }
+  }
+
+  Widget _buildLinkIcon(LinkItem link, {double size = 20}) {
+    if (link.type == LinkType.folder) {
+      if (link.iconData != null) {
+        return Icon(
+          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
+          color: _getLinkIconColor(link),
+          size: size,
+        );
+      } else {
+        return Icon(
+          Icons.folder,
+          color: _getLinkIconColor(link),
+          size: size,
+        );
+      }
+    } else {
+      switch (link.type) {
+        case LinkType.file:
+          return Icon(
+            Icons.insert_drive_file,
+            color: _getLinkIconColor(link),
+            size: size,
+          );
+        case LinkType.url:
+          return Icon(
+            Icons.link,
+            color: _getLinkIconColor(link),
+            size: size,
+          );
+        case LinkType.folder:
+          return Icon(
+            Icons.folder,
+            color: _getLinkIconColor(link),
+            size: size,
+          );
+      }
     }
   }
   
@@ -3247,7 +3296,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                     child: Icon(
                       Icons.link,
                       color: theme.colorScheme.primary,
-                      size: 24,
+                      size: 16,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.lg),
@@ -3300,7 +3349,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                           leading: Icon(
                             Icons.link_off,
                             color: theme.colorScheme.error,
-                            size: 20,
+                            size: 16,
                           ),
                           title: Text(
                             '既存の関連リンク（${_currentExistingLinkCount}個）',
@@ -3630,7 +3679,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                     icon: Icon(
                       Icons.delete_outline,
                       color: theme.colorScheme.error,
-                      size: 22,
+                      size: 16,
                     ),
                     tooltip: 'このリンクを削除',
                     style: IconButton.styleFrom(
@@ -3969,10 +4018,10 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
                           Container(
                             padding: const EdgeInsets.all(2), // パディングを削減
                             decoration: BoxDecoration(
-                              color: _getLinkIconColor(link).withValues(alpha: 0.2),
+                              color: Colors.blue.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(3),
                             ),
-                            child: _buildLinkIcon(link, size: 12), // アイコンサイズを削減
+                            child: _buildFaviconOrIcon(link, theme), // リンク管理画面と同じロジック
                           ),
                           const Spacer(),
                           // 選択状態インジケーター
@@ -4022,45 +4071,6 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
             ),
           );
       }
-
-  /// 既存リンク用のFaviconまたはデフォルトアイコンを表示（リンク管理画面と同じロジック）
-  Widget _buildFaviconOrIconForExisting(LinkItem link, ThemeData theme) {
-    // リンク管理画面と同じアイコン表示ロジックを使用
-    if (link.type == LinkType.url) {
-      return UrlPreviewWidget(
-        url: link.path, 
-        isDark: theme.brightness == Brightness.dark,
-        fallbackDomain: link.faviconFallbackDomain,
-      );
-    } else if (link.type == LinkType.file) {
-      return FilePreviewWidget(
-        path: link.path,
-        isDark: theme.brightness == Brightness.dark,
-      );
-    } else {
-      // フォルダの場合
-      return _buildLinkIcon(link, size: 20);
-    }
-  }
-
-  Widget _buildFaviconOrIcon(LinkItem link, ThemeData theme) {
-    // リンク管理画面と同じアイコン表示ロジックを使用
-    if (link.type == LinkType.url) {
-      return UrlPreviewWidget(
-        url: link.path, 
-        isDark: theme.brightness == Brightness.dark,
-        fallbackDomain: link.faviconFallbackDomain,
-      );
-    } else if (link.type == LinkType.file) {
-      return FilePreviewWidget(
-        path: link.path,
-        isDark: theme.brightness == Brightness.dark,
-      );
-    } else {
-      // フォルダの場合
-      return _buildLinkIcon(link, size: 12);
-    }
-  }
 
   /// リンクの詳細ツールチップを表示
   void _showLinkTooltip(LinkItem link, ThemeData theme) {
@@ -4337,64 +4347,6 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
   }
 
 
-  // リンク画面と同じアイコンロジック
-  Color _getLinkIconColor(LinkItem link) {
-    if (link.type == LinkType.folder) {
-      if (link.iconColor != null) {
-        return Color(link.iconColor!);
-      } else {
-        return Colors.orange;
-      }
-    } else {
-      switch (link.type) {
-        case LinkType.file:
-          return Colors.blue;
-        case LinkType.url:
-          return Colors.green;
-        case LinkType.folder:
-          return Colors.orange;
-      }
-    }
-  }
-
-  Widget _buildLinkIcon(LinkItem link, {double size = 20}) {
-    if (link.type == LinkType.folder) {
-      if (link.iconData != null) {
-        return Icon(
-          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
-          color: _getLinkIconColor(link),
-          size: size,
-        );
-      } else {
-        return Icon(
-          Icons.folder,
-          color: _getLinkIconColor(link),
-          size: size,
-        );
-      }
-    } else {
-      switch (link.type) {
-        case LinkType.file:
-          return Icon(
-            Icons.insert_drive_file,
-            color: _getLinkIconColor(link),
-            size: size,
-          );
-        case LinkType.url:
-          return Icon(
-            Icons.link,
-            color: _getLinkIconColor(link),
-            size: size,
-          );
-        case LinkType.folder:
-          return Icon(
-            Icons.folder,
-            color: _getLinkIconColor(link),
-            size: size,
-          );
-      }
-    }
-  }
 
   Future<void> _saveLinkAssociations() async {
     try {
@@ -4870,5 +4822,66 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
     );
   }
 
+  Widget _buildFaviconOrIconForExisting(LinkItem link, ThemeData theme) {
+    // リンク管理画面と同じアイコン表示ロジックを使用
+    if (link.type == LinkType.url) {
+      return UrlPreviewWidget(
+        url: link.path, 
+        isDark: theme.brightness == Brightness.dark,
+        fallbackDomain: link.faviconFallbackDomain,
+      );
+    } else if (link.type == LinkType.file) {
+      return FilePreviewWidget(
+        path: link.path,
+        isDark: theme.brightness == Brightness.dark,
+      );
+    } else {
+      // フォルダの場合 - リンク管理画面と同じロジック
+      if (link.iconData != null) {
+        return Icon(
+          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
+          color: link.iconColor != null ? Color(link.iconColor!) : Colors.orange,
+          size: 16,
+        );
+      } else {
+        return Icon(
+          Icons.folder,
+          color: Colors.orange,
+          size: 16,
+        );
+      }
+    }
+  }
+
+  Widget _buildFaviconOrIcon(LinkItem link, ThemeData theme) {
+    // リンク管理画面と同じアイコン表示ロジックを使用
+    if (link.type == LinkType.url) {
+      return UrlPreviewWidget(
+        url: link.path, 
+        isDark: theme.brightness == Brightness.dark,
+        fallbackDomain: link.faviconFallbackDomain,
+      );
+    } else if (link.type == LinkType.file) {
+      return FilePreviewWidget(
+        path: link.path,
+        isDark: theme.brightness == Brightness.dark,
+      );
+    } else {
+      // フォルダの場合 - リンク管理画面と同じロジック
+      if (link.iconData != null) {
+        return Icon(
+          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
+          color: link.iconColor != null ? Color(link.iconColor!) : Colors.orange,
+          size: 16,
+        );
+      } else {
+        return Icon(
+          Icons.folder,
+          color: Colors.orange,
+          size: 16,
+        );
+      }
+    }
+  }
   
 }

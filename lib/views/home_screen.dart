@@ -2065,7 +2065,7 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return SizedBox(width: 32, height: 32, child: CircularProgressIndicator(strokeWidth: 2));
+      return SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2));
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -2073,16 +2073,16 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
         _faviconUrl != null
           ? Image.network(
               _faviconUrl!,
-              width: 20,
-              height: 20,
+              width: 16,
+              height: 16,
               errorBuilder: (_, __, ___) => FaviconService.getFallbackIcon(widget.url))
           : FaviconService.getFallbackIcon(widget.url),
-        const SizedBox(width: 4),
+        const SizedBox(width: 2),
         Flexible(
           child: HighlightedText(
             text: _title ?? widget.url,
             highlight: widget.searchQuery,
-            style: TextStyle(fontSize: 13, color: widget.isDark ? Colors.white : Colors.black87),
+            style: TextStyle(fontSize: 12, color: widget.isDark ? Colors.white : Colors.black87),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -2235,7 +2235,7 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return SizedBox(width: 32, height: 32, child: CircularProgressIndicator(strokeWidth: 2));
+      return SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2));
     }
     if (_isImage) {
       return MouseRegion(
@@ -2247,8 +2247,8 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
           // プレビュー機能を無効化
         },
         child: Container(
-          width: 32,
-          height: 32,
+          width: 16,
+          height: 16,
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
             borderRadius: BorderRadius.circular(4),
@@ -2258,7 +2258,7 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
             child: Image.file(
               File(widget.path),
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 24)
+              errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 16)
             ),
           ),
         ),
@@ -2289,7 +2289,7 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
               }
             }
           },
-          child: Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
+          child: Icon(Icons.picture_as_pdf, color: Colors.red, size: 16),
         ),
       );
     }
@@ -2303,28 +2303,28 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
         onExit: (_) {
           // プレビュー機能を無効化
         },
-        child: Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 24),
+        child: Icon(Icons.description, color: widget.isDark ? Colors.white70 : Colors.blueGrey, size: 16),
       );
     }
     
     // Office系ファイルのアイコン表示（ホバー機能なし）
     final fileExt = widget.path.toLowerCase();
     if (fileExt.endsWith('.xlsx') || fileExt.endsWith('.xls')) {
-      return FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green[700], size: 24); // Excel
+      return FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green[700], size: 16); // Excel
     }
     if (fileExt.endsWith('.docx') || fileExt.endsWith('.doc')) {
-      return FaIcon(FontAwesomeIcons.fileWord, color: Colors.blue[700], size: 24); // Word
+      return FaIcon(FontAwesomeIcons.fileWord, color: Colors.blue[700], size: 16); // Word
     }
     if (fileExt.endsWith('.pptx') || fileExt.endsWith('.ppt')) {
-      return FaIcon(FontAwesomeIcons.filePowerpoint, color: Colors.orange[700], size: 24); // PowerPoint
+      return FaIcon(FontAwesomeIcons.filePowerpoint, color: Colors.orange[700], size: 16); // PowerPoint
     }
     if (fileExt.endsWith('.msg') || fileExt.endsWith('.eml')) {
-      return FaIcon(FontAwesomeIcons.envelope, color: Colors.blue[800], size: 24); // メール
+      return FaIcon(FontAwesomeIcons.envelope, color: Colors.blue[800], size: 16); // メール
     }
     
 
     // その他
-    return Icon(Icons.insert_drive_file, color: widget.isDark ? Colors.white70 : Colors.grey, size: 24);
+    return Icon(Icons.insert_drive_file, color: widget.isDark ? Colors.white70 : Colors.grey, size: 16);
   }
 }
 

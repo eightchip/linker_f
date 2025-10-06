@@ -101,6 +101,26 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       }
       
       state = tasks;
+      
+      // サブタスク統計を更新
+      print('🚨 サブタスク統計更新開始');
+      for (int i = 0; i < tasks.length; i++) {
+        final task = tasks[i];
+        try {
+          await updateSubTaskStatistics(task.id);
+          // 更新されたタスクを取得
+          final updatedTask = _taskBox?.get(task.id);
+          if (updatedTask != null) {
+            tasks[i] = updatedTask;
+          }
+        } catch (e) {
+          print('❌ サブタスク統計更新エラー (${task.title}): $e');
+        }
+      }
+      print('🚨 サブタスク統計更新完了');
+      
+      // 更新されたタスクリストでstateを更新
+      state = tasks;
       await _removeHolidayTasksOnStartup();
       print('🚨 タスク読み込み完了: ${state.length}件');
     } catch (e) {

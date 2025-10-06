@@ -2,12 +2,14 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import '../repositories/link_repository.dart';
 import '../services/settings_service.dart';
 import '../utils/error_handler.dart';
 import '../models/link_item.dart';
 import '../models/task_item.dart';
 import '../models/group.dart';
+import '../models/sub_task.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -557,6 +559,20 @@ class IntegratedBackupService {
       if (!onlyLinks && _taskViewModel != null) {
         final tasks = _taskViewModel.tasks;
         exportData['tasks'] = tasks.map((task) => task.toJson()).toList();
+        
+        // サブタスクデータもエクスポート
+        final subTaskBox = Hive.box<SubTask>('sub_tasks');
+        final allSubTasks = subTaskBox.values.toList();
+        exportData['subTasks'] = allSubTasks.map((subtask) => subtask.toJson()).toList();
+        
+        if (kDebugMode) {
+          print('=== サブタスクエクスポート ===');
+          print('エクスポートされたサブタスク数: ${allSubTasks.length}');
+          for (final subtask in allSubTasks) {
+            print('サブタスク: ${subtask.title} (親タスク: ${subtask.parentTaskId}, 完了: ${subtask.isCompleted})');
+          }
+          print('========================');
+        }
       }
       
       // 設定データ（UI設定を含む）
@@ -829,6 +845,9 @@ class IntegratedBackupService {
           // 有効な関連リンクIDのみでタスクを作成
           final cleanedTask = task.copyWith(relatedLinkIds: validRelatedLinkIds);
           await _taskViewModel.addTask(cleanedTask);
+          
+          // サブタスクの復元処理を追加（実際のデータから復元）
+          await _restoreSubTasksFromBackup(task.id, task, v2Data['subTasks']);
         }
       }
       
@@ -946,6 +965,78 @@ class IntegratedBackupService {
         groups: [],
         warnings: ['インポートエラー: $e'],
       );
+    }
+  }
+
+  /// バックアップからサブタスクを復元
+  Future<void> _restoreSubTasksFromBackup(String taskId, TaskItem task, List<dynamic>? exportedSubTasks) async {
+    try {
+      final subTaskBox = Hive.box<SubTask>('sub_tasks');
+      
+      if (exportedSubTasks != null && exportedSubTasks.isNotEmpty) {
+        // 実際のサブタスクデータから復元
+        final taskSubTasks = exportedSubTasks
+            .where((subtaskData) => subtaskData['parentTaskId'] == taskId)
+            .toList();
+        
+        for (final subtaskData in taskSubTasks) {
+          final subtask = SubTask(
+            id: subtaskData['id'] ?? '${taskId}_${DateTime.now().millisecondsSinceEpoch}',
+            parentTaskId: taskId,
+            title: subtaskData['title'] ?? 'サブタスク',
+            description: subtaskData['description'],
+            isCompleted: subtaskData['isCompleted'] ?? false,
+            order: subtaskData['order'] ?? 0,
+            createdAt: subtaskData['createdAt'] != null 
+                ? DateTime.parse(subtaskData['createdAt']) 
+                : DateTime.now(),
+            completedAt: subtaskData['completedAt'] != null 
+                ? DateTime.parse(subtaskData['completedAt']) 
+                : null,
+          );
+          subTaskBox.put(subtask.id, subtask);
+        }
+        
+        subTaskBox.flush();
+        if (kDebugMode) {
+          print('サブタスク復元完了（実際のデータ）: タスク「${task.title}」- ${taskSubTasks.length}件');
+        }
+      } else if (task.hasSubTasks && task.totalSubTasksCount > 0) {
+        // フォールバック: タスクのメタデータから復元（後方互換性）
+        for (int i = 0; i < task.completedSubTasksCount; i++) {
+          final subtask = SubTask(
+            id: '${taskId}_completed_$i',
+            parentTaskId: taskId,
+            title: '完了済みサブタスク ${i + 1}',
+            isCompleted: true,
+            order: i,
+            createdAt: DateTime.now(),
+            completedAt: DateTime.now(),
+          );
+          subTaskBox.put(subtask.id, subtask);
+        }
+        
+        for (int i = task.completedSubTasksCount; i < task.totalSubTasksCount; i++) {
+          final subtask = SubTask(
+            id: '${taskId}_pending_$i',
+            parentTaskId: taskId,
+            title: '未完了サブタスク ${i + 1}',
+            isCompleted: false,
+            order: i,
+            createdAt: DateTime.now(),
+          );
+          subTaskBox.put(subtask.id, subtask);
+        }
+        
+        subTaskBox.flush();
+        if (kDebugMode) {
+          print('サブタスク復元完了（メタデータ）: タスク「${task.title}」- 完了:${task.completedSubTasksCount}, 総数:${task.totalSubTasksCount}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('サブタスク復元エラー: $e');
+      }
     }
   }
 
