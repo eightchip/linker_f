@@ -147,6 +147,21 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     });
   }
 
+  /// ホーム画面に遷移（タスク管理デフォルトトグル対応）
+  void _navigateToHome(BuildContext context) {
+    if (Navigator.of(context).canPop()) {
+      // 通常のナビゲーション（ホーム画面から来た場合）
+      Navigator.of(context).pop();
+    } else {
+      // タスク管理デフォルトトグルがオンの場合（ルート画面の場合）
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const HomeScreen(),
+        ),
+      );
+    }
+  }
+
   /// タスクの選択状態を切り替え
   void _toggleTaskSelection(String taskId) {
     setState(() {
@@ -347,7 +362,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   icon: const Icon(Icons.close),
                   tooltip: '選択モードを終了',
                 )
-              : null,
+              : IconButton(
+                  onPressed: () => _navigateToHome(context),
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: 'ホーム画面に戻る',
+                ),
             actions: [
               if (_isSelectionMode) ...[
                 // 全選択/全解除ボタン
@@ -374,7 +393,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 if (event is KeyDownEvent) {
                   if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
                     // 左矢印キーでホーム画面に戻る
-                    Navigator.of(context).pop();
+                    _navigateToHome(context);
                     return KeyEventResult.handled;
                   } else if (event.logicalKey == LogicalKeyboardKey.enter) {
                     // エンターキーでメニューを開く
@@ -2374,9 +2393,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       }
       
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).maybePop();
-        }
+        _navigateToHome(context);
         return;
       } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
         // 右矢印キーでAppBarの3点ドットメニューにフォーカスを移す

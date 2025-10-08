@@ -38,8 +38,8 @@ void main() async {
     
     // 段階的初期化でアプリケーションの安定性を向上
     await _initializeApp();
-    // ウィンドウ初期化を一時的に無効化
-    // await _initializeWindow();
+    // ウィンドウ初期化
+    await _initializeWindow();
     
     // 通知サービス初期化（既存サービスを直接使用）
     try {
@@ -281,9 +281,9 @@ Future<void> _initializeWindow() async {
     
     await windowManager.ensureInitialized();
 
-    // 最もシンプルなウィンドウ設定（デュアルモニター対応を完全に無効化）
+    // 全画面起動のウィンドウ設定
     WindowOptions windowOptions = WindowOptions(
-      size: const Size(1000, 700), // 小さめの固定サイズ
+      size: const Size(1920, 1080), // フルHDサイズ
       center: true, // メインモニターの中央に配置
       backgroundColor: const Color(0xFFF4F5F7),
       skipTaskbar: false,
@@ -296,7 +296,9 @@ Future<void> _initializeWindow() async {
       await windowManager.show();
       await windowManager.focus();
       await windowManager.setTitle('Link Navigator');
-      print('ウィンドウ表示完了');
+      // 起動時に最大化
+      await windowManager.maximize();
+      print('ウィンドウ表示完了（最大化）');
     });
     
     print('ウィンドウ初期化完了');
