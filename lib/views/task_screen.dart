@@ -1120,7 +1120,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         bool isExpanded = _expandedTaskIds.contains(task.id);
         final bool hasDetails =
             (task.description != null && task.description!.isNotEmpty) ||
-            task.relatedLinkIds.isNotEmpty;
+            _hasValidLinks(task);
         
         // UIカスタマイズ設定を取得
         final uiState = ref.watch(uiCustomizationProvider);
@@ -1262,7 +1262,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                           : ref.watch(descriptionFontFamilyProvider),
                     ),
                   ),
-                if (task.relatedLinkIds.isNotEmpty) ...[
+                if (_hasValidLinks(task)) ...[
                   const SizedBox(height: 6),
                   _buildRelatedLinksDisplay(_getRelatedLinks(task), onAnyLinkTap: () {
                     // 詳細折りたたみ中の誤タップ防止はしない。ここは展開中のみ表示

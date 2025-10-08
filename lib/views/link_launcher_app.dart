@@ -2,7 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../services/keyboard_shortcut_service.dart';
+import '../services/settings_service.dart';
 import 'home_screen.dart';
+import 'task_screen.dart';
+
+// 起動画面を決定するProvider
+final startScreenProvider = FutureProvider<Widget>((ref) async {
+  try {
+    final settingsService = SettingsService.instance;
+    // 設定サービスが初期化されるまで待機
+    int retryCount = 0;
+    while (!settingsService.isInitialized && retryCount < 50) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      retryCount++;
+    }
+    
+    if (settingsService.isInitialized && settingsService.startWithTaskScreen) {
+      return const TaskScreen();
+    }
+  } catch (e) {
+    print('起動画面決定エラー: $e');
+  }
+  return const HomeScreen();
+});
 
 class LinkLauncherApp extends ConsumerStatefulWidget {
   const LinkLauncherApp({super.key});
@@ -49,7 +71,6 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
     final isDarkMode = ref.watch(darkModeProvider);
     final accentColor = ref.watch(accentColorProvider);
     final fontSize = ref.watch(fontSizeProvider);
-    final textColor = ref.watch(textColorProvider);
     final colorIntensity = ref.watch(colorIntensityProvider);
     final colorContrast = ref.watch(colorContrastProvider);
     
@@ -122,7 +143,30 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
           },
         ),
       ),
-      home: const HomeScreen(),
+      home: const _StartupScreen(),
+    );
+  }
+}
+
+// 起動時に設定を読み込んで適切な画面を表示するWidget
+class _StartupScreen extends ConsumerWidget {
+  const _StartupScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final startScreenAsync = ref.watch(startScreenProvider);
+    
+    return startScreenAsync.when(
+      data: (screen) => screen,
+      loading: () => const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stack) {
+        print('起動画面エラー: $error');
+        return const HomeScreen(); // エラー時はホーム画面
+      },
     );
   }
 } 

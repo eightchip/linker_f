@@ -38,7 +38,8 @@ void main() async {
     
     // 段階的初期化でアプリケーションの安定性を向上
     await _initializeApp();
-    await _initializeWindow();
+    // ウィンドウ初期化を一時的に無効化
+    // await _initializeWindow();
     
     // 通知サービス初期化（既存サービスを直接使用）
     try {
@@ -280,35 +281,10 @@ Future<void> _initializeWindow() async {
     
     await windowManager.ensureInitialized();
 
-    // ディスプレイの取得と設定
-    final displays = await ScreenRetriever.instance.getAllDisplays();
-    
-    // 複数ディスプレイがある場合は小さいディスプレイを選択
-    final targetDisplay = displays.length > 1 
-        ? displays.reduce((a, b) => (a.size.width * a.size.height) < (b.size.width * b.size.height) ? a : b)
-        : displays[0];
-    
-    // 選択したディスプレイの半分のサイズでウィンドウを設定
-    final displaySize = targetDisplay.size;
-    final windowWidth = (displaySize.width / 2).round();
-    final windowHeight = displaySize.height.round();
-    
-    // ウィンドウの位置を設定
-    final windowX = displays.length > 1 
-        ? displays[0].size.width + (displaySize.width - windowWidth)
-        : (displaySize.width - windowWidth);
-    final windowY = 0;
-
-    if (kDebugMode) {
-      print('ディスプレイ数: ${displays.length}');
-      print('選択したディスプレイサイズ: ${targetDisplay.size}');
-      print('ウィンドウサイズ: ${windowWidth}x$windowHeight');
-      print('ウィンドウ位置: ($windowX, $windowY)');
-    }
-
+    // 最もシンプルなウィンドウ設定（デュアルモニター対応を完全に無効化）
     WindowOptions windowOptions = WindowOptions(
-      size: Size(windowWidth.toDouble(), windowHeight.toDouble()),
-      center: false,
+      size: const Size(1000, 700), // 小さめの固定サイズ
+      center: true, // メインモニターの中央に配置
       backgroundColor: const Color(0xFFF4F5F7),
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.normal,
@@ -319,8 +295,8 @@ Future<void> _initializeWindow() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
-      await windowManager.setPosition(Offset(windowX.toDouble(), windowY.toDouble()));
       await windowManager.setTitle('Link Navigator');
+      print('ウィンドウ表示完了');
     });
     
     print('ウィンドウ初期化完了');
@@ -426,14 +402,40 @@ Future<bool> _checkSingleInstance() async {
         final pid = int.tryParse(content.trim());
         if (pid != null) {
           // Windowsでプロセスが存在するかチェック
-          final result = await Process.run('tasklist', ['/FI', 'PID eq $pid', '/FO', 'CSV']);
-          if (result.stdout.toString().contains('$pid')) {
+          final result = await Process.run('tasklist', ['/FI', 'PID eq $pid', '/FO', 'CSV', '/NH']);
+          
+          // プロセスが実際に存在する場合は、CSVフォーマットの出力が返される
+          // 存在しない場合は「情報: 指定された条件を満たすタスクは実行されていません。」などが返される
+          final output = result.stdout.toString();
+          final lines = output.trim().split('\n');
+          
+          // 実際のプロセス情報が含まれているかチェック（CSV形式の行があるか）
+          bool processExists = false;
+          for (final line in lines) {
+            if (line.contains('"') && line.contains('$pid')) {
+              // CSV形式で、かつflutter関連のプロセスかチェック
+              if (line.toLowerCase().contains('flutter') || line.toLowerCase().contains('dart')) {
+                processExists = true;
+                break;
+              }
+            }
+          }
+          
+          if (processExists) {
             print('既存のプロセスが実行中です (PID: $pid)');
             return false;
+          } else {
+            // プロセスが存在しないので、古いロックファイルを削除
+            print('古いロックファイルを削除します (PID: $pid は存在しません)');
+            await lockFile.delete();
           }
         }
       } catch (e) {
         print('ロックファイルチェックエラー: $e');
+        // エラーの場合は古いロックファイルを削除して続行
+        try {
+          await lockFile.delete();
+        } catch (_) {}
       }
     }
     

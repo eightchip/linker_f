@@ -45,6 +45,7 @@ class SettingsState {
   final bool googleCalendarBidirectionalSync;
   final bool googleCalendarShowCompletedTasks;
   final bool gmailApiEnabled;
+  final bool startWithTaskScreen;
 
   SettingsState({
     this.autoBackup = true,
@@ -59,6 +60,7 @@ class SettingsState {
     this.googleCalendarBidirectionalSync = false,
     this.googleCalendarShowCompletedTasks = true,
     this.gmailApiEnabled = false,
+    this.startWithTaskScreen = false,
   });
 
   SettingsState copyWith({
@@ -74,6 +76,7 @@ class SettingsState {
     bool? googleCalendarBidirectionalSync,
     bool? googleCalendarShowCompletedTasks,
     bool? gmailApiEnabled,
+    bool? startWithTaskScreen,
   }) {
     return SettingsState(
       autoBackup: autoBackup ?? this.autoBackup,
@@ -88,6 +91,7 @@ class SettingsState {
       googleCalendarBidirectionalSync: googleCalendarBidirectionalSync ?? this.googleCalendarBidirectionalSync,
       googleCalendarShowCompletedTasks: googleCalendarShowCompletedTasks ?? this.googleCalendarShowCompletedTasks,
       gmailApiEnabled: gmailApiEnabled ?? this.gmailApiEnabled,
+      startWithTaskScreen: startWithTaskScreen ?? this.startWithTaskScreen,
     );
   }
 }
@@ -115,6 +119,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         googleCalendarBidirectionalSync: _service.googleCalendarBidirectionalSync,
         googleCalendarShowCompletedTasks: _service.googleCalendarShowCompletedTasks,
         gmailApiEnabled: _service.gmailApiEnabled,
+        startWithTaskScreen: _service.startWithTaskScreen,
         isLoading: false,
       );
     } catch (e) {
@@ -175,6 +180,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> updateGmailApiEnabled(bool value) async {
     await _service.setGmailApiEnabled(value);
     state = state.copyWith(gmailApiEnabled: value);
+  }
+
+  Future<void> setStartWithTaskScreen(bool value) async {
+    await _service.setStartWithTaskScreen(value);
+    state = state.copyWith(startWithTaskScreen: value);
   }
 
   Future<void> resetToDefaults() async {
@@ -279,6 +289,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return ListView(
       padding: const EdgeInsets.all(12), // パディングを増やして余裕のあるレイアウトに
       children: [
+        _buildMenuSection('一般', [
+          _buildMenuItem(context, ref, '起動設定', Icons.settings, 'general'),
+        ]),
         _buildMenuSection('外観', [
           _buildMenuItem(context, ref, 'テーマ設定', Icons.palette, 'theme', '全画面共通'),
           _buildMenuItem(context, ref, 'フォント設定', Icons.text_fields, 'font', '全画面共通'),
@@ -350,6 +363,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // 各セクションに応じた色を定義
     Color getIconColor() {
       switch (section) {
+        case 'general':
+          return const Color(0xFF757575); // グレー
         case 'theme':
           return const Color(0xFF4CAF50); // 緑
         case 'font':
@@ -466,6 +481,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final currentSection = ref.watch(settingsSectionProvider);
     
     switch (currentSection) {
+      case 'general':
+        return _buildGeneralSection(settingsState, settingsNotifier);
       case 'theme':
         return _buildThemeSection(context, ref, currentDarkMode, currentAccentColor);
         case 'font':
@@ -493,6 +510,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       default:
         return _buildThemeSection(context, ref, currentDarkMode, currentAccentColor);
     }
+  }
+
+  Widget _buildGeneralSection(SettingsState state, SettingsNotifier notifier) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('起動設定', Icons.settings),
+        const SizedBox(height: 16),
+        
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildSwitchWithDescription(
+                  title: 'タスク画面で起動',
+                  description: 'アプリ起動時にタスク画面をデフォルトで表示します。オフにすると、リンク管理画面で起動します。',
+                  value: state.startWithTaskScreen,
+                  onChanged: notifier.setStartWithTaskScreen,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildThemeSection(BuildContext context, WidgetRef ref, bool currentDarkMode, int currentAccentColor) {

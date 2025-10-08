@@ -60,6 +60,7 @@ class SettingsService {
   static const String _descriptionTextColorKey = 'descriptionTextColor';
   static const String _descriptionFontSizeKey = 'descriptionFontSize';
   static const String _descriptionFontFamilyKey = 'descriptionFontFamily';
+  static const String _startWithTaskScreenKey = 'startWithTaskScreen';
   
   // UIカスタマイズ設定キー
   static const String _cardBorderRadiusKey = 'cardBorderRadius';
@@ -95,6 +96,7 @@ class SettingsService {
   static const int _defaultDescriptionTextColor = 0xFF000000;
   static const double _defaultDescriptionFontSize = 1.0;
   static const String _defaultDescriptionFontFamily = '';
+  static const bool _defaultStartWithTaskScreen = false;
   
   // UIカスタマイズデフォルト値
   static const double _defaultCardBorderRadius = 16.0;
@@ -233,6 +235,7 @@ class SettingsService {
       await _defaultSettingsBox.put(_taskFilterStatusesKey, _defaultTaskFilterStatuses);
       await _defaultSettingsBox.put(_taskFilterPriorityKey, _defaultTaskFilterPriority);
       await _defaultSettingsBox.put(_taskSortOrdersKey, _defaultTaskSortOrders);
+      await _defaultSettingsBox.put(_startWithTaskScreenKey, _defaultStartWithTaskScreen);
       await _defaultSettingsBox.put(_versionKey, _currentVersion);
     }
   }
@@ -299,6 +302,9 @@ class SettingsService {
     }
     if (!_settingsBox.containsKey(_descriptionFontFamilyKey)) {
       await _settingsBox.put(_descriptionFontFamilyKey, _defaultDescriptionFontFamily);
+    }
+    if (!_settingsBox.containsKey(_startWithTaskScreenKey)) {
+      await _settingsBox.put(_startWithTaskScreenKey, _defaultStartWithTaskScreen);
     }
   }
 
@@ -392,6 +398,12 @@ class SettingsService {
   String get descriptionFontFamily => _settingsBox.get(_descriptionFontFamilyKey, defaultValue: _defaultDescriptionFontFamily) as String;
   Future<void> setDescriptionFontFamily(String value) async {
     await _settingsBox.put(_descriptionFontFamilyKey, value);
+  }
+
+  /// タスク画面で起動する設定
+  bool get startWithTaskScreen => _settingsBox.get(_startWithTaskScreenKey, defaultValue: _defaultStartWithTaskScreen) as bool;
+  Future<void> setStartWithTaskScreen(bool value) async {
+    await _settingsBox.put(_startWithTaskScreenKey, value);
   }
 
   // ==================== ウィンドウ設定 ====================

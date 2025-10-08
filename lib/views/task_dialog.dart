@@ -570,7 +570,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   enableInteractiveSelection: true,
                   style: TextStyle(
                     color: Color(ref.watch(titleTextColorProvider)),
-                    fontSize: 16 * ref.watch(titleFontSizeProvider) * ref.watch(uiDensityProvider),
+                    fontSize: 16 * ref.watch(titleFontSizeProvider),
                     fontFamily: ref.watch(titleFontFamilyProvider).isEmpty 
                         ? null 
                         : ref.watch(titleFontFamilyProvider),
