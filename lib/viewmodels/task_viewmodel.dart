@@ -1251,16 +1251,13 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   void _restoreRemindersFromCallback(List<TaskItem> tasks) {
     print('=== リマインダー復元コールバック開始 ===');
     print('復元するタスク数: ${tasks.length}');
+    // 注意: WindowsNotificationService.restoreReminders()内で
+    // 既にscheduleTaskReminder()が呼ばれているため、
+    // ここで再度呼び出すと重複通知が発生します。
+    // このコールバックはログ出力のみに使用します。
     for (final task in tasks) {
-      print('復元タスク: ${task.title} (ID: ${task.id})');
-      // リマインダーを再スケジュール
       if (task.reminderTime != null) {
-        print('リマインダー時間: ${task.reminderTime}');
-        if (Platform.isWindows) {
-          WindowsNotificationService.scheduleTaskReminder(task);
-        } else {
-          NotificationService.scheduleTaskReminder(task);
-        }
+        print('復元確認: ${task.title} (ID: ${task.id}, リマインダー: ${task.reminderTime})');
       }
     }
     print('=== リマインダー復元コールバック完了 ===');
