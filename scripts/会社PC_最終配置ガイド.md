@@ -1,7 +1,8 @@
 # 会社PC用 Outlook連携 最終配置ガイド
 
 ## 配置場所
-**ディレクトリ: `C:\Apps\`**
+**ディレクトリ: `%APPDATA%\Apps`**
+（例: `C:\Users\<user>\AppData\Roaming\Apps`）
 
 ## 配置すべきファイル一覧
 
@@ -16,19 +17,19 @@
 
 ## 配置方法
 
-### 方法1: 自動配置（推奨）
-```batch
-# プロジェクトのscriptsディレクトリで実行
-scripts\会社PC_最終配置.bat
-```
+### 方法1: インストーラーによる自動配置（推奨）
+Inno Setupインストーラーを使用すると、PowerShellスクリプトが自動的に `%APPDATA%\Apps` に配置されます。
 
 ### 方法2: 手動配置
-1. `C:\Apps` ディレクトリを作成
+1. `%APPDATA%\Apps` ディレクトリを作成
+   ```powershell
+   New-Item -ItemType Directory -Path "$env:APPDATA\Apps" -Force
+   ```
 2. 以下のファイルをコピー：
-   - `scripts/company_outlook_test.ps1` → `C:\Apps/company_outlook_test.ps1`
-   - `scripts/company_task_search.ps1` → `C:\Apps/company_task_search.ps1`
-   - `scripts/compose_mail.ps1` → `C:\Apps/compose_mail.ps1`
-   - `scripts/find_sent.ps1` → `C:\Apps/find_sent.ps1`
+   - `scripts/company_outlook_test.ps1` → `%APPDATA%\Apps\company_outlook_test.ps1`
+   - `scripts/company_task_search.ps1` → `%APPDATA%\Apps\company_task_search.ps1`
+   - `scripts/compose_mail.ps1` → `%APPDATA%\Apps\compose_mail.ps1`
+   - `scripts/find_sent.ps1` → `%APPDATA%\Apps\find_sent.ps1`
 
 ## 前提条件
 
@@ -52,7 +53,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ### 1. 環境確認
 ```powershell
-cd C:\Apps
+cd $env:APPDATA\Apps
 powershell -ExecutionPolicy Bypass -File company_outlook_test.ps1
 ```
 

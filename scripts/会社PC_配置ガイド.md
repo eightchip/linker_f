@@ -1,7 +1,8 @@
 # 会社PC用 PowerShellスクリプト配置ガイド
 
 ## 配置場所
-**推奨ディレクトリ: `C:\Apps\`**
+**推奨ディレクトリ: `%APPDATA%\Apps`**
+（例: `C:\Users\<user>\AppData\Roaming\Apps`）
 
 ## 配置すべきファイル一覧
 
@@ -21,12 +22,12 @@
 
 ### 1. ディレクトリ作成
 ```powershell
-# 管理者権限で実行
-New-Item -ItemType Directory -Path "C:\Apps" -Force
+# ユーザー権限で実行可能（管理者権限不要）
+New-Item -ItemType Directory -Path "$env:APPDATA\Apps" -Force
 ```
 
 ### 2. ファイル配置
-以下のファイルを `C:\Apps\` にコピー：
+以下のファイルを `%APPDATA%\Apps` にコピー：
 
 #### 既存ファイル（画像で確認済み）
 - `compose_mail.ps1` ✅
@@ -38,15 +39,15 @@ New-Item -ItemType Directory -Path "C:\Apps" -Force
 
 ### 3. 権限設定
 ```powershell
-# ユーザー権限で実行可能に設定
-icacls "C:\Apps\*.ps1" /grant "Users:(RX)"
+# ユーザー権限で実行可能に設定（通常は不要）
+icacls "$env:APPDATA\Apps\*.ps1" /grant "Users:(RX)"
 ```
 
 ## 安全性確認
 
 ### 1. 環境確認スクリプト実行
 ```powershell
-cd C:\Apps
+cd $env:APPDATA\Apps
 .\check_company_environment.ps1
 ```
 
@@ -61,10 +62,10 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ### 現在の問題
 - `outlook_service.dart` が `scripts/find_task_assignments_safe.ps1` を参照
-- 会社PCでは `C:\Apps\find_task_assignments_company_safe.ps1` を使用すべき
+- 会社PCでは `%APPDATA%\Apps\find_task_assignments_company_safe.ps1` を使用すべき
 
 ### 修正内容
-1. `outlook_service.dart` のパスを `C:\Apps\find_task_assignments_company_safe.ps1` に変更
+1. `outlook_service.dart` のパスを `%APPDATA%\Apps\find_task_assignments_company_safe.ps1` に変更
 2. または、環境に応じてパスを動的に切り替える
 
 ## テスト手順

@@ -4765,7 +4765,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         'company_outlook_test.ps1',
                         'Outlook接続テスト',
                         'Outlookアプリケーションとの接続をテストします',
-                        'C:\\Apps\\',
+                        '%APPDATA%\\Apps\\',
                         '手動実行',
                       ),
                       
@@ -4774,7 +4774,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         'compose_mail.ps1',
                         'メール作成支援',
                         'タスクから返信メールを作成する際の支援機能',
-                        'C:\\Apps\\',
+                        '%APPDATA%\\Apps\\',
                         '手動実行',
                       ),
                       
@@ -4782,7 +4782,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         'find_sent.ps1',
                         '送信メール検索',
                         '送信済みメールの検索・確認機能',
-                        'C:\\Apps\\',
+                        '%APPDATA%\\Apps\\',
                         '手動実行',
                       ),
                       
@@ -4814,7 +4814,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             const SizedBox(height: 6),
                             Text(
                               '• 管理者権限は不要（ユーザーレベルで実行可能）\n'
-                              '• すべてのファイルは C:\\Apps\\ に配置してください\n'
+                              '• すべてのファイルは %APPDATA%\\Apps\\ に配置してください\n'
+                              '  （例: C:\\Users\\<user>\\AppData\\Roaming\\Apps）\n'
                               '• ファイル名は正確に一致させる必要があります\n'
                               '• 実行ポリシーが制限されている場合は手動で許可が必要です\n'
                               '• 会社PCのセキュリティポリシーにより動作しない場合があります',

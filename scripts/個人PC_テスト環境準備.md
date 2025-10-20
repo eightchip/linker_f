@@ -34,12 +34,13 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ### 配置ディレクトリ作成
 ```powershell
-# 管理者権限で実行
-New-Item -ItemType Directory -Path "C:\Apps" -Force
+# ユーザー権限で実行可能（管理者権限不要）
+New-Item -ItemType Directory -Path "$env:APPDATA\Apps" -Force
 ```
 
 ### ファイル配置
-以下のファイルを `C:\Apps\` に配置：
+以下のファイルを `%APPDATA%\Apps` に配置：
+（例: `C:\Users\<user>\AppData\Roaming\Apps`）
 - `find_task_assignments_company_safe.ps1`
 - `check_company_environment.ps1`
 - `compose_mail.ps1`（メール作成機能用）
@@ -49,7 +50,7 @@ New-Item -ItemType Directory -Path "C:\Apps" -Force
 
 ### 環境確認スクリプト実行
 ```powershell
-cd C:\Apps
+cd $env:APPDATA\Apps
 .\check_company_environment.ps1
 ```
 

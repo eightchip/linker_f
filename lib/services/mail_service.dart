@@ -177,7 +177,8 @@ class MailService {
       final htmlBody = _createHtmlBody(body);
       await File(htmlPath).writeAsString(htmlBody, encoding: utf8);
 
-      const scriptPath = r'C:\Apps\compose_mail.ps1';
+      final appdataPath = Platform.environment['APPDATA'];
+      final scriptPath = '$appdataPath\\Apps\\compose_mail.ps1';
       
       // PowerShellスクリプトを実行
       final result = await Process.run('powershell.exe', [
@@ -372,7 +373,8 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
   /// 送信済み検索（Outlook デスクトップ）
   Future<void> openOutlookSentSearch(String token) async {
     try {
-      const scriptPath = r'C:\Apps\find_sent.ps1';
+      final appdataPath = Platform.environment['APPDATA'];
+      final scriptPath = '$appdataPath\\Apps\\find_sent.ps1';
       
       final result = await Process.run('powershell.exe', [
         '-NoProfile',
@@ -644,7 +646,8 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
   /// Outlook送信済み検索
   Future<bool> searchSentMail(String token) async {
     try {
-      const scriptPath = r'C:\Apps\find_sent.ps1';
+      final appdataPath = Platform.environment['APPDATA'];
+      final scriptPath = '$appdataPath\\Apps\\find_sent.ps1';
       
       final result = await Process.run('powershell.exe', [
         '-ExecutionPolicy', 'Bypass',

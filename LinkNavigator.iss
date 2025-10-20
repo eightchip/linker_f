@@ -13,6 +13,11 @@ SolidCompression=yes
 Source: "build\windows\x64\runner\Release\Link_Navigator.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "build\windows\x64\runner\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
+; PowerShellスクリプトを {userappdata}\Apps にコピー
+Source: "scripts\company_outlook_test.ps1"; DestDir: "{userappdata}\Apps"; Flags: ignoreversion
+Source: "scripts\company_task_search.ps1"; DestDir: "{userappdata}\Apps"; Flags: ignoreversion
+Source: "scripts\compose_mail.ps1"; DestDir: "{userappdata}\Apps"; Flags: ignoreversion
+Source: "scripts\find_sent.ps1"; DestDir: "{userappdata}\Apps"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Link Navigator"; Filename: "{app}\Link_Navigator.exe"
