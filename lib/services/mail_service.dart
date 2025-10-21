@@ -177,8 +177,15 @@ class MailService {
       final htmlBody = _createHtmlBody(body);
       await File(htmlPath).writeAsString(htmlBody, encoding: utf8);
 
-      final appdataPath = Platform.environment['APPDATA'];
+      final appdataPath = Platform.environment['APPDATA'] ?? 
+        'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
       final scriptPath = '$appdataPath\\Apps\\compose_mail.ps1';
+      
+      // スクリプトファイルの存在確認
+      if (!await File(scriptPath).exists()) {
+        throw Exception('PowerShellスクリプトが見つかりません: $scriptPath\n'
+            'インストーラーを使用するか、手動で配置してください。');
+      }
       
       // PowerShellスクリプトを実行
       final result = await Process.run('powershell.exe', [
@@ -373,8 +380,15 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
   /// 送信済み検索（Outlook デスクトップ）
   Future<void> openOutlookSentSearch(String token) async {
     try {
-      final appdataPath = Platform.environment['APPDATA'];
+      final appdataPath = Platform.environment['APPDATA'] ?? 
+        'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
       final scriptPath = '$appdataPath\\Apps\\find_sent.ps1';
+      
+      // スクリプトファイルの存在確認
+      if (!await File(scriptPath).exists()) {
+        throw Exception('PowerShellスクリプトが見つかりません: $scriptPath\n'
+            'インストーラーを使用するか、手動で配置してください。');
+      }
       
       final result = await Process.run('powershell.exe', [
         '-NoProfile',
@@ -646,8 +660,18 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
   /// Outlook送信済み検索
   Future<bool> searchSentMail(String token) async {
     try {
-      final appdataPath = Platform.environment['APPDATA'];
+      final appdataPath = Platform.environment['APPDATA'] ?? 
+        'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
       final scriptPath = '$appdataPath\\Apps\\find_sent.ps1';
+      
+      // スクリプトファイルの存在確認
+      final scriptFile = File(scriptPath);
+      if (!await scriptFile.exists()) {
+        if (kDebugMode) {
+          print('PowerShellスクリプトが見つかりません: $scriptPath');
+        }
+        return false;
+      }
       
       final result = await Process.run('powershell.exe', [
         '-ExecutionPolicy', 'Bypass',
