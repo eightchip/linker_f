@@ -266,6 +266,9 @@ void _initializeAdvancedFeatures() {
       // テンプレートボックスを開く
       await Hive.openBox('templates');
       
+      // 検索履歴ボックスを開く
+      await Hive.openBox('searchHistory');
+      
       // Google Calendar自動同期の初期化
       await _initializeGoogleCalendarSync();
       

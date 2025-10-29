@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:hive/hive.dart';
 import 'dart:io';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
@@ -94,6 +95,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   // 並び替え機能
   String _sortBy = 'dueDate'; // dueDate, priority, created, title, status
   bool _sortAscending = true;
+  
+  // 検索機能強化
+  bool _useRegex = false;
+  bool _searchInDescription = true;
+  bool _searchInTags = true;
+  bool _searchInRequester = true;
+  List<String> _searchHistory = [];
+  bool _showSearchOptions = false;
 
   @override
   void initState() {
@@ -105,6 +114,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
     _searchQuery = '';
     print('初期化時の_searchQuery: "$_searchQuery"');
+    
+    // 検索履歴を読み込み
+    _loadSearchHistory();
     
     // 検索コントローラーのリスナーを追加（初期化直後）
     _searchController.addListener(() {
@@ -618,6 +630,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           // 統計情報と検索・フィルターを1行に配置
           _buildCompactHeaderSection(statistics),
           
+          // 検索オプション（折りたたみ可能）
+          if (_showSearchOptions) _buildSearchOptionsSection(),
+          
           // ステータスフィルター（折りたたみ可能）
           if (_showFilters) _buildStatusFilterSection(),
           
@@ -714,7 +729,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             child: Row(
               children: [
                 const SizedBox(width: AppSpacing.lg),
-                // 検索バー
+                // 強化された検索バー
                 Expanded(
                   flex: 3, // 検索バーを広く
                   child: Builder(
@@ -725,11 +740,57 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                         controller: _searchController,                 // ← controller を使う
                         focusNode: _searchFocusNode,
                         textInputAction: TextInputAction.search,
-                        decoration: const InputDecoration(
-                          hintText: 'タスクを検索（タイトル・説明・メモ・タグ）...',
+                        decoration: InputDecoration(
+                          hintText: _useRegex 
+                            ? '正規表現で検索（例: ^プロジェクト.*完了\$）...'
+                            : 'タスクを検索（タイトル・説明・タグ・依頼先）...',
                           prefixIcon: Icon(Icons.search, size: AppIconSizes.medium),
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          suffixIcon: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_searchQuery.isNotEmpty) ...[
+                                IconButton(
+                                  icon: const Icon(Icons.history, size: 20),
+                                  onPressed: _showSearchHistory,
+                                  tooltip: '検索履歴',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.clear, size: 20),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                      _userTypedSearch = false;
+                                    });
+                                  },
+                                  tooltip: 'クリア',
+                                ),
+                              ],
+                              IconButton(
+                                icon: Icon(
+                                  _useRegex ? Icons.code : Icons.text_fields,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _useRegex = !_useRegex;
+                                  });
+                                },
+                                tooltip: _useRegex ? '通常検索に切り替え' : '正規表現検索に切り替え',
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.tune, size: 20),
+                                onPressed: () {
+                                  setState(() {
+                                    _showSearchOptions = !_showSearchOptions;
+                                  });
+                                },
+                                tooltip: '検索オプション',
+                              ),
+                            ],
+                          ),
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           isDense: true,
                         ),
                         onTap: () {
@@ -746,9 +807,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                             _searchFocusNode.requestFocus();
                           }
                         },
-                        onSubmitted: (_) {
+                        onSubmitted: (value) {
                           // Enter で確定した際の処理
                           _saveFilterSettings();
+                          // 検索実行時に履歴に追加
+                          if (value.trim().isNotEmpty) {
+                            _addToSearchHistory(value.trim());
+                          }
                         },
                       );
                     },
@@ -2347,22 +2412,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         if (task.priority != priority) return false;
       }
 
-      // 検索フィルター
+      // 強化された検索フィルター
       if (_searchQuery.isNotEmpty) {
-        final query = _searchQuery.toLowerCase();
-        final title = task.title.toLowerCase();
-        final description = task.description?.toLowerCase() ?? '';
-        final notes = task.notes?.toLowerCase() ?? '';
-        final assignedTo = task.assignedTo?.toLowerCase() ?? '';
-        final tags = task.tags.map((tag) => tag.toLowerCase()).join(' ');
-        
-        final titleMatch = title.contains(query);
-        final descriptionMatch = description.contains(query);
-        final notesMatch = notes.contains(query);
-        final assignedToMatch = assignedTo.contains(query);
-        final tagsMatch = tags.contains(query);
-        
-        if (!titleMatch && !descriptionMatch && !notesMatch && !assignedToMatch && !tagsMatch) {
+        if (!_matchesSearchQuery(task, _searchQuery)) {
           return false;
         }
       }
@@ -2647,17 +2699,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     buffer.writeln('完了: ${task.completedSubTasksCount}個');
     buffer.writeln('');
     
-    for (int i = 0; i < subTasks.length && i < 8; i++) {
+    for (int i = 0; i < subTasks.length && i < 10; i++) {
       final subTask = subTasks[i];
-      final status = subTask.isCompleted ? '✓' : '○';
+      final status = subTask.isCompleted ? '✓' : '×';
       final title = subTask.title.length > 20 
         ? '${subTask.title.substring(0, 20)}...' 
         : subTask.title;
       buffer.writeln('$status $title');
     }
     
-    if (subTasks.length > 8) {
-      buffer.writeln('... 他${subTasks.length - 8}個');
+    if (subTasks.length > 10) {
+      buffer.writeln('... 他${subTasks.length - 10}個');
     }
     
     return buffer.toString().trim();
@@ -2750,6 +2802,482 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       // それ以外
       return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
     }
+  }
+
+  /// 検索履歴を読み込み
+  void _loadSearchHistory() async {
+    try {
+      final box = Hive.box('searchHistory');
+      final history = box.get('taskSearchHistory', defaultValue: <String>[]);
+      _searchHistory = List<String>.from(history);
+    } catch (e) {
+      print('検索履歴読み込みエラー: $e');
+      _searchHistory = [];
+    }
+  }
+
+  /// 検索履歴を保存
+  void _saveSearchHistory() async {
+    try {
+      final box = Hive.box('searchHistory');
+      box.put('taskSearchHistory', _searchHistory);
+    } catch (e) {
+      print('検索履歴保存エラー: $e');
+    }
+  }
+
+  /// 検索履歴に追加
+  void _addToSearchHistory(String query) {
+    if (query.trim().isEmpty) return;
+    
+    // 既存の履歴から同じクエリを削除
+    _searchHistory.remove(query.trim());
+    
+    // 先頭に追加
+    _searchHistory.insert(0, query.trim());
+    
+    // 最大20件まで保持
+    if (_searchHistory.length > 20) {
+      _searchHistory = _searchHistory.take(20).toList();
+    }
+    
+    _saveSearchHistory();
+  }
+
+  /// 検索履歴をクリア
+  void _clearSearchHistory() {
+    setState(() {
+      _searchHistory.clear();
+    });
+    _saveSearchHistory();
+  }
+
+  /// 強化された検索クエリマッチング
+  bool _matchesSearchQuery(TaskItem task, String query) {
+    if (query.trim().isEmpty) return true;
+    
+    try {
+      if (_useRegex) {
+        // 正規表現検索
+        final regex = RegExp(query, caseSensitive: false);
+        return _matchesRegexInTask(task, regex);
+      } else {
+        // 通常の検索
+        final queryLower = query.toLowerCase();
+        return _matchesTextInTask(task, queryLower);
+      }
+    } catch (e) {
+      // 正規表現エラーの場合は通常検索にフォールバック
+      print('正規表現エラー: $e');
+      final queryLower = query.toLowerCase();
+      return _matchesTextInTask(task, queryLower);
+    }
+  }
+
+  /// 正規表現での検索
+  bool _matchesRegexInTask(TaskItem task, RegExp regex) {
+    // タイトル検索（常に有効）
+    if (regex.hasMatch(task.title)) return true;
+    
+    // 説明文検索
+    if (_searchInDescription && task.description != null && regex.hasMatch(task.description!)) {
+      return true;
+    }
+    
+    // タグ検索
+    if (_searchInTags && task.tags.isNotEmpty) {
+      for (final tag in task.tags) {
+        if (regex.hasMatch(tag)) return true;
+      }
+    }
+    
+    // 依頼先検索
+    if (_searchInRequester && task.assignedTo != null && regex.hasMatch(task.assignedTo!)) {
+      return true;
+    }
+    
+    // メモ検索
+    if (task.notes != null && regex.hasMatch(task.notes!)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /// 通常のテキスト検索
+  bool _matchesTextInTask(TaskItem task, String queryLower) {
+    // タイトル検索（常に有効）
+    if (task.title.toLowerCase().contains(queryLower)) return true;
+    
+    // 説明文検索
+    if (_searchInDescription && task.description != null && 
+        task.description!.toLowerCase().contains(queryLower)) {
+      return true;
+    }
+    
+    // タグ検索
+    if (_searchInTags && task.tags.isNotEmpty) {
+      for (final tag in task.tags) {
+        if (tag.toLowerCase().contains(queryLower)) return true;
+      }
+    }
+    
+    // 依頼先検索
+    if (_searchInRequester && task.assignedTo != null && 
+        task.assignedTo!.toLowerCase().contains(queryLower)) {
+      return true;
+    }
+    
+    // メモ検索
+    if (task.notes != null && task.notes!.toLowerCase().contains(queryLower)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /// 検索オプションセクションを構築
+  Widget _buildSearchOptionsSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.tune,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '検索オプション',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () {
+                  setState(() {
+                    _showSearchOptions = false;
+                  });
+                },
+                tooltip: '閉じる',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: CheckboxListTile(
+                  title: const Text('説明文', style: TextStyle(fontSize: 14)),
+                  value: _searchInDescription,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchInDescription = value ?? true;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              Expanded(
+                child: CheckboxListTile(
+                  title: const Text('タグ', style: TextStyle(fontSize: 14)),
+                  value: _searchInTags,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchInTags = value ?? true;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              Expanded(
+                child: CheckboxListTile(
+                  title: const Text('依頼先', style: TextStyle(fontSize: 14)),
+                  value: _searchInRequester,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchInRequester = value ?? true;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                _useRegex ? Icons.code : Icons.text_fields,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _useRegex ? '正規表現検索モード' : '通常検索モード',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              if (_searchHistory.isNotEmpty) ...[
+                TextButton.icon(
+                  onPressed: _showSearchHistory,
+                  icon: const Icon(Icons.history, size: 16),
+                  label: const Text('履歴'),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: _clearSearchHistory,
+                  icon: const Icon(Icons.clear_all, size: 16),
+                  label: const Text('履歴クリア'),
+                ),
+              ],
+            ],
+          ),
+          if (_useRegex) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '正規表現の使い方',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildRegexExamples(),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 正規表現の例を表示
+  Widget _buildRegexExamples() {
+    final examples = [
+      {'pattern': r'^プロジェクト', 'description': '「プロジェクト」で始まるタスク'},
+      {'pattern': r'完了$', 'description': '「完了」で終わるタスク'},
+      {'pattern': r'^プロジェクト.*完了$', 'description': '「プロジェクト」で始まり「完了」で終わるタスク'},
+      {'pattern': r'緊急|重要', 'description': '「緊急」または「重要」を含むタスク'},
+      {'pattern': r'\d{4}-\d{2}-\d{2}', 'description': '日付形式（YYYY-MM-DD）を含むタスク'},
+      {'pattern': r'[A-Z]{2,}', 'description': '2文字以上の大文字を含むタスク'},
+      {'pattern': r'^.{1,10}$', 'description': '1〜10文字のタスクタイトル'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'よく使うパターン:',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 6),
+        ...examples.map((example) => Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Text(
+                    example['pattern']!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 16),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: example['pattern']!));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('「${example['pattern']}」をコピーしました'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                tooltip: 'パターンをコピー',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 24,
+                  minHeight: 24,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  example['description']!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        )).toList(),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.warning_amber,
+                size: 14,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '正規表現が無効な場合は自動的に通常検索に切り替わります',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 検索履歴を表示
+  void _showSearchHistory() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.history),
+            SizedBox(width: 8),
+            Text('検索履歴'),
+          ],
+        ),
+        content: SizedBox(
+          width: 400,
+          height: 300,
+          child: _searchHistory.isEmpty
+            ? const Center(
+                child: Text('検索履歴がありません'),
+              )
+            : ListView.builder(
+                itemCount: _searchHistory.length,
+                itemBuilder: (context, index) {
+                  final query = _searchHistory[index];
+                  return ListTile(
+                    leading: const Icon(Icons.search, size: 20),
+                    title: Text(query),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, size: 18),
+                      onPressed: () {
+                        setState(() {
+                          _searchHistory.removeAt(index);
+                        });
+                        _saveSearchHistory();
+                      },
+                    ),
+                    onTap: () {
+                      _searchController.text = query;
+                      setState(() {
+                        _searchQuery = query;
+                        _userTypedSearch = true;
+                      });
+                      Navigator.of(context).pop();
+                    },
+                  );
+                },
+              ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('閉じる'),
+          ),
+          if (_searchHistory.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                _clearSearchHistory();
+                Navigator.of(context).pop();
+              },
+              child: const Text('履歴をクリア'),
+            ),
+        ],
+      ),
+    );
   }
 
   /// タスクを並び替える
@@ -5412,4 +5940,5 @@ class _ProjectOverviewDialog extends ConsumerWidget {
       }
     }
   }
+
 }

@@ -13,6 +13,7 @@ class TaskTemplateDialog extends ConsumerStatefulWidget {
 }
 
 class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
+  final _nameController = TextEditingController();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _requesterController = TextEditingController();
@@ -34,6 +35,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _requesterController.dispose();
@@ -295,6 +297,17 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                       child: SingleChildScrollView(
                         child: Column(
                           children: [
+                            // テンプレート名
+                            TextField(
+                              controller: _nameController,
+                              decoration: const InputDecoration(
+                                labelText: 'テンプレート名',
+                                hintText: '例: 会議準備、定期報告など',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            
                             // タイトル
                             TextField(
                               controller: _titleController,
@@ -494,6 +507,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
     final template = _templates[index];
     setState(() {
       _editingIndex = index;
+      _nameController.text = template.name;
       _titleController.text = template.title;
       _descriptionController.text = template.description;
       _requesterController.text = template.requester;
@@ -536,6 +550,13 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
 
   /// テンプレートを保存
   void _saveTemplate() {
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('テンプレート名を入力してください')),
+      );
+      return;
+    }
+    
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('タイトルを入力してください')),
@@ -544,7 +565,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
     }
 
     final template = TaskTemplate(
-      name: _titleController.text.trim(),
+      name: _nameController.text.trim(),
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       priority: _priority,
@@ -574,6 +595,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
 
   /// フォームをクリア
   void _clearForm() {
+    _nameController.clear();
     _titleController.clear();
     _descriptionController.clear();
     _requesterController.clear();
