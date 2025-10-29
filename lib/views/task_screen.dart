@@ -31,6 +31,7 @@ import '../services/keyboard_shortcut_service.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../viewmodels/ui_customization_provider.dart';
 import '../widgets/unified_dialog.dart';
+import '../widgets/copy_task_dialog.dart';
 import '../widgets/app_button_styles.dart';
 import '../widgets/app_spacing.dart';
 
@@ -2489,91 +2490,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   void _showCopyTaskDialog(TaskItem task) {
     showDialog(
       context: context,
-      builder: (context) => UnifiedDialog(
-        title: 'タスクをコピー',
-        icon: Icons.copy,
-        iconColor: Colors.blue,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('「${task.title}」をコピーしますか？'),
-              const SizedBox(height: AppSpacing.lg),
-              const Text('コピーされる内容:'),
-              const SizedBox(height: AppSpacing.sm),
-              Text('• タイトル: ${task.title} (コピー)'),
-              if (task.description != null && task.description!.isNotEmpty)
-                Text('• 説明: ${task.description}'),
-              if (task.assignedTo != null && task.assignedTo!.isNotEmpty)
-                Text('• 依頼先・メモ: ${task.assignedTo}'),
-              if (task.dueDate != null)
-                Text('• 期限日: ${DateFormat('yyyy/MM/dd').format(task.dueDate!)}'),
-              if (task.reminderTime != null)
-                Text('• リマインダー: ${DateFormat('yyyy/MM/dd HH:mm').format(task.reminderTime!)}'),
-              Text('• 優先度: ${_getPriorityText(task.priority)}'),
-              Text('• ステータス: ${_getStatusText(task.status)}'),
-              if (task.recurringReminderPattern != null && task.recurringReminderPattern!.isNotEmpty)
-                Text('• 繰り返しリマインダー: ${task.recurringReminderPattern}'),
-              if (task.tags.isNotEmpty)
-                HighlightedText(
-                  text: '• タグ: ${task.tags.join(', ')}',
-                  highlight: (_userTypedSearch && _searchQuery.isNotEmpty) ? _searchQuery : null,
-                ),
-              if (task.estimatedMinutes != null && task.estimatedMinutes! > 0)
-                Text('• 推定時間: ${task.estimatedMinutes}分'),
-              if (task.relatedLinkId != null && task.relatedLinkId!.isNotEmpty)
-                Text('• 関連リンク: あり'),
-              if (task.hasSubTasks)
-                Text('• サブタスク: ${task.totalSubTasksCount}個'),
-              const SizedBox(height: AppSpacing.sm),
-              const Text('※ 期限日とリマインダー時間は翌月の同日に自動調整されます'),
-              const Text('※ ステータスは「未着手」にリセットされます'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: AppButtonStyles.text(context),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              print('=== タスクコピーボタンクリック ===');
-              print('コピー対象タスク: ${task.title}');
-              print('コピー対象タスクID: ${task.id}');
-              print('===============================');
-              
-              // タスクをコピー
-              final copiedTask = await ref.read(taskViewModelProvider.notifier).copyTask(task);
-              
-              // ダイアログを閉じる
-              Navigator.of(context).pop();
-              
-              if (copiedTask != null) {
-                // 成功メッセージを表示
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('タスク「${copiedTask.title}」をコピーしました'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } else {
-                // エラーメッセージを表示
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('タスクのコピーに失敗しました'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: AppButtonStyles.primary(context),
-            child: const Text('コピー'),
-          ),
-        ],
-      ),
+      builder: (context) => CopyTaskDialog(task: task),
     );
   }
 
