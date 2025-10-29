@@ -263,6 +263,9 @@ void _initializeAdvancedFeatures() {
         await WindowsNotificationService.restoreReminders(tasks);
       }
       
+      // テンプレートボックスを開く
+      await Hive.openBox('templates');
+      
       // Google Calendar自動同期の初期化
       await _initializeGoogleCalendarSync();
       

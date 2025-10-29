@@ -23,6 +23,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
   DateTime? _selectedReminderTime;
   String _selectedPeriod = 'monthly'; // monthly, quarterly, yearly, custom
   bool _isLoading = false;
+  int _copyCount = 1; // コピーする個数
 
   @override
   void initState() {
@@ -89,6 +90,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
     if (value != null) {
       setState(() {
         _selectedPeriod = value;
+        _copyCount = 1; // 期間変更時にコピー個数をリセット
         _calculateInitialDates();
       });
     }
@@ -174,6 +176,53 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
               ],
               onChanged: _onPeriodChanged,
             ),
+            
+            // コピー個数選択（月次・四半期の場合のみ表示）
+            if (_selectedPeriod == 'monthly' || _selectedPeriod == 'quarterly') ...[
+              const SizedBox(height: AppSpacing.lg),
+              const Text('コピー個数:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: _copyCount.toDouble(),
+                      min: 1,
+                      max: _selectedPeriod == 'monthly' ? 12 : 4,
+                      divisions: _selectedPeriod == 'monthly' ? 11 : 3,
+                      label: '$_copyCount個',
+                      onChanged: (value) {
+                        setState(() {
+                          _copyCount = value.round();
+                        });
+                      },
+                    ),
+                  ),
+                  Container(
+                    width: 60,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '$_copyCount個',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                _selectedPeriod == 'monthly' 
+                  ? '最大12個まで（1か月ずつ期限をずらしてコピー）'
+                  : '最大4個まで（3か月ずつ期限をずらしてコピー）',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             
             // 期限日選択
@@ -242,8 +291,18 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
               Text('• 説明: ${widget.task.description}'),
             if (widget.task.assignedTo != null && widget.task.assignedTo!.isNotEmpty)
               Text('• 依頼先・メモ: ${widget.task.assignedTo}'),
-            Text('• 期限日: ${_selectedDueDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDueDate!) : '未設定'}'),
-            Text('• リマインダー: ${_selectedReminderTime != null ? DateFormat('yyyy/MM/dd HH:mm').format(_selectedReminderTime!) : '未設定'}'),
+            
+            // 複数コピーの場合の期限日表示
+            if ((_selectedPeriod == 'monthly' || _selectedPeriod == 'quarterly') && _copyCount > 1) ...[
+              Text('• コピー個数: $_copyCount個'),
+              Text('• 期限日: ${_getMultipleDueDatesPreview()}'),
+              if (widget.task.reminderTime != null)
+                Text('• リマインダー: ${_getMultipleReminderTimesPreview()}'),
+            ] else ...[
+              Text('• 期限日: ${_selectedDueDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDueDate!) : '未設定'}'),
+              Text('• リマインダー: ${_selectedReminderTime != null ? DateFormat('yyyy/MM/dd HH:mm').format(_selectedReminderTime!) : '未設定'}'),
+            ],
+            
             Text('• 優先度: ${_getPriorityText(widget.task.priority)}'),
             Text('• ステータス: 未着手'),
             if (widget.task.tags.isNotEmpty)
@@ -292,6 +351,50 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
     }
   }
 
+  /// 複数期限日のプレビューを取得
+  String _getMultipleDueDatesPreview() {
+    if (widget.task.dueDate == null) return '未設定';
+    
+    final dates = <String>[];
+    for (int i = 0; i < _copyCount && i < 3; i++) {
+      DateTime dueDate;
+      if (_selectedPeriod == 'monthly') {
+        dueDate = _addMonths(widget.task.dueDate!, i + 1);
+      } else {
+        dueDate = _addMonths(widget.task.dueDate!, (i + 1) * 3);
+      }
+      dates.add(DateFormat('MM/dd').format(dueDate));
+    }
+    
+    if (_copyCount > 3) {
+      dates.add('...');
+    }
+    
+    return dates.join(', ');
+  }
+
+  /// 複数リマインダー時間のプレビューを取得
+  String _getMultipleReminderTimesPreview() {
+    if (widget.task.reminderTime == null) return '未設定';
+    
+    final times = <String>[];
+    for (int i = 0; i < _copyCount && i < 3; i++) {
+      DateTime reminderTime;
+      if (_selectedPeriod == 'monthly') {
+        reminderTime = _addMonths(widget.task.reminderTime!, i + 1);
+      } else {
+        reminderTime = _addMonths(widget.task.reminderTime!, (i + 1) * 3);
+      }
+      times.add(DateFormat('MM/dd HH:mm').format(reminderTime));
+    }
+    
+    if (_copyCount > 3) {
+      times.add('...');
+    }
+    
+    return times.join(', ');
+  }
+
   Future<void> _copyTask() async {
     setState(() {
       _isLoading = true;
@@ -303,28 +406,79 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
       print('選択された期限日: $_selectedDueDate');
       print('選択されたリマインダー時間: $_selectedReminderTime');
       print('選択された期間: $_selectedPeriod');
+      print('コピー個数: $_copyCount');
       print('===============================');
       
-      // タスクをコピー
-      final copiedTask = await ref.read(taskViewModelProvider.notifier).copyTask(
-        widget.task,
-        newDueDate: _selectedDueDate,
-        newReminderTime: _selectedReminderTime,
-      );
+      int successCount = 0;
+      int totalCount = _copyCount;
+      
+      // 複数コピーの場合
+      if ((_selectedPeriod == 'monthly' || _selectedPeriod == 'quarterly') && _copyCount > 1) {
+        for (int i = 0; i < _copyCount; i++) {
+          // 期限日を計算
+          DateTime? dueDate;
+          if (widget.task.dueDate != null) {
+            if (_selectedPeriod == 'monthly') {
+              dueDate = _addMonths(widget.task.dueDate!, i + 1);
+            } else if (_selectedPeriod == 'quarterly') {
+              dueDate = _addMonths(widget.task.dueDate!, (i + 1) * 3);
+            }
+          }
+          
+          // リマインダー時間を計算
+          DateTime? reminderTime;
+          if (widget.task.reminderTime != null) {
+            if (_selectedPeriod == 'monthly') {
+              reminderTime = _addMonths(widget.task.reminderTime!, i + 1);
+            } else if (_selectedPeriod == 'quarterly') {
+              reminderTime = _addMonths(widget.task.reminderTime!, (i + 1) * 3);
+            }
+          }
+          
+          // タスクをコピー
+          final copiedTask = await ref.read(taskViewModelProvider.notifier).copyTask(
+            widget.task,
+            newDueDate: dueDate,
+            newReminderTime: reminderTime,
+          );
+          
+          if (copiedTask != null) {
+            successCount++;
+          }
+        }
+      } else {
+        // 単一コピーの場合
+        final copiedTask = await ref.read(taskViewModelProvider.notifier).copyTask(
+          widget.task,
+          newDueDate: _selectedDueDate,
+          newReminderTime: _selectedReminderTime,
+        );
+        
+        if (copiedTask != null) {
+          successCount = 1;
+          totalCount = 1;
+        }
+      }
       
       // ダイアログを閉じる
       Navigator.of(context).pop();
       
-      if (copiedTask != null) {
-        // 成功メッセージを表示
+      // 結果メッセージを表示
+      if (successCount == totalCount) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('タスク「${copiedTask.title}」をコピーしました'),
+            content: Text('タスクを${successCount}個コピーしました'),
             backgroundColor: Colors.green,
           ),
         );
+      } else if (successCount > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('タスクを${successCount}個コピーしました（${totalCount - successCount}個失敗）'),
+            backgroundColor: Colors.orange,
+          ),
+        );
       } else {
-        // エラーメッセージを表示
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('タスクのコピーに失敗しました'),

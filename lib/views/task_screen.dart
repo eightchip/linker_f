@@ -27,11 +27,13 @@ import 'sub_task_dialog.dart';
 import '../widgets/mail_badge.dart';
 import '../services/mail_service.dart';
 import '../models/sent_mail_log.dart';
+import '../models/sub_task.dart';
 import '../services/keyboard_shortcut_service.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../viewmodels/ui_customization_provider.dart';
 import '../widgets/unified_dialog.dart';
 import '../widgets/copy_task_dialog.dart';
+import '../widgets/task_template_dialog.dart';
 import '../widgets/app_button_styles.dart';
 import '../widgets/app_spacing.dart';
 
@@ -88,6 +90,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   Set<String> _expandedTaskIds = {};
   // タスクごとのホバー状態
   final Set<String> _hoveredTaskIds = {};
+  
+  // 並び替え機能
+  String _sortBy = 'dueDate'; // dueDate, priority, created, title, status
+  bool _sortAscending = true;
 
   @override
   void initState() {
@@ -175,14 +181,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   }
 
   /// 全選択/全解除
-  void _toggleSelectAll(List<TaskItem> filteredTasks) {
+  void _toggleSelectAll(List<TaskItem> sortedTasks) {
     setState(() {
-      if (_selectedTaskIds.length == filteredTasks.length) {
+      if (_selectedTaskIds.length == sortedTasks.length) {
         // 全選択されている場合は全解除
         _selectedTaskIds.clear();
       } else {
         // 一部または未選択の場合は全選択
-        _selectedTaskIds = filteredTasks.map((task) => task.id).toSet();
+        _selectedTaskIds = sortedTasks.map((task) => task.id).toSet();
       }
     });
   }
@@ -315,9 +321,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     // フィルタリング
     final filteredTasks = _getFilteredTasks(tasks);
     
+    // 並び替え
+    final sortedTasks = _sortTasks(filteredTasks);
+    
     // 重要な情報のみ出力
     if (tasks.isNotEmpty) {
       print('🚨 フィルタリング後: ${filteredTasks.length}件表示');
+      print('🚨 並び替え後: ${sortedTasks.length}件表示');
     } else {
       print('🚨 タスクが存在しません！');
     }
@@ -387,6 +397,112 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               tooltip: '選択したタスクを削除',
             ),
              ] else ...[
+            // プロジェクト一覧ボタン
+            IconButton(
+              onPressed: () => _showProjectOverview(),
+              icon: Icon(
+                Icons.calendar_view_month,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              tooltip: 'プロジェクト一覧',
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                setState(() {
+                  if (value == _sortBy) {
+                    _sortAscending = !_sortAscending;
+                  } else {
+                    _sortBy = value;
+                    _sortAscending = true;
+                  }
+                });
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'dueDate',
+                  child: Row(
+                    children: [
+                      Icon(Icons.schedule, size: 16),
+                      const SizedBox(width: 8),
+                      const Text('期限日'),
+                      if (_sortBy == 'dueDate') ...[
+                        const Spacer(),
+                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'priority',
+                  child: Row(
+                    children: [
+                      Icon(Icons.priority_high, size: 16),
+                      const SizedBox(width: 8),
+                      const Text('優先度'),
+                      if (_sortBy == 'priority') ...[
+                        const Spacer(),
+                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'created',
+                  child: Row(
+                    children: [
+                      Icon(Icons.access_time, size: 16),
+                      const SizedBox(width: 8),
+                      const Text('作成日'),
+                      if (_sortBy == 'created') ...[
+                        const Spacer(),
+                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'title',
+                  child: Row(
+                    children: [
+                      Icon(Icons.title, size: 16),
+                      const SizedBox(width: 8),
+                      const Text('タイトル'),
+                      if (_sortBy == 'title') ...[
+                        const Spacer(),
+                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'status',
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, size: 16),
+                      const SizedBox(width: 8),
+                      const Text('ステータス'),
+                      if (_sortBy == 'status') ...[
+                        const Spacer(),
+                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+              icon: Icon(
+                Icons.sort,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              tooltip: '並び替え',
+            ),
+            IconButton(
+              onPressed: () => _showTaskTemplate(),
+              icon: Icon(
+                Icons.content_copy,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              tooltip: 'テンプレートから作成',
+            ),
             // 3点ドットメニューに統合
             Focus(
               focusNode: _appBarMenuFocusNode,
@@ -507,14 +623,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           
           // タスク一覧（全画面表示）
           Expanded(
-            child: filteredTasks.isEmpty
+            child: sortedTasks.isEmpty
                 ? const Center(
                     child: Text('タスクがありません'),
                   )
                 : ListView.builder(
-                    itemCount: filteredTasks.length,
+                    itemCount: sortedTasks.length,
                     itemBuilder: (context, index) {
-                      return _buildTaskCard(filteredTasks[index]);
+                      return _buildTaskCard(sortedTasks[index]);
                     },
                   ),
           ),//Expanded
@@ -1085,14 +1201,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             ? Theme.of(context).primaryColor.withValues(alpha: 0.15) 
             : isHovered
               ? Theme.of(context).primaryColor.withValues(alpha: uiState.hoverEffectIntensity) // UIカスタマイズのホバー効果
-              : Theme.of(context).colorScheme.surface, // 元のカード背景色に戻す
+              : _getTaskCardColor(task), // 期限日に応じた色
           borderRadius: BorderRadius.circular(uiState.cardBorderRadius), // UIカスタマイズの角丸半径
           border: Border.all(
             color: _isSelectionMode && isSelected
               ? Theme.of(context).primaryColor.withValues(alpha: 0.6)
               : isHovered
                 ? Theme.of(context).primaryColor.withValues(alpha: 0.8)
-                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
+                : _getTaskBorderColor(task), // 期限日に応じたボーダー色
             width: _isSelectionMode && isSelected ? 3 : isHovered ? 4 : 2,
           ),
           boxShadow: [
@@ -1268,20 +1384,23 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 const SizedBox(height: 4),
                 _buildClickableMemoText(task.assignedTo!, task, showRelatedLinks: false),
               ],
-              // 展開時のみ表示される詳細情報（説明＋関連資料）
+              // 説明文を常時表示（緑色の文字部分）
+              if (task.description != null && task.description!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  task.description!,
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              // 展開時のみ表示される詳細情報（関連資料）
               if (isExpanded) ...[
                 const SizedBox(height: 8),
-                if (task.description != null && task.description!.isNotEmpty)
-                  Text(
-                    task.description!,
-                    style: TextStyle(
-                      color: Color(ref.watch(descriptionTextColorProvider)),
-                      fontSize: 14 * ref.watch(descriptionFontSizeProvider),
-                      fontFamily: ref.watch(descriptionFontFamilyProvider).isEmpty 
-                          ? null 
-                          : ref.watch(descriptionFontFamilyProvider),
-                    ),
-                  ),
                 if (_hasValidLinks(task)) ...[
                   const SizedBox(height: 6),
                   _buildRelatedLinksDisplay(_getRelatedLinks(task), onAnyLinkTap: () {
@@ -1314,59 +1433,76 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   print('===============================');
                   
                   if (task.hasSubTasks || task.totalSubTasksCount > 0) {
-                    return Container(
-                      width: 65,
-                      height: 32,
+                    return Tooltip(
+                      message: _buildSubTaskTooltipContent(task),
+                      preferBelow: false,
+                      verticalOffset: 20,
                       decoration: BoxDecoration(
+                        color: Colors.grey[900],
                         borderRadius: BorderRadius.circular(8),
-                        color: Colors.transparent,
                       ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
+                      textStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                      child: Container(
+                        width: 65,
+                        height: 32,
+                        decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          onTap: () => _showTaskDialog(task: task),
-                          child: Stack(
-                            children: [
-                              Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade600,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.blue.shade600.withValues(alpha: 0.4),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 60,
-                                    minHeight: 32,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-                                      style: const TextStyle(
+                          color: Colors.transparent,
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () => _showSubTaskDialog(task),
+                            child: Stack(
+                              children: [
+                                Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: task.completedSubTasksCount == task.totalSubTasksCount 
+                                        ? Colors.green.shade600 
+                                        : Colors.blue.shade600,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
                                         color: Colors.white,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1.0,
+                                        width: 2,
                                       ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.visible,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (task.completedSubTasksCount == task.totalSubTasksCount 
+                                            ? Colors.green.shade600 
+                                            : Colors.blue.shade600).withValues(alpha: 0.4),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 60,
+                                      minHeight: 32,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.0,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.visible,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -2494,6 +2630,164 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     );
   }
 
+  /// サブタスクのツールチップ内容を構築
+  String _buildSubTaskTooltipContent(TaskItem task) {
+    if (!task.hasSubTasks && task.totalSubTasksCount == 0) {
+      return '';
+    }
+
+    // サブタスクの詳細を取得
+    final subTasks = _getSubTasksForTask(task.id);
+    if (subTasks.isEmpty) {
+      return 'サブタスク: ${task.totalSubTasksCount}個\n完了: ${task.completedSubTasksCount}個';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('サブタスク: ${task.totalSubTasksCount}個');
+    buffer.writeln('完了: ${task.completedSubTasksCount}個');
+    buffer.writeln('');
+    
+    for (int i = 0; i < subTasks.length && i < 8; i++) {
+      final subTask = subTasks[i];
+      final status = subTask.isCompleted ? '✓' : '○';
+      final title = subTask.title.length > 20 
+        ? '${subTask.title.substring(0, 20)}...' 
+        : subTask.title;
+      buffer.writeln('$status $title');
+    }
+    
+    if (subTasks.length > 8) {
+      buffer.writeln('... 他${subTasks.length - 8}個');
+    }
+    
+    return buffer.toString().trim();
+  }
+
+  /// タスクのサブタスクを取得
+  List<SubTask> _getSubTasksForTask(String taskId) {
+    try {
+      // SubTaskViewModelから取得
+      final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
+      final subTasks = subTaskViewModel.getSubTasksByParentId(taskId);
+      
+      // 並び順でソート
+      subTasks.sort((a, b) => a.order.compareTo(b.order));
+      
+      return subTasks;
+    } catch (e) {
+      print('サブタスク取得エラー: $e');
+      return [];
+    }
+  }
+
+  /// プロジェクト一覧を表示
+  void _showProjectOverview() {
+    showDialog(
+      context: context,
+      builder: (context) => _ProjectOverviewDialog(),
+    );
+  }
+
+  /// タスクテンプレートダイアログを表示
+  void _showTaskTemplate() {
+    showDialog(
+      context: context,
+      builder: (context) => const TaskTemplateDialog(),
+    );
+  }
+
+  /// タスクの期限日に応じたカード色を取得
+  Color _getTaskCardColor(TaskItem task) {
+    if (task.dueDate == null) {
+      return Theme.of(context).colorScheme.surface;
+    }
+
+    final now = DateTime.now();
+    final dueDate = task.dueDate!;
+    final difference = dueDate.difference(now).inDays;
+
+    if (difference < 0) {
+      // 期限切れ
+      return Colors.red.shade50;
+    } else if (difference == 0) {
+      // 今日が期限
+      return Colors.orange.shade50;
+    } else if (difference <= 3) {
+      // 3日以内
+      return Colors.amber.shade50;
+    } else if (difference <= 7) {
+      // 1週間以内
+      return Colors.yellow.shade50;
+    } else {
+      // それ以外
+      return Theme.of(context).colorScheme.surface;
+    }
+  }
+
+  /// タスクの期限日に応じたボーダー色を取得
+  Color _getTaskBorderColor(TaskItem task) {
+    if (task.dueDate == null) {
+      return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
+    }
+
+    final now = DateTime.now();
+    final dueDate = task.dueDate!;
+    final difference = dueDate.difference(now).inDays;
+
+    if (difference < 0) {
+      // 期限切れ
+      return Colors.red.shade300;
+    } else if (difference == 0) {
+      // 今日が期限
+      return Colors.orange.shade300;
+    } else if (difference <= 3) {
+      // 3日以内
+      return Colors.amber.shade300;
+    } else if (difference <= 7) {
+      // 1週間以内
+      return Colors.yellow.shade300;
+    } else {
+      // それ以外
+      return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
+    }
+  }
+
+  /// タスクを並び替える
+  List<TaskItem> _sortTasks(List<TaskItem> tasks) {
+    final sortedTasks = List<TaskItem>.from(tasks);
+    
+    sortedTasks.sort((a, b) {
+      int comparison = 0;
+      
+      switch (_sortBy) {
+        case 'dueDate':
+          if (a.dueDate == null && b.dueDate == null) return 0;
+          if (a.dueDate == null) return 1;
+          if (b.dueDate == null) return -1;
+          comparison = a.dueDate!.compareTo(b.dueDate!);
+          break;
+        case 'priority':
+          comparison = a.priority.index.compareTo(b.priority.index);
+          break;
+        case 'created':
+          comparison = a.createdAt.compareTo(b.createdAt);
+          break;
+        case 'title':
+          comparison = a.title.compareTo(b.title);
+          break;
+        case 'status':
+          comparison = a.status.index.compareTo(b.status.index);
+          break;
+        default:
+          return 0;
+      }
+      
+      return _sortAscending ? comparison : -comparison;
+    });
+    
+    return sortedTasks;
+  }
+
   /// メールバッジを構築
   Widget _buildMailBadges(String taskId) {
     print('=== _buildMailBadges呼び出し ===');
@@ -3262,7 +3556,7 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
             // コンテンツ部分
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -4818,4 +5112,304 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
     }
   }
   
+}
+
+/// プロジェクト一覧ダイアログ
+class _ProjectOverviewDialog extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasks = ref.watch(taskViewModelProvider);
+    final now = DateTime.now();
+    
+    // タスクをプロジェクト（タイトル）ごとにグループ化
+    final Map<String, List<TaskItem>> projectGroups = {};
+    for (final task in tasks) {
+      String projectTitle;
+      if (task.title.contains('(コピー)')) {
+        // コピーしたタスクはベースタイトルでグループ化
+        final baseTitle = task.title.replaceAll('(コピー)', '').trim();
+        projectTitle = '$baseTitle (コピー)';
+      } else {
+        // 通常のタスクは最初の部分をプロジェクト名とする
+        projectTitle = task.title.split(' - ').first;
+      }
+      
+      if (!projectGroups.containsKey(projectTitle)) {
+        projectGroups[projectTitle] = [];
+      }
+      projectGroups[projectTitle]!.add(task);
+    }
+    
+    // 各プロジェクト内でタスクを期限日順でソート
+    for (final projectTasks in projectGroups.values) {
+      projectTasks.sort((a, b) {
+        if (a.dueDate == null && b.dueDate == null) return 0;
+        if (a.dueDate == null) return 1;
+        if (b.dueDate == null) return -1;
+        return a.dueDate!.compareTo(b.dueDate!);
+      });
+    }
+    
+    // 期限日順でソート
+    final sortedProjects = projectGroups.entries.toList()
+      ..sort((a, b) {
+        final aEarliest = a.value.map((t) => t.dueDate).where((d) => d != null).fold<DateTime?>(null, (earliest, current) {
+          if (earliest == null) return current;
+          return current!.isBefore(earliest) ? current : earliest;
+        });
+        final bEarliest = b.value.map((t) => t.dueDate).where((d) => d != null).fold<DateTime?>(null, (earliest, current) {
+          if (earliest == null) return current;
+          return current!.isBefore(earliest) ? current : earliest;
+        });
+        
+        if (aEarliest == null && bEarliest == null) return 0;
+        if (aEarliest == null) return 1;
+        if (bEarliest == null) return -1;
+        return aEarliest.compareTo(bEarliest);
+      });
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.98,
+        height: MediaQuery.of(context).size.height * 0.95,
+        constraints: const BoxConstraints(
+          minWidth: 1000,
+          minHeight: 700,
+          maxWidth: 1600,
+          maxHeight: 1200,
+        ),
+        child: Column(
+          children: [
+            // ヘッダー
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_view_month,
+                    color: Theme.of(context).primaryColor,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'プロジェクト一覧',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                    tooltip: '閉じる',
+                  ),
+                ],
+              ),
+            ),
+            // プロジェクト一覧
+            Expanded(
+              child: sortedProjects.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'プロジェクトがありません',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.all(6),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      childAspectRatio: 2.0,
+                      crossAxisSpacing: 6,
+                      mainAxisSpacing: 6,
+                    ),
+                    itemCount: sortedProjects.length,
+                    itemBuilder: (context, index) {
+                      final entry = sortedProjects[index];
+                      final projectTitle = entry.key;
+                      final projectTasks = entry.value;
+                      
+                      // 最も近い期限日を取得
+                      final nearestDueDate = projectTasks
+                          .map((t) => t.dueDate)
+                          .where((d) => d != null)
+                          .fold<DateTime?>(null, (nearest, current) {
+                        if (nearest == null) return current;
+                        return current!.isBefore(nearest) ? current : nearest;
+                      });
+                      
+                      // 完了済みタスク数
+                      final completedCount = projectTasks.where((t) => t.status == TaskStatus.completed).length;
+                      final totalCount = projectTasks.length;
+                      
+                      return Card(
+                        elevation: 2,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            // 該当プロジェクトのタスクをフィルタリングして表示
+                            // ここでは実装を簡略化
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 10,
+                                      backgroundColor: _getProjectColor(index),
+                                      child: Text(
+                                        projectTitle.substring(0, 1).toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        projectTitle,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 10,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'タスク: $totalCount個 (完了: $completedCount個)',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                if (nearestDueDate != null) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.schedule,
+                                        size: 10,
+                                        color: _getDueDateColor(nearestDueDate, now),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Expanded(
+                                        child: Text(
+                                          _getDueDateDisplayText(projectTasks, nearestDueDate),
+                                          style: TextStyle(
+                                            color: _getDueDateColor(nearestDueDate, now),
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 9,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getProjectColor(int index) {
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.red,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+    ];
+    return colors[index % colors.length];
+  }
+
+  Color _getDueDateColor(DateTime dueDate, DateTime now) {
+    final difference = dueDate.difference(now).inDays;
+    if (difference < 0) {
+      return Colors.red; // 期限切れ
+    } else if (difference == 0) {
+      return Colors.orange; // 今日が期限
+    } else if (difference <= 3) {
+      return Colors.amber; // 3日以内
+    } else {
+      return Colors.grey; // それ以外
+    }
+  }
+
+  /// 期限日表示テキストを取得
+  String _getDueDateDisplayText(List<TaskItem> projectTasks, DateTime nearestDueDate) {
+    if (projectTasks.length == 1) {
+      // 単一タスクの場合
+      return '期限: ${DateFormat('MM/dd').format(nearestDueDate)}';
+    } else {
+      // 複数タスクの場合（コピーしたタスクなど）
+      final dueDates = projectTasks
+          .map((t) => t.dueDate)
+          .where((d) => d != null)
+          .cast<DateTime>()
+          .toList();
+      
+      if (dueDates.length <= 1) {
+        return '期限: ${DateFormat('MM/dd').format(nearestDueDate)}';
+      } else {
+        // 最も近い期限日と最も遠い期限日を表示
+        dueDates.sort();
+        final earliest = dueDates.first;
+        final latest = dueDates.last;
+        
+        if (earliest == latest) {
+          return '期限: ${DateFormat('MM/dd').format(earliest)}';
+        } else {
+          return '期限: ${DateFormat('MM/dd').format(earliest)}-${DateFormat('MM/dd').format(latest)}';
+        }
+      }
+    }
+  }
 }
