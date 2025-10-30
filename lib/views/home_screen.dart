@@ -2232,6 +2232,93 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
     });
   }
 
+  void _showFullScreenImage(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              // 背景をクリックで閉じる
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    color: Colors.transparent,
+                  ),
+                ),
+              ),
+              // 画像を中央に配置
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    // 画像をクリックしても閉じない（ズームやパンの操作ができるように）
+                  },
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.file(
+                      File(widget.path),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              Text(
+                                '画像を読み込めませんでした',
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              // 閉じるボタン
+              Positioned(
+                top: 40,
+                right: 40,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -2246,19 +2333,24 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
         onExit: (_) {
           // プレビュー機能を無効化
         },
-        child: Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: Image.file(
-              File(widget.path),
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 16)
+        child: GestureDetector(
+          onTap: () {
+            _showFullScreenImage(context);
+          },
+          child: Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.file(
+                File(widget.path),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 16)
+              ),
             ),
           ),
         ),

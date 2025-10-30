@@ -37,6 +37,7 @@ import '../widgets/copy_task_dialog.dart';
 import '../widgets/task_template_dialog.dart';
 import '../widgets/app_button_styles.dart';
 import '../widgets/app_spacing.dart';
+import '../widgets/link_association_dialog.dart';
 
 class TaskScreen extends ConsumerStatefulWidget {
   const TaskScreen({super.key});
@@ -52,6 +53,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   String _searchQuery = '';
   List<Map<String, String>> _sortOrders = [{'field': 'dueDate', 'order': 'asc'}]; // 第3順位まで設定可能
   bool _showFilters = false; // フィルター表示/非表示の切り替え
+  bool _showHeaderSection = true; // 統計情報と検索バーの表示/非表示の切り替え
   final FocusNode _appBarMenuFocusNode = FocusNode();
   late FocusNode _searchFocusNode;
 
@@ -438,112 +440,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               tooltip: '選択したタスクを削除',
             ),
              ] else ...[
-            // プロジェクト一覧ボタン
-            IconButton(
-              onPressed: () => _showProjectOverview(),
-              icon: Icon(
-                Icons.calendar_view_month,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-              tooltip: 'プロジェクト一覧',
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                setState(() {
-                  if (value == _sortBy) {
-                    _sortAscending = !_sortAscending;
-                  } else {
-                    _sortBy = value;
-                    _sortAscending = true;
-                  }
-                });
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'dueDate',
-                  child: Row(
-                    children: [
-                      Icon(Icons.schedule, size: 16),
-                      const SizedBox(width: 8),
-                      const Text('期限日'),
-                      if (_sortBy == 'dueDate') ...[
-                        const Spacer(),
-                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
-                      ],
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'priority',
-                  child: Row(
-                    children: [
-                      Icon(Icons.priority_high, size: 16),
-                      const SizedBox(width: 8),
-                      const Text('優先度'),
-                      if (_sortBy == 'priority') ...[
-                        const Spacer(),
-                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
-                      ],
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'created',
-                  child: Row(
-                    children: [
-                      Icon(Icons.access_time, size: 16),
-                      const SizedBox(width: 8),
-                      const Text('作成日'),
-                      if (_sortBy == 'created') ...[
-                        const Spacer(),
-                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
-                      ],
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'title',
-                  child: Row(
-                    children: [
-                      Icon(Icons.title, size: 16),
-                      const SizedBox(width: 8),
-                      const Text('タイトル'),
-                      if (_sortBy == 'title') ...[
-                        const Spacer(),
-                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
-                      ],
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'status',
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle, size: 16),
-                      const SizedBox(width: 8),
-                      const Text('ステータス'),
-                      if (_sortBy == 'status') ...[
-                        const Spacer(),
-                        Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-              icon: Icon(
-                Icons.sort,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-              tooltip: '並び替え',
-            ),
-            IconButton(
-              onPressed: () => _showTaskTemplate(),
-              icon: Icon(
-                Icons.content_copy,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-              tooltip: 'テンプレートから作成',
-            ),
             // 3点ドットメニューに統合
             Focus(
               focusNode: _appBarMenuFocusNode,
@@ -571,7 +467,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   children: [
                     Icon(Icons.add, color: Colors.green, size: 20),
                     SizedBox(width: 8),
-                    Text('新しいタスク'),
+                    Text('新しいタスク (Ctrl+N)'),
                   ],
                 ),
               ),
@@ -582,69 +478,77 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   children: [
                     Icon(Icons.checklist, color: Colors.blue, size: 20),
                     SizedBox(width: 8),
-                    Text('一括選択モード'),
+                    Text('一括選択モード (Ctrl+B)'),
                   ],
                 ),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'export',
                 child: Row(
                   children: [
-                    Icon(Icons.download, color: Colors.green),
+                    Icon(Icons.download, color: Colors.green, size: 20),
                     SizedBox(width: 8),
-                    Text('CSV出力'),
+                    Text('CSV出力 (Ctrl+Shift+E)'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'settings',
                 child: Row(
                   children: [
-                    Icon(Icons.settings, color: Colors.grey),
+                    Icon(Icons.settings, color: Colors.grey, size: 20),
                     SizedBox(width: 8),
-                    Text('設定'),
+                    Text('設定 (Ctrl+Shift+S)'),
                   ],
                 ),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'test_notification',
+              // プロジェクト一覧
+              PopupMenuItem(
+                value: 'project_overview',
                 child: Row(
                   children: [
-                    Icon(Icons.notifications, color: Colors.orange),
+                    Icon(Icons.calendar_view_month, color: Colors.blue, size: 20),
                     SizedBox(width: 8),
-                    Text('通知テスト'),
+                    Text('プロジェクト一覧 (Ctrl+P)'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
-                value: 'test_reminder',
+              // 並び替え
+              PopupMenuItem(
+                value: 'sort_menu',
                 child: Row(
                   children: [
-                    Icon(Icons.schedule, color: Colors.purple),
+                    Icon(Icons.sort, color: Colors.orange, size: 20),
                     SizedBox(width: 8),
-                    Text('リマインダーテスト'),
+                    Text('並び替え (Ctrl+O)'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
-                value: 'test_reminder_1min',
+              // テンプレートから作成
+              PopupMenuItem(
+                value: 'task_template',
                 child: Row(
                   children: [
-                    Icon(Icons.timer, color: Colors.red),
+                    Icon(Icons.content_copy, color: Colors.teal, size: 20),
                     SizedBox(width: 8),
-                    Text('1分後リマインダーテスト'),
+                    Text('テンプレートから作成 (Ctrl+Shift+T)'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
-                value: 'reset_filters',
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'toggle_header',
                 child: Row(
                   children: [
-                    Icon(Icons.refresh, color: Colors.blue),
+                    Icon(
+                      _showHeaderSection ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                      size: 20,
+                    ),
                     SizedBox(width: 8),
-                    Text('フィルターリセット'),
+                    Text(_showHeaderSection ? '統計・検索バーを非表示 (Ctrl+H)' : '統計・検索バーを表示 (Ctrl+H)'),
                   ],
                 ),
               ),
@@ -657,10 +561,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         body: Column(
           children: [
           // 統計情報と検索・フィルターを1行に配置
-          _buildCompactHeaderSection(statistics),
+          if (_showHeaderSection) _buildCompactHeaderSection(statistics),
           
           // 検索オプション（折りたたみ可能）
-          if (_showSearchOptions) _buildSearchOptionsSection(),
+          if (_showSearchOptions && _showHeaderSection) _buildSearchOptionsSection(),
           
           // ステータスフィルター（折りたたみ可能）
           if (_showFilters) _buildStatusFilterSection(),
@@ -1902,17 +1806,19 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           ),
         );
         break;
-      case 'test_notification':
-        _showTestNotification();
+      case 'project_overview':
+        _showProjectOverview();
         break;
-      case 'test_reminder':
-        _showTestReminderNotification();
+      case 'sort_menu':
+        _showSortMenu(context);
         break;
-      case 'test_reminder_1min':
-        _showTestReminderInOneMinute();
+      case 'task_template':
+        _showTaskTemplate();
         break;
-      case 'reset_filters':
-        _resetFilters();
+      case 'toggle_header':
+        setState(() {
+          _showHeaderSection = !_showHeaderSection;
+        });
         break;
       case 'reload_tasks':
         _reloadTasks();
@@ -2309,12 +2215,21 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
   /// リンク関連付けダイアログを表示
   void _showLinkAssociationDialog(TaskItem task) {
+    // 最新のタスクデータを取得
+    final tasks = ref.read(taskViewModelProvider);
+    final currentTask = tasks.firstWhere(
+      (t) => t.id == task.id,
+      orElse: () => task,
+    );
+    
     showDialog(
       context: context,
-      builder: (context) => _LinkAssociationDialog(
-        task: task,
+      builder: (context) => LinkAssociationDialog(
+        task: currentTask,
         onLinksUpdated: () {
-          setState(() {}); // UIを更新
+          // ref.watch(taskViewModelProvider)で監視しているため、自動的に再ビルドされる
+          // ただし、念のため明示的にsetStateを呼ぶ
+          setState(() {});
         },
       ),
     );
@@ -2616,8 +2531,22 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   // キーボードショートカット処理
   void _handleKeyEvent(KeyEvent event) {
     if (event is KeyDownEvent) {
-      // モーダルが開いている場合はショートカットを無効化
-      if (ModalRoute.of(context)?.isFirst != true) {
+      // モーダルが開いている場合はショートカットを無効化（ただし、統計・検索バーの表示/非表示は常に有効）
+      final isModalOpen = ModalRoute.of(context)?.isFirst != true;
+      
+      final isControlPressed = HardwareKeyboard.instance.isControlPressed;
+      final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+      
+      // Ctrl+H: 統計・検索バーの表示/非表示を切り替え（常に有効）
+      if (event.logicalKey == LogicalKeyboardKey.keyH && isControlPressed && !isShiftPressed) {
+        setState(() {
+          _showHeaderSection = !_showHeaderSection;
+        });
+        return;
+      }
+      
+      // モーダルが開いている場合は他のショートカットを無効化
+      if (isModalOpen) {
         return;
       }
       
@@ -2630,8 +2559,80 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
         // 下矢印キーでAppBarの3点ドットメニューにフォーカスを移す
         _appBarMenuFocusNode.requestFocus();
+      } else if (event.logicalKey == LogicalKeyboardKey.keyN && isControlPressed && !isShiftPressed) {
+        // Ctrl+N: 新しいタスク作成
+        _showTaskDialog();
+      } else if (event.logicalKey == LogicalKeyboardKey.keyB && isControlPressed && !isShiftPressed) {
+        // Ctrl+B: 一括選択モード
+        _toggleSelectionMode();
+      } else if (event.logicalKey == LogicalKeyboardKey.keyE && isControlPressed && isShiftPressed) {
+        // Ctrl+Shift+E: CSV出力
+        _exportTasksToCsv();
+      } else if (event.logicalKey == LogicalKeyboardKey.keyS && isControlPressed && isShiftPressed) {
+        // Ctrl+Shift+S: 設定画面
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SettingsScreen(),
+          ),
+        );
+      } else if (event.logicalKey == LogicalKeyboardKey.keyP && isControlPressed && !isShiftPressed) {
+        // Ctrl+P: プロジェクト一覧
+        _showProjectOverview();
+      } else if (event.logicalKey == LogicalKeyboardKey.keyO && isControlPressed && !isShiftPressed) {
+        // Ctrl+O: 並び替え
+        _showSortMenu(context);
+      } else if (event.logicalKey == LogicalKeyboardKey.keyT && isControlPressed && isShiftPressed) {
+        // Ctrl+Shift+T: テンプレートから作成
+        _showTaskTemplate();
+      } else if (event.logicalKey == LogicalKeyboardKey.f1) {
+        // F1: ショートカットヘルプを表示
+        _showShortcutHelp(context);
       }
     }
+  }
+
+  /// ショートカットヘルプダイアログを表示
+  void _showShortcutHelp(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => UnifiedDialog(
+        title: 'キーボードショートカット',
+        icon: Icons.keyboard,
+        iconColor: Colors.blue,
+        width: 400,
+        height: 500,
+        content: SizedBox(
+          width: 400,
+          height: 400,
+          child: ListView(
+            children: [
+              _TaskShortcutItem('Ctrl+N', '新しいタスク'),
+              _TaskShortcutItem('Ctrl+B', '一括選択モード'),
+              _TaskShortcutItem('Ctrl+Shift+E', 'CSV出力'),
+              _TaskShortcutItem('Ctrl+Shift+S', '設定'),
+              const Divider(),
+              _TaskShortcutItem('Ctrl+P', 'プロジェクト一覧'),
+              _TaskShortcutItem('Ctrl+O', '並び替え'),
+              _TaskShortcutItem('Ctrl+Shift+T', 'テンプレートから作成'),
+              const Divider(),
+              _TaskShortcutItem('←', 'ホーム画面に戻る'),
+              _TaskShortcutItem('→', '3点ドットメニュー'),
+              _TaskShortcutItem('Ctrl+H', '統計・検索バー表示/非表示'),
+              _TaskShortcutItem('F1', 'ショートカットキー'),
+              const Divider(),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: AppButtonStyles.primary(context),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
   }
 
   // 3点ドットメニューを表示
@@ -2786,6 +2787,97 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       context: context,
       builder: (context) => const TaskTemplateDialog(),
     );
+  }
+
+  /// 並び替えメニューを表示
+  void _showSortMenu(BuildContext context) {
+    showMenu<String>(
+      context: context,
+      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
+      items: [
+        PopupMenuItem(
+          value: 'dueDate',
+          child: Row(
+            children: [
+              Icon(Icons.schedule, size: 16),
+              const SizedBox(width: 8),
+              const Text('期限日'),
+              if (_sortBy == 'dueDate') ...[
+                const Spacer(),
+                Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+              ],
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'priority',
+          child: Row(
+            children: [
+              Icon(Icons.priority_high, size: 16),
+              const SizedBox(width: 8),
+              const Text('優先度'),
+              if (_sortBy == 'priority') ...[
+                const Spacer(),
+                Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+              ],
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'created',
+          child: Row(
+            children: [
+              Icon(Icons.access_time, size: 16),
+              const SizedBox(width: 8),
+              const Text('作成日'),
+              if (_sortBy == 'created') ...[
+                const Spacer(),
+                Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+              ],
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'title',
+          child: Row(
+            children: [
+              Icon(Icons.title, size: 16),
+              const SizedBox(width: 8),
+              const Text('タイトル'),
+              if (_sortBy == 'title') ...[
+                const Spacer(),
+                Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+              ],
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'status',
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, size: 16),
+              const SizedBox(width: 8),
+              const Text('ステータス'),
+              if (_sortBy == 'status') ...[
+                const Spacer(),
+                Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 16),
+              ],
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value != null) {
+        setState(() {
+          if (value == _sortBy) {
+            _sortAscending = !_sortAscending;
+          } else {
+            _sortBy = value;
+            _sortAscending = true;
+          }
+        });
+      }
+    });
   }
 
   /// タスクの期限日に応じたカード色を取得
@@ -3898,48 +3990,174 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     return relatedLinks;
   }
 
+  /// 画像ファイルかどうかを判定
+  bool _isImageFile(String path) {
+    final ext = path.toLowerCase();
+    return ext.endsWith('.png') || 
+           ext.endsWith('.jpg') || 
+           ext.endsWith('.jpeg') || 
+           ext.endsWith('.gif') || 
+           ext.endsWith('.bmp') || 
+           ext.endsWith('.webp');
+  }
+
+  /// 全画面画像表示
+  void _showFullScreenImage(BuildContext context, String imagePath) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              // 背景をクリックで閉じる
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    color: Colors.transparent,
+                  ),
+                ),
+              ),
+              // 画像を中央に配置
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    // 画像をクリックしても閉じない（ズームやパンの操作ができるように）
+                  },
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.file(
+                      File(imagePath),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              Text(
+                                '画像を読み込めませんでした',
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              // 閉じるボタン
+              Positioned(
+                top: 40,
+                right: 40,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   /// 関連リンクの表示を構築
   Widget _buildRelatedLinksDisplay(List<LinkItem> links, {VoidCallback? onAnyLinkTap}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // リンク一覧（アイコン付きで表示）
-        ...links.map((link) => Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              if (onAnyLinkTap != null) onAnyLinkTap();
-              _openRelatedLink(link);
-            },
+        ...links.map((link) {
+          final isImage = link.type == LinkType.file && _isImageFile(link.path);
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
             child: Row(
               children: [
-                // リンクアイコン（リンク管理画面と同じロジック）
-                Container(
-                  width: 16,
-                  height: 16,
-                  child: _buildFaviconOrIcon(link, Theme.of(context)),
-                ),
-                const SizedBox(width: 8),
-                // リンクラベル
-                Expanded(
-                  child: Text(
-                    link.label,
-                    style: TextStyle(
-                      color: Colors.blue[800],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.blue[800],
+                // リンクアイコン（画像の場合は大きく表示してクリック可能）
+                if (isImage)
+                  GestureDetector(
+                    onTap: () {
+                      _showFullScreenImage(context, link.path);
+                    },
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(link.path),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 32),
+                        ),
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  )
+                else
+                  Container(
+                    width: 16,
+                    height: 16,
+                    child: _buildFaviconOrIcon(link, Theme.of(context)),
+                  ),
+                const SizedBox(width: 8),
+                // リンクラベル（クリック可能）
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      if (onAnyLinkTap != null) onAnyLinkTap();
+                      _openRelatedLink(link);
+                    },
+                    child: Text(
+                      link.label,
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Colors.blue[800],
+                      ),
+                      maxLines: isImage ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-        )),
+          );
+        }),
       ],
     );
   }
@@ -4057,1680 +4275,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
             color: _getLinkIconColor(link),
             size: size,
           );
-      }
-    }
-  }
-  
-}
-
-/// リンク関連付けダイアログ
-class _LinkAssociationDialog extends ConsumerStatefulWidget {
-  final TaskItem task;
-  final VoidCallback onLinksUpdated;
-
-  const _LinkAssociationDialog({
-    required this.task,
-    required this.onLinksUpdated,
-  });
-
-  @override
-  ConsumerState<_LinkAssociationDialog> createState() => _LinkAssociationDialogState();
-}
-
-class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> {
-  Set<String> _selectedLinkIds = {};
-  late int _initialExistingLinkCount; // 初期既存リンク数を追跡
-  Set<String> _removedLinkIds = {}; // 削除されたリンクIDを追跡
-  String _searchQuery = ''; // 検索クエリ
-
-  @override
-  void initState() {
-    super.initState();
-    // 現在の関連リンクを選択状態に設定
-    _selectedLinkIds = Set.from(widget.task.relatedLinkIds);
-    // 初期既存リンク数を記録
-    _initialExistingLinkCount = widget.task.relatedLinkIds.length;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final linkGroups = ref.watch(linkViewModelProvider);
-    final theme = Theme.of(context);
-    
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.95, // 80% → 95%に拡大
-        height: MediaQuery.of(context).size.height * 0.95, // 80% → 95%に拡大
-        constraints: const BoxConstraints(
-          minWidth: 800, // 600 → 800に拡大
-          minHeight: 600, // 500 → 600に拡大
-          maxWidth: 1400, // 1000 → 1400に拡大
-          maxHeight: 1000, // 800 → 1000に拡大
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.surface.withValues(alpha: 0.8),
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            // ヘッダー部分
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary.withValues(alpha: 0.1),
-                    theme.colorScheme.secondary.withValues(alpha: 0.1),
-                  ],
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.link,
-                      color: theme.colorScheme.primary,
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'リンク管理',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'タスク「${widget.task.title}」にリンクを関連付け',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // コンテンツ部分
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 既存の関連リンクセクション（折りたたみ可能）
-                    if (_currentExistingLinkCount > 0) ...[
-                      Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.errorContainer.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: theme.colorScheme.error.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: ExpansionTile(
-                          initiallyExpanded: false, // デフォルトで閉じた状態
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          childrenPadding: const EdgeInsets.only(bottom: 12),
-                          leading: Icon(
-                            Icons.link_off,
-                            color: theme.colorScheme.error,
-                            size: 16,
-                          ),
-                          title: Text(
-                            '既存の関連リンク（${_currentExistingLinkCount}個）',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.error,
-                            ),
-                          ),
-                          subtitle: Text(
-                            'クリックして展開・削除',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.error.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          children: [
-                            Container(
-                              constraints: const BoxConstraints(maxHeight: 300), // 最大高さを制限
-                              child: SingleChildScrollView(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  child: Column(
-                                    children: _buildExistingLinksList(linkGroups, theme),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                    
-                    Text(
-                      '関連付けたいリンクを選択してください：',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    
-                    // 検索フィールド
-                    Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'リンクを検索...',
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                          ),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.clear,
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _searchQuery = '';
-                                    });
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                        onChanged: (value) {
-                          setState(() {
-                            _searchQuery = value;
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _getFilteredGroups(linkGroups).length,
-                        itemBuilder: (context, groupIndex) {
-                          final group = _getFilteredGroups(linkGroups)[groupIndex];
-                          return _buildGroupCard(group, theme);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            // フッター部分
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              ),
-              child: Row(
-                children: [
-                  // 選択情報
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _selectedLinkIds.isNotEmpty 
-                          ? theme.colorScheme.primary.withValues(alpha: 0.2)
-                          : theme.colorScheme.outline.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _selectedLinkIds.isNotEmpty 
-                            ? theme.colorScheme.primary.withValues(alpha: 0.3)
-                            : theme.colorScheme.outline.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _selectedLinkIds.isNotEmpty ? Icons.check_circle : Icons.info_outline,
-                          color: _selectedLinkIds.isNotEmpty 
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.outline,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          '選択されたリンク: ${_getValidSelectedLinkCount()}個（既存: ${_currentExistingLinkCount}個）',
-                          style: TextStyle(
-                            color: _getValidSelectedLinkCount() > 0 
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.outline,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  const Spacer(),
-                  
-                  // ボタン
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: TextButton.styleFrom(
-                          foregroundColor: theme.colorScheme.outline,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                        child: const Text('キャンセル'),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: (_getValidSelectedLinkCount() > 0 || _hasExistingLinksChanged()) ? _saveLinkAssociations : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: theme.colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('保存'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 既存の関連リンクリストを構築
-  List<Widget> _buildExistingLinksList(LinkState linkGroups, ThemeData theme) {
-    final existingLinks = <Widget>[];
-    
-    for (final linkId in widget.task.relatedLinkIds) {
-      // 削除されたリンクIDはスキップ
-      if (_removedLinkIds.contains(linkId)) {
-        continue;
-      }
-      
-      // リンクを検索
-      LinkItem? link;
-      Group? parentGroup;
-      
-      for (final group in linkGroups.groups) {
-        for (final item in group.items) {
-          if (item.id == linkId) {
-            link = item;
-            parentGroup = group;
-            break;
-          }
-        }
-        if (link != null) break;
-      }
-      
-      if (link != null) {
-        existingLinks.add(
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.shadow.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // リンクアイコン（リンク管理画面と同じロジック）
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: _buildFaviconOrIconForExisting(link, theme),
-                ),
-                const SizedBox(width: 16),
-                
-                // リンク情報
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        link.label,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          link.path,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                            fontFamily: 'monospace',
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (parentGroup != null) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _getGroupColor(parentGroup).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _getGroupColor(parentGroup).withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: _getGroupColor(parentGroup),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                parentGroup.title,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: _getGroupColor(parentGroup),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                
-                // 削除ボタン
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.errorContainer.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: theme.colorScheme.error.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: IconButton(
-                    onPressed: () => _removeLinkFromTask(linkId),
-                    icon: Icon(
-                      Icons.delete_outline,
-                      color: theme.colorScheme.error,
-                      size: 16,
-                    ),
-                    tooltip: 'このリンクを削除',
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: theme.colorScheme.error,
-                      padding: const EdgeInsets.all(8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-    }
-    
-    // 既存リンクIDがあるが、実際のリンクが見つからない場合のみメッセージを表示
-    if (existingLinks.isEmpty && widget.task.relatedLinkIds.isNotEmpty) {
-      existingLinks.add(
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            '関連付けられたリンクが見つかりません（${_currentExistingLinkCount}個のリンクIDが存在）',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error.withValues(alpha: 0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-    
-    return existingLinks;
-  }
-
-  /// 検索クエリに基づいてグループをフィルタリング
-  List<Group> _getFilteredGroups(LinkState linkGroups) {
-    if (_searchQuery.isEmpty) {
-      return linkGroups.groups;
-    }
-    
-    final query = _searchQuery.toLowerCase();
-    return linkGroups.groups.where((group) {
-      // グループ名で検索
-      if (group.title.toLowerCase().contains(query)) {
-        return true;
-      }
-      
-      // グループ内のリンクで検索
-      return group.items.any((link) =>
-          link.label.toLowerCase().contains(query) ||
-          link.path.toLowerCase().contains(query));
-    }).toList();
-  }
-
-  /// 有効な選択されたリンク数を取得（削除されていないリンクのみ）
-  int _getValidSelectedLinkCount() {
-    final linkGroups = ref.read(linkViewModelProvider);
-    int validCount = 0;
-    
-    for (final linkId in _selectedLinkIds) {
-      // 削除されたリンクIDはスキップ
-      if (_removedLinkIds.contains(linkId)) {
-        continue;
-      }
-      
-      // 実際にリンクが存在するかチェック
-      bool linkExists = false;
-      for (final group in linkGroups.groups) {
-        for (final link in group.items) {
-          if (link.id == linkId) {
-            linkExists = true;
-            break;
-          }
-        }
-        if (linkExists) break;
-      }
-      
-      if (linkExists) {
-        validCount++;
-      }
-    }
-    
-    return validCount;
-  }
-
-  /// 現在の既存リンク数を取得（実際に存在するリンクのみ）
-  int get _currentExistingLinkCount {
-    final linkGroups = ref.read(linkViewModelProvider);
-    int validLinkCount = 0;
-    
-    for (final linkId in widget.task.relatedLinkIds) {
-      if (!_removedLinkIds.contains(linkId)) {
-        // リンクが実際に存在するかチェック
-        bool linkExists = false;
-        for (final group in linkGroups.groups) {
-          for (final link in group.items) {
-            if (link.id == linkId) {
-              linkExists = true;
-              break;
-            }
-          }
-          if (linkExists) break;
-        }
-        if (linkExists) {
-          validLinkCount++;
-        }
-      }
-    }
-    
-    return validLinkCount;
-  }
-
-  /// 既存リンクに変更があったかチェック
-  bool _hasExistingLinksChanged() {
-    // 初期状態の既存リンク数と現在の既存リンク数を比較
-    return _currentExistingLinkCount != _initialExistingLinkCount;
-  }
-
-  /// タスクからリンクを削除
-  void _removeLinkFromTask(String linkId) async {
-    try {
-      final taskViewModel = ref.read(taskViewModelProvider.notifier);
-      final updatedLinkIds = List<String>.from(widget.task.relatedLinkIds);
-      updatedLinkIds.remove(linkId);
-      
-      final updatedTask = widget.task.copyWith(relatedLinkIds: updatedLinkIds);
-      await taskViewModel.updateTask(updatedTask);
-      
-      // 選択状態からも削除
-      setState(() {
-        _selectedLinkIds.remove(linkId);
-        _removedLinkIds.add(linkId); // 削除されたリンクIDを追跡
-      });
-      
-      // コールバックを呼び出してUIを更新
-      widget.onLinksUpdated();
-      
-      // 成功メッセージ
-      if (mounted) {
-        SnackBarService.showSuccess(
-          context,
-          'リンクを削除しました',
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarService.showError(
-          context,
-          'リンクの削除に失敗しました: $e',
-        );
-      }
-    }
-  }
-
-  Widget _buildGroupCard(Group group, ThemeData theme) {
-    print('デバッグ: _buildGroupCard呼び出し - ${group.title}, アイテム数: ${group.items.length}');
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.2),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(8 * ref.watch(uiDensityProvider)),
-              decoration: BoxDecoration(
-                color: _getGroupColor(group).withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.folder,
-                color: _getGroupColor(group),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                group.title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _getGroupColor(group).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${group.items.length}個',
-                style: TextStyle(
-                  color: _getGroupColor(group),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        children: [
-          // グループのアイテム数を表示
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: _getGroupColor(group).withValues(alpha: 0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.list,
-                  color: _getGroupColor(group),
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'リンク一覧: ${group.items.length}個',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: _getGroupColor(group),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // 実際のリンクアイテム（グリッド表示でより多く表示）
-          Container(
-            constraints: const BoxConstraints(maxHeight: 500), // 高さをさらに増加
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const ClampingScrollPhysics(), // スクロール可能に
-         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-           crossAxisCount: 4, // 4列に変更してより多くのリンクを表示
-           childAspectRatio: 2.5, // さらにコンパクトなアスペクト比（高さを削減）
-           crossAxisSpacing: 4,
-           mainAxisSpacing: 4,
-         ),
-              padding: const EdgeInsets.all(12),
-              itemCount: group.items.length,
-              itemBuilder: (context, index) {
-                final link = group.items[index];
-                return _buildGridLinkItem(link, theme);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLinkItem(LinkItem link, ThemeData theme) {
-    print('デバッグ: _buildLinkItem呼び出し - ${link.label}');
-    final isSelected = _selectedLinkIds.contains(link.id);
-    
-    // リンクが属するグループを取得
-    final linkGroups = ref.read(linkViewModelProvider);
-    Group? parentGroup;
-    for (final group in linkGroups.groups) {
-      if (group.items.any((item) => item.id == link.id)) {
-        parentGroup = group;
-        break;
-      }
-    }
-    
-    // グループの色を取得
-    final groupColor = parentGroup != null ? _getGroupColor(parentGroup) : Colors.grey;
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: isSelected 
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: isSelected 
-              ? theme.colorScheme.primary.withValues(alpha: 0.3)
-              : theme.colorScheme.outline.withValues(alpha: 0.1),
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(6),
-                onTap: () {
-                  setState(() {
-                    if (isSelected) {
-                      _selectedLinkIds.remove(link.id);
-                    } else {
-                      _selectedLinkIds.add(link.id);
-                    }
-                  });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(4), // パディングを削減
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min, // 最小サイズに制限
-                    children: [
-                      // ヘッダー（アイコン、選択状態、グループ色）
-                      Row(
-                        children: [
-                          // グループ色のボーダー
-                          Container(
-                            width: 2, // 幅を削減
-                            height: 12, // 高さを削減
-                            decoration: BoxDecoration(
-                              color: groupColor,
-                              borderRadius: BorderRadius.circular(1),
-                            ),
-                          ),
-                          const SizedBox(width: 4), // スペーシングを削減
-                          // リンクアイコン
-                          Container(
-                            padding: const EdgeInsets.all(2), // パディングを削減
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: _buildFaviconOrIcon(link, theme), // リンク管理画面と同じロジック
-                          ),
-                          const Spacer(),
-                          // 選択状態インジケーター
-                          Container(
-                            width: 12, // サイズを削減
-                            height: 12, // サイズを削減
-                            decoration: BoxDecoration(
-                              color: isSelected 
-                                  ? theme.colorScheme.primary 
-                                  : Colors.transparent,
-                              border: Border.all(
-                                color: isSelected 
-                                    ? theme.colorScheme.primary 
-                                    : theme.colorScheme.outline,
-                                width: 1.5, // ボーダー幅を調整
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: isSelected 
-                                ? Icon(
-                                    Icons.check,
-                                    size: 6, // アイコンサイズを削減
-                                    color: theme.colorScheme.onPrimary,
-                                  )
-                                : null,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2), // スペーシングを削減
-                      // リンク情報（ラベルのみ、パスは削除）
-                      Text(
-                        link.label,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
-                          fontSize: 11, // フォントサイズを削減
-                          height: 1.2, // 行間を詰める
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-      }
-
-  /// リンクの詳細ツールチップを表示
-  void _showLinkTooltip(LinkItem link, ThemeData theme) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            _buildFaviconOrIcon(link, theme),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                link.label,
-                style: theme.textTheme.titleMedium,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'URL:',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ),
-            const SizedBox(height: 4),
-            SelectableText(
-              link.path,
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(
-                  Icons.open_in_new,
-                  size: 16,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'クリックして開く',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // リンクを開く
-              _launchUrl(link.path);
-            },
-            child: const Text('開く'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// URLを開く
-  void _launchUrl(String url) async {
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      }
-    } catch (e) {
-      print('URL起動エラー: $e');
-    }
-  }
-
-  /// リンクの種類に応じたアイコンを取得
-  IconData _getLinkTypeIcon(String path) {
-    final lowerPath = path.toLowerCase();
-    
-    if (lowerPath.startsWith('http://') || lowerPath.startsWith('https://')) {
-      return Icons.language;
-    } else if (lowerPath.startsWith('mailto:')) {
-      return Icons.email;
-    } else if (lowerPath.startsWith('file://') || lowerPath.contains('\\') || lowerPath.contains('/')) {
-      final extension = path.split('.').last.toLowerCase();
-      switch (extension) {
-        case 'pdf':
-          return Icons.picture_as_pdf;
-        case 'doc':
-        case 'docx':
-          return Icons.description;
-        case 'xls':
-        case 'xlsx':
-          return Icons.table_chart;
-        case 'ppt':
-        case 'pptx':
-          return Icons.slideshow;
-        case 'txt':
-          return Icons.text_snippet;
-        case 'jpg':
-        case 'jpeg':
-        case 'png':
-        case 'gif':
-          return Icons.image;
-        case 'mp4':
-        case 'avi':
-        case 'mov':
-          return Icons.video_file;
-        case 'mp3':
-        case 'wav':
-          return Icons.audio_file;
-        default:
-          return Icons.insert_drive_file;
-      }
-    }
-    
-    return Icons.link;
-  }
-
-  /// グリッド表示用のリンクアイテム（簡潔版）
-  Widget _buildGridLinkItem(LinkItem link, ThemeData theme) {
-    final isSelected = _selectedLinkIds.contains(link.id);
-    
-    // リンクが属するグループを取得
-    final linkGroups = ref.read(linkViewModelProvider);
-    Group? parentGroup;
-    for (final group in linkGroups.groups) {
-      if (group.items.any((item) => item.id == link.id)) {
-        parentGroup = group;
-        break;
-      }
-    }
-    
-    // グループの色を取得
-    final groupColor = parentGroup != null ? _getGroupColor(parentGroup) : Colors.grey;
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: isSelected 
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-            : theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isSelected 
-              ? theme.colorScheme.primary.withValues(alpha: 0.5)
-              : theme.colorScheme.outline.withValues(alpha: 0.2),
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () {
-            setState(() {
-              if (isSelected) {
-                _selectedLinkIds.remove(link.id);
-              } else {
-                _selectedLinkIds.add(link.id);
-              }
-            });
-          },
-          onLongPress: () {
-            // 長押しでツールチップ表示
-            _showLinkTooltip(link, theme);
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ヘッダー部分（アイコンと選択状態）
-                Row(
-                  children: [
-                    // 左端の色付きボーダー
-                    Container(
-                      width: 2,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: groupColor,
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    
-                    // Faviconまたはリンクアイコン
-                    _buildFaviconOrIcon(link, theme),
-                    const Spacer(),
-                    
-                    // 選択状態のインジケーター
-                    Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSelected 
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.outline,
-                          width: 1.5,
-                        ),
-                        color: isSelected 
-                            ? theme.colorScheme.primary
-                            : Colors.transparent,
-                      ),
-                      child: isSelected
-                          ? Icon(
-                              Icons.check,
-                              color: theme.colorScheme.onPrimary,
-                              size: 8,
-                            )
-                          : null,
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 4),
-                
-                // リンクラベル（コンパクト版）
-                Expanded(
-                  child: Text(
-                    link.label,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _getGroupColor(Group group) {
-    // グループ名に基づいて色を決定
-    switch (group.title.toLowerCase()) {
-      case 'favorites':
-        return Colors.blue;
-      case 'favorites2':
-        return Colors.green;
-      case 'favorites3':
-        return Colors.red;
-      case 'programming':
-        return Colors.purple;
-      default:
-        return Colors.orange;
-    }
-  }
-
-  Color _getLinkTypeColor(LinkType type) {
-    switch (type) {
-      case LinkType.url:
-        return Colors.blue;
-      case LinkType.file:
-        return Colors.green;
-      case LinkType.folder:
-        return Colors.orange;
-    }
-  }
-
-
-
-  Future<void> _saveLinkAssociations() async {
-    try {
-      final taskViewModel = ref.read(taskViewModelProvider.notifier);
-      
-      // 現在のリンクを取得
-      final currentLinkIds = Set.from(widget.task.relatedLinkIds);
-      
-      // 追加するリンク
-      final linksToAdd = _selectedLinkIds.difference(currentLinkIds);
-      
-      // 削除するリンク
-      final linksToRemove = currentLinkIds.difference(_selectedLinkIds);
-      
-      // リンクを追加
-      for (final linkId in linksToAdd) {
-        await taskViewModel.addLinkToTask(widget.task.id, linkId);
-      }
-      
-      // リンクを削除
-      for (final linkId in linksToRemove) {
-        await taskViewModel.removeLinkFromTask(widget.task.id, linkId);
-      }
-      
-      // 成功メッセージを表示
-      SnackBarService.showSuccess(
-        context,
-        'リンクの関連付けを更新しました',
-      );
-      
-      // コールバックを実行
-      widget.onLinksUpdated();
-      
-      // ダイアログを閉じる
-      Navigator.of(context).pop();
-      
-    } catch (e) {
-      SnackBarService.showError(
-        context,
-        'リンクの関連付け更新に失敗しました: $e',
-      );
-    }
-  }
-  
-  /// 自動生成タスクかどうかを判定
-  bool _isAutoGeneratedTask(TaskItem task) {
-    return task.tags.contains('Gmail自動生成') || 
-           task.tags.contains('Outlook自動生成') ||
-           task.id.startsWith('gmail_') ||
-           task.id.startsWith('outlook_');
-  }
-  
-  /// メールバッジを構築
-  Widget _buildEmailBadge(TaskItem task) {
-    return Positioned(
-      top: 8,
-      right: 8,
-      child: GestureDetector(
-        onTap: () => _showEmailActions(task),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade600,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.email,
-                color: Colors.white,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              const Text(
-                'メール',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  
-  /// メールアクションを表示
-  void _showEmailActions(TaskItem task) {
-    showDialog(
-      context: context,
-      builder: (context) => UnifiedDialog(
-        title: 'メールアクション',
-        icon: Icons.email,
-        iconColor: Colors.blue,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'タスク: ${task.title}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            const Text('このタスクに関連するメールアクション:'),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.reply),
-              title: const Text('メールに返信'),
-              onTap: () {
-                Navigator.pop(context);
-                _replyToEmail(task);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.search),
-              title: const Text('関連メールを検索'),
-              onTap: () {
-                Navigator.pop(context);
-                _searchRelatedEmails(task);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info),
-              title: const Text('メール詳細を表示'),
-              onTap: () {
-                Navigator.pop(context);
-                _showEmailDetails(task);
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: AppButtonStyles.text(context),
-            child: const Text('閉じる'),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  /// メールに返信
-  void _replyToEmail(TaskItem task) {
-    // 説明から返信先メールアドレスを抽出
-    final description = task.description ?? '';
-    final emailMatch = RegExp(r'💬 返信先: (.+)').firstMatch(description);
-    
-    if (emailMatch != null) {
-      final replyEmail = emailMatch.group(1)?.trim();
-      if (replyEmail != null && replyEmail.isNotEmpty) {
-        // メーラー選択ダイアログを表示
-        _showMailerSelectionDialog(task, replyEmail);
-      } else {
-        SnackBarService.showError(context, '返信先メールアドレスが無効です');
-      }
-    } else {
-      SnackBarService.showError(context, '返信先メールアドレスが見つかりません');
-    }
-  }
-
-  /// メーラー選択ダイアログを表示
-  void _showMailerSelectionDialog(TaskItem task, String replyEmail) {
-    String selectedMailer = 'outlook'; // デフォルトは必ずOutlook
-    
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          
-          return UnifiedDialog(
-            title: 'メーラー選択',
-            icon: Icons.email,
-            iconColor: Colors.blue,
-            width: 450,
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('送信アプリ:'),
-                const SizedBox(height: 12),
-                
-                // メーラー選択（Outlook左デフォルト／Gmail右）
-                Row(
-                  children: [
-                    // Outlook選択（左、デフォルト）
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: selectedMailer == 'outlook' ? Colors.blue : Colors.grey.shade300,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          color: selectedMailer == 'outlook' ? Colors.blue.shade50 : Colors.white,
-                        ),
-                        child: RadioListTile<String>(
-                          title: const Text('Outlook'),
-                          subtitle: const Text('デスクトップ'),
-                          value: 'outlook',
-                          groupValue: selectedMailer,
-                          onChanged: (value) => setState(() => selectedMailer = value!),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          activeColor: Colors.blue,
-                          dense: true,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Gmail選択（右）
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: selectedMailer == 'gmail' ? Colors.red : Colors.grey.shade300,
-                            width: 2,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                          color: selectedMailer == 'gmail' ? Colors.red.shade50 : Colors.white,
-                        ),
-                        child: RadioListTile<String>(
-                          title: const Text('Gmail'),
-                          subtitle: const Text('Web'),
-                          value: 'gmail',
-                          groupValue: selectedMailer,
-                          onChanged: (value) => setState(() => selectedMailer = value!),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          activeColor: Colors.red,
-                          dense: true,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // 各メーラー個別テストボタン
-              Row(
-                children: [
-                  // Outlookテストボタン
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: selectedMailer == 'outlook' ? Colors.blue : Colors.grey.shade300,
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        color: selectedMailer == 'outlook' ? Colors.blue.shade50 : Colors.grey.shade50,
-                      ),
-                      child: ElevatedButton.icon(
-                        onPressed: () => _testOutlookConnection(),
-                        icon: const Icon(Icons.business, size: 16),
-                        label: const Text('Outlookテスト'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: selectedMailer == 'outlook' ? Colors.blue : Colors.grey.shade600,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Gmailテストボタン
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: selectedMailer == 'gmail' ? Colors.red : Colors.grey.shade300,
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        color: selectedMailer == 'gmail' ? Colors.red.shade50 : Colors.grey.shade50,
-                      ),
-                      child: ElevatedButton.icon(
-                        onPressed: () => _testGmailConnection(),
-                        icon: const Icon(Icons.mail, size: 16),
-                        label: const Text('Gmailテスト'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: selectedMailer == 'gmail' ? Colors.red : Colors.grey.shade600,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              style: AppButtonStyles.text(context),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _sendReplyEmail(task, replyEmail, selectedMailer);
-              },
-              style: AppButtonStyles.primary(context),
-              child: const Text('送信'),
-            ),
-          ],
-        );
-        },
-      ),
-    );
-  }
-
-  /// 返信メールを送信
-  void _sendReplyEmail(TaskItem task, String replyEmail, String mailer) async {
-    try {
-      final subject = 'Re: ${task.title}';
-      final mailService = MailService();
-      
-      await mailService.sendMail(
-        taskId: task.id,
-        app: mailer,
-        to: replyEmail,
-        cc: '',
-        bcc: '',
-        subject: subject,
-        body: '', // HTMLテンプレートを使用
-        title: task.title,
-        due: task.dueDate?.toString(),
-        status: task.status.toString(),
-        memo: task.description,
-        links: [], // 必要に応じてリンクを追加
-      );
-      
-      SnackBarService.showSuccess(context, '${mailer == 'outlook' ? 'Outlook' : 'Gmail'}で返信メールを作成しました');
-    } catch (e) {
-      SnackBarService.showError(context, 'メール送信エラー: $e');
-    }
-  }
-
-  /// Outlook接続テスト
-  void _testOutlookConnection() async {
-    try {
-      final mailService = MailService();
-      final isAvailable = await mailService.isOutlookAvailable();
-      
-      if (isAvailable) {
-        SnackBarService.showSuccess(context, 'Outlook接続テスト成功');
-      } else {
-        SnackBarService.showError(context, 'Outlook接続テスト失敗');
-      }
-    } catch (e) {
-      SnackBarService.showError(context, 'Outlook接続テストエラー: $e');
-    }
-  }
-
-  /// Gmail接続テスト
-  void _testGmailConnection() async {
-    try {
-      const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=';
-      final uri = Uri.parse(gmailUrl);
-      
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-        SnackBarService.showSuccess(context, 'Gmail接続テスト成功');
-      } else {
-        SnackBarService.showError(context, 'Gmail接続テスト失敗');
-      }
-    } catch (e) {
-      SnackBarService.showError(context, 'Gmail接続テストエラー: $e');
-    }
-  }
-  
-  /// 関連メールを検索
-  void _searchRelatedEmails(TaskItem task) async {
-    try {
-      // 説明からメールIDを抽出
-      final description = task.description ?? '';
-      final emailIdMatch = RegExp(r'🔍 メールID: (.+)').firstMatch(description);
-      
-      if (emailIdMatch != null) {
-        final emailId = emailIdMatch.group(1)?.trim();
-        if (emailId != null && emailId.isNotEmpty) {
-          // タスクのソースに応じて検索方法を選択
-          if (task.id.startsWith('gmail_')) {
-            // Gmailの場合はGmailで検索
-            final gmailUrl = 'https://mail.google.com/mail/u/0/#search/$emailId';
-            if (await canLaunchUrl(Uri.parse(gmailUrl))) {
-              await launchUrl(Uri.parse(gmailUrl));
-              SnackBarService.showSuccess(context, 'Gmailでメールを検索中...');
-            } else {
-              SnackBarService.showError(context, 'Gmailを開けませんでした');
-            }
-          } else if (task.id.startsWith('outlook_')) {
-            // Outlookの場合はPowerShellスクリプトで検索
-            await _searchOutlookEmail(emailId);
-          } else {
-            SnackBarService.showInfo(context, 'メールID: $emailId\n手動でメールを検索してください');
-          }
-        } else {
-          SnackBarService.showError(context, 'メールIDが見つかりません');
-        }
-      } else {
-        SnackBarService.showError(context, 'メールIDが見つかりません');
-      }
-    } catch (e) {
-      SnackBarService.showError(context, 'メール検索エラー: $e');
-    }
-  }
-
-  /// Outlookでメールを検索
-  Future<void> _searchOutlookEmail(String emailId) async {
-    try {
-      final mailService = MailService();
-      await mailService.initialize();
-      
-      final result = await mailService.searchSentMail(emailId);
-      if (result) {
-        SnackBarService.showSuccess(context, 'Outlookでメールを検索中...');
-      } else {
-        SnackBarService.showError(context, 'メールが見つかりませんでした');
-      }
-    } catch (e) {
-      SnackBarService.showError(context, 'Outlook検索エラー: $e');
-    }
-  }
-  
-  /// メール詳細を表示
-  void _showEmailDetails(TaskItem task) {
-    final description = task.description ?? '';
-    
-    showDialog(
-      context: context,
-      builder: (context) => UnifiedDialog(
-        title: 'メール詳細',
-        icon: Icons.info_outline,
-        iconColor: Colors.blue,
-        width: 600,
-        height: 500,
-        content: SingleChildScrollView(
-          child: Text(
-            description,
-            style: const TextStyle(fontSize: 14),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: AppButtonStyles.text(context),
-            child: const Text('閉じる'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _replyToEmail(task);
-            },
-            style: AppButtonStyles.primary(context),
-            child: const Text('返信'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFaviconOrIconForExisting(LinkItem link, ThemeData theme) {
-    // リンク管理画面と同じアイコン表示ロジックを使用
-    if (link.type == LinkType.url) {
-      return UrlPreviewWidget(
-        url: link.path, 
-        isDark: theme.brightness == Brightness.dark,
-        fallbackDomain: link.faviconFallbackDomain,
-      );
-    } else if (link.type == LinkType.file) {
-      return FilePreviewWidget(
-        path: link.path,
-        isDark: theme.brightness == Brightness.dark,
-      );
-    } else {
-      // フォルダの場合 - リンク管理画面と同じロジック
-      if (link.iconData != null) {
-        return Icon(
-          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
-          color: link.iconColor != null ? Color(link.iconColor!) : Colors.orange,
-          size: 16,
-        );
-      } else {
-        return Icon(
-          Icons.folder,
-          color: Colors.orange,
-          size: 16,
-        );
-      }
-    }
-  }
-
-  Widget _buildFaviconOrIcon(LinkItem link, ThemeData theme) {
-    // リンク管理画面と同じアイコン表示ロジックを使用
-    if (link.type == LinkType.url) {
-      return UrlPreviewWidget(
-        url: link.path, 
-        isDark: theme.brightness == Brightness.dark,
-        fallbackDomain: link.faviconFallbackDomain,
-      );
-    } else if (link.type == LinkType.file) {
-      return FilePreviewWidget(
-        path: link.path,
-        isDark: theme.brightness == Brightness.dark,
-      );
-    } else {
-      // フォルダの場合 - リンク管理画面と同じロジック
-      if (link.iconData != null) {
-        return Icon(
-          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
-          color: link.iconColor != null ? Color(link.iconColor!) : Colors.orange,
-          size: 16,
-        );
-      } else {
-        return Icon(
-          Icons.folder,
-          color: Colors.orange,
-          size: 16,
-        );
       }
     }
   }
@@ -6099,5 +4643,34 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
         };
     }
   }
+}
 
+/// ショートカット項目ウィジェット（タスク画面用）
+class _TaskShortcutItem extends StatelessWidget {
+  final String shortcut;
+  final String description;
+
+  const _TaskShortcutItem(this.shortcut, this.description);
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(description),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          shortcut,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
 }

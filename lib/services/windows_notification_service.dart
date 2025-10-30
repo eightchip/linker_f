@@ -175,6 +175,13 @@ class WindowsNotificationService {
   // 通知表示（UI + 安全な音声再生）
   static Future<void> _showNotification(String title, String message) async {
     try {
+      // 通知設定をチェック
+      final settingsService = SettingsService.instance;
+      if (!settingsService.showNotifications) {
+        print('通知設定がOFFのため通知をスキップ: $title');
+        return;
+      }
+      
       print('=== 通知表示開始 ===');
       print('タイトル: $title');
       print('メッセージ: $message');
@@ -198,6 +205,13 @@ class WindowsNotificationService {
 
   // Windowsネイティブトースト通知を表示（シンプル版）
   static Future<void> showToastNotification(String title, String message, {String? taskId}) async {
+    // 通知設定をチェック
+    final settingsService = SettingsService.instance;
+    if (!settingsService.showNotifications) {
+      print('通知設定がOFFのためトースト通知をスキップ: $title');
+      return;
+    }
+    
     if (!_isInitialized) {
       await initialize();
     }
@@ -206,8 +220,11 @@ class WindowsNotificationService {
       await _showNotification(title, message);
     } catch (e) {
       print('トースト通知エラー: $e');
-      // フォールバック: メッセージボックス
-      await _showMessageBox(title, message);
+      // エラー時も通知設定がOFFの場合は何もしない
+      if (settingsService.showNotifications) {
+        // フォールバック: メッセージボックス
+        await _showMessageBox(title, message);
+      }
     }
   }
 
@@ -578,6 +595,12 @@ class WindowsNotificationService {
     if (_getTasksCallback == null) {
       print('タスク取得コールバックが設定されていません。リマインダーチェックをスキップします。');
       return;
+    }
+
+    // 通知設定をチェック
+    final settingsService = SettingsService.instance;
+    if (!settingsService.showNotifications) {
+      return; // 通知設定がOFFの場合はチェックをスキップ
     }
 
     final tasks = _getTasksCallback!();

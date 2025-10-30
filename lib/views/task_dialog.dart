@@ -1074,8 +1074,15 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   Widget _buildLinkAssociationButton(BuildContext context) {
     if (widget.task == null) return const SizedBox.shrink(); // 新規作成時は非表示
     
+    // 最新のタスクデータを取得
+    final tasks = ref.watch(taskViewModelProvider);
+    final currentTask = tasks.firstWhere(
+      (t) => t.id == widget.task!.id,
+      orElse: () => widget.task!,
+    );
+    
     // リンクの数を取得
-    final linkCount = widget.task!.relatedLinkIds.length;
+    final linkCount = currentTask.relatedLinkIds.length;
     
     return InkWell(
       onTap: () => _showLinkAssociationDialog(context),
@@ -1158,10 +1165,17 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   void _showLinkAssociationDialog(BuildContext context) {
     if (widget.task == null) return;
     
+    // 最新のタスクデータを取得
+    final tasks = ref.read(taskViewModelProvider);
+    final currentTask = tasks.firstWhere(
+      (t) => t.id == widget.task!.id,
+      orElse: () => widget.task!,
+    );
+    
     showDialog(
       context: context,
       builder: (context) => LinkAssociationDialog(
-        task: widget.task!,
+        task: currentTask,
         onLinksUpdated: () {
           // UIを更新
           setState(() {});

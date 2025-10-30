@@ -3200,12 +3200,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.grid_view, size: 24),
                         label: const Text('レイアウト設定をリセット', style: TextStyle(fontSize: 16)),
-                          onPressed: () {
+                        onPressed: () {
                           ref.read(layoutSettingsProvider.notifier).resetToDefaults();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('レイアウト設定をリセットしました'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
                         },
-                  style: ElevatedButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
