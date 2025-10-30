@@ -17,6 +17,8 @@ import '../models/email_contact.dart';
 import '../models/sent_mail_log.dart';
 import '../widgets/app_button_styles.dart';
 import '../viewmodels/font_size_provider.dart';
+import '../widgets/link_association_dialog.dart';
+import 'package:hive/hive.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
@@ -107,6 +109,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   TaskStatus _status = TaskStatus.pending; // デフォルトは未着手
   bool _isRecurringReminder = false;
   String _recurringReminderPattern = RecurringReminderPattern.fiveMinutes;
+  
+  // ピン留め状態
+  bool _isPinned = false;
 
   @override
   void initState() {
@@ -129,6 +134,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       _status = widget.task!.status;
       _isRecurringReminder = widget.task!.isRecurringReminder;
       _recurringReminderPattern = widget.task!.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
+      
+      // ピン留め状態を読み込み
+      _loadPinnedState();
       
       print('初期化後の期限日: $_dueDate');
       print('初期化後のリマインダー時間: $_reminderTime');
@@ -657,6 +665,36 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
    );
   }
 
+  void _loadPinnedState() {
+    if (widget.task == null) return;
+    try {
+      final box = Hive.box('pinnedTasks');
+      final ids = box.get('ids', defaultValue: <String>[]) as List;
+      _isPinned = ids.contains(widget.task!.id);
+    } catch (_) {}
+  }
+
+  void _savePinnedState() {
+    if (widget.task == null) return;
+    try {
+      final box = Hive.box('pinnedTasks');
+      final ids = (box.get('ids', defaultValue: <String>[]) as List).map((e) => e.toString()).toSet();
+      if (_isPinned) {
+        ids.add(widget.task!.id);
+      } else {
+        ids.remove(widget.task!.id);
+      }
+      box.put('ids', ids.toList());
+    } catch (_) {}
+  }
+
+  void _togglePin() {
+    setState(() {
+      _isPinned = !_isPinned;
+    });
+    _savePinnedState();
+  }
+
   /// 左カラム（タイトル+本文+説明）を構築
   Widget _buildLeftColumnControls(BuildContext context) {
     return Column(
@@ -810,6 +848,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         _buildStatusField(context),
         const SizedBox(height: 16),
         _buildReminderToggle(context),
+        const SizedBox(height: 16),
+        _buildLinkAssociationButton(context),
+        const SizedBox(height: 16),
+        _buildPinButton(context),
       ],
     );
   }
@@ -1025,6 +1067,106 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           ],
         ),
       ],
+    );
+  }
+
+  /// リンク関連付けボタンを構築
+  Widget _buildLinkAssociationButton(BuildContext context) {
+    if (widget.task == null) return const SizedBox.shrink(); // 新規作成時は非表示
+    
+    // リンクの数を取得
+    final linkCount = widget.task!.relatedLinkIds.length;
+    
+    return InkWell(
+      onTap: () => _showLinkAssociationDialog(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+          color: linkCount > 0 ? Colors.orange.shade50 : null,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              linkCount > 0 ? Icons.link : Icons.link_off,
+              color: linkCount > 0 ? Colors.orange.shade600 : Colors.grey.shade600,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            const Text('リンク関連付け', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            if (linkCount > 0) ...[
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade600,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$linkCount',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ピン留めボタンを構築
+  Widget _buildPinButton(BuildContext context) {
+    if (widget.task == null) return const SizedBox.shrink(); // 新規作成時は非表示
+    
+    return InkWell(
+      onTap: _togglePin,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: _isPinned ? Colors.blue.shade300 : Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+          color: _isPinned ? Colors.blue.shade50 : null,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              _isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+              color: _isPinned ? Colors.blue.shade600 : Colors.grey.shade600,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _isPinned ? '上部にピン留め中' : 'ピン留め',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: _isPinned ? Colors.blue.shade600 : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// リンク関連付けダイアログを表示
+  void _showLinkAssociationDialog(BuildContext context) {
+    if (widget.task == null) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => LinkAssociationDialog(
+        task: widget.task!,
+        onLinksUpdated: () {
+          // UIを更新
+          setState(() {});
+        },
+      ),
     );
   }
 

@@ -1341,367 +1341,363 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   
   /// 改善されたタスクのListTileを構築（指示書に基づく）
   Widget _buildImprovedTaskListTile(TaskItem task, bool isSelected) {
-    return StatefulBuilder(
-      builder: (context, setInnerState) {
-        bool isExpanded = _expandedTaskIds.contains(task.id);
-        final bool hasDetails =
-            (task.description != null && task.description!.isNotEmpty) ||
-            _hasValidLinks(task);
-        
-        // UIカスタマイズ設定を取得
-        final uiState = ref.watch(uiCustomizationProvider);
-        
-        // アクセントカラーの調整色を取得
-        final accentColor = ref.watch(accentColorProvider);
-        final colorIntensity = ref.watch(colorIntensityProvider);
-        final colorContrast = ref.watch(colorContrastProvider);
-        final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
-        
-        return ListTile(
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: uiState.cardPadding, 
-            vertical: uiState.cardPadding * 0.75
-          ), // UIカスタマイズのパディング
-          leading: _isSelectionMode 
-            ? Checkbox(
-                value: isSelected,
-                onChanged: (_) => _toggleTaskSelection(task.id),
-              )
-            : _buildDeadlineIndicator(task),
-          title: Row(
-            children: [
-              // 詳細ボタン（左寄せ）: 表示内容がある場合のみ
-              if (hasDetails)
-                TextButton(
-                  onPressed: () => setInnerState(() {
-                    if (isExpanded) {
-                      _expandedTaskIds.remove(task.id);
-                    } else {
-                      _expandedTaskIds.add(task.id);
-                    }
-                  }),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
-                    minimumSize: const Size(0, 0),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, size: 16, color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 2),
-                      Text(
-                        isExpanded ? '閉じる' : '詳細',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _searchQuery.isNotEmpty
-                      ? HighlightedText(
-                        text: task.title,
-                        highlight: _searchQuery,
-                        style: TextStyle(
-                          color: _getTaskTitleColor(),
-                          decoration: task.status == TaskStatus.completed 
-                              ? TextDecoration.lineThrough 
-                              : null,
-                          fontSize: 16 * ref.watch(titleFontSizeProvider),
-                          fontWeight: FontWeight.w500,
-                          fontFamily: ref.watch(titleFontFamilyProvider).isEmpty 
-                              ? null 
-                              : ref.watch(titleFontFamilyProvider),
-                        ),
-                      )
-                    : Text(
-                        task.title,
-                        style: TextStyle(
-                          color: _getTaskTitleColor(),
-                          decoration: task.status == TaskStatus.completed 
-                              ? TextDecoration.lineThrough 
-                              : null,
-                          fontSize: 16 * ref.watch(titleFontSizeProvider),
-                          fontWeight: FontWeight.w500,
-                          fontFamily: ref.watch(titleFontFamilyProvider).isEmpty 
-                              ? null 
-                              : ref.watch(titleFontFamilyProvider),
-                        ),
-                      ),
-              ),
-              const SizedBox(width: 4),
-              // ピン留めトグル
-              IconButton(
-                icon: Icon(
-                  _pinnedTaskIds.contains(task.id)
-                    ? Icons.push_pin
-                    : Icons.push_pin_outlined,
-                  size: 18,
-                  color: _pinnedTaskIds.contains(task.id)
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.grey,
-                ),
-                tooltip: _pinnedTaskIds.contains(task.id) ? 'ピンを外す' : '上部にピン留め',
+    bool isExpanded = _expandedTaskIds.contains(task.id);
+    final bool hasDetails =
+        (task.description != null && task.description!.isNotEmpty) ||
+        _hasValidLinks(task);
+    
+    // UIカスタマイズ設定を取得
+    final uiState = ref.watch(uiCustomizationProvider);
+    
+    // アクセントカラーの調整色を取得
+    final accentColor = ref.watch(accentColorProvider);
+    final colorIntensity = ref.watch(colorIntensityProvider);
+    final colorContrast = ref.watch(colorContrastProvider);
+    final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
+    
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: uiState.cardPadding, 
+        vertical: uiState.cardPadding * 0.75
+      ), // UIカスタマイズのパディング
+      leading: _isSelectionMode 
+        ? Checkbox(
+            value: isSelected,
+            onChanged: (_) => _toggleTaskSelection(task.id),
+          )
+        : _buildDeadlineIndicator(task),
+      title: Row(
+        children: [
+          // 詳細ボタン（左寄せ）: 表示内容がある場合のみ
+          if (hasDetails)
+            TextButton(
+              onPressed: () => setState(() {
+                if (isExpanded) {
+                  _expandedTaskIds.remove(task.id);
+                } else {
+                  _expandedTaskIds.add(task.id);
+                }
+              }),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                minimumSize: const Size(0, 0),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
-                onPressed: () => _togglePinTask(task.id),
               ),
-              if (task.isTeamTask) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[100],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue[300]!),
+              child: Row(
+                children: [
+                  Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, size: 16, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 2),
+                  Text(
+                    isExpanded ? '閉じる' : '詳細',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.group,
-                        size: 16,
-                        color: Colors.blue[700],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'チーム',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.blue[700],
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 依頼先/メモ（テキストのみ）
-              if (task.assignedTo != null) ...[
-                const SizedBox(height: 4),
-                _buildClickableMemoText(task.assignedTo!, task, showRelatedLinks: false),
-              ],
-              // 説明文を常時表示（緑色の文字部分）
-              if (task.description != null && task.description!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  task.description!,
-                  style: TextStyle(
-                    color: Colors.green[700],
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              // 展開時のみ表示される詳細情報（関連資料）
-              if (isExpanded) ...[
-                const SizedBox(height: 8),
-                if (_hasValidLinks(task)) ...[
-                  const SizedBox(height: 6),
-                  _buildRelatedLinksDisplay(_getRelatedLinks(task), onAnyLinkTap: () {
-                    // 詳細折りたたみ中の誤タップ防止はしない。ここは展開中のみ表示
-                  }),
                 ],
-              ],
-            ],
+              ),
+            ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: _searchQuery.isNotEmpty
+                ? HighlightedText(
+                    text: task.title,
+                    highlight: _searchQuery,
+                    style: TextStyle(
+                      color: _getTaskTitleColor(),
+                      decoration: task.status == TaskStatus.completed 
+                          ? TextDecoration.lineThrough 
+                          : null,
+                      fontSize: 16 * ref.watch(titleFontSizeProvider),
+                      fontWeight: FontWeight.w500,
+                      fontFamily: ref.watch(titleFontFamilyProvider).isEmpty 
+                          ? null 
+                          : ref.watch(titleFontFamilyProvider),
+                    ),
+                  )
+                : Text(
+                    task.title,
+                    style: TextStyle(
+                      color: _getTaskTitleColor(),
+                      decoration: task.status == TaskStatus.completed 
+                          ? TextDecoration.lineThrough 
+                          : null,
+                      fontSize: 16 * ref.watch(titleFontSizeProvider),
+                      fontWeight: FontWeight.w500,
+                      fontFamily: ref.watch(titleFontFamilyProvider).isEmpty 
+                          ? null 
+                          : ref.watch(titleFontFamilyProvider),
+                    ),
+                  ),
           ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // リマインダーアイコン
-              if (task.reminderTime != null)
-                Icon(
-                  Icons.notifications_active,
-                  color: Colors.orange,
-                  size: 20,
-                ),
-              const SizedBox(width: 4),
-              // サブタスク: あるときだけバッジ表示し、クリックで編集ダイアログ
-              Builder(
-                builder: (context) {
-                  print('=== 全タスクのサブタスクバッジチェック ===');
-                  print('タスク: ${task.title}');
-                  print('hasSubTasks: ${task.hasSubTasks}');
-                  print('totalSubTasksCount: ${task.totalSubTasksCount}');
-                  print('completedSubTasksCount: ${task.completedSubTasksCount}');
-                  print('表示条件: ${task.hasSubTasks || task.totalSubTasksCount > 0}');
-                  print('===============================');
-                  
-                  if (task.hasSubTasks || task.totalSubTasksCount > 0) {
-                    return Tooltip(
-                      message: _buildSubTaskTooltipContent(task),
-                      preferBelow: false,
-                      verticalOffset: 20,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[900],
+          const SizedBox(width: 4),
+          // ピン留めトグル
+          IconButton(
+            icon: Icon(
+              _pinnedTaskIds.contains(task.id)
+                ? Icons.push_pin
+                : Icons.push_pin_outlined,
+              size: 18,
+              color: _pinnedTaskIds.contains(task.id)
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey,
+            ),
+            tooltip: _pinnedTaskIds.contains(task.id) ? 'ピンを外す' : '上部にピン留め',
+            visualDensity: VisualDensity.compact,
+            onPressed: () => _togglePinTask(task.id),
+          ),
+          if (task.isTeamTask) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.blue[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue[300]!),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.group,
+                    size: 16,
+                    color: Colors.blue[700],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'チーム',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 依頼先/メモ（テキストのみ）
+          if (task.assignedTo != null) ...[
+            const SizedBox(height: 4),
+            _buildClickableMemoText(task.assignedTo!, task, showRelatedLinks: false),
+          ],
+          // 説明文を常時表示（緑色の文字部分）
+          if (task.description != null && task.description!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              task.description!,
+              style: TextStyle(
+                color: Colors.green[700],
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          // 展開時のみ表示される詳細情報（関連資料）
+          if (isExpanded) ...[
+            const SizedBox(height: 8),
+            if (_hasValidLinks(task)) ...[
+              const SizedBox(height: 6),
+              _buildRelatedLinksDisplay(_getRelatedLinks(task), onAnyLinkTap: () {
+                // 詳細折りたたみ中の誤タップ防止はしない。ここは展開中のみ表示
+              }),
+            ],
+          ],
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // リマインダーアイコン
+          if (task.reminderTime != null)
+            Icon(
+              Icons.notifications_active,
+              color: Colors.orange,
+              size: 20,
+            ),
+          const SizedBox(width: 4),
+          // サブタスク: あるときだけバッジ表示し、クリックで編集ダイアログ
+          Builder(
+            builder: (context) {
+              print('=== 全タスクのサブタスクバッジチェック ===');
+              print('タスク: ${task.title}');
+              print('hasSubTasks: ${task.hasSubTasks}');
+              print('totalSubTasksCount: ${task.totalSubTasksCount}');
+              print('completedSubTasksCount: ${task.completedSubTasksCount}');
+              print('表示条件: ${task.hasSubTasks || task.totalSubTasksCount > 0}');
+              print('===============================');
+              
+              if (task.hasSubTasks || task.totalSubTasksCount > 0) {
+                return Tooltip(
+                  message: _buildSubTaskTooltipContent(task),
+                  preferBelow: false,
+                  verticalOffset: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                  child: Container(
+                    width: 65,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.transparent,
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(8),
-                      ),
-                      textStyle: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
-                      child: Container(
-                        width: 65,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.transparent,
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(8),
-                            onTap: () => _showSubTaskDialog(task),
-                            child: Stack(
-                              children: [
-                                Center(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: task.completedSubTasksCount == task.totalSubTasksCount 
+                        onTap: () => _showSubTaskDialog(task),
+                        child: Stack(
+                          children: [
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: task.completedSubTasksCount == task.totalSubTasksCount 
+                                    ? Colors.green.shade600 
+                                    : Colors.blue.shade600,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (task.completedSubTasksCount == task.totalSubTasksCount 
                                         ? Colors.green.shade600 
-                                        : Colors.blue.shade600,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 2,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: (task.completedSubTasksCount == task.totalSubTasksCount 
-                                            ? Colors.green.shade600 
-                                            : Colors.blue.shade600).withValues(alpha: 0.4),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
+                                        : Colors.blue.shade600).withValues(alpha: 0.4),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
-                                    constraints: const BoxConstraints(
-                                      minWidth: 60,
-                                      minHeight: 32,
+                                  ],
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 60,
+                                  minHeight: 32,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.0,
                                     ),
-                                    child: Center(
-                                      child: Text(
-                                        '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1.0,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.visible,
-                                      ),
-                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
-                    );
-                  } else {
-                    return const SizedBox.shrink();
-                  }
-                },
+                    ),
+                  ),
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
+            },
+          ),
+          // メールバッジ
+          _buildMailBadges(task.id),
+          const SizedBox(width: 4),
+          // 関連リンクボタン
+          _buildRelatedLinksButton(task),
+          const SizedBox(width: 4),
+          // ステータスチップ
+          _buildStatusChip(task.status),
+          const SizedBox(width: 8),
+          // アクションメニュー
+          PopupMenuButton<String>(
+            onSelected: (value) => _handleTaskAction(value, task),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit),
+                    SizedBox(width: 8),
+                    Text('編集'),
+                  ],
+                ),
               ),
-              // メールバッジ
-              _buildMailBadges(task.id),
-              const SizedBox(width: 4),
-              // 関連リンクボタン
-              _buildRelatedLinksButton(task),
-              const SizedBox(width: 4),
-              // ステータスチップ
-              _buildStatusChip(task.status),
-              const SizedBox(width: 8),
-              // アクションメニュー
-              PopupMenuButton<String>(
-                onSelected: (value) => _handleTaskAction(value, task),
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit),
-                        SizedBox(width: 8),
-                        Text('編集'),
-                      ],
-                    ),
+              PopupMenuItem(
+                value: 'copy',
+                child: Row(
+                  children: [
+                    Icon(Icons.copy, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('コピー', style: TextStyle(color: Colors.blue)),
+                  ],
+                ),
+              ),
+              if (task.status == TaskStatus.pending)
+                PopupMenuItem(
+                  value: 'start',
+                  child: Row(
+                    children: [
+                      Icon(Icons.play_arrow, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('進行中', style: TextStyle(color: Colors.blue)),
+                    ],
                   ),
-                  PopupMenuItem(
-                    value: 'copy',
-                    child: Row(
-                      children: [
-                        Icon(Icons.copy, color: Colors.blue),
-                        SizedBox(width: 8),
-                        Text('コピー', style: TextStyle(color: Colors.blue)),
-                      ],
-                    ),
+                ),
+              if (task.status == TaskStatus.inProgress)
+                PopupMenuItem(
+                  value: 'complete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.check),
+                      SizedBox(width: 8),
+                      Text('完了'),
+                    ],
                   ),
-                  if (task.status == TaskStatus.pending)
-                    PopupMenuItem(
-                      value: 'start',
-                      child: Row(
-                        children: [
-                          Icon(Icons.play_arrow, color: Colors.blue),
-                          SizedBox(width: 8),
-                          Text('進行中', style: TextStyle(color: Colors.blue)),
-                        ],
-                      ),
-                    ),
-                  if (task.status == TaskStatus.inProgress)
-                    PopupMenuItem(
-                      value: 'complete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.check),
-                          SizedBox(width: 8),
-                          Text('完了'),
-                        ],
-                      ),
-                    ),
-                  PopupMenuItem(
-                    value: 'sync_to_calendar',
-                    child: Row(
-                      children: [
-                        Icon(Icons.sync, color: Colors.green),
-                        SizedBox(width: 8),
-                        Text('このタスクを同期', style: TextStyle(color: Colors.green)),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('削除', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
+              PopupMenuItem(
+                value: 'sync_to_calendar',
+                child: Row(
+                  children: [
+                    Icon(Icons.sync, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('このタスクを同期', style: TextStyle(color: Colors.green)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('削除', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
               ),
             ],
           ),
-          onTap: () {
-            // タップで編集画面を開く
-            _showTaskDialog(task: task);
-          },
-        );
+        ],
+      ),
+      onTap: () {
+        // タップで編集画面を開く
+        _showTaskDialog(task: task);
       },
     );
   }
@@ -1861,8 +1857,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     );
   }
 
-  void _showTaskDialog({TaskItem? task}) {
-    showDialog(
+  void _showTaskDialog({TaskItem? task}) async {
+    await showDialog(
       context: context,
       builder: (context) => TaskDialog(
         task: task,
@@ -1872,6 +1868,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         },
       ),
     );
+    // ダイアログを閉じた後にピン留め状態を再読み込み
+    _loadPinnedTasks();
+    setState(() {});
   }
 
   void _showSubTaskDialog(TaskItem task) {
