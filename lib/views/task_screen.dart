@@ -665,18 +665,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           // ステータスフィルター（折りたたみ可能）
           if (_showFilters) _buildStatusFilterSection(),
           
-          // タスク一覧（全画面表示）
+          // タスク一覧（ピン留めタスク固定 + 通常タスクスクロール）
           Expanded(
             child: sortedTasks.isEmpty
                 ? const Center(
                     child: Text('タスクがありません'),
                   )
-                : ListView.builder(
-                    itemCount: sortedTasks.length,
-                    itemBuilder: (context, index) {
-                      return _buildTaskCard(sortedTasks[index]);
-                    },
-                  ),
+                : _buildPinnedAndScrollableTaskList(sortedTasks),
           ),//Expanded
           ],//children
         ),//Column
@@ -3368,6 +3363,55 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     return sortedTasks;
   }
 
+  /// ピン留めタスク固定 + 通常タスクスクロール表示を構築
+  Widget _buildPinnedAndScrollableTaskList(List<TaskItem> sortedTasks) {
+    // ピン留めタスクと通常タスクを分離
+    final pinnedTasks = sortedTasks.where((task) => _pinnedTaskIds.contains(task.id)).toList();
+    final unpinnedTasks = sortedTasks.where((task) => !_pinnedTaskIds.contains(task.id)).toList();
+    
+    // ピン留めタスクがある場合は固定 + スクロール表示
+    if (pinnedTasks.isNotEmpty) {
+      return Column(
+        children: [
+          // ピン留めタスク（固定表示）
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).dividerColor,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Column(
+              children: pinnedTasks.map((task) => _buildTaskCard(task)).toList(),
+            ),
+          ),
+          // 通常タスク（スクロール可能）
+          Expanded(
+            child: unpinnedTasks.isEmpty
+                ? const Center(child: Text('その他のタスクはありません'))
+                : ListView.builder(
+                    itemCount: unpinnedTasks.length,
+                    itemBuilder: (context, index) {
+                      return _buildTaskCard(unpinnedTasks[index]);
+                    },
+                  ),
+          ),
+        ],
+      );
+    }
+    
+    // ピン留めタスクがない場合は通常のリスト表示
+    return ListView.builder(
+      itemCount: unpinnedTasks.length,
+      itemBuilder: (context, index) {
+        return _buildTaskCard(unpinnedTasks[index]);
+      },
+    );
+  }
+
   /// メールバッジを構築
   Widget _buildMailBadges(String taskId) {
     print('=== _buildMailBadges呼び出し ===');
@@ -5709,68 +5753,21 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
     final tasks = ref.watch(taskViewModelProvider);
     final now = DateTime.now();
     
-    // タスクをプロジェクト（タイトル）ごとにグループ化
-    final Map<String, List<TaskItem>> projectGroups = {};
-    for (final task in tasks) {
-      // 完了タスクを除外
+    // タスクをフィルタリング（完了タスクを除外）
+    final filteredTasks = tasks.where((task) {
       if (_hideCompleted && task.status == TaskStatus.completed) {
-        continue;
+        return false;
       }
-      String projectTitle;
-      if (task.title.contains('(コピー)')) {
-        // コピーしたタスクはベースタイトルでグループ化
-        final baseTitle = task.title.replaceAll('(コピー)', '').trim();
-        projectTitle = '$baseTitle (コピー)';
-      } else {
-        // 通常のタスクは最初の部分をプロジェクト名とする
-        projectTitle = task.title.split(' - ').first;
-      }
-      
-      if (!projectGroups.containsKey(projectTitle)) {
-        projectGroups[projectTitle] = [];
-      }
-      projectGroups[projectTitle]!.add(task);
-    }
+      return true;
+    }).toList();
     
-    // グループ化後に、完了タスクのみを含むプロジェクトを除外
-    final filteredGroups = Map<String, List<TaskItem>>.fromEntries(
-      projectGroups.entries.where((entry) {
-        final tasks = entry.value;
-        if (_hideCompleted) {
-          // 完了以外のタスクが含まれているプロジェクトのみ表示
-          return tasks.any((t) => t.status != TaskStatus.completed);
-        }
-        return true;
-      })
-    );
-    
-    // 各プロジェクト内でタスクを期限日順でソート
-    for (final projectTasks in filteredGroups.values) {
-      projectTasks.sort((a, b) {
-        if (a.dueDate == null && b.dueDate == null) return 0;
-        if (a.dueDate == null) return 1;
-        if (b.dueDate == null) return -1;
-        return a.dueDate!.compareTo(b.dueDate!);
-      });
-    }
-    
-    // 期限日順でソート
-    final sortedProjects = filteredGroups.entries.toList()
-      ..sort((a, b) {
-        final aEarliest = a.value.map((t) => t.dueDate).where((d) => d != null).fold<DateTime?>(null, (earliest, current) {
-          if (earliest == null) return current;
-          return current!.isBefore(earliest) ? current : earliest;
-        });
-        final bEarliest = b.value.map((t) => t.dueDate).where((d) => d != null).fold<DateTime?>(null, (earliest, current) {
-          if (earliest == null) return current;
-          return current!.isBefore(earliest) ? current : earliest;
-        });
-        
-        if (aEarliest == null && bEarliest == null) return 0;
-        if (aEarliest == null) return 1;
-        if (bEarliest == null) return -1;
-        return aEarliest.compareTo(bEarliest);
-      });
+    // 期限日順でソート（期限なしは最後）
+    final sortedTasks = filteredTasks..sort((a, b) {
+      if (a.dueDate == null && b.dueDate == null) return 0;
+      if (a.dueDate == null) return 1;
+      if (b.dueDate == null) return -1;
+      return a.dueDate!.compareTo(b.dueDate!);
+    });
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -5798,7 +5795,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
               child: Row(
                 children: [
                   Text(
-                    'プロジェクト一覧',
+                    'タスク一覧',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -5826,9 +5823,9 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                 ],
               ),
             ),
-            // プロジェクト一覧
+            // タスク一覧
             Expanded(
-              child: sortedProjects.isEmpty
+              child: sortedTasks.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -5840,7 +5837,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'プロジェクトがありません',
+                          'タスクがありません',
                           style: TextStyle(
                             fontSize: 18,
                             color: Colors.grey[600],
@@ -5857,31 +5854,13 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                       crossAxisSpacing: 6,
                       mainAxisSpacing: 6,
                     ),
-                    itemCount: sortedProjects.length,
+                    itemCount: sortedTasks.length,
                     itemBuilder: (context, index) {
-                      final entry = sortedProjects[index];
-                      final projectTitle = entry.key;
-                      final projectTasks = entry.value;
-                      
-                      // 最も近い期限日を取得
-                      final nearestDueDate = projectTasks
-                          .map((t) => t.dueDate)
-                          .where((d) => d != null)
-                          .fold<DateTime?>(null, (nearest, current) {
-                        if (nearest == null) return current;
-                        return current!.isBefore(nearest) ? current : nearest;
-                      });
-                      
-                      // 完了済みタスク数
-                      final completedCount = projectTasks.where((t) => t.status == TaskStatus.completed).length;
-                      final totalCount = projectTasks.length;
-                      
-                      // ステータスバッジの色とテキスト
-                      final statusBadge = _getStatusBadge(completedCount, totalCount);
+                      final task = sortedTasks[index];
                       
                       // カードカラー（期限に応じた色味）
-                      final Color? dueColor = nearestDueDate != null
-                          ? _getDueDateColor(nearestDueDate, now)
+                      final Color? dueColor = task.dueDate != null
+                          ? _getDueDateColor(task.dueDate!, now)
                           : null;
                       final Color cardBg = dueColor != null
                           ? dueColor.withOpacity(0.08)
@@ -5889,6 +5868,9 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                       final Color borderColor = dueColor != null
                           ? dueColor.withOpacity(0.5)
                           : Theme.of(context).dividerColor;
+
+                      // ステータスバッジの色とテキスト
+                      final statusBadge = _getTaskStatusBadge(task.status);
 
                       return Card(
                         elevation: 0,
@@ -5901,8 +5883,10 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                           borderRadius: BorderRadius.circular(8),
                           onTap: () {
                             Navigator.of(context).pop();
-                            // 該当プロジェクトのタスクをフィルタリングして表示
-                            // ここでは実装を簡略化
+                            showDialog(
+                              context: context,
+                              builder: (context) => TaskDialog(task: task),
+                            );
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(6),
@@ -5914,12 +5898,12 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        projectTitle,
+                                        task.title,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
                                         ),
-                                        maxLines: 1,
+                                        maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
@@ -5954,16 +5938,8 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'タスク: $totalCount個 (完了: $completedCount個)',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                if (nearestDueDate != null && dueColor != null) ...[
-                                  const SizedBox(height: 2),
+                                if (task.dueDate != null && dueColor != null) ...[
+                                  const SizedBox(height: 4),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                     decoration: BoxDecoration(
@@ -5981,7 +5957,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: Text(
-                                            _getDueDateDisplayText(projectTasks, nearestDueDate),
+                                            '期限: ${DateFormat('MM/dd').format(task.dueDate!)}',
                                             style: TextStyle(
                                               color: dueColor,
                                               fontWeight: FontWeight.w700,
@@ -6092,6 +6068,36 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
           return '期限: ${DateFormat('MM/dd').format(earliest)}-${DateFormat('MM/dd').format(latest)}';
         }
       }
+    }
+  }
+
+  /// タスクのステータスバッジ情報を取得
+  Map<String, dynamic> _getTaskStatusBadge(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return {
+          'icon': Icons.hourglass_empty,
+          'text': '未着手',
+          'color': Colors.green,
+        };
+      case TaskStatus.inProgress:
+        return {
+          'icon': Icons.play_circle,
+          'text': '進行中',
+          'color': Colors.blue,
+        };
+      case TaskStatus.completed:
+        return {
+          'icon': Icons.check_circle,
+          'text': '完了',
+          'color': Colors.grey,
+        };
+      case TaskStatus.cancelled:
+        return {
+          'icon': Icons.cancel,
+          'text': 'キャンセル',
+          'color': Colors.red,
+        };
     }
   }
 
