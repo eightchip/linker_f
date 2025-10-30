@@ -95,6 +95,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   // 並び替え機能
   String _sortBy = 'dueDate'; // dueDate, priority, created, title, status
   bool _sortAscending = true;
+  // ピン留めされたタスクID
+  Set<String> _pinnedTaskIds = <String>{};
   
   // 検索機能強化
   bool _useRegex = false;
@@ -117,6 +119,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     
     // 検索履歴を読み込み
     _loadSearchHistory();
+    // ピン留めを読み込み
+    _loadPinnedTasks();
     
     // 検索コントローラーのリスナーを追加（初期化直後）
     _searchController.addListener(() {
@@ -145,6 +149,31 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
     // 検索クエリの同期はonChangedで処理
     print('=== TaskScreen initState 終了 ===');
+  }
+
+  void _loadPinnedTasks() {
+    try {
+      final box = Hive.box('pinnedTasks');
+      final ids = box.get('ids', defaultValue: <String>[]) as List;
+      _pinnedTaskIds = ids.map((e) => e.toString()).toSet();
+    } catch (_) {}
+  }
+
+  void _savePinnedTasks() {
+    try {
+      Hive.box('pinnedTasks').put('ids', _pinnedTaskIds.toList());
+    } catch (_) {}
+  }
+
+  void _togglePinTask(String taskId) {
+    setState(() {
+      if (_pinnedTaskIds.contains(taskId)) {
+        _pinnedTaskIds.remove(taskId);
+      } else {
+        _pinnedTaskIds.add(taskId);
+      }
+      _savePinnedTasks();
+    });
   }
 
   @override
@@ -748,12 +777,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              // 入力前から履歴アイコンを表示
+                              IconButton(
+                                icon: const Icon(Icons.history, size: 20),
+                                onPressed: _showSearchHistory,
+                                tooltip: '検索履歴',
+                              ),
                               if (_searchQuery.isNotEmpty) ...[
-                                IconButton(
-                                  icon: const Icon(Icons.history, size: 20),
-                                  onPressed: _showSearchHistory,
-                                  tooltip: '検索履歴',
-                                ),
                                 IconButton(
                                   icon: const Icon(Icons.clear, size: 20),
                                   onPressed: () {
@@ -1408,6 +1438,22 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                               : ref.watch(titleFontFamilyProvider),
                         ),
                       ),
+              ),
+              const SizedBox(width: 4),
+              // ピン留めトグル
+              IconButton(
+                icon: Icon(
+                  _pinnedTaskIds.contains(task.id)
+                    ? Icons.push_pin
+                    : Icons.push_pin_outlined,
+                  size: 18,
+                  color: _pinnedTaskIds.contains(task.id)
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey,
+                ),
+                tooltip: _pinnedTaskIds.contains(task.id) ? 'ピンを外す' : '上部にピン留め',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _togglePinTask(task.id),
               ),
               if (task.isTeamTask) ...[
                 const SizedBox(width: 8),
@@ -3285,6 +3331,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     final sortedTasks = List<TaskItem>.from(tasks);
     
     sortedTasks.sort((a, b) {
+      // ピン留めは最優先で上に
+      final aPinned = _pinnedTaskIds.contains(a.id);
+      final bPinned = _pinnedTaskIds.contains(b.id);
+      if (aPinned != bPinned) {
+        return aPinned ? -1 : 1;
+      }
       int comparison = 0;
       
       switch (_sortBy) {
@@ -5643,15 +5695,27 @@ class _LinkAssociationDialogState extends ConsumerState<_LinkAssociationDialog> 
 }
 
 /// プロジェクト一覧ダイアログ
-class _ProjectOverviewDialog extends ConsumerWidget {
+class _ProjectOverviewDialog extends ConsumerStatefulWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ProjectOverviewDialog> createState() => _ProjectOverviewDialogState();
+}
+
+class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> {
+  bool _hideCompleted = true; // デフォルトで完了タスクを非表示
+
+  @override
+  Widget build(BuildContext context) {
+    final WidgetRef ref = this.ref;
     final tasks = ref.watch(taskViewModelProvider);
     final now = DateTime.now();
     
     // タスクをプロジェクト（タイトル）ごとにグループ化
     final Map<String, List<TaskItem>> projectGroups = {};
     for (final task in tasks) {
+      // 完了タスクを除外
+      if (_hideCompleted && task.status == TaskStatus.completed) {
+        continue;
+      }
       String projectTitle;
       if (task.title.contains('(コピー)')) {
         // コピーしたタスクはベースタイトルでグループ化
@@ -5668,8 +5732,20 @@ class _ProjectOverviewDialog extends ConsumerWidget {
       projectGroups[projectTitle]!.add(task);
     }
     
+    // グループ化後に、完了タスクのみを含むプロジェクトを除外
+    final filteredGroups = Map<String, List<TaskItem>>.fromEntries(
+      projectGroups.entries.where((entry) {
+        final tasks = entry.value;
+        if (_hideCompleted) {
+          // 完了以外のタスクが含まれているプロジェクトのみ表示
+          return tasks.any((t) => t.status != TaskStatus.completed);
+        }
+        return true;
+      })
+    );
+    
     // 各プロジェクト内でタスクを期限日順でソート
-    for (final projectTasks in projectGroups.values) {
+    for (final projectTasks in filteredGroups.values) {
       projectTasks.sort((a, b) {
         if (a.dueDate == null && b.dueDate == null) return 0;
         if (a.dueDate == null) return 1;
@@ -5679,7 +5755,7 @@ class _ProjectOverviewDialog extends ConsumerWidget {
     }
     
     // 期限日順でソート
-    final sortedProjects = projectGroups.entries.toList()
+    final sortedProjects = filteredGroups.entries.toList()
       ..sort((a, b) {
         final aEarliest = a.value.map((t) => t.dueDate).where((d) => d != null).fold<DateTime?>(null, (earliest, current) {
           if (earliest == null) return current;
@@ -5711,7 +5787,7 @@ class _ProjectOverviewDialog extends ConsumerWidget {
           children: [
             // ヘッダー
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: Theme.of(context).primaryColor.withOpacity(0.1),
                 borderRadius: const BorderRadius.only(
@@ -5721,12 +5797,6 @@ class _ProjectOverviewDialog extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.calendar_view_month,
-                    color: Theme.of(context).primaryColor,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 12),
                   Text(
                     'プロジェクト一覧',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -5734,6 +5804,20 @@ class _ProjectOverviewDialog extends ConsumerWidget {
                     ),
                   ),
                   const Spacer(),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _hideCompleted,
+                        onChanged: (v) => setState(() => _hideCompleted = v ?? true),
+                        visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                      ),
+                      const Text(
+                        '完了タスクを非表示',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close),
@@ -5792,8 +5876,27 @@ class _ProjectOverviewDialog extends ConsumerWidget {
                       final completedCount = projectTasks.where((t) => t.status == TaskStatus.completed).length;
                       final totalCount = projectTasks.length;
                       
+                      // ステータスバッジの色とテキスト
+                      final statusBadge = _getStatusBadge(completedCount, totalCount);
+                      
+                      // カードカラー（期限に応じた色味）
+                      final Color? dueColor = nearestDueDate != null
+                          ? _getDueDateColor(nearestDueDate, now)
+                          : null;
+                      final Color cardBg = dueColor != null
+                          ? dueColor.withOpacity(0.08)
+                          : Theme.of(context).colorScheme.surface;
+                      final Color borderColor = dueColor != null
+                          ? dueColor.withOpacity(0.5)
+                          : Theme.of(context).dividerColor;
+
                       return Card(
-                        elevation: 2,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: borderColor, width: 1),
+                        ),
+                        color: cardBg,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(8),
                           onTap: () {
@@ -5806,36 +5909,48 @@ class _ProjectOverviewDialog extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // タイトル
                                 Row(
                                   children: [
-                                    CircleAvatar(
-                                      radius: 10,
-                                      backgroundColor: _getProjectColor(index),
-                                      child: Text(
-                                        projectTitle.substring(0, 1).toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
                                         projectTitle,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 11,
+                                          fontSize: 12,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    Icon(
-                                      Icons.arrow_forward_ios,
-                                      size: 10,
-                                      color: Colors.grey[400],
+                                    const SizedBox(width: 4),
+                                    // ステータスバッジ
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: statusBadge['color'].withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: statusBadge['color'].withOpacity(0.4), width: 1),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            statusBadge['icon'] as IconData,
+                                            size: 10,
+                                            color: statusBadge['color'],
+                                          ),
+                                          const SizedBox(width: 2),
+                                          Text(
+                                            statusBadge['text'] as String,
+                                            style: TextStyle(
+                                              color: statusBadge['color'],
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 9,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -5847,27 +5962,37 @@ class _ProjectOverviewDialog extends ConsumerWidget {
                                     color: Colors.grey[600],
                                   ),
                                 ),
-                                if (nearestDueDate != null) ...[
+                                if (nearestDueDate != null && dueColor != null) ...[
                                   const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.schedule,
-                                        size: 10,
-                                        color: _getDueDateColor(nearestDueDate, now),
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Expanded(
-                                        child: Text(
-                                          _getDueDateDisplayText(projectTasks, nearestDueDate),
-                                          style: TextStyle(
-                                            color: _getDueDateColor(nearestDueDate, now),
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 9,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: dueColor.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: dueColor.withOpacity(0.5)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.schedule,
+                                          size: 12,
+                                          color: dueColor,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            _getDueDateDisplayText(projectTasks, nearestDueDate),
+                                            style: TextStyle(
+                                              color: dueColor,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 12,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ],
@@ -5908,6 +6033,35 @@ class _ProjectOverviewDialog extends ConsumerWidget {
       return Colors.amber; // 3日以内
     } else {
       return Colors.grey; // それ以外
+    }
+  }
+
+  /// ステータスバッジ情報を取得
+  Map<String, dynamic> _getStatusBadge(int completedCount, int totalCount) {
+    if (totalCount == 0) {
+      return {
+        'icon': Icons.hourglass_empty,
+        'text': '未着手',
+        'color': Colors.green,
+      };
+    } else if (completedCount == totalCount) {
+      return {
+        'icon': Icons.check_circle,
+        'text': '完了',
+        'color': Colors.grey,
+      };
+    } else if (completedCount > 0) {
+      return {
+        'icon': Icons.play_circle,
+        'text': '進行中',
+        'color': Colors.blue,
+      };
+    } else {
+      return {
+        'icon': Icons.hourglass_empty,
+        'text': '未着手',
+        'color': Colors.green,
+      };
     }
   }
 

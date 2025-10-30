@@ -269,6 +269,9 @@ void _initializeAdvancedFeatures() {
       // 検索履歴ボックスを開く
       await Hive.openBox('searchHistory');
       
+      // ピン留めタスク用ボックスを開く
+      await Hive.openBox('pinnedTasks');
+      
       // Google Calendar自動同期の初期化
       await _initializeGoogleCalendarSync();
       

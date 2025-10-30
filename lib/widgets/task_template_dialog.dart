@@ -47,19 +47,22 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
   void _loadTemplates() {
     try {
       final box = Hive.box('templates');
-      final templatesData = box.get('templates', defaultValue: <Map>[]);
+      final templatesData = box.get('templates');
       
-      if (templatesData.isEmpty) {
+      if (templatesData == null || (templatesData is List && templatesData.isEmpty)) {
         // 初回起動時はデフォルトテンプレートを作成
         _templates = _getDefaultTemplates();
         _saveTemplates();
       } else {
         // 保存されたテンプレートを読み込み
-        _templates = templatesData.map((data) => TaskTemplate.fromMap(Map<String, dynamic>.from(data))).toList();
+        final List dataList = templatesData is List ? templatesData : [];
+        _templates = dataList.map((data) => TaskTemplate.fromMap(Map<String, dynamic>.from(data))).toList();
+        setState(() {}); // UIを更新
       }
     } catch (e) {
       print('テンプレート読み込みエラー: $e');
       _templates = _getDefaultTemplates();
+      _saveTemplates();
     }
   }
 
@@ -587,6 +590,9 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
 
     // データベースに保存
     _saveTemplates();
+    
+    // 再度setStateでUIを更新
+    setState(() {});
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('テンプレートを保存しました')),

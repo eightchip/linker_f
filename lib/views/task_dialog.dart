@@ -44,6 +44,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   // サブタスク用
   final _subTaskTitleController = TextEditingController();
   final _subTaskMinutesController = TextEditingController();
+  final _subTaskDescriptionController = TextEditingController();
   SubTask? _editingSubTask;
   
   // メール送信用のコントローラー
@@ -187,6 +188,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     _assignedToController.dispose();
     _subTaskTitleController.dispose();
     _subTaskMinutesController.dispose();
+    _subTaskDescriptionController.dispose();
     _toController.dispose();
     super.dispose();
   }
@@ -1188,30 +1190,61 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               children: [
                 Expanded(
                   flex: 2,
-                  child: TextField(
-                    controller: _subTaskTitleController,
-                    decoration: InputDecoration(
-                      labelText: 'サブタスク名',
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _subTaskTitleController,
+                        decoration: InputDecoration(
+                          labelText: 'サブタスク名',
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                          ),
+                          labelStyle: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _subTaskDescriptionController,
+                        decoration: InputDecoration(
+                          labelText: '説明',
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue.shade600, width: 2.5),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                          ),
+                          labelStyle: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                        maxLines: 2,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
-                      ),
-                      labelStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1261,7 +1294,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       }
                       final newSub = vm.createSubTask(
                         title: title,
-                        description: null,
+                        description: _subTaskDescriptionController.text.trim().isEmpty
+                            ? null
+                            : _subTaskDescriptionController.text.trim(),
                         parentTaskId: widget.task!.id,
                         estimatedMinutes: minutes,
                         notes: null,
@@ -1276,6 +1311,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       }
                       final updated = _editingSubTask!.copyWith(
                         title: title,
+                        description: _subTaskDescriptionController.text.trim().isEmpty
+                            ? _editingSubTask!.description
+                            : _subTaskDescriptionController.text.trim(),
                         estimatedMinutes: minutes,
                       );
                       await vm.updateSubTask(updated);
@@ -1283,6 +1321,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     }
                     _subTaskTitleController.clear();
                     _subTaskMinutesController.clear();
+                    _subTaskDescriptionController.clear();
                     // 親統計更新
                     await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(widget.task!.id);
                     setState((){});
@@ -1331,6 +1370,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         onPressed: () {
                           _subTaskTitleController.text = s.title;
                           _subTaskMinutesController.text = s.estimatedMinutes?.toString() ?? '';
+                          _subTaskDescriptionController.text = s.description ?? '';
                           _editingSubTask = s;
                           setState((){});
                         },
