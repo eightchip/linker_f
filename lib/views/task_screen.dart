@@ -32,6 +32,7 @@ import '../models/sub_task.dart';
 import '../services/keyboard_shortcut_service.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../viewmodels/ui_customization_provider.dart';
+import '../viewmodels/layout_settings_provider.dart';
 import '../widgets/unified_dialog.dart';
 import '../widgets/copy_task_dialog.dart';
 import '../widgets/task_template_dialog.dart';
@@ -4343,12 +4344,37 @@ class _ProjectOverviewDialog extends ConsumerStatefulWidget {
 
 class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> {
   bool _hideCompleted = true; // デフォルトで完了タスクを非表示
+  late FocusNode _dialogFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _dialogFocusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _dialogFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final WidgetRef ref = this.ref;
     final tasks = ref.watch(taskViewModelProvider);
     final now = DateTime.now();
+    
+    // フォント設定を取得
+    final fontSize = ref.watch(fontSizeProvider);
+    final titleFontSize = ref.watch(titleFontSizeProvider);
+    final memoFontSize = ref.watch(memoFontSizeProvider);
+    final descriptionFontSize = ref.watch(descriptionFontSizeProvider);
+    final titleFontFamily = ref.watch(titleFontFamilyProvider);
+    final memoFontFamily = ref.watch(memoFontFamilyProvider);
+    final descriptionFontFamily = ref.watch(descriptionFontFamilyProvider);
+    
+    // プロジェクト一覧用のレイアウト設定を取得
+    final layoutSettings = ref.watch(taskProjectLayoutSettingsProvider);
     
     // タスクをフィルタリング（完了タスクを除外）
     final filteredTasks = tasks.where((task) {
@@ -4365,19 +4391,85 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
       if (b.dueDate == null) return -1;
       return a.dueDate!.compareTo(b.dueDate!);
     });
+    
+    // グリッド設定を計算
+    final crossAxisCount = layoutSettings.autoAdjustLayout
+        ? (MediaQuery.of(context).size.width > 1400 ? layoutSettings.defaultCrossAxisCount
+            : MediaQuery.of(context).size.width > 1100 ? layoutSettings.defaultCrossAxisCount
+            : MediaQuery.of(context).size.width > 700 ? (layoutSettings.defaultCrossAxisCount - 1).clamp(2, 4)
+            : 2)
+        : layoutSettings.defaultCrossAxisCount;
+    
+    // カードサイズからアスペクト比を計算
+    final cardWidth = layoutSettings.cardWidth;
+    final cardHeight = layoutSettings.cardHeight;
+    final childAspectRatio = cardWidth / cardHeight;
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.98,
-        height: MediaQuery.of(context).size.height * 0.95,
-        constraints: const BoxConstraints(
-          minWidth: 1000,
-          minHeight: 700,
-          maxWidth: 1600,
-          maxHeight: 1200,
-        ),
-        child: Column(
+    return PopScope(
+      canPop: true,
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: FocusScope(
+          autofocus: true,
+          child: Focus(
+            autofocus: true,
+            canRequestFocus: true,
+            skipTraversal: true,
+            onKeyEvent: (node, event) {
+              if (event is KeyDownEvent) {
+                final isControlPressed = HardwareKeyboard.instance.isControlPressed;
+                final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+                
+                print('🔑 ダイアログ内キーイベント受信: ${event.logicalKey.keyLabel}, Ctrl=$isControlPressed, Shift=$isShiftPressed');
+                
+                // Escape: ダイアログを閉じる
+                if (event.logicalKey == LogicalKeyboardKey.escape) {
+                  print('✅ Escape 検出: ダイアログを閉じる');
+                  Navigator.of(context).pop();
+                  return KeyEventResult.handled;
+                }
+                
+                // Ctrl+P: ダイアログを閉じる（プロジェクト一覧を閉じる）
+                if (event.logicalKey == LogicalKeyboardKey.keyP && isControlPressed && !isShiftPressed) {
+                  print('✅ Ctrl+P 検出: ダイアログを閉じる');
+                  Navigator.of(context).pop();
+                  return KeyEventResult.handled;
+                }
+                
+                // Ctrl+H: 親画面のヘッダーセクション切り替え（ダイアログを閉じて処理）
+                if (event.logicalKey == LogicalKeyboardKey.keyH && isControlPressed && !isShiftPressed) {
+                  print('✅ Ctrl+H 検出: ダイアログを閉じてヘッダーセクション切り替え');
+                  Navigator.of(context).pop();
+                  // 親画面の状態更新は親画面で処理される
+                  return KeyEventResult.handled;
+                }
+                
+                // F1: ショートカットヘルプ（ダイアログを閉じて表示）
+                if (event.logicalKey == LogicalKeyboardKey.f1) {
+                  print('✅ F1 検出: ダイアログを閉じてショートカットヘルプ表示');
+                  Navigator.of(context).pop();
+                  // 親画面でヘルプが表示される
+                  return KeyEventResult.handled;
+                }
+              }
+              return KeyEventResult.ignored;
+            },
+            child: KeyboardListener(
+              focusNode: _dialogFocusNode,
+              autofocus: true,
+              onKeyEvent: (event) {
+                // 追加のキーイベント処理が必要な場合
+              },
+              child: Container(
+            width: MediaQuery.of(context).size.width * 0.98,
+            height: MediaQuery.of(context).size.height * 0.95,
+            constraints: const BoxConstraints(
+              minWidth: 1000,
+              minHeight: 700,
+              maxWidth: 1600,
+              maxHeight: 1200,
+            ),
+            child: Column(
           children: [
             // ヘッダー
             Container(
@@ -4395,6 +4487,8 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                     'タスク一覧',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
+                      fontSize: (Theme.of(context).textTheme.headlineSmall?.fontSize ?? 20) * fontSize,
+                      fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
                     ),
                   ),
                   const Spacer(),
@@ -4405,9 +4499,9 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                         onChanged: (v) => setState(() => _hideCompleted = v ?? true),
                         visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
                       ),
-                      const Text(
+                      Text(
                         '完了タスクを非表示',
-                        style: TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12 * fontSize),
                       ),
                       const SizedBox(width: 8),
                     ],
@@ -4444,12 +4538,12 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                     ),
                   )
                 : GridView.builder(
-                    padding: const EdgeInsets.all(6),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      childAspectRatio: 2.0,
-                      crossAxisSpacing: 6,
-                      mainAxisSpacing: 6,
+                    padding: EdgeInsets.all(layoutSettings.defaultGridSpacing * 0.75),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: childAspectRatio,
+                      crossAxisSpacing: layoutSettings.defaultGridSpacing,
+                      mainAxisSpacing: layoutSettings.defaultGridSpacing,
                     ),
                     itemCount: sortedTasks.length,
                     itemBuilder: (context, index) {
@@ -4478,6 +4572,8 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                         color: cardBg,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(8),
+                          focusColor: Colors.transparent,
+                          canRequestFocus: false,
                           onTap: () {
                             Navigator.of(context).pop();
                             showDialog(
@@ -4486,19 +4582,22 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                             );
                           },
                           child: Padding(
-                            padding: const EdgeInsets.all(6),
+                            padding: EdgeInsets.all(8 * fontSize),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 // タイトル
                                 Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
                                       child: Text(
                                         task.title,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 12,
+                                          fontSize: 14 * fontSize * titleFontSize,
+                                          fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -4507,7 +4606,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                     const SizedBox(width: 4),
                                     // ステータスバッジ
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: EdgeInsets.symmetric(horizontal: 6 * fontSize, vertical: 2 * fontSize),
                                       decoration: BoxDecoration(
                                         color: statusBadge['color'].withOpacity(0.15),
                                         borderRadius: BorderRadius.circular(4),
@@ -4518,16 +4617,16 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                         children: [
                                           Icon(
                                             statusBadge['icon'] as IconData,
-                                            size: 10,
+                                            size: 10 * fontSize,
                                             color: statusBadge['color'],
                                           ),
-                                          const SizedBox(width: 2),
+                                          SizedBox(width: 2 * fontSize),
                                           Text(
                                             statusBadge['text'] as String,
                                             style: TextStyle(
                                               color: statusBadge['color'],
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 9,
+                                              fontSize: 9 * fontSize,
                                             ),
                                           ),
                                         ],
@@ -4535,37 +4634,159 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                     ),
                                   ],
                                 ),
+                                // 期限
                                 if (task.dueDate != null && dueColor != null) ...[
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4 * fontSize),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                    padding: EdgeInsets.symmetric(horizontal: 6 * fontSize, vertical: 4 * fontSize),
                                     decoration: BoxDecoration(
                                       color: dueColor.withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(color: dueColor.withOpacity(0.5)),
                                     ),
                                     child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
                                           Icons.schedule,
-                                          size: 12,
+                                          size: 12 * fontSize,
                                           color: dueColor,
                                         ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            '期限: ${DateFormat('MM/dd').format(task.dueDate!)}',
-                                            style: TextStyle(
-                                              color: dueColor,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 12,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                        SizedBox(width: 4 * fontSize),
+                                        Text(
+                                          '期限: ${DateFormat('MM/dd').format(task.dueDate!)}',
+                                          style: TextStyle(
+                                            color: dueColor,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 11 * fontSize,
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
+                                  ),
+                                ],
+                                // メモまたは依頼先
+                                if (task.assignedTo != null && task.assignedTo!.isNotEmpty) ...[
+                                  SizedBox(height: 4 * fontSize),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.person, size: 10 * fontSize, color: Colors.grey[600]),
+                                      SizedBox(width: 2 * fontSize),
+                                      Expanded(
+                                        child: Text(
+                                          task.assignedTo!,
+                                          style: TextStyle(
+                                            color: Color(ref.watch(memoTextColorProvider)),
+                                            fontSize: 10 * fontSize * memoFontSize,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ] else if (task.notes != null && task.notes!.isNotEmpty) ...[
+                                  SizedBox(height: 4 * fontSize),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.note, size: 10 * fontSize, color: Colors.grey[600]),
+                                      SizedBox(width: 2 * fontSize),
+                                      Expanded(
+                                        child: Text(
+                                          task.notes!,
+                                          style: TextStyle(
+                                            color: Color(ref.watch(memoTextColorProvider)),
+                                            fontSize: 10 * fontSize * memoFontSize,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                // 説明
+                                if (task.description != null && task.description!.isNotEmpty) ...[
+                                  SizedBox(height: 4 * fontSize),
+                                  Text(
+                                    task.description!,
+                                    style: TextStyle(
+                                      color: Colors.green[700],
+                                      fontSize: 10 * fontSize * descriptionFontSize,
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: descriptionFontFamily.isEmpty ? null : descriptionFontFamily,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                // サブタスク進捗
+                                if (task.hasSubTasks && task.totalSubTasksCount > 0) ...[
+                                  SizedBox(height: 4 * fontSize),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.list, size: 10 * fontSize, color: Colors.blue),
+                                      SizedBox(width: 2 * fontSize),
+                                      Text(
+                                        '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                                        style: TextStyle(
+                                          color: Colors.blue,
+                                          fontSize: 10 * fontSize,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                // タグ
+                                if (task.tags.isNotEmpty) ...[
+                                  SizedBox(height: 4 * fontSize),
+                                  Wrap(
+                                    spacing: 2 * fontSize,
+                                    runSpacing: 2 * fontSize,
+                                    children: task.tags.take(2).map((tag) {
+                                      return Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 4 * fontSize, vertical: 2 * fontSize),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[200],
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          tag,
+                                          style: TextStyle(
+                                            fontSize: 8 * fontSize,
+                                            color: Colors.grey[700],
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                                // 推定時間
+                                if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) ...[
+                                  SizedBox(height: 4 * fontSize),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.access_time, size: 10 * fontSize, color: Colors.grey[600]),
+                                      SizedBox(width: 2 * fontSize),
+                                      Text(
+                                        task.estimatedMinutes! >= 60
+                                            ? '${task.estimatedMinutes! ~/ 60}時間${task.estimatedMinutes! % 60 > 0 ? '${task.estimatedMinutes! % 60}分' : ''}'
+                                            : '${task.estimatedMinutes}分',
+                                        style: TextStyle(
+                                          fontSize: 9 * fontSize,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ],
@@ -4577,6 +4798,10 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                   ),
             ),
           ],
+            ),
+          ),
+        ),
+          ),
         ),
       ),
     );

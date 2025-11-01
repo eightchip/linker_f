@@ -216,3 +216,123 @@ class LayoutSettingsNotifier extends StateNotifier<LayoutSettings> {
 final layoutSettingsProvider = StateNotifierProvider<LayoutSettingsNotifier, LayoutSettings>(
   (ref) => LayoutSettingsNotifier(),
 );
+
+// プロジェクト一覧用レイアウト設定のデータクラス
+class TaskProjectLayoutSettings {
+  final int defaultCrossAxisCount;
+  final double defaultGridSpacing;
+  final double cardWidth;  // カードの幅（px）
+  final double cardHeight; // カードの高さ（px）
+  final bool autoAdjustLayout;
+
+  TaskProjectLayoutSettings({
+    this.defaultCrossAxisCount = 4,
+    this.defaultGridSpacing = 8.0,
+    this.cardWidth = 180.0,  // デフォルト幅（プロジェクト一覧用）
+    this.cardHeight = 160.0, // デフォルト高さ（プロジェクト一覧用）
+    this.autoAdjustLayout = true,
+  });
+
+  TaskProjectLayoutSettings copyWith({
+    int? defaultCrossAxisCount,
+    double? defaultGridSpacing,
+    double? cardWidth,
+    double? cardHeight,
+    bool? autoAdjustLayout,
+  }) {
+    return TaskProjectLayoutSettings(
+      defaultCrossAxisCount: defaultCrossAxisCount ?? this.defaultCrossAxisCount,
+      defaultGridSpacing: defaultGridSpacing ?? this.defaultGridSpacing,
+      cardWidth: cardWidth ?? this.cardWidth,
+      cardHeight: cardHeight ?? this.cardHeight,
+      autoAdjustLayout: autoAdjustLayout ?? this.autoAdjustLayout,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'defaultCrossAxisCount': defaultCrossAxisCount,
+      'defaultGridSpacing': defaultGridSpacing,
+      'cardWidth': cardWidth,
+      'cardHeight': cardHeight,
+      'autoAdjustLayout': autoAdjustLayout,
+    };
+  }
+
+  factory TaskProjectLayoutSettings.fromJson(Map<String, dynamic> json) {
+    return TaskProjectLayoutSettings(
+      defaultCrossAxisCount: json['defaultCrossAxisCount'] ?? 4,
+      defaultGridSpacing: json['defaultGridSpacing']?.toDouble() ?? 8.0,
+      cardWidth: json['cardWidth']?.toDouble() ?? 180.0,
+      cardHeight: json['cardHeight']?.toDouble() ?? 160.0,
+      autoAdjustLayout: json['autoAdjustLayout'] ?? true,
+    );
+  }
+}
+
+// プロジェクト一覧用レイアウト設定のプロバイダー
+class TaskProjectLayoutSettingsNotifier extends StateNotifier<TaskProjectLayoutSettings> {
+  TaskProjectLayoutSettingsNotifier() : super(TaskProjectLayoutSettings()) {
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final box = await Hive.openBox('taskProjectLayoutSettings');
+      final settingsJson = box.get('settings');
+      if (settingsJson != null) {
+        state = TaskProjectLayoutSettings.fromJson(Map<String, dynamic>.from(settingsJson));
+      }
+    } catch (e) {
+      // デフォルト設定を使用
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    try {
+      final box = await Hive.openBox('taskProjectLayoutSettings');
+      await box.put('settings', state.toJson());
+    } catch (e) {
+      // エラーハンドリング
+    }
+  }
+
+  void updateSettings(TaskProjectLayoutSettings newSettings) {
+    state = newSettings;
+    _saveSettings();
+  }
+
+  void updateCrossAxisCount(int count) {
+    state = state.copyWith(defaultCrossAxisCount: count);
+    _saveSettings();
+  }
+
+  void updateGridSpacing(double spacing) {
+    state = state.copyWith(defaultGridSpacing: spacing);
+    _saveSettings();
+  }
+
+  void updateCardWidth(double width) {
+    state = state.copyWith(cardWidth: width);
+    _saveSettings();
+  }
+
+  void updateCardHeight(double height) {
+    state = state.copyWith(cardHeight: height);
+    _saveSettings();
+  }
+
+  void toggleAutoAdjustLayout() {
+    state = state.copyWith(autoAdjustLayout: !state.autoAdjustLayout);
+    _saveSettings();
+  }
+
+  void resetToDefaults() {
+    state = TaskProjectLayoutSettings();
+    _saveSettings();
+  }
+}
+
+final taskProjectLayoutSettingsProvider = StateNotifierProvider<TaskProjectLayoutSettingsNotifier, TaskProjectLayoutSettings>(
+  (ref) => TaskProjectLayoutSettingsNotifier(),
+);

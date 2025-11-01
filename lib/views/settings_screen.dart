@@ -301,6 +301,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildMenuItem(context, ref, 'グリッド設定', Icons.grid_view, 'grid', 'リンク画面'),
           _buildMenuItem(context, ref, 'カード設定', Icons.view_agenda, 'card', 'リンク・タスク画面'),
           _buildMenuItem(context, ref, 'アイテム設定', Icons.link, 'item', 'リンク画面'),
+          _buildMenuItem(context, ref, 'プロジェクト一覧設定', Icons.view_module, 'task_project', 'タスク一覧'),
         ]),
         _buildMenuSection('データ', [
           _buildMenuItem(context, ref, 'バックアップ', Icons.backup, 'backup'),
@@ -493,8 +494,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return _buildGridSection(ref, layoutSettings);
       case 'card':
         return _buildCardSection(ref, layoutSettings);
-      case 'item':
+        case 'item':
         return _buildItemSection(ref, layoutSettings);
+      case 'task_project':
+        return _buildTaskProjectSection(ref);
       case 'backup':
         return _buildIntegratedBackupSection(context, ref, settingsState, settingsNotifier);
       case 'notifications':
@@ -2254,6 +2257,212 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Widget _buildTaskProjectSection(WidgetRef ref) {
+    final taskProjectLayoutSettings = ref.watch(taskProjectLayoutSettingsProvider);
+    final notifier = ref.read(taskProjectLayoutSettingsProvider.notifier);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('プロジェクト一覧設定', Icons.view_module),
+        const SizedBox(height: 16),
+        
+        // グリッド設定
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'グリッド設定',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text('自動レイアウト調整'),
+                  subtitle: const Text('画面サイズに応じて自動調整'),
+                  value: taskProjectLayoutSettings.autoAdjustLayout,
+                  onChanged: (value) => notifier.toggleAutoAdjustLayout(),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 自動レイアウトの説明
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            taskProjectLayoutSettings.autoAdjustLayout ? Icons.auto_awesome : Icons.settings,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            taskProjectLayoutSettings.autoAdjustLayout ? '自動レイアウト有効' : '手動レイアウト設定',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      if (taskProjectLayoutSettings.autoAdjustLayout) ...[
+                        Text(
+                          '自動レイアウトが有効です。画面サイズに応じて最適な列数が自動で決定されます。',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                          ),
+                        ),
+                      ] else ...[
+                        Text(
+                          '手動レイアウト設定が有効です。固定の列数で表示されます。',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildLayoutInfo(
+                          '固定列数',
+                          '${taskProjectLayoutSettings.defaultCrossAxisCount}列表示',
+                          'すべての画面サイズで同じ列数',
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                
+                if (!taskProjectLayoutSettings.autoAdjustLayout) ...[
+                  const SizedBox(height: 16),
+                  Text('デフォルト列数: ${taskProjectLayoutSettings.defaultCrossAxisCount}'),
+                  Slider(
+                    value: taskProjectLayoutSettings.defaultCrossAxisCount.toDouble(),
+                    min: 2,
+                    max: 6,
+                    divisions: 4,
+                    label: '${taskProjectLayoutSettings.defaultCrossAxisCount}',
+                    onChanged: (value) => notifier.updateCrossAxisCount(value.round()),
+                  ),
+                ],
+                
+                const SizedBox(height: 16),
+                Text('グリッド間隔: ${taskProjectLayoutSettings.defaultGridSpacing}px'),
+                Slider(
+                  value: taskProjectLayoutSettings.defaultGridSpacing,
+                  min: 4,
+                  max: 20,
+                  divisions: 16,
+                  label: '${taskProjectLayoutSettings.defaultGridSpacing}px',
+                  onChanged: (value) => notifier.updateGridSpacing(value),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // カード設定
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'カード設定',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Text('カード幅: ${taskProjectLayoutSettings.cardWidth}px'),
+                Slider(
+                  value: taskProjectLayoutSettings.cardWidth,
+                  min: 150,
+                  max: 300,
+                  divisions: 15,
+                  label: '${taskProjectLayoutSettings.cardWidth}px',
+                  onChanged: (value) => notifier.updateCardWidth(value),
+                ),
+                
+                const SizedBox(height: 16),
+                Text('カード高さ: ${taskProjectLayoutSettings.cardHeight}px'),
+                Slider(
+                  value: taskProjectLayoutSettings.cardHeight,
+                  min: 80,
+                  max: 200,
+                  divisions: 12,
+                  label: '${taskProjectLayoutSettings.cardHeight}px',
+                  onChanged: (value) => notifier.updateCardHeight(value),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // リセットボタン
+        ElevatedButton.icon(
+          onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => UnifiedDialog(
+                title: 'プロジェクト一覧設定をリセット',
+                icon: Icons.restore,
+                iconColor: Colors.orange,
+                content: const Text('プロジェクト一覧の設定を初期値にリセットしますか？\nこの操作は取り消せません。'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('キャンセル'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('リセット'),
+                  ),
+                ],
+              ),
+            );
+            
+            if (confirmed == true) {
+              notifier.resetToDefaults();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('プロジェクト一覧設定をリセットしました'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            }
+          },
+          icon: const Icon(Icons.restore),
+          label: const Text('設定をリセット'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
 
   /// バックアップフォルダを開く
   Future<void> _openBackupFolder(BuildContext context) async {
