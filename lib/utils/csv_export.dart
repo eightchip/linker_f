@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:hive/hive.dart';
 import '../models/task_item.dart';
 import '../models/sub_task.dart';
 
 class CsvExport {
   // タスクの全項目を含むヘッダー
-  static const String _csvHeader = 'ID,タイトル,説明,期限,リマインダー時刻,優先度,ステータス,タグ,関連リンクID,作成日,完了日,推定時間(分),メモ,繰り返しタスク,繰り返しパターン,繰り返しリマインダー,繰り返しリマインダーパターン,次のリマインダー時刻,リマインダー回数,サブタスク有無,完了サブタスク数,総サブタスク数\n';
+  static const String _csvHeader = 'ID,タイトル,説明,期限,リマインダー時刻,優先度,ステータス,タグ,関連リンクID,作成日,完了日,着手日,完了日（手動入力）,推定時間(分),メモ,繰り返しタスク,繰り返しパターン,繰り返しリマインダー,繰り返しリマインダーパターン,次のリマインダー時刻,リマインダー回数,サブタスク有無,完了サブタスク数,総サブタスク数\n';
   
   // サブタスク用のヘッダー
   static const String _subTaskCsvHeader = 'サブタスクID,親タスクID,サブタスクタイトル,サブタスク説明,完了状態,作成日,完了日,順序,推定時間(分),メモ\n';
@@ -20,8 +21,37 @@ class CsvExport {
     // タスクヘッダー
     csvContent.write(_csvHeader);
     
+    // 着手日・完了日を読み込むためのHive boxを開く
+    Box? taskDatesBox;
+    try {
+      taskDatesBox = await Hive.openBox('taskDates');
+    } catch (e) {
+      print('taskDates boxの読み込みエラー: $e');
+    }
+    
     // タスクデータ
     for (final task in tasks) {
+      // 着手日・完了日を読み込み
+      DateTime? startedAt;
+      DateTime? completedAtManual;
+      
+      if (taskDatesBox != null) {
+        try {
+          final dates = taskDatesBox.get(task.id);
+          if (dates != null) {
+            final datesMap = Map<String, dynamic>.from(dates);
+            if (datesMap['startedAt'] != null) {
+              startedAt = DateTime.parse(datesMap['startedAt']);
+            }
+            if (datesMap['completedAt'] != null) {
+              completedAtManual = DateTime.parse(datesMap['completedAt']);
+            }
+          }
+        } catch (e) {
+          print('タスク${task.id}の着手日・完了日読み込みエラー: $e');
+        }
+      }
+      
       final row = [
         _escapeCsvField(task.id),
         _escapeCsvField(task.title),
@@ -34,6 +64,8 @@ class CsvExport {
         _escapeCsvField(task.relatedLinkId ?? ''),
         DateFormat('yyyy/MM/dd HH:mm').format(task.createdAt),
         task.completedAt != null ? DateFormat('yyyy/MM/dd HH:mm').format(task.completedAt!) : '',
+        startedAt != null ? DateFormat('yyyy/MM/dd').format(startedAt) : '',
+        completedAtManual != null ? DateFormat('yyyy/MM/dd').format(completedAtManual) : '',
         task.estimatedMinutes?.toString() ?? '',
         _escapeCsvField(task.notes ?? ''),
         task.isRecurring ? 'はい' : 'いいえ',

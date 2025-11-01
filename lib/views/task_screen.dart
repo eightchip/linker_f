@@ -1648,6 +1648,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   }
 
   /// 期限日インジケーター（指示書に基づく改善）
+  /// プロジェクト一覧ビューと同じ色分けロジックを使用
   Widget _buildDeadlineIndicator(TaskItem task) {
     Color backgroundColor;
     Color textColor;
@@ -1655,25 +1656,41 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     IconData icon;
     
     if (task.dueDate == null) {
-      backgroundColor = Colors.amber.shade50;
-      textColor = Colors.amber.shade900;
-      borderColor = Colors.amber.shade300;
+      // 期限未設定は未着手と同じ緑色
+      backgroundColor = Colors.green.shade50;
+      textColor = Colors.green.shade900;
+      borderColor = Colors.green.shade300;
       icon = Icons.schedule;
-    } else if (task.isOverdue) {
-      backgroundColor = Colors.red.shade50;
-      textColor = Colors.red.shade900;
-      borderColor = Colors.red.shade300;
-      icon = Icons.warning;
-    } else if (task.isToday) {
-      backgroundColor = Colors.orange.shade50;
-      textColor = Colors.orange.shade900;
-      borderColor = Colors.orange.shade300;
-      icon = Icons.today;
     } else {
-      backgroundColor = Colors.blue.shade50;
-      textColor = Colors.blue.shade900;
-      borderColor = Colors.blue.shade300;
-      icon = Icons.calendar_today;
+      final now = DateTime.now();
+      final dueDate = task.dueDate!;
+      final difference = dueDate.difference(now).inDays;
+      
+      if (difference < 0) {
+        // 期限切れ
+        backgroundColor = Colors.red.shade50;
+        textColor = Colors.red.shade900;
+        borderColor = Colors.red.shade300;
+        icon = Icons.warning;
+      } else if (difference == 0) {
+        // 今日が期限
+        backgroundColor = Colors.orange.shade50;
+        textColor = Colors.orange.shade900;
+        borderColor = Colors.orange.shade300;
+        icon = Icons.today;
+      } else if (difference <= 3) {
+        // 3日以内（黄色/アンバー）
+        backgroundColor = Colors.amber.shade50;
+        textColor = Colors.amber.shade900;
+        borderColor = Colors.amber.shade300;
+        icon = Icons.calendar_today;
+      } else {
+        // それ以外（グレー/青）
+        backgroundColor = Colors.blue.shade50;
+        textColor = Colors.blue.shade900;
+        borderColor = Colors.blue.shade300;
+        icon = Icons.calendar_today;
+      }
     }
     
     return Container(
@@ -2936,59 +2953,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   }
 
   /// タスクの期限日に応じたカード色を取得
+  /// カード背景色は常にUI設定の色を使用（期限日による色分けは期限バッジのみに適用）
   Color _getTaskCardColor(TaskItem task) {
-    if (task.dueDate == null) {
-      return Theme.of(context).colorScheme.surface;
-    }
-
-    final now = DateTime.now();
-    final dueDate = task.dueDate!;
-    final difference = dueDate.difference(now).inDays;
-
-    if (difference < 0) {
-      // 期限切れ
-      return Colors.red.shade50;
-    } else if (difference == 0) {
-      // 今日が期限
-      return Colors.orange.shade50;
-    } else if (difference <= 3) {
-      // 3日以内
-      return Colors.amber.shade50;
-    } else if (difference <= 7) {
-      // 1週間以内
-      return Colors.yellow.shade50;
-    } else {
-      // それ以外
-      return Theme.of(context).colorScheme.surface;
-    }
+    return Theme.of(context).colorScheme.surface;
   }
 
   /// タスクの期限日に応じたボーダー色を取得
+  /// ボーダー色は常にUI設定の色を使用（期限日による色分けは期限バッジのみに適用）
   Color _getTaskBorderColor(TaskItem task) {
-    if (task.dueDate == null) {
-      return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
-    }
-
-    final now = DateTime.now();
-    final dueDate = task.dueDate!;
-    final difference = dueDate.difference(now).inDays;
-
-    if (difference < 0) {
-      // 期限切れ
-      return Colors.red.shade300;
-    } else if (difference == 0) {
-      // 今日が期限
-      return Colors.orange.shade300;
-    } else if (difference <= 3) {
-      // 3日以内
-      return Colors.amber.shade300;
-    } else if (difference <= 7) {
-      // 1週間以内
-      return Colors.yellow.shade300;
-    } else {
-      // それ以外
-      return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
-    }
+    return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
   }
 
   /// 検索履歴を読み込み
@@ -4549,16 +4522,14 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                     itemBuilder: (context, index) {
                       final task = sortedTasks[index];
                       
-                      // カードカラー（期限に応じた色味）
+                      // カードカラー（UI設定の色を使用）
                       final Color? dueColor = task.dueDate != null
                           ? _getDueDateColor(task.dueDate!, now)
                           : null;
-                      final Color cardBg = dueColor != null
-                          ? dueColor.withOpacity(0.08)
-                          : Theme.of(context).colorScheme.surface;
-                      final Color borderColor = dueColor != null
-                          ? dueColor.withOpacity(0.5)
-                          : Theme.of(context).dividerColor;
+                      // カード背景色は常にUI設定の色を使用（期限日による色分けは期限バッジのみに適用）
+                      final Color cardBg = Theme.of(context).colorScheme.surface;
+                      // ボーダー色も常にUI設定の色を使用
+                      final Color borderColor = Theme.of(context).dividerColor;
 
                       // ステータスバッジの色とテキスト
                       final statusBadge = _getTaskStatusBadge(task.status);
@@ -4654,7 +4625,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                         ),
                                         SizedBox(width: 4 * fontSize),
                                         Text(
-                                          '期限: ${DateFormat('MM/dd').format(task.dueDate!)}',
+                                          DateFormat('MM/dd').format(task.dueDate!),
                                           style: TextStyle(
                                             color: dueColor,
                                             fontWeight: FontWeight.w700,

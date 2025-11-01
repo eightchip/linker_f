@@ -112,6 +112,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   
   // ピン留め状態
   bool _isPinned = false;
+  
+  // 着手日・完了日（スキーマを変更せずにHive boxに保存）
+  DateTime? _startedAt;
+  DateTime? _completedAtManual; // TaskItemのcompletedAtとは別に管理
 
   @override
   void initState() {
@@ -137,6 +141,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       
       // ピン留め状態を読み込み
       _loadPinnedState();
+      
+      // 着手日・完了日を読み込み
+      _loadTaskDates();
       
       print('初期化後の期限日: $_dueDate');
       print('初期化後のリマインダー時間: $_reminderTime');
@@ -369,6 +376,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         await taskViewModel.updateTask(updatedTask);
         // 念のためサブタスク統計を最新化
         await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(updatedTask.id);
+        // 着手日・完了日を保存
+        await _saveTaskDates(updatedTask.id);
       } else {
         // 新規タスクの追加
         final task = taskViewModel.createTask(
@@ -397,6 +406,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         print('=== タスク作成ダイアログ完了 ===');
         
         await taskViewModel.addTask(task);
+        
+        // 着手日・完了日を保存
+        await _saveTaskDates(task.id);
         
         // 新規タスク作成時にメール送信情報が一時保存されている場合は、正しいタスクIDで保存
         if (_pendingMailLog != null) {
@@ -431,11 +443,22 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     }
   }
 
-  Future<void> _selectDate(BuildContext context, bool isDueDate) async {
+  Future<void> _selectDate(BuildContext context, bool isDueDate, {bool isStartedAt = false, bool isCompletedAt = false}) async {
+    DateTime? initialDate;
+    if (isDueDate) {
+      initialDate = _dueDate ?? DateTime.now();
+    } else if (isStartedAt) {
+      initialDate = _startedAt ?? DateTime.now();
+    } else if (isCompletedAt) {
+      initialDate = _completedAtManual ?? DateTime.now();
+    } else {
+      initialDate = _reminderTime ?? DateTime.now();
+    }
+    
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isDueDate ? (_dueDate ?? DateTime.now()) : (_reminderTime ?? DateTime.now()),
-      firstDate: DateTime.now(),
+      initialDate: initialDate,
+      firstDate: DateTime(2000, 1, 1), // 着手日・完了日は過去の日付も選択可能
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) {
@@ -443,6 +466,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         if (isDueDate) {
           _dueDate = picked;
           print('期限日設定: $_dueDate');
+        } else if (isStartedAt) {
+          _startedAt = picked;
+          print('着手日設定: $_startedAt');
+        } else if (isCompletedAt) {
+          _completedAtManual = picked;
+          print('完了日設定: $_completedAtManual');
         } else {
           // リマインダー日の場合、既存の時刻を保持するか、デフォルト時刻を設定
           if (_reminderTime != null) {
@@ -597,9 +626,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                             return Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(flex: 2, child: _buildLeftColumnControls(context)),
+                                Expanded(flex: 3, child: _buildLeftColumnControls(context)),
                                 const SizedBox(width: 16),
-                                Expanded(flex: 1, child: _buildRightColumnControls(context)),
+                                Expanded(flex: 0, child: SizedBox(width: 280, child: _buildRightColumnControls(context))),
                               ],
                             );
                           },
@@ -688,6 +717,52 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     } catch (_) {}
   }
 
+  /// 着手日・完了日を読み込み（Hive boxから）
+  Future<void> _loadTaskDates() async {
+    if (widget.task == null) return;
+    try {
+      final box = await Hive.openBox('taskDates');
+      final taskId = widget.task!.id;
+      final dates = box.get(taskId);
+      if (dates != null) {
+        final datesMap = Map<String, dynamic>.from(dates);
+        if (datesMap['startedAt'] != null) {
+          _startedAt = DateTime.parse(datesMap['startedAt']);
+        }
+        if (datesMap['completedAt'] != null) {
+          _completedAtManual = DateTime.parse(datesMap['completedAt']);
+        }
+      }
+      // 完了日が未設定で、タスクが完了している場合はTaskItemのcompletedAtを使用
+      if (_completedAtManual == null && widget.task!.status == TaskStatus.completed && widget.task!.completedAt != null) {
+        _completedAtManual = widget.task!.completedAt;
+      }
+    } catch (e) {
+      print('着手日・完了日の読み込みエラー: $e');
+    }
+  }
+
+  /// 着手日・完了日を保存（Hive boxに）
+  Future<void> _saveTaskDates(String taskId) async {
+    try {
+      final box = await Hive.openBox('taskDates');
+      final datesMap = <String, dynamic>{};
+      if (_startedAt != null) {
+        datesMap['startedAt'] = _startedAt!.toIso8601String();
+      }
+      if (_completedAtManual != null) {
+        datesMap['completedAt'] = _completedAtManual!.toIso8601String();
+      }
+      if (datesMap.isNotEmpty) {
+        await box.put(taskId, datesMap);
+      } else {
+        await box.delete(taskId);
+      }
+    } catch (e) {
+      print('着手日・完了日の保存エラー: $e');
+    }
+  }
+
   void _togglePin() {
     setState(() {
       _isPinned = !_isPinned;
@@ -759,8 +834,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         final isWide = constraints.maxWidth > 900;
         Widget memoField = TextFormField(
           controller: _assignedToController,
-          maxLines: isWide ? 10 : 4,
-          minLines: 4,
+          maxLines: isWide ? 15 : 8,
+          minLines: isWide ? 12 : 8,
           textAlignVertical: TextAlignVertical.top,
           enableInteractiveSelection: true,
           keyboardType: TextInputType.multiline,
@@ -842,15 +917,19 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     return Column(
       children: [
         _buildDueDateField(context),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _buildPriorityField(context),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _buildStatusField(context),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        _buildStartedAtField(context),
+        const SizedBox(height: 12),
+        _buildCompletedAtField(context),
+        const SizedBox(height: 12),
         _buildReminderToggle(context),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _buildLinkAssociationButton(context),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _buildPinButton(context),
       ],
     );
@@ -948,6 +1027,68 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       onChanged: (value) {
         if (value != null) setState(() => _status = value);
       },
+    );
+  }
+
+  Widget _buildStartedAtField(BuildContext context) {
+    return InkWell(
+      onTap: () => _selectDate(context, false, isStartedAt: true),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: '着手日',
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _startedAt != null ? DateFormat('yyyy/MM/dd').format(_startedAt!) : '着手日を選択',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+            if (_startedAt != null)
+              IconButton(
+                onPressed: () => setState(() => _startedAt = null),
+                icon: const Icon(Icons.clear, size: 16),
+                tooltip: '着手日をクリア',
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletedAtField(BuildContext context) {
+    return InkWell(
+      onTap: () => _selectDate(context, false, isCompletedAt: true),
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: '完了日',
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _completedAtManual != null ? DateFormat('yyyy/MM/dd').format(_completedAtManual!) : '完了日を選択',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+            if (_completedAtManual != null)
+              IconButton(
+                onPressed: () => setState(() => _completedAtManual = null),
+                icon: const Icon(Icons.clear, size: 16),
+                tooltip: '完了日をクリア',
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                padding: EdgeInsets.zero,
+              ),
+          ],
+        ),
+      ),
     );
   }
 
