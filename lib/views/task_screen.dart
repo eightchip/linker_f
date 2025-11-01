@@ -376,17 +376,55 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     }
 
     return KeyboardShortcutWidget(
-      child: KeyboardListener(
-        focusNode: _rootKeyFocus, // 再生成しない
-        autofocus: false,         // ← これが超重要。TextField のフォーカスを奪わない
-        onKeyEvent: (e) {
-          // TextField にフォーカスがある時はグローバルショートカット無効化
-          final focused = FocusManager.instance.primaryFocus;
-          final isEditing = focused?.context?.widget is EditableText;
-          if (isEditing) return;
-          _handleKeyEvent(e);
-        },
-        child: Scaffold(
+      child: FocusScope(
+        autofocus: false,
+        child: Focus(
+          autofocus: false,
+          canRequestFocus: true,
+          skipTraversal: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent) {
+              print('🔑 キーイベント受信: ${event.logicalKey.keyLabel}, Ctrl=${HardwareKeyboard.instance.isControlPressed}, Shift=${HardwareKeyboard.instance.isShiftPressed}');
+              
+              final isControlPressed = HardwareKeyboard.instance.isControlPressed;
+              final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+              
+              // Ctrl+H: 統計・検索バーの表示/非表示（常に有効）
+              if (event.logicalKey == LogicalKeyboardKey.keyH && isControlPressed && !isShiftPressed) {
+                print('✅ Ctrl+H 検出: 統計・検索バー切り替え');
+                setState(() {
+                  _showHeaderSection = !_showHeaderSection;
+                });
+                return KeyEventResult.handled;
+              }
+              
+              // F1: ショートカットヘルプ（常に有効）
+              if (event.logicalKey == LogicalKeyboardKey.f1) {
+                print('✅ F1 検出: ショートカットヘルプ表示');
+                _showShortcutHelp(context);
+                return KeyEventResult.handled;
+              }
+              
+              // その他のショートカット処理
+              final result = _handleKeyEventShortcut(event, isControlPressed, isShiftPressed);
+              if (result) {
+                return KeyEventResult.handled;
+              }
+            }
+            return KeyEventResult.ignored;
+          },
+          child: KeyboardListener(
+            focusNode: _rootKeyFocus,
+            autofocus: false,
+            onKeyEvent: (e) {
+              // フォールバック: KeyboardListenerでも処理
+              if (e is KeyDownEvent) {
+                final isControlPressed = HardwareKeyboard.instance.isControlPressed;
+                final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+                _handleKeyEventShortcut(e, isControlPressed, isShiftPressed);
+              }
+            },
+            child: Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.98),
           appBar: AppBar(
             title: _isSelectionMode 
@@ -579,9 +617,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           ),//Expanded
           ],//children
         ),//Column
-        ),
-      ),
-    );
+          ),//Scaffold
+          ),//KeyboardListener
+        ),//Focus
+      ),//FocusScope
+    );//KeyboardShortcutWidget
   }//build
 
   Widget _buildCompactHeaderSection(Map<String, int> statistics) {
@@ -2528,67 +2568,81 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     }
   }
 
-  // キーボードショートカット処理
+  // キーボードショートカット処理（ショートカット専用）
+  bool _handleKeyEventShortcut(KeyDownEvent event, bool isControlPressed, bool isShiftPressed) {
+    // モーダルが開いている場合はショートカットを無効化
+    final isModalOpen = ModalRoute.of(context)?.isFirst != true;
+    if (isModalOpen) {
+      print('⏸️ モーダルが開いているため、ショートカットをスキップ');
+      return false;
+    }
+    
+    // TextField編集中は一部のショートカットのみ有効
+    final focused = FocusManager.instance.primaryFocus;
+    final isEditing = focused?.context?.widget is EditableText;
+    
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      print('✅ ← 検出: ホーム画面に戻る');
+      _navigateToHome(context);
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      print('✅ → 検出: 3点ドットメニューにフォーカス');
+      _appBarMenuFocusNode.requestFocus();
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      print('✅ ↓ 検出: 3点ドットメニューにフォーカス');
+      _appBarMenuFocusNode.requestFocus();
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyN && isControlPressed && !isShiftPressed) {
+      if (isEditing) return false;
+      print('✅ Ctrl+N 検出: 新しいタスク作成');
+      _showTaskDialog();
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyB && isControlPressed && !isShiftPressed) {
+      if (isEditing) return false;
+      print('✅ Ctrl+B 検出: 一括選択モード');
+      _toggleSelectionMode();
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyE && isControlPressed && isShiftPressed) {
+      if (isEditing) return false;
+      print('✅ Ctrl+Shift+E 検出: CSV出力');
+      _exportTasksToCsv();
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyS && isControlPressed && isShiftPressed) {
+      if (isEditing) return false;
+      print('✅ Ctrl+Shift+S 検出: 設定画面');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SettingsScreen(),
+        ),
+      );
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyP && isControlPressed && !isShiftPressed) {
+      if (isEditing) return false;
+      print('✅ Ctrl+P 検出: プロジェクト一覧');
+      _showProjectOverview();
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyO && isControlPressed && !isShiftPressed) {
+      if (isEditing) return false;
+      print('✅ Ctrl+O 検出: 並び替え');
+      _showSortMenu(context);
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyT && isControlPressed && isShiftPressed) {
+      if (isEditing) return false;
+      print('✅ Ctrl+Shift+T 検出: テンプレートから作成');
+      _showTaskTemplate();
+      return true;
+    }
+    return false;
+  }
+
+  // キーボードショートカット処理（後方互換性のため残す）
   void _handleKeyEvent(KeyEvent event) {
     if (event is KeyDownEvent) {
-      // モーダルが開いている場合はショートカットを無効化（ただし、統計・検索バーの表示/非表示は常に有効）
-      final isModalOpen = ModalRoute.of(context)?.isFirst != true;
-      
       final isControlPressed = HardwareKeyboard.instance.isControlPressed;
       final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-      
-      // Ctrl+H: 統計・検索バーの表示/非表示を切り替え（常に有効）
-      if (event.logicalKey == LogicalKeyboardKey.keyH && isControlPressed && !isShiftPressed) {
-        setState(() {
-          _showHeaderSection = !_showHeaderSection;
-        });
-        return;
-      }
-      
-      // モーダルが開いている場合は他のショートカットを無効化
-      if (isModalOpen) {
-        return;
-      }
-      
-      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-        _navigateToHome(context);
-        return;
-      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-        // 右矢印キーでAppBarの3点ドットメニューにフォーカスを移す
-        _appBarMenuFocusNode.requestFocus();
-      } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-        // 下矢印キーでAppBarの3点ドットメニューにフォーカスを移す
-        _appBarMenuFocusNode.requestFocus();
-      } else if (event.logicalKey == LogicalKeyboardKey.keyN && isControlPressed && !isShiftPressed) {
-        // Ctrl+N: 新しいタスク作成
-        _showTaskDialog();
-      } else if (event.logicalKey == LogicalKeyboardKey.keyB && isControlPressed && !isShiftPressed) {
-        // Ctrl+B: 一括選択モード
-        _toggleSelectionMode();
-      } else if (event.logicalKey == LogicalKeyboardKey.keyE && isControlPressed && isShiftPressed) {
-        // Ctrl+Shift+E: CSV出力
-        _exportTasksToCsv();
-      } else if (event.logicalKey == LogicalKeyboardKey.keyS && isControlPressed && isShiftPressed) {
-        // Ctrl+Shift+S: 設定画面
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const SettingsScreen(),
-          ),
-        );
-      } else if (event.logicalKey == LogicalKeyboardKey.keyP && isControlPressed && !isShiftPressed) {
-        // Ctrl+P: プロジェクト一覧
-        _showProjectOverview();
-      } else if (event.logicalKey == LogicalKeyboardKey.keyO && isControlPressed && !isShiftPressed) {
-        // Ctrl+O: 並び替え
-        _showSortMenu(context);
-      } else if (event.logicalKey == LogicalKeyboardKey.keyT && isControlPressed && isShiftPressed) {
-        // Ctrl+Shift+T: テンプレートから作成
-        _showTaskTemplate();
-      } else if (event.logicalKey == LogicalKeyboardKey.f1) {
-        // F1: ショートカットヘルプを表示
-        _showShortcutHelp(context);
-      }
+      _handleKeyEventShortcut(event, isControlPressed, isShiftPressed);
     }
   }
 
