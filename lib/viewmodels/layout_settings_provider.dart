@@ -217,20 +217,26 @@ final layoutSettingsProvider = StateNotifierProvider<LayoutSettingsNotifier, Lay
   (ref) => LayoutSettingsNotifier(),
 );
 
-// プロジェクト一覧用レイアウト設定のデータクラス
+// タスクグリッドビュー用レイアウト設定のデータクラス
 class TaskProjectLayoutSettings {
   final int defaultCrossAxisCount;
   final double defaultGridSpacing;
   final double cardWidth;  // カードの幅（px）
   final double cardHeight; // カードの高さ（px）
   final bool autoAdjustLayout;
+  final double titleFontSize; // タイトルフォントサイズ（倍率）
+  final double memoFontSize; // メモフォントサイズ（倍率）
+  final double descriptionFontSize; // 説明フォントサイズ（倍率）
 
   TaskProjectLayoutSettings({
     this.defaultCrossAxisCount = 4,
     this.defaultGridSpacing = 8.0,
-    this.cardWidth = 180.0,  // デフォルト幅（プロジェクト一覧用）
-    this.cardHeight = 160.0, // デフォルト高さ（プロジェクト一覧用）
+    this.cardWidth = 180.0,  // デフォルト幅（タスクグリッドビュー用）
+    this.cardHeight = 160.0, // デフォルト高さ（タスクグリッドビュー用）
     this.autoAdjustLayout = true,
+    this.titleFontSize = 1.0,
+    this.memoFontSize = 1.0,
+    this.descriptionFontSize = 1.0,
   });
 
   TaskProjectLayoutSettings copyWith({
@@ -239,6 +245,9 @@ class TaskProjectLayoutSettings {
     double? cardWidth,
     double? cardHeight,
     bool? autoAdjustLayout,
+    double? titleFontSize,
+    double? memoFontSize,
+    double? descriptionFontSize,
   }) {
     return TaskProjectLayoutSettings(
       defaultCrossAxisCount: defaultCrossAxisCount ?? this.defaultCrossAxisCount,
@@ -246,6 +255,9 @@ class TaskProjectLayoutSettings {
       cardWidth: cardWidth ?? this.cardWidth,
       cardHeight: cardHeight ?? this.cardHeight,
       autoAdjustLayout: autoAdjustLayout ?? this.autoAdjustLayout,
+      titleFontSize: titleFontSize ?? this.titleFontSize,
+      memoFontSize: memoFontSize ?? this.memoFontSize,
+      descriptionFontSize: descriptionFontSize ?? this.descriptionFontSize,
     );
   }
 
@@ -256,6 +268,9 @@ class TaskProjectLayoutSettings {
       'cardWidth': cardWidth,
       'cardHeight': cardHeight,
       'autoAdjustLayout': autoAdjustLayout,
+      'titleFontSize': titleFontSize,
+      'memoFontSize': memoFontSize,
+      'descriptionFontSize': descriptionFontSize,
     };
   }
 
@@ -266,6 +281,9 @@ class TaskProjectLayoutSettings {
       cardWidth: json['cardWidth']?.toDouble() ?? 180.0,
       cardHeight: json['cardHeight']?.toDouble() ?? 160.0,
       autoAdjustLayout: json['autoAdjustLayout'] ?? true,
+      titleFontSize: json['titleFontSize']?.toDouble() ?? 1.0,
+      memoFontSize: json['memoFontSize']?.toDouble() ?? 1.0,
+      descriptionFontSize: json['descriptionFontSize']?.toDouble() ?? 1.0,
     );
   }
 }
@@ -324,6 +342,21 @@ class TaskProjectLayoutSettingsNotifier extends StateNotifier<TaskProjectLayoutS
 
   void toggleAutoAdjustLayout() {
     state = state.copyWith(autoAdjustLayout: !state.autoAdjustLayout);
+    _saveSettings();
+  }
+
+  void updateTitleFontSize(double fontSize) {
+    state = state.copyWith(titleFontSize: fontSize);
+    _saveSettings();
+  }
+
+  void updateMemoFontSize(double fontSize) {
+    state = state.copyWith(memoFontSize: fontSize);
+    _saveSettings();
+  }
+
+  void updateDescriptionFontSize(double fontSize) {
+    state = state.copyWith(descriptionFontSize: fontSize);
     _saveSettings();
   }
 

@@ -301,7 +301,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildMenuItem(context, ref, 'グリッド設定', Icons.grid_view, 'grid', 'リンク画面'),
           _buildMenuItem(context, ref, 'カード設定', Icons.view_agenda, 'card', 'リンク・タスク画面'),
           _buildMenuItem(context, ref, 'アイテム設定', Icons.link, 'item', 'リンク画面'),
-          _buildMenuItem(context, ref, 'プロジェクト一覧設定', Icons.view_module, 'task_project', 'タスク一覧'),
+          _buildMenuItem(context, ref, 'タスクグリッドビュー設定', Icons.view_module, 'task_project', 'タスク一覧'),
         ]),
         _buildMenuSection('データ', [
           _buildMenuItem(context, ref, 'バックアップ', Icons.backup, 'backup'),
@@ -2264,7 +2264,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('プロジェクト一覧設定', Icons.view_module),
+        _buildSectionHeader('タスクグリッドビュー設定', Icons.view_module),
         const SizedBox(height: 16),
         
         // グリッド設定
@@ -2414,16 +2414,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         
         const SizedBox(height: 16),
         
+        // フォント設定
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'フォント設定',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Text('タイトルフォントサイズ: ${(taskProjectLayoutSettings.titleFontSize * 100).round()}%'),
+                Slider(
+                  value: taskProjectLayoutSettings.titleFontSize,
+                  min: 0.5,
+                  max: 2.0,
+                  divisions: 15,
+                  label: '${(taskProjectLayoutSettings.titleFontSize * 100).round()}%',
+                  onChanged: (value) => notifier.updateTitleFontSize(value),
+                ),
+                
+                const SizedBox(height: 16),
+                Text('メモフォントサイズ: ${(taskProjectLayoutSettings.memoFontSize * 100).round()}%'),
+                Slider(
+                  value: taskProjectLayoutSettings.memoFontSize,
+                  min: 0.5,
+                  max: 2.0,
+                  divisions: 15,
+                  label: '${(taskProjectLayoutSettings.memoFontSize * 100).round()}%',
+                  onChanged: (value) => notifier.updateMemoFontSize(value),
+                ),
+                
+                const SizedBox(height: 16),
+                Text('説明フォントサイズ: ${(taskProjectLayoutSettings.descriptionFontSize * 100).round()}%'),
+                Slider(
+                  value: taskProjectLayoutSettings.descriptionFontSize,
+                  min: 0.5,
+                  max: 2.0,
+                  divisions: 15,
+                  label: '${(taskProjectLayoutSettings.descriptionFontSize * 100).round()}%',
+                  onChanged: (value) => notifier.updateDescriptionFontSize(value),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
         // リセットボタン
         ElevatedButton.icon(
           onPressed: () async {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => UnifiedDialog(
-                title: 'プロジェクト一覧設定をリセット',
+                title: 'タスクグリッドビュー設定をリセット',
                 icon: Icons.restore,
                 iconColor: Colors.orange,
-                content: const Text('プロジェクト一覧の設定を初期値にリセットしますか？\nこの操作は取り消せません。'),
+                content: const Text('タスクグリッドビューの設定を初期値にリセットしますか？\nこの操作は取り消せません。'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),

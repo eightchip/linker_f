@@ -43,6 +43,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _assignedToController = TextEditingController();
+  final _tagsController = TextEditingController(); // タグ入力用
   // サブタスク用
   final _subTaskTitleController = TextEditingController();
   final _subTaskMinutesController = TextEditingController();
@@ -136,6 +137,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       _reminderTime = widget.task!.reminderTime;
       _priority = widget.task!.priority;
       _status = widget.task!.status;
+      _tagsController.text = widget.task!.tags.join(', '); // タグをカンマ区切りで表示
       _isRecurringReminder = widget.task!.isRecurringReminder;
       _recurringReminderPattern = widget.task!.recurringReminderPattern ?? RecurringReminderPattern.fiveMinutes;
       
@@ -201,6 +203,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     _titleController.dispose();
     _descriptionController.dispose();
     _assignedToController.dispose();
+    _tagsController.dispose();
     _subTaskTitleController.dispose();
     _subTaskMinutesController.dispose();
     _subTaskDescriptionController.dispose();
@@ -303,8 +306,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     if (_formKey.currentState!.validate()) {
       final taskViewModel = ref.read(taskViewModelProvider.notifier);
       
-      // タグは削除されたため、空のリストを使用
-      final tags = <String>[];
+      // タグをカンマ区切り文字列からリストに変換
+      final tags = _tagsController.text
+          .split(',')
+          .map((tag) => tag.trim())
+          .where((tag) => tag.isNotEmpty)
+          .toList();
 
       print('=== タスク作成ダイアログ ===');
       print('タイトル: ${_titleController.text.trim()}');
@@ -747,12 +754,24 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     try {
       final box = await Hive.openBox('taskDates');
       final datesMap = <String, dynamic>{};
-      if (_startedAt != null) {
-        datesMap['startedAt'] = _startedAt!.toIso8601String();
+      
+      // 新規タスク作成時、期限日がある場合は着手日・完了日を期限日と同じに設定
+      if (widget.task == null && _dueDate != null) {
+        final normalizedDueDate = DateTime(_dueDate!.year, _dueDate!.month, _dueDate!.day);
+        datesMap['startedAt'] = normalizedDueDate.toIso8601String();
+        datesMap['completedAt'] = normalizedDueDate.toIso8601String();
+        _startedAt = normalizedDueDate;
+        _completedAtManual = normalizedDueDate;
+      } else {
+        // 既存タスクの更新時は、手動で設定された値を使用
+        if (_startedAt != null) {
+          datesMap['startedAt'] = _startedAt!.toIso8601String();
+        }
+        if (_completedAtManual != null) {
+          datesMap['completedAt'] = _completedAtManual!.toIso8601String();
+        }
       }
-      if (_completedAtManual != null) {
-        datesMap['completedAt'] = _completedAtManual!.toIso8601String();
-      }
+      
       if (datesMap.isNotEmpty) {
         await box.put(taskId, datesMap);
       } else {
@@ -922,6 +941,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         const SizedBox(height: 12),
         _buildStatusField(context),
         const SizedBox(height: 12),
+        _buildTagsField(context),
+        const SizedBox(height: 12),
         _buildStartedAtField(context),
         const SizedBox(height: 12),
         _buildCompletedAtField(context),
@@ -1027,6 +1048,20 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       onChanged: (value) {
         if (value != null) setState(() => _status = value);
       },
+    );
+  }
+
+  /// タグ入力フィールドを構築
+  Widget _buildTagsField(BuildContext context) {
+    return TextFormField(
+      controller: _tagsController,
+      decoration: const InputDecoration(
+        labelText: 'タグ',
+        hintText: 'カンマ区切りで入力（例: 仕事, 重要, プロジェクトA）',
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      ),
+      maxLines: 2,
     );
   }
 
