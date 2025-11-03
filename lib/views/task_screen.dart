@@ -68,6 +68,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   bool _showHeaderSection = true; // 統計情報と検索バーの表示/非表示の切り替え
   final FocusNode _appBarMenuFocusNode = FocusNode();
   late FocusNode _searchFocusNode;
+  final GlobalKey _menuButtonKey = GlobalKey(); // 3点ドットメニューボタンの位置を取得するためのキー
 
   // 色の濃淡とコントラストを調整した色を取得
   Color _getAdjustedColor(int baseColor, double intensity, double contrast) {
@@ -294,6 +295,214 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
     }
   }
 
+  /// 一括ステータス変更メニューを表示
+  void _showBulkStatusMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildBulkStatusMenuItem(
+              context,
+              TaskStatus.pending,
+              '未着手',
+              Colors.green,
+              Icons.pending,
+            ),
+            _buildBulkStatusMenuItem(
+              context,
+              TaskStatus.inProgress,
+              '進行中',
+              Colors.blue,
+              Icons.play_circle_outline,
+            ),
+            _buildBulkStatusMenuItem(
+              context,
+              TaskStatus.completed,
+              '完了',
+              Colors.grey,
+              Icons.check_circle,
+            ),
+            _buildBulkStatusMenuItem(
+              context,
+              TaskStatus.cancelled,
+              '取消',
+              Colors.red,
+              Icons.cancel,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 一括ステータスメニューアイテムを構築
+  Widget _buildBulkStatusMenuItem(
+    BuildContext context,
+    TaskStatus status,
+    String label,
+    Color color,
+    IconData icon,
+  ) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(label),
+      onTap: () async {
+        Navigator.pop(context);
+        await _bulkChangeStatus(status);
+      },
+    );
+  }
+
+  /// 選択されたタスクのステータスを一括変更
+  Future<void> _bulkChangeStatus(TaskStatus status) async {
+    if (_selectedTaskIds.isEmpty) return;
+
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final tasks = ref.read(taskViewModelProvider);
+      final selectedTasks = tasks.where((t) => _selectedTaskIds.contains(t.id)).toList();
+      final updatedCount = selectedTasks.length;
+
+      for (final task in selectedTasks) {
+        if (status == TaskStatus.completed) {
+          await taskViewModel.completeTask(task.id);
+        } else if (status == TaskStatus.inProgress && task.status == TaskStatus.pending) {
+          await taskViewModel.startTask(task.id);
+        } else {
+          final updatedTask = task.copyWith(
+            status: status,
+            completedAt: status == TaskStatus.completed ? DateTime.now() : null,
+          );
+          await taskViewModel.updateTask(updatedTask);
+        }
+      }
+
+      // 選択をクリア
+      setState(() {
+        _selectedTaskIds.clear();
+      });
+
+      if (mounted) {
+        SnackBarService.showSuccess(
+          context,
+          '$updatedCount件のタスクのステータスを変更しました',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, 'ステータス変更に失敗しました: $e');
+      }
+    }
+  }
+
+  /// 一括優先度変更メニューを表示
+  void _showBulkPriorityMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildBulkPriorityMenuItem(
+              context,
+              TaskPriority.low,
+              '低',
+              Colors.grey,
+            ),
+            _buildBulkPriorityMenuItem(
+              context,
+              TaskPriority.medium,
+              '中',
+              Colors.orange,
+            ),
+            _buildBulkPriorityMenuItem(
+              context,
+              TaskPriority.high,
+              '高',
+              Colors.red,
+            ),
+            _buildBulkPriorityMenuItem(
+              context,
+              TaskPriority.urgent,
+              '緊急',
+              Colors.deepPurple,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 一括優先度メニューアイテムを構築
+  Widget _buildBulkPriorityMenuItem(
+    BuildContext context,
+    TaskPriority priority,
+    String label,
+    Color color,
+  ) {
+    IconData icon;
+    switch (priority) {
+      case TaskPriority.low:
+        icon = Icons.arrow_downward;
+        break;
+      case TaskPriority.medium:
+        icon = Icons.remove;
+        break;
+      case TaskPriority.high:
+        icon = Icons.arrow_upward;
+        break;
+      case TaskPriority.urgent:
+        icon = Icons.priority_high;
+        break;
+    }
+
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(label),
+      onTap: () async {
+        Navigator.pop(context);
+        await _bulkChangePriority(priority);
+      },
+    );
+  }
+
+  /// 選択されたタスクの優先度を一括変更
+  Future<void> _bulkChangePriority(TaskPriority priority) async {
+    if (_selectedTaskIds.isEmpty) return;
+
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final tasks = ref.read(taskViewModelProvider);
+      final selectedTasks = tasks.where((t) => _selectedTaskIds.contains(t.id)).toList();
+      final updatedCount = selectedTasks.length;
+
+      for (final task in selectedTasks) {
+        final updatedTask = task.copyWith(priority: priority);
+        await taskViewModel.updateTask(updatedTask);
+      }
+
+      // 選択をクリア
+      setState(() {
+        _selectedTaskIds.clear();
+      });
+
+      if (mounted) {
+        SnackBarService.showSuccess(
+          context,
+          '$updatedCount件のタスクの優先度を変更しました',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, '優先度変更に失敗しました: $e');
+      }
+    }
+  }
+
   /// 設定サービスを初期化してからフィルター設定を読み込み
   Future<void> _initializeSettings() async {
     try {
@@ -495,11 +704,57 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 ? '全解除' 
                 : '全選択',
             ),
-            // 削除ボタン
-            IconButton(
-              onPressed: _selectedTaskIds.isEmpty ? null : _deleteSelectedTasks,
-              icon: const Icon(Icons.delete),
-              tooltip: '選択したタスクを削除',
+            // 一括操作メニューボタン
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: '一括操作',
+              enabled: !_selectedTaskIds.isEmpty,
+              onSelected: (value) async {
+                switch (value) {
+                  case 'status':
+                    _showBulkStatusMenu(context);
+                    break;
+                  case 'priority':
+                    _showBulkPriorityMenu(context);
+                    break;
+                  case 'delete':
+                    await _deleteSelectedTasks();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'status',
+                  child: Row(
+                    children: [
+                      Icon(Icons.play_circle_outline, size: 20),
+                      SizedBox(width: 8),
+                      Text('ステータス変更'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'priority',
+                  child: Row(
+                    children: [
+                      Icon(Icons.flag, size: 20),
+                      SizedBox(width: 8),
+                      Text('優先度変更'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, size: 20, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('削除', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
              ] else ...[
             // 3点ドットメニューに統合
@@ -519,9 +774,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                 }//if (event is KeyDownEvent)
                 return KeyEventResult.ignored;
               },
-              child: PopupMenuButton<String>(
-            onSelected: (value) => _handleMenuAction(value),
-            itemBuilder: (context) => [
+              child: Builder(
+                key: _menuButtonKey,
+                builder: (context) => PopupMenuButton<String>(
+                  onSelected: (value) => _handleMenuAction(value),
+                  itemBuilder: (context) => [
               // 新しいタスク作成
               PopupMenuItem(
                 value: 'add_task',
@@ -607,7 +864,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   children: [
                     Icon(Icons.group, color: Colors.purple, size: 20),
                     SizedBox(width: 8),
-                    Text('グループ化'),
+                    Text('グループ化 (Ctrl+G)'),
                   ],
                 ),
               ),
@@ -637,9 +894,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
                   ],
                 ),
               ),
-            ],//itemBuilder
-          ),
-          ),
+                  ],//itemBuilder
+                ),
+              ),
+            ),
          ],//else
          ],//actions
        ),
@@ -1297,14 +1555,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               ? Theme.of(context).primaryColor.withValues(alpha: 0.6)
               : isHovered
                 ? Theme.of(context).primaryColor.withValues(alpha: 0.8)
-                : _getTaskBorderColor(task), // 期限日に応じたボーダー色
-            width: _isSelectionMode && isSelected ? 3 : isHovered ? 4 : 2,
+                : _getTaskBorderColorEnhanced(task), // 期限日に応じたボーダー色（ダークモード対応）
+            width: _isSelectionMode && isSelected ? 3 : isHovered ? 4 : 2.5, // 通常時も少し太く
           ),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withValues(alpha: uiState.shadowIntensity), // UIカスタマイズの影の強さ
-              blurRadius: isHovered ? uiState.cardElevation * 8 : uiState.cardElevation * 4, // UIカスタマイズの影の強さ
-              offset: Offset(0, isHovered ? uiState.cardElevation * 4 : uiState.cardElevation * 2),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withValues(alpha: 0.6) // ダークモードではより濃い影
+                  : Theme.of(context).colorScheme.shadow.withValues(alpha: uiState.shadowIntensity),
+              blurRadius: isHovered ? uiState.cardElevation * 8 : uiState.cardElevation * 5, // 少し大きめに
+              offset: Offset(0, isHovered ? uiState.cardElevation * 4 : uiState.cardElevation * 2.5),
             ),
             if (_isSelectionMode && isSelected)
               BoxShadow(
@@ -1499,6 +1759,33 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
           if (task.description != null && task.description!.isNotEmpty) ...[
             const SizedBox(height: 4),
             _buildDescriptionWithTooltip(task.description!),
+          ],
+          // タグ表示（タスクグリッドビューと同様のスタイル）
+          if (task.tags.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: task.tags.map((tag) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    tag,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+            ),
           ],
           // 展開時のみ表示される詳細情報（関連資料）
           if (isExpanded) ...[
@@ -2769,8 +3056,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       _navigateToHome(context);
       return true;
     } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-      print('✅ → 検出: 3点ドットメニューにフォーカス');
-      _appBarMenuFocusNode.requestFocus();
+      if (isEditing) return false;
+      print('✅ → 検出: 3点ドットメニューを表示');
+      _showPopupMenu(context);
       return true;
     } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
       print('✅ ↓ 検出: 3点ドットメニューにフォーカス');
@@ -2826,6 +3114,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         ),
       );
       return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyG && isControlPressed && !isShiftPressed) {
+      if (isEditing) return false;
+      print('✅ Ctrl+G 検出: グループ化メニュー');
+      _showGroupMenu(context);
+      return true;
     }
     return false;
   }
@@ -2862,6 +3155,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
               _TaskShortcutItem('Ctrl+P', 'タスクグリッドビュー'),
               _TaskShortcutItem('Ctrl+Shift+C', 'スケジュール一覧'),
               _TaskShortcutItem('Ctrl+O', '並び替え'),
+              _TaskShortcutItem('Ctrl+G', 'グループ化'),
               _TaskShortcutItem('Ctrl+Shift+T', 'テンプレートから作成'),
               const Divider(),
               _TaskShortcutItem('←', 'ホーム画面に戻る'),
@@ -2885,73 +3179,145 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
 
   // 3点ドットメニューを表示
   void _showPopupMenu(BuildContext context) {
+    // 3点ドットメニューボタンの位置を取得
+    final RenderBox? button = _menuButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    RelativeRect position;
+    
+    if (button != null) {
+      final Offset offset = button.localToGlobal(Offset.zero);
+      position = RelativeRect.fromLTRB(
+        offset.dx,
+        offset.dy + button.size.height,
+        offset.dx + button.size.width,
+        offset.dy + button.size.height,
+      );
+    } else {
+      // フォールバック: ボタンの位置が取得できない場合は固定位置
+      final screenSize = MediaQuery.of(context).size;
+      position = RelativeRect.fromLTRB(
+        screenSize.width - 200,
+        100,
+        screenSize.width - 50,
+        100,
+      );
+    }
+    
     showMenu<String>(
       context: context,
-      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
+      position: position,
       items: [
         // 新しいタスク作成
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'add_task',
           child: Row(
             children: [
               Icon(Icons.add, color: Colors.green, size: 20),
               SizedBox(width: 8),
-              Text('新しいタスク'),
+              Text('新しいタスク (Ctrl+N)'),
             ],
           ),
         ),
         // 一括選択モード
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'bulk_select',
           child: Row(
             children: [
               Icon(Icons.checklist, color: Colors.blue, size: 20),
               SizedBox(width: 8),
-              Text('一括選択モード'),
+              Text('一括選択モード (Ctrl+B)'),
             ],
           ),
         ),
-        // CSVエクスポート
-        const PopupMenuItem(
+        const PopupMenuDivider(),
+        PopupMenuItem(
           value: 'export',
           child: Row(
             children: [
-              Icon(Icons.download, color: Colors.purple, size: 20),
+              Icon(Icons.download, color: Colors.green, size: 20),
               SizedBox(width: 8),
-              Text('CSVエクスポート'),
+              Text('CSV出力 (Ctrl+Shift+E)'),
             ],
           ),
         ),
-        // テスト通知
-        const PopupMenuItem(
-          value: 'test_notification',
+        PopupMenuItem(
+          value: 'settings',
           child: Row(
             children: [
-              Icon(Icons.notifications, color: Colors.red, size: 20),
+              Icon(Icons.settings, color: Colors.grey, size: 20),
               SizedBox(width: 8),
-              Text('テスト通知'),
+              Text('設定 (Ctrl+Shift+S)'),
             ],
           ),
         ),
-        // テストリマインダー
-        const PopupMenuItem(
-          value: 'test_reminder',
+        const PopupMenuDivider(),
+        // タスクグリッドビュー
+        PopupMenuItem(
+          value: 'project_overview',
           child: Row(
             children: [
-              Icon(Icons.alarm, color: Colors.teal, size: 20),
+              Icon(Icons.calendar_view_month, color: Colors.blue, size: 20),
               SizedBox(width: 8),
-              Text('テストリマインダー'),
+              Text('タスクグリッドビュー (Ctrl+P)'),
             ],
           ),
         ),
-        // 1分後リマインダー
-        const PopupMenuItem(
-          value: 'test_reminder_1min',
+        // スケジュール一覧
+        PopupMenuItem(
+          value: 'schedule',
           child: Row(
             children: [
-              Icon(Icons.timer, color: Colors.indigo, size: 20),
+              Icon(Icons.calendar_month, color: Colors.orange, size: 20),
+              const SizedBox(width: 8),
+              const Text('スケジュール一覧 (Ctrl+Shift+C)'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        // 並び替え
+        PopupMenuItem(
+          value: 'sort_menu',
+          child: Row(
+            children: [
+              Icon(Icons.sort, color: Colors.orange, size: 20),
               SizedBox(width: 8),
-              Text('1分後リマインダー'),
+              Text('並び替え (Ctrl+O)'),
+            ],
+          ),
+        ),
+        // グループ化
+        PopupMenuItem(
+          value: 'group_menu',
+          child: Row(
+            children: [
+              Icon(Icons.group, color: Colors.purple, size: 20),
+              SizedBox(width: 8),
+              Text('グループ化 (Ctrl+G)'),
+            ],
+          ),
+        ),
+        // テンプレートから作成
+        PopupMenuItem(
+          value: 'task_template',
+          child: Row(
+            children: [
+              Icon(Icons.content_copy, color: Colors.teal, size: 20),
+              SizedBox(width: 8),
+              Text('テンプレートから作成 (Ctrl+Shift+T)'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'toggle_header',
+          child: Row(
+            children: [
+              Icon(
+                _showHeaderSection ? Icons.visibility_off : Icons.visibility,
+                color: Colors.grey,
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(_showHeaderSection ? '統計・検索バーを非表示 (Ctrl+H)' : '統計・検索バーを表示 (Ctrl+H)'),
             ],
           ),
         ),
@@ -3138,6 +3504,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
   /// ボーダー色は常にUI設定の色を使用（期限日による色分けは期限バッジのみに適用）
   Color _getTaskBorderColor(TaskItem task) {
     return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
+  }
+
+  /// タスクの期限日に応じたボーダー色を取得（ダークモード対応強化版）
+  Color _getTaskBorderColorEnhanced(TaskItem task) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    if (isDarkMode) {
+      // ダークモードではより明るいボーダーで視認性を向上
+      return Theme.of(context).colorScheme.outline.withValues(alpha: 0.6);
+    } else {
+      return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
+    }
   }
 
   /// 検索履歴を読み込み
@@ -4929,6 +5306,9 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
   bool _hideCompleted = true; // デフォルトで完了タスクを非表示
   String _filterDueDateColor = ''; // 期限日の色でフィルター（''（空文字）: すべて, 'red', 'orange', 'amber', 'blue', 'green'）
   late FocusNode _dialogFocusNode;
+  // 一括選択機能の状態変数
+  bool _isSelectionMode = false; // 選択モードのオン/オフ
+  Set<String> _selectedTaskIds = {}; // 選択されたタスクのIDセット
 
   @override
   void initState() {
@@ -5080,27 +5460,121 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
               ),
               child: Row(
                 children: [
-                  Text(
-                    'タスク一覧',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: (Theme.of(context).textTheme.headlineSmall?.fontSize ?? 20) * fontSize,
-                      fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
+                  // 選択モード時は選択数を表示
+                  if (_isSelectionMode)
+                    Text(
+                      '${_selectedTaskIds.length}件選択中',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  else
+                    Text(
+                      'タスク一覧',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: (Theme.of(context).textTheme.headlineSmall?.fontSize ?? 20) * fontSize,
+                        fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
+                      ),
                     ),
-                  ),
                   const Spacer(),
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _hideCompleted,
-                        onChanged: (v) => setState(() => _hideCompleted = v ?? true),
-                        visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-                      ),
-                      Text(
-                        '完了タスクを非表示',
-                        style: TextStyle(fontSize: 12 * fontSize),
-                      ),
-                      const SizedBox(width: 16),
+                  if (_isSelectionMode) ...[
+                    // 選択モード時のアクション
+                    IconButton(
+                      icon: Icon(_selectedTaskIds.length == sortedTasks.length 
+                        ? Icons.deselect 
+                        : Icons.select_all),
+                      tooltip: _selectedTaskIds.length == sortedTasks.length 
+                        ? '全解除' 
+                        : '全選択',
+                      onPressed: () => _toggleSelectAllForGrid(sortedTasks),
+                    ),
+                    // 一括操作メニューボタン
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      tooltip: '一括操作',
+                      enabled: !_selectedTaskIds.isEmpty,
+                      onSelected: (value) async {
+                        switch (value) {
+                          case 'status':
+                            _showBulkStatusMenuForGrid(context);
+                            break;
+                          case 'priority':
+                            _showBulkPriorityMenuForGrid(context);
+                            break;
+                          case 'delete':
+                            await _deleteSelectedTasksForGrid(context);
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'status',
+                          child: Row(
+                            children: [
+                              Icon(Icons.play_circle_outline, size: 20),
+                              SizedBox(width: 8),
+                              Text('ステータス変更'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'priority',
+                          child: Row(
+                            children: [
+                              Icon(Icons.flag, size: 20),
+                              SizedBox(width: 8),
+                              Text('優先度変更'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, size: 20, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('削除', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: '選択モードを終了',
+                      onPressed: () {
+                        setState(() {
+                          _isSelectionMode = false;
+                          _selectedTaskIds.clear();
+                        });
+                      },
+                    ),
+                  ] else ...[
+                    // 通常モード時のアクション
+                    IconButton(
+                      icon: const Icon(Icons.check_box_outline_blank),
+                      tooltip: '一括選択モード',
+                      onPressed: () {
+                        setState(() {
+                          _isSelectionMode = true;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _hideCompleted,
+                          onChanged: (v) => setState(() => _hideCompleted = v ?? true),
+                          visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+                        ),
+                        Text(
+                          '完了タスクを非表示',
+                          style: TextStyle(fontSize: 12 * fontSize),
+                        ),
+                        const SizedBox(width: 16),
                       // 色分けフィルター
                       PopupMenuButton<String>(
                         icon: Stack(
@@ -5262,6 +5736,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                       const SizedBox(width: 8),
                     ],
                   ),
+                  ],
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close),
@@ -5324,18 +5799,30 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                           side: BorderSide(color: borderColor, width: 1),
                         ),
                         color: cardBg,
-                        child: InkWell(
+                          child: InkWell(
                           borderRadius: BorderRadius.circular(8),
                           focusColor: Colors.transparent,
                           canRequestFocus: false,
                           onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => TaskDialog(task: task),
-                            ).then((_) {
-                              // タスクダイアログを閉じた時にタスクグリッドビューに戻る
-                              // ダイアログが既に閉じられているため、何もしない
-                            });
+                            if (_isSelectionMode) {
+                              // 選択モード時はタップで選択切り替え
+                              setState(() {
+                                if (_selectedTaskIds.contains(task.id)) {
+                                  _selectedTaskIds.remove(task.id);
+                                } else {
+                                  _selectedTaskIds.add(task.id);
+                                }
+                              });
+                            } else {
+                              // 通常モード時はタスクダイアログを開く
+                              showDialog(
+                                context: context,
+                                builder: (context) => TaskDialog(task: task),
+                              ).then((_) {
+                                // タスクダイアログを閉じた時にタスクグリッドビューに戻る
+                                // ダイアログが既に閉じられているため、何もしない
+                              });
+                            }
                           },
                           child: Padding(
                             padding: EdgeInsets.all(8 * fontSize),
@@ -5347,6 +5834,24 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // 選択モード時はチェックボックスを表示
+                                    if (_isSelectionMode)
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 4, top: 2),
+                                        child: Checkbox(
+                                          value: _selectedTaskIds.contains(task.id),
+                                          onChanged: (_) {
+                                            setState(() {
+                                              if (_selectedTaskIds.contains(task.id)) {
+                                                _selectedTaskIds.remove(task.id);
+                                              } else {
+                                                _selectedTaskIds.add(task.id);
+                                              }
+                                            });
+                                          },
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ),
                                     Expanded(
                                       child: Text(
                                         task.title,
@@ -5354,6 +5859,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14 * fontSize * titleFontSize,
                                           fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
+                                          color: _getTextColorForCardBackground(cardBg),
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -5716,6 +6222,34 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
     }
   }
 
+  /// カード背景色に対して適切なコントラストのテキスト色を取得
+  Color _getTextColorForCardBackground(Color backgroundColor) {
+    // 背景色の明度を計算
+    final luminance = backgroundColor.computeLuminance();
+    
+    // ダークモードかどうかを確認
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // 背景が薄い色（明度が高い）の場合、濃いテキストを使用
+    // 背景が濃い色（明度が低い）の場合、明るいテキストを使用
+    if (isDarkMode) {
+      // ダークモードの場合、背景が薄くても濃いテキストを使用
+      // ただし、背景が非常に薄い場合は少し濃めにする
+      if (luminance > 0.5) {
+        return Colors.black87; // 薄い背景に対して濃いテキスト
+      } else {
+        return Colors.white; // 濃い背景に対して白テキスト
+      }
+    } else {
+      // ライトモードの場合
+      if (luminance > 0.5) {
+        return Colors.black87; // 薄い背景に対して濃いテキスト
+      } else {
+        return Colors.white; // 濃い背景に対して白テキスト
+      }
+    }
+  }
+
   /// ステータスバッジ情報を取得
   Map<String, dynamic> _getStatusBadge(int completedCount, int totalCount) {
     if (totalCount == 0) {
@@ -5929,6 +6463,268 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
         );
       },
     );
+  }
+
+  /// 全選択/全解除（タスクグリッドビュー）
+  void _toggleSelectAllForGrid(List<TaskItem> tasks) {
+    setState(() {
+      if (_selectedTaskIds.length == tasks.length) {
+        _selectedTaskIds.clear();
+      } else {
+        _selectedTaskIds = tasks.map((task) => task.id).toSet();
+      }
+    });
+  }
+
+  /// 一括ステータス変更メニューを表示（タスクグリッドビュー）
+  void _showBulkStatusMenuForGrid(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildBulkStatusMenuItemForGrid(
+              context,
+              TaskStatus.pending,
+              '未着手',
+              Colors.green,
+              Icons.pending,
+            ),
+            _buildBulkStatusMenuItemForGrid(
+              context,
+              TaskStatus.inProgress,
+              '進行中',
+              Colors.blue,
+              Icons.play_circle_outline,
+            ),
+            _buildBulkStatusMenuItemForGrid(
+              context,
+              TaskStatus.completed,
+              '完了',
+              Colors.grey,
+              Icons.check_circle,
+            ),
+            _buildBulkStatusMenuItemForGrid(
+              context,
+              TaskStatus.cancelled,
+              '取消',
+              Colors.red,
+              Icons.cancel,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 一括ステータスメニューアイテムを構築（タスクグリッドビュー）
+  Widget _buildBulkStatusMenuItemForGrid(
+    BuildContext context,
+    TaskStatus status,
+    String label,
+    Color color,
+    IconData icon,
+  ) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(label),
+      onTap: () async {
+        Navigator.pop(context);
+        await _bulkChangeStatusForGrid(status);
+      },
+    );
+  }
+
+  /// 一括優先度変更メニューを表示（タスクグリッドビュー）
+  void _showBulkPriorityMenuForGrid(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildBulkPriorityMenuItemForGrid(
+              context,
+              TaskPriority.low,
+              '低',
+              Colors.grey,
+            ),
+            _buildBulkPriorityMenuItemForGrid(
+              context,
+              TaskPriority.medium,
+              '中',
+              Colors.orange,
+            ),
+            _buildBulkPriorityMenuItemForGrid(
+              context,
+              TaskPriority.high,
+              '高',
+              Colors.red,
+            ),
+            _buildBulkPriorityMenuItemForGrid(
+              context,
+              TaskPriority.urgent,
+              '緊急',
+              Colors.deepPurple,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 一括優先度メニューアイテムを構築（タスクグリッドビュー）
+  Widget _buildBulkPriorityMenuItemForGrid(
+    BuildContext context,
+    TaskPriority priority,
+    String label,
+    Color color,
+  ) {
+    IconData icon;
+    switch (priority) {
+      case TaskPriority.low:
+        icon = Icons.arrow_downward;
+        break;
+      case TaskPriority.medium:
+        icon = Icons.remove;
+        break;
+      case TaskPriority.high:
+        icon = Icons.arrow_upward;
+        break;
+      case TaskPriority.urgent:
+        icon = Icons.priority_high;
+        break;
+    }
+
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(label),
+      onTap: () async {
+        Navigator.pop(context);
+        await _bulkChangePriorityForGrid(priority);
+      },
+    );
+  }
+
+  /// 選択されたタスクのステータスを一括変更（タスクグリッドビュー）
+  Future<void> _bulkChangeStatusForGrid(TaskStatus status) async {
+    if (_selectedTaskIds.isEmpty) return;
+
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final tasks = ref.read(taskViewModelProvider);
+      final selectedTasks = tasks.where((t) => _selectedTaskIds.contains(t.id)).toList();
+      final updatedCount = selectedTasks.length;
+
+      for (final task in selectedTasks) {
+        if (status == TaskStatus.completed) {
+          await taskViewModel.completeTask(task.id);
+        } else if (status == TaskStatus.inProgress && task.status == TaskStatus.pending) {
+          await taskViewModel.startTask(task.id);
+        } else {
+          final updatedTask = task.copyWith(
+            status: status,
+            completedAt: status == TaskStatus.completed ? DateTime.now() : null,
+          );
+          await taskViewModel.updateTask(updatedTask);
+        }
+      }
+
+      // 選択をクリア
+      setState(() {
+        _selectedTaskIds.clear();
+      });
+
+      if (mounted) {
+        SnackBarService.showSuccess(
+          context,
+          '$updatedCount件のタスクのステータスを変更しました',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, 'ステータス変更に失敗しました: $e');
+      }
+    }
+  }
+
+  /// 選択されたタスクの優先度を一括変更（タスクグリッドビュー）
+  Future<void> _bulkChangePriorityForGrid(TaskPriority priority) async {
+    if (_selectedTaskIds.isEmpty) return;
+
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final tasks = ref.read(taskViewModelProvider);
+      final selectedTasks = tasks.where((t) => _selectedTaskIds.contains(t.id)).toList();
+      final updatedCount = selectedTasks.length;
+
+      for (final task in selectedTasks) {
+        final updatedTask = task.copyWith(priority: priority);
+        await taskViewModel.updateTask(updatedTask);
+      }
+
+      // 選択をクリア
+      setState(() {
+        _selectedTaskIds.clear();
+      });
+
+      if (mounted) {
+        SnackBarService.showSuccess(
+          context,
+          '$updatedCount件のタスクの優先度を変更しました',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, '優先度変更に失敗しました: $e');
+      }
+    }
+  }
+
+  /// 選択されたタスクを一括削除（タスクグリッドビュー）
+  Future<void> _deleteSelectedTasksForGrid(BuildContext context) async {
+    if (_selectedTaskIds.isEmpty) return;
+
+    final confirmed = await UnifiedDialogHelper.showDeleteConfirmDialog(
+      context,
+      title: '確認',
+      message: '選択した${_selectedTaskIds.length}件のタスクを削除しますか？',
+      confirmText: '削除',
+      cancelText: 'キャンセル',
+    );
+
+    if (confirmed == true) {
+      try {
+        final taskViewModel = ref.read(taskViewModelProvider.notifier);
+        final deletedCount = _selectedTaskIds.length;
+      
+        // 選択されたタスクを削除
+        for (final taskId in _selectedTaskIds) {
+          await taskViewModel.deleteTask(taskId);
+        }
+
+        // 選択モードを解除
+        setState(() {
+          _selectedTaskIds.clear();
+          _isSelectionMode = false;
+        });
+
+        // 削除完了のメッセージを表示
+        if (mounted) {
+          SnackBarService.showSuccess(
+            context,
+            '$deletedCount件のタスクを削除しました',
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          SnackBarService.showError(context, '削除に失敗しました: $e');
+        }
+      }
+    }
   }
 
   /// タスクのステータスバッジ情報を取得

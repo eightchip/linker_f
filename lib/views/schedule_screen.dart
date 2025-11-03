@@ -335,37 +335,70 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             color: isToday
                 ? Theme.of(context).colorScheme.primaryContainer
                 : isPast
-                    ? Colors.grey[200]
+                    ? (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[800]!
+                        : Colors.grey[200]!)
                     : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isToday
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).dividerColor,
-              width: isToday ? 2 : 1,
+                  : Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).dividerColor.withValues(alpha: 0.6)
+                      : Theme.of(context).dividerColor,
+              width: isToday 
+                  ? 2 
+                  : (Theme.of(context).brightness == Brightness.dark ? 1.5 : 1),
             ),
           ),
           child: Row(
             children: [
-              Text(
-                DateFormat('yyyy年MM月dd日').format(date),
-                style: TextStyle(
-                  fontSize: 14 * fontSize,
-                  fontWeight: FontWeight.bold,
-                  color: isToday
+              Builder(
+                builder: (context) {
+                  // 背景色を取得
+                  final backgroundColor = isToday
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : isPast
+                          ? Colors.grey[200]!
+                          : Theme.of(context).colorScheme.surface;
+                  // 背景色に応じたテキスト色を決定
+                  final textColor = isToday
                       ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
+                      : _getDateTextColorWithBackground(context, backgroundColor, isPast);
+                  
+                  return Text(
+                    DateFormat('yyyy年MM月dd日').format(date),
+                    style: TextStyle(
+                      fontSize: 16 * fontSize, // フォントサイズをさらに大きく
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 8),
-              Text(
-                '(${_getDayOfWeek(date)})',
-                style: TextStyle(
-                  fontSize: 12 * fontSize,
-                  color: isToday
-                      ? Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8)
-                      : Colors.grey[600],
-                ),
+              Builder(
+                builder: (context) {
+                  // 背景色を取得
+                  final backgroundColor = isToday
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : isPast
+                          ? Colors.grey[200]!
+                          : Theme.of(context).colorScheme.surface;
+                  // 背景色に応じたテキスト色を決定
+                  final textColor = isToday
+                      ? Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.9)
+                      : _getDateTextColorWithBackground(context, backgroundColor, isPast).withOpacity(0.9);
+                  
+                  return Text(
+                    '(${_getDayOfWeek(date)})',
+                    style: TextStyle(
+                      fontSize: 14 * fontSize, // フォントサイズを大きく
+                      fontWeight: FontWeight.w700, // さらに太く
+                      color: textColor,
+                    ),
+                  );
+                },
               ),
               const Spacer(),
               // 統計情報
@@ -549,17 +582,67 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         final startedAt = snapshot.data?['startedAt'];
         final completedAt = snapshot.data?['completedAt'];
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          elevation: 1,
-          child: InkWell(
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => TaskDialog(task: task),
-              );
-            },
-            child: Padding(
+        return Dismissible(
+          key: Key(task.id),
+          background: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 20),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.check_circle,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+          secondaryBackground: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.arrow_forward,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+          confirmDismiss: (direction) async {
+            if (direction == DismissDirection.startToEnd) {
+              // 左スワイプ: 完了/未完了の切り替え
+              await _toggleTaskCompletion(task);
+            } else if (direction == DismissDirection.endToStart) {
+              // 右スワイプ: 次のステータスに進める
+              await _moveToNextStatus(task);
+            }
+            return false; // カードを削除しない
+          },
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            elevation: Theme.of(context).brightness == Brightness.dark ? 3 : 1, // ダークモードではより高いエレベーション
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)
+                    : Colors.transparent,
+                width: Theme.of(context).brightness == Brightness.dark ? 1.5 : 0,
+              ),
+            ),
+            child: GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => TaskDialog(task: task),
+                );
+              },
+              onLongPress: () {
+                _showQuickActionMenu(context, task);
+              },
+              child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -663,10 +746,445 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                 ],
               ),
             ),
+            ),
           ),
         );
       },
     );
+  }
+
+  /// タスクの完了/未完了を切り替え
+  Future<void> _toggleTaskCompletion(TaskItem task) async {
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      if (task.status == TaskStatus.completed) {
+        // 未完了に戻す
+        final updatedTask = task.copyWith(
+          status: TaskStatus.pending,
+          completedAt: null,
+        );
+        await taskViewModel.updateTask(updatedTask);
+      } else {
+        // 完了にする
+        await taskViewModel.completeTask(task.id);
+      }
+    } catch (e) {
+      print('タスク完了切り替えエラー: $e');
+    }
+  }
+
+  /// タスクを次のステータスに進める
+  Future<void> _moveToNextStatus(TaskItem task) async {
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      
+      switch (task.status) {
+        case TaskStatus.pending:
+          await taskViewModel.startTask(task.id);
+          break;
+        case TaskStatus.inProgress:
+          await taskViewModel.completeTask(task.id);
+          break;
+        case TaskStatus.completed:
+          // 完了の場合は未着手に戻す
+          final updatedTask = task.copyWith(
+            status: TaskStatus.pending,
+            completedAt: null,
+          );
+          await taskViewModel.updateTask(updatedTask);
+          break;
+        case TaskStatus.cancelled:
+          // 取消の場合は未着手に戻す
+          final updatedTask = task.copyWith(
+            status: TaskStatus.pending,
+            completedAt: null,
+          );
+          await taskViewModel.updateTask(updatedTask);
+          break;
+      }
+    } catch (e) {
+      print('タスクステータス変更エラー: $e');
+    }
+  }
+
+  /// クイックアクションメニューを表示
+  void _showQuickActionMenu(BuildContext context, TaskItem task) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ステータス変更
+            ListTile(
+              leading: Icon(
+                _getStatusIcon(task.status),
+                color: _getStatusColor(task.status),
+              ),
+              title: const Text('ステータス'),
+              subtitle: Text(_getStatusText(task.status)),
+              onTap: () {
+                Navigator.pop(context);
+                _showStatusMenu(context, task);
+              },
+            ),
+            // 優先度変更
+            ListTile(
+              leading: Icon(
+                _getPriorityIcon(task.priority),
+                color: _getPriorityColor(task.priority),
+              ),
+              title: const Text('優先度'),
+              subtitle: Text(_getPriorityText(task.priority)),
+              onTap: () {
+                Navigator.pop(context);
+                _showPriorityMenu(context, task);
+              },
+            ),
+            const Divider(),
+            // 編集
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('編集'),
+              onTap: () {
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  builder: (context) => TaskDialog(task: task),
+                );
+              },
+            ),
+            // 削除
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('削除', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDeleteTask(context, task);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ステータス変更メニューを表示
+  void _showStatusMenu(BuildContext context, TaskItem task) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildStatusMenuItem(
+              context,
+              TaskStatus.pending,
+              '未着手',
+              Colors.green,
+              Icons.pending,
+              task,
+            ),
+            _buildStatusMenuItem(
+              context,
+              TaskStatus.inProgress,
+              '進行中',
+              Colors.blue,
+              Icons.play_circle_outline,
+              task,
+            ),
+            _buildStatusMenuItem(
+              context,
+              TaskStatus.completed,
+              '完了',
+              Colors.grey,
+              Icons.check_circle,
+              task,
+            ),
+            _buildStatusMenuItem(
+              context,
+              TaskStatus.cancelled,
+              '取消',
+              Colors.red,
+              Icons.cancel,
+              task,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ステータスメニューアイテムを構築
+  Widget _buildStatusMenuItem(
+    BuildContext context,
+    TaskStatus status,
+    String label,
+    Color color,
+    IconData icon,
+    TaskItem task,
+  ) {
+    final isSelected = task.status == status;
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? color : null),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? color : null,
+        ),
+      ),
+      trailing: isSelected ? Icon(Icons.check, color: color) : null,
+      onTap: () async {
+        Navigator.pop(context);
+        await _changeTaskStatus(task, status);
+      },
+    );
+  }
+
+  /// 優先度変更メニューを表示
+  void _showPriorityMenu(BuildContext context, TaskItem task) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPriorityMenuItem(
+              context,
+              TaskPriority.low,
+              '低',
+              Colors.grey,
+              task,
+            ),
+            _buildPriorityMenuItem(
+              context,
+              TaskPriority.medium,
+              '中',
+              Colors.orange,
+              task,
+            ),
+            _buildPriorityMenuItem(
+              context,
+              TaskPriority.high,
+              '高',
+              Colors.red,
+              task,
+            ),
+            _buildPriorityMenuItem(
+              context,
+              TaskPriority.urgent,
+              '緊急',
+              Colors.deepPurple,
+              task,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 優先度メニューアイテムを構築
+  Widget _buildPriorityMenuItem(
+    BuildContext context,
+    TaskPriority priority,
+    String label,
+    Color color,
+    TaskItem task,
+  ) {
+    final isSelected = task.priority == priority;
+    return ListTile(
+      leading: Icon(
+        _getPriorityIcon(priority),
+        color: isSelected ? color : null,
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? color : null,
+        ),
+      ),
+      trailing: isSelected ? Icon(Icons.check, color: color) : null,
+      onTap: () async {
+        Navigator.pop(context);
+        await _changeTaskPriority(task, priority);
+      },
+    );
+  }
+
+  /// タスクのステータスを変更
+  Future<void> _changeTaskStatus(TaskItem task, TaskStatus status) async {
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      
+      if (status == TaskStatus.completed) {
+        await taskViewModel.completeTask(task.id);
+      } else if (status == TaskStatus.inProgress && task.status == TaskStatus.pending) {
+        await taskViewModel.startTask(task.id);
+      } else {
+        final updatedTask = task.copyWith(
+          status: status,
+          completedAt: status == TaskStatus.completed ? DateTime.now() : null,
+        );
+        await taskViewModel.updateTask(updatedTask);
+      }
+    } catch (e) {
+      print('タスクステータス変更エラー: $e');
+    }
+  }
+
+  /// タスクの優先度を変更
+  Future<void> _changeTaskPriority(TaskItem task, TaskPriority priority) async {
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final updatedTask = task.copyWith(priority: priority);
+      await taskViewModel.updateTask(updatedTask);
+    } catch (e) {
+      print('タスク優先度変更エラー: $e');
+    }
+  }
+
+  /// タスク削除の確認ダイアログを表示
+  void _confirmDeleteTask(BuildContext context, TaskItem task) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('タスクを削除'),
+        content: Text('「${task.title}」を削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteTask(task);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// タスクを削除
+  Future<void> _deleteTask(TaskItem task) async {
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      await taskViewModel.deleteTask(task.id);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('「${task.title}」を削除しました'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('タスク削除エラー: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('削除エラー: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// ステータスのアイコンを取得
+  IconData _getStatusIcon(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return Icons.pending;
+      case TaskStatus.inProgress:
+        return Icons.play_circle_outline;
+      case TaskStatus.completed:
+        return Icons.check_circle;
+      case TaskStatus.cancelled:
+        return Icons.cancel;
+    }
+  }
+
+  /// ステータスの色を取得
+  Color _getStatusColor(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return Colors.green;
+      case TaskStatus.inProgress:
+        return Colors.blue;
+      case TaskStatus.completed:
+        return Colors.grey;
+      case TaskStatus.cancelled:
+        return Colors.red;
+    }
+  }
+
+  /// ステータスのテキストを取得
+  String _getStatusText(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return '未着手';
+      case TaskStatus.inProgress:
+        return '進行中';
+      case TaskStatus.completed:
+        return '完了';
+      case TaskStatus.cancelled:
+        return '取消';
+    }
+  }
+
+  /// 優先度のアイコンを取得
+  IconData _getPriorityIcon(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return Icons.arrow_downward;
+      case TaskPriority.medium:
+        return Icons.remove;
+      case TaskPriority.high:
+        return Icons.arrow_upward;
+      case TaskPriority.urgent:
+        return Icons.priority_high;
+    }
+  }
+
+  /// 優先度の色を取得
+  Color _getPriorityColor(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return Colors.grey;
+      case TaskPriority.medium:
+        return Colors.orange;
+      case TaskPriority.high:
+        return Colors.red;
+      case TaskPriority.urgent:
+        return Colors.deepPurple;
+    }
+  }
+
+  /// 優先度のテキストを取得
+  String _getPriorityText(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return '低';
+      case TaskPriority.medium:
+        return '中';
+      case TaskPriority.high:
+        return '高';
+      case TaskPriority.urgent:
+        return '緊急';
+    }
   }
 
   Widget _buildStatusBadge(TaskStatus status, double fontSize) {
@@ -721,12 +1239,20 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         date.month != dueDate.month ||
         date.day != dueDate.day;
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: isDarkMode
+            ? color.withOpacity(0.25) // ダークモードでは背景色を少し濃く
+            : color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(
+          color: isDarkMode
+              ? color.withOpacity(0.8) // ダークモードではボーダーをより明確に
+              : color.withOpacity(0.5),
+          width: isDarkMode ? 1.5 : 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -744,7 +1270,11 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             DateFormat('MM/dd').format(date),
             style: TextStyle(
               fontSize: 10 * fontSize,
-              color: isDifferent ? color : Colors.grey[700],
+              color: isDifferent 
+                  ? color 
+                  : (isDarkMode 
+                      ? Colors.grey[300]! 
+                      : Colors.grey[700]!),
               fontWeight: isDifferent ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -776,12 +1306,20 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         break;
     }
 
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: isDarkMode
+            ? color.withOpacity(0.3) // ダークモードでは背景色を少し濃く
+            : color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(
+          color: isDarkMode
+              ? color.withOpacity(0.8) // ダークモードではボーダーをより明確に
+              : color.withOpacity(0.5),
+          width: isDarkMode ? 1.5 : 1,
+        ),
       ),
       child: Text(
         text,
@@ -806,6 +1344,50 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       return Colors.orange; // 3日以内
     } else {
       return Colors.green; // 余裕あり
+    }
+  }
+
+  /// 日付ヘッダーのテキスト色を取得（ダークモード対応）
+  Color _getDateTextColor(BuildContext context, bool isPast) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    if (isDarkMode) {
+      // ダークモードの場合、より明るい色を使用して視認性を向上
+      if (isPast) {
+        return Colors.grey[300]!; // 過去の日付は少し薄め
+      } else {
+        return Colors.white; // 未来の日付は白で強調
+      }
+    } else {
+      // ライトモードの場合
+      if (isPast) {
+        return Colors.grey[700]!; // 過去の日付は濃いグレー
+      } else {
+        return Theme.of(context).colorScheme.onSurface; // 未来の日付は通常の色
+      }
+    }
+  }
+
+  /// 背景色に対して適切なコントラストの日付テキスト色を取得
+  Color _getDateTextColorWithBackground(BuildContext context, Color backgroundColor, bool isPast) {
+    // 背景色の明度を計算
+    final bgLuminance = backgroundColor.computeLuminance();
+    
+    // 背景が薄い（明度が高い）場合は濃いテキスト、濃い（明度が低い）場合は明るいテキスト
+    if (bgLuminance > 0.5) {
+      // 薄い背景に対して濃いテキストを使用
+      if (isPast) {
+        return Colors.black87; // 過去の日付は濃い黒
+      } else {
+        return Colors.black; // 未来の日付は完全な黒で強調
+      }
+    } else {
+      // 濃い背景に対して明るいテキストを使用
+      if (isPast) {
+        return Colors.grey[200]!; // 過去の日付は薄いグレー
+      } else {
+        return Colors.white; // 未来の日付は白で強調
+      }
     }
   }
 

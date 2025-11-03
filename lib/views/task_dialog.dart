@@ -576,8 +576,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(24), // 角丸を大きくしてモダンな印象に
             border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-              width: 1,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)
+                  : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+              width: Theme.of(context).brightness == Brightness.dark ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
@@ -799,7 +801,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           controller: _titleController,
           enableInteractiveSelection: true,
           style: TextStyle(
-            color: Color(ref.watch(titleTextColorProvider)),
+            color: _getTaskTitleColor(),
             fontSize: 16 * ref.watch(titleFontSizeProvider),
             fontFamily: ref.watch(titleFontFamilyProvider).isEmpty ? null : ref.watch(titleFontFamilyProvider),
           ),
@@ -809,15 +811,28 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
+              borderSide: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.6)
+                    : Theme.of(context).colorScheme.outline,
+                width: Theme.of(context).brightness == Brightness.dark ? 2 : 1.5,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2.5),
+              borderSide: BorderSide(
+                color: Theme.of(context).primaryColor,
+                width: Theme.of(context).brightness == Brightness.dark ? 3 : 2.5,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
+              borderSide: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.6)
+                    : Theme.of(context).colorScheme.outline,
+                width: Theme.of(context).brightness == Brightness.dark ? 2 : 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -870,15 +885,28 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
+              borderSide: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.6)
+                    : Theme.of(context).colorScheme.outline,
+                width: Theme.of(context).brightness == Brightness.dark ? 2 : 1.5,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2.5),
+              borderSide: BorderSide(
+                color: Theme.of(context).primaryColor,
+                width: Theme.of(context).brightness == Brightness.dark ? 3 : 2.5,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
+              borderSide: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.6)
+                    : Theme.of(context).colorScheme.outline,
+                width: Theme.of(context).brightness == Brightness.dark ? 2 : 1.5,
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             labelStyle: TextStyle(
@@ -903,15 +931,28 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
+              borderSide: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.6)
+                    : Theme.of(context).colorScheme.outline,
+                width: Theme.of(context).brightness == Brightness.dark ? 2 : 1.5,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2.5),
+              borderSide: BorderSide(
+                color: Theme.of(context).primaryColor,
+                width: Theme.of(context).brightness == Brightness.dark ? 3 : 2.5,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.outline, width: 1.5),
+              borderSide: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.6)
+                    : Theme.of(context).colorScheme.outline,
+                width: Theme.of(context).brightness == Brightness.dark ? 2 : 1.5,
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             labelStyle: TextStyle(
@@ -1227,11 +1268,20 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   value: RecurringReminderPattern.allPatterns.contains(_recurringReminderPattern)
                       ? _recurringReminderPattern : RecurringReminderPattern.fiveMinutes,
                   isExpanded: true,
-                  style: const TextStyle(fontSize: 14),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                   items: RecurringReminderPattern.allPatterns.map((pattern) {
                     return DropdownMenuItem(
                       value: pattern,
-                      child: Text(RecurringReminderPattern.getDisplayName(pattern), style: const TextStyle(fontSize: 14)),
+                      child: Text(
+                        RecurringReminderPattern.getDisplayName(pattern),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -1265,19 +1315,39 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.6)
+                : Colors.grey.shade300,
+            width: Theme.of(context).brightness == Brightness.dark ? 1.5 : 1,
+          ),
           borderRadius: BorderRadius.circular(8),
-          color: linkCount > 0 ? Colors.orange.shade50 : null,
+          color: linkCount > 0
+              ? (Theme.of(context).brightness == Brightness.dark
+                  ? Colors.orange.shade900.withValues(alpha: 0.2)
+                  : Colors.orange.shade50)
+              : null,
         ),
         child: Row(
           children: [
             Icon(
               linkCount > 0 ? Icons.link : Icons.link_off,
-              color: linkCount > 0 ? Colors.orange.shade600 : Colors.grey.shade600,
+              color: linkCount > 0 
+                  ? _getLinkAssociationIconColor(context)
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               size: 20,
             ),
             const SizedBox(width: 8),
-            const Text('リンク関連付け', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            Text(
+              'リンク関連付け',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: linkCount > 0
+                    ? _getLinkAssociationTextColor(context)
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
             if (linkCount > 0) ...[
               const Spacer(),
               Container(
@@ -1288,9 +1358,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
                 child: Text(
                   '$linkCount',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1454,7 +1524,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 const Spacer(),
                 if (widget.task != null)
                   Text('${subTasks.where((s)=>s.isCompleted).length}/${subTasks.length} 完了',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    ),),
               ],
             ),
             const SizedBox(height: 8),
@@ -1604,7 +1677,13 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             ),
             const SizedBox(height: 8),
             if (widget.task == null)
-              const Text('※ タスク作成後にサブタスク編集が可能になります', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(
+                '※ タスク作成後にサブタスク編集が可能になります',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
             if (widget.task != null)
               ListView.builder(
                 physics: const NeverScrollableScrollPhysics(),
@@ -1705,6 +1784,46 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     }
   }
 
+  /// タスクタイトルの文字色を取得（タスク管理画面と同じロジック）
+  Color _getTaskTitleColor() {
+    final isDarkMode = ref.watch(darkModeProvider);
+    final customColor = Color(ref.watch(titleTextColorProvider));
+    
+    // ダークモードの場合は自動的に白、ライトモードの場合はカスタム色または黒
+    if (isDarkMode) {
+      return Colors.white;
+    } else {
+      // カスタム色が設定されている場合はそれを使用、デフォルトは黒
+      return customColor.value == 0xFF000000 ? Colors.black : customColor;
+    }
+  }
+
+  /// リンク関連付けアイコンの色を取得（背景色に対してコントラストを確保）
+  Color _getLinkAssociationIconColor(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // オレンジの背景（shade50）に対して、コントラストの高い色を使用
+    if (isDarkMode) {
+      // ダークモードでは明るいオレンジを使用
+      return Colors.orange.shade400;
+    } else {
+      // ライトモードでは濃いオレンジを使用
+      return Colors.orange.shade800;
+    }
+  }
+
+  /// リンク関連付けテキストの色を取得（背景色に対してコントラストを確保）
+  Color _getLinkAssociationTextColor(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // オレンジの背景（shade50）に対して、コントラストの高い色を使用
+    if (isDarkMode) {
+      // ダークモードでは明るいオレンジを使用
+      return Colors.orange.shade400;
+    } else {
+      // ライトモードでは濃いオレンジを使用
+      return Colors.orange.shade900;
+    }
+  }
+
   // ステータスのテキストを取得
   String _getStatusText(TaskStatus status) {
     switch (status) {
@@ -1736,7 +1855,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         ),
         subtitle: Text(
           _isMailSectionExpanded ? 'メール機能を折りたたむ' : 'メール送信とテンプレート機能',
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          ),
         ),
         initiallyExpanded: _isMailSectionExpanded,
         onExpansionChanged: (bool expanded) {
@@ -1825,7 +1947,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             decoration: InputDecoration(
               labelText: 'To',
               filled: true,
-              fillColor: Colors.white,
+              fillColor: Theme.of(context).colorScheme.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
@@ -2004,7 +2126,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     ? AppButtonStyles.primary(context)
                     : ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.onSurface,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
@@ -2023,7 +2145,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   ),
                   child: Text(
                     'デバッグ: _pendingMailTo = $_pendingMailTo',
-                    style: const TextStyle(fontSize: 10, color: Colors.blue),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -2031,7 +2156,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 _pendingMailTo != null 
                   ? '※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください'
                   : '※まず「メーラーを起動」ボタンでメーラーを開いてください',
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -2779,9 +2907,10 @@ ${linksInfo.isNotEmpty ? '──────────────────
                               Expanded(
                                 child: Text(
                                   template['name']!,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                               ),
@@ -2792,7 +2921,7 @@ ${linksInfo.isNotEmpty ? '──────────────────
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: Theme.of(context).colorScheme.surfaceVariant,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Column(
@@ -2800,17 +2929,18 @@ ${linksInfo.isNotEmpty ? '──────────────────
                               children: [
                                 Text(
                                   '件名: ${template['subject']!}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   '本文: ${template['body']!.replaceAll('\n', ' ').substring(0, template['body']!.length > 50 ? 50 : template['body']!.length)}${template['body']!.length > 50 ? '...' : ''}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                   ),
                                 ),
                               ],
@@ -2913,9 +3043,10 @@ ${linksInfo.isNotEmpty ? '──────────────────
                                 Expanded(
                                   child: Text(
                                     log.subject.replaceAll(RegExp(r'\s*\[LN-[A-Z0-9]+\]'), ''), // トークンを除去
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
@@ -2941,13 +3072,16 @@ ${linksInfo.isNotEmpty ? '──────────────────
                                   Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: Colors.grey.shade300),
+                                      border: Border.all(color: Theme.of(context).colorScheme.outline),
                                     ),
                                     child: Text(
                                       log.body.replaceAll(RegExp(r'---\s*送信ID:.*$', multiLine: true), '').trim(), // 送信ID部分を除去
-                                      style: const TextStyle(fontSize: 12),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
                                       maxLines: 3,
                                       overflow: TextOverflow.ellipsis,
                                     ),
