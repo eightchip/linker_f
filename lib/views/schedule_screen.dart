@@ -102,8 +102,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       return a.dueDate!.compareTo(b.dueDate!);
     });
 
-    // 日付ごとにグループ化
-    final groupedTasks = _groupTasksByDate(filteredTasks);
+    // 日付ごとにグループ化（順序情報を読み込んでソート）
+    // FutureBuilderで非同期処理を扱うため、ここでは変数に保存しない
 
     // 表示期間を計算
     final duration = _endDate.difference(_startDate).inDays + 1;
@@ -216,27 +216,36 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                    // 期間バーの凡例
                    if (_showPeriodBarLegend)
                      _buildPeriodBarLegend(fontSize),
-                   // タスクリスト
-                   Expanded(
-                     child: ListView.builder(
-                       padding: const EdgeInsets.all(16),
-                       itemCount: groupedTasks.length,
-                       itemBuilder: (context, index) {
-                         final dateKey = groupedTasks.keys.elementAt(index);
-                         final tasksForDate = groupedTasks[dateKey]!;
-                         final date = DateTime.parse(dateKey);
+                  // タスクリスト
+                  Expanded(
+                    child: FutureBuilder<Map<String, List<TaskItem>>>(
+                      future: _groupTasksByDate(filteredTasks),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        final groupedTasks = snapshot.data!;
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: groupedTasks.length,
+                          itemBuilder: (context, index) {
+                            final dateKey = groupedTasks.keys.elementAt(index);
+                            final tasksForDate = groupedTasks[dateKey]!;
+                            final date = DateTime.parse(dateKey);
 
-                         return _buildDateGroup(date, tasksForDate, fontSize);
-                       },
-                     ),
-                   ),
+                            return _buildDateGroup(date, tasksForDate, filteredTasks, fontSize);
+                          },
+                        );
+                      },
+                    ),
+                  ),
                  ],
                ),
              ),
      );
    }
 
-  Map<String, List<TaskItem>> _groupTasksByDate(List<TaskItem> tasks) {
+  Future<Map<String, List<TaskItem>>> _groupTasksByDate(List<TaskItem> tasks) async {
     final Map<String, List<TaskItem>> grouped = {};
 
     for (final task in tasks) {
@@ -251,19 +260,65 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       grouped[dateKey]!.add(task);
     }
 
-    // 日付順にソート
+    // 日付ごとに順序を適用してソート
+    final sorted = <String, List<TaskItem>>{};
     final sortedKeys = grouped.keys.toList()
       ..sort((a, b) => a.compareTo(b));
-
-    final sorted = <String, List<TaskItem>>{};
+    
     for (final key in sortedKeys) {
-      sorted[key] = grouped[key]!;
+      final tasksForDate = grouped[key]!;
+      // 順序情報を読み込んでソート
+      sorted[key] = await _loadAndSortTasksByOrder(key, tasksForDate);
     }
 
     return sorted;
   }
 
-  Widget _buildDateGroup(DateTime date, List<TaskItem> tasks, double fontSize) {
+  /// 日付ごとのタスク順序を読み込んでソート
+  Future<List<TaskItem>> _loadAndSortTasksByOrder(String dateKey, List<TaskItem> tasks) async {
+    try {
+      final box = await Hive.openBox('taskDates');
+      final orderKey = 'schedule_order_$dateKey';
+      final orderData = box.get(orderKey);
+      
+      if (orderData != null && orderData is List) {
+        // 保存されている順序に従ってソート
+        final orderMap = <String, int>{};
+        for (int i = 0; i < orderData.length; i++) {
+          if (orderData[i] is String) {
+            orderMap[orderData[i]] = i;
+          }
+        }
+        
+        tasks.sort((a, b) {
+          final aOrder = orderMap[a.id];
+          final bOrder = orderMap[b.id];
+          if (aOrder == null && bOrder == null) return 0;
+          if (aOrder == null) return 1; // 順序が設定されていないタスクは最後
+          if (bOrder == null) return -1;
+          return aOrder.compareTo(bOrder);
+        });
+      }
+    } catch (e) {
+      print('タスク順序読み込みエラー ($dateKey): $e');
+    }
+    
+    return tasks;
+  }
+
+  /// タスクの順序を保存
+  Future<void> _saveTaskOrder(String dateKey, List<TaskItem> tasks) async {
+    try {
+      final box = await Hive.openBox('taskDates');
+      final orderKey = 'schedule_order_$dateKey';
+      final taskIds = tasks.map((t) => t.id).toList();
+      await box.put(orderKey, taskIds);
+    } catch (e) {
+      print('タスク順序保存エラー ($dateKey): $e');
+    }
+  }
+
+  Widget _buildDateGroup(DateTime date, List<TaskItem> tasks, List<TaskItem> allFilteredTasks, double fontSize) {
     final now = DateTime.now();
     final isToday = date.year == now.year &&
         date.month == now.month &&
@@ -314,84 +369,176 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               ),
               const Spacer(),
               // 統計情報
-              Row(
-                children: [
-                  // 完了タスク数
-                  if (tasks.any((t) => t.status == TaskStatus.completed))
-                    Container(
-                      margin: const EdgeInsets.only(right: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.green[400],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${tasks.where((t) => t.status == TaskStatus.completed).length}完了',
-                        style: TextStyle(
-                          fontSize: 9 * fontSize,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  // 期限切れタスク数
-                  Builder(
-                    builder: (context) {
-                      final now = DateTime.now();
-                      final overdueCount = tasks.where((t) {
-                        if (t.dueDate == null) return false;
-                        return t.dueDate!.isBefore(now) && t.status != TaskStatus.completed;
-                      }).length;
-                      
-                      if (overdueCount > 0) {
-                        return Container(
+              Builder(
+                builder: (context) {
+                  // 週/月の集計を計算
+                  final weekTasks = _getWeekTasks(date, allFilteredTasks);
+                  final monthTasks = _getMonthTasks(date, allFilteredTasks);
+                  final weekCount = weekTasks.length;
+                  final monthCount = monthTasks.length;
+                  
+                  return Row(
+                    children: [
+                      // 週の集計（月曜日または週の最初の日の場合のみ表示）
+                      if (date.weekday == 1 || _isWeekStart(date, allFilteredTasks))
+                        Container(
                           margin: const EdgeInsets.only(right: 4),
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.red[400],
+                            color: Colors.blue[300],
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            '$overdueCount期限切れ',
+                            '週:$weekCount',
                             style: TextStyle(
                               fontSize: 9 * fontSize,
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                  // 総タスク数
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isToday
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey[400],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${tasks.length}件',
-                      style: TextStyle(
-                        fontSize: 11 * fontSize,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        ),
+                      // 月の集計（月初の場合のみ表示）
+                      if (date.day == 1)
+                        Container(
+                          margin: const EdgeInsets.only(right: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.purple[300],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '月:$monthCount',
+                            style: TextStyle(
+                              fontSize: 9 * fontSize,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      // 完了タスク数
+                      if (tasks.any((t) => t.status == TaskStatus.completed))
+                        Container(
+                          margin: const EdgeInsets.only(right: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.green[400],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${tasks.where((t) => t.status == TaskStatus.completed).length}完了',
+                            style: TextStyle(
+                              fontSize: 9 * fontSize,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      // 期限切れタスク数
+                      Builder(
+                        builder: (context) {
+                          final now = DateTime.now();
+                          final overdueCount = tasks.where((t) {
+                            if (t.dueDate == null) return false;
+                            return t.dueDate!.isBefore(now) && t.status != TaskStatus.completed;
+                          }).length;
+                          
+                          if (overdueCount > 0) {
+                            return Container(
+                              margin: const EdgeInsets.only(right: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.red[400],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '$overdueCount期限切れ',
+                                style: TextStyle(
+                                  fontSize: 9 * fontSize,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
                       ),
-                    ),
-                  ),
-                ],
+                      // 総タスク数
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isToday
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey[400],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${tasks.length}件',
+                          style: TextStyle(
+                            fontSize: 11 * fontSize,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
         ),
         const SizedBox(height: 8),
-        // タスクリスト
-        ...tasks.map((task) => _buildTaskItem(task, date, fontSize)),
+        // タスクリスト（ReorderableListViewで並び替え可能）
+        _buildReorderableTaskList(tasks, date, fontSize),
         const SizedBox(height: 24),
       ],
+    );
+  }
+
+  /// 並び替え可能なタスクリストを構築
+  Widget _buildReorderableTaskList(List<TaskItem> tasks, DateTime date, double fontSize) {
+    if (tasks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    final dateKey = DateFormat('yyyy-MM-dd').format(date);
+    
+    // タスクリストのコピーを作成（状態を変更するため）
+    final tasksCopy = List<TaskItem>.from(tasks);
+    
+    return ReorderableListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: tasksCopy.length,
+      onReorder: (oldIndex, newIndex) async {
+        // インデックス調整（ReorderableListViewの仕様）
+        if (newIndex > oldIndex) {
+          newIndex -= 1;
+        }
+        
+        // タスクの順序を更新
+        final movedTask = tasksCopy.removeAt(oldIndex);
+        tasksCopy.insert(newIndex, movedTask);
+        
+        // 順序を保存
+        await _saveTaskOrder(dateKey, tasksCopy);
+        
+        // 状態を更新（再ビルドをトリガー）
+        setState(() {});
+      },
+      itemBuilder: (context, index) {
+        final task = tasksCopy[index];
+        return _buildTaskItemWithKey(task, date, fontSize, index, key: ValueKey(task.id));
+      },
+    );
+  }
+
+  /// キー付きタスクアイテムを構築（ReorderableListView用）
+  Widget _buildTaskItemWithKey(TaskItem task, DateTime dueDate, double fontSize, int index, {required Key key}) {
+    return Container(
+      key: key,
+      child: _buildTaskItem(task, dueDate, fontSize),
     );
   }
 
@@ -660,6 +807,49 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     } else {
       return Colors.green; // 余裕あり
     }
+  }
+
+  /// 指定日付を含む週のタスクを取得
+  List<TaskItem> _getWeekTasks(DateTime date, List<TaskItem> allTasks) {
+    // 週の開始日（月曜日）を計算
+    final weekStart = date.subtract(Duration(days: date.weekday - 1));
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    
+    return allTasks.where((task) {
+      if (task.dueDate == null) return false;
+      final taskDate = DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
+      return !taskDate.isBefore(weekStart) && !taskDate.isAfter(weekEnd);
+    }).toList();
+  }
+
+  /// 指定日付を含む月のタスクを取得
+  List<TaskItem> _getMonthTasks(DateTime date, List<TaskItem> allTasks) {
+    final monthStart = DateTime(date.year, date.month, 1);
+    final nextMonthStart = DateTime(date.year, date.month + 1, 1);
+    
+    return allTasks.where((task) {
+      if (task.dueDate == null) return false;
+      final taskDate = DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
+      return !taskDate.isBefore(monthStart) && taskDate.isBefore(nextMonthStart);
+    }).toList();
+  }
+
+  /// 指定日付が週の最初の日（表示範囲内）かどうかを判定
+  bool _isWeekStart(DateTime date, List<TaskItem> allTasks) {
+    // 週の開始日（月曜日）を計算
+    final weekStart = date.subtract(Duration(days: date.weekday - 1));
+    
+    // 同じ週にタスクがあるかチェック
+    final weekTasks = _getWeekTasks(date, allTasks);
+    if (weekTasks.isEmpty) return false;
+    
+    // 週の最初のタスクの日付を取得
+    final firstTaskDate = weekTasks.map((t) => t.dueDate!).reduce((a, b) => a.isBefore(b) ? a : b);
+    final firstTaskDateNormalized = DateTime(firstTaskDate.year, firstTaskDate.month, firstTaskDate.day);
+    
+    return firstTaskDateNormalized.year == weekStart.year &&
+           firstTaskDateNormalized.month == weekStart.month &&
+           firstTaskDateNormalized.day == weekStart.day;
   }
 
   String _getDayOfWeek(DateTime date) {

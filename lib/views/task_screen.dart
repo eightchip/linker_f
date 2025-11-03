@@ -2582,6 +2582,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       final filteredTasks = _getFilteredTasks(tasks);
       final subTasks = ref.read(subTaskViewModelProvider);
       
+      // 列選択ダイアログを表示
+      final columns = CsvExport.getColumns();
+      final selectedColumns = await _showColumnSelectionDialog(columns);
+      
+      if (selectedColumns == null) {
+        // ユーザーがキャンセルした場合
+        return;
+      }
+      
       // ファイルダイアログで保存場所を選択
       final now = DateTime.now();
       final formatted = DateFormat('yyMMdd_HHmm').format(now);
@@ -2608,8 +2617,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
       final tempFile = File('${tempDir.path}/temp_$defaultFileName');
       
       try {
-        // 一時ファイルにCSVを出力（フィルター適用済みタスクのみ）
-        await CsvExport.exportTasksToCsv(filteredTasks, subTasks, tempFile.path);
+        // 一時ファイルにCSVを出力（フィルター適用済みタスクのみ、選択された列のみ）
+        await CsvExport.exportTasksToCsv(
+          filteredTasks,
+          subTasks,
+          tempFile.path,
+          selectedColumns: selectedColumns,
+        );
         
         // 一時ファイルを目的の場所に移動
         final targetFile = File(outputFile);
@@ -2647,6 +2661,94 @@ class _TaskScreenState extends ConsumerState<TaskScreen> {
         );
       }
     }
+  }
+
+  /// CSV出力の列選択ダイアログを表示
+  Future<Set<String>?> _showColumnSelectionDialog(List<Map<String, String>> columns) async {
+    // デフォルトで全列を選択
+    final selectedColumnIds = columns.map((c) => c['id']!).toSet();
+    
+    return await showDialog<Set<String>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('CSV出力する列を選択'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 全選択/全解除ボタン
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        setDialogState(() {
+                          selectedColumnIds.clear();
+                          selectedColumnIds.addAll(columns.map((c) => c['id']!));
+                        });
+                      },
+                      child: const Text('すべて選択'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setDialogState(() {
+                          selectedColumnIds.clear();
+                        });
+                      },
+                      child: const Text('すべて解除'),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                // 列のチェックボックス
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: columns.length,
+                    itemBuilder: (context, index) {
+                      final column = columns[index];
+                      final columnId = column['id']!;
+                      final columnLabel = column['label']!;
+                      final isSelected = selectedColumnIds.contains(columnId);
+                      
+                      return CheckboxListTile(
+                        title: Text(columnLabel),
+                        value: isSelected,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            if (value == true) {
+                              selectedColumnIds.add(columnId);
+                            } else {
+                              selectedColumnIds.remove(columnId);
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: selectedColumnIds.isEmpty
+                  ? null
+                  : () {
+                      Navigator.pop(context, Set<String>.from(selectedColumnIds));
+                    },
+              child: const Text('出力'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // キーボードショートカット処理（ショートカット専用）
