@@ -224,6 +224,7 @@ class TaskProjectLayoutSettings {
   final double cardWidth;  // カードの幅（px）
   final double cardHeight; // カードの高さ（px）
   final bool autoAdjustLayout;
+  final bool autoAdjustCardHeight; // カード高さをコンテンツに応じて自動調整
   final double titleFontSize; // タイトルフォントサイズ（倍率）
   final double memoFontSize; // メモフォントサイズ（倍率）
   final double descriptionFontSize; // 説明フォントサイズ（倍率）
@@ -234,6 +235,7 @@ class TaskProjectLayoutSettings {
     this.cardWidth = 180.0,  // デフォルト幅（タスクグリッドビュー用）
     this.cardHeight = 160.0, // デフォルト高さ（タスクグリッドビュー用）
     this.autoAdjustLayout = true,
+    this.autoAdjustCardHeight = false, // デフォルトはオフ
     this.titleFontSize = 1.0,
     this.memoFontSize = 1.0,
     this.descriptionFontSize = 1.0,
@@ -245,6 +247,7 @@ class TaskProjectLayoutSettings {
     double? cardWidth,
     double? cardHeight,
     bool? autoAdjustLayout,
+    bool? autoAdjustCardHeight,
     double? titleFontSize,
     double? memoFontSize,
     double? descriptionFontSize,
@@ -255,6 +258,7 @@ class TaskProjectLayoutSettings {
       cardWidth: cardWidth ?? this.cardWidth,
       cardHeight: cardHeight ?? this.cardHeight,
       autoAdjustLayout: autoAdjustLayout ?? this.autoAdjustLayout,
+      autoAdjustCardHeight: autoAdjustCardHeight ?? this.autoAdjustCardHeight,
       titleFontSize: titleFontSize ?? this.titleFontSize,
       memoFontSize: memoFontSize ?? this.memoFontSize,
       descriptionFontSize: descriptionFontSize ?? this.descriptionFontSize,
@@ -268,6 +272,7 @@ class TaskProjectLayoutSettings {
       'cardWidth': cardWidth,
       'cardHeight': cardHeight,
       'autoAdjustLayout': autoAdjustLayout,
+      'autoAdjustCardHeight': autoAdjustCardHeight,
       'titleFontSize': titleFontSize,
       'memoFontSize': memoFontSize,
       'descriptionFontSize': descriptionFontSize,
@@ -281,6 +286,7 @@ class TaskProjectLayoutSettings {
       cardWidth: json['cardWidth']?.toDouble() ?? 180.0,
       cardHeight: json['cardHeight']?.toDouble() ?? 160.0,
       autoAdjustLayout: json['autoAdjustLayout'] ?? true,
+      autoAdjustCardHeight: json['autoAdjustCardHeight'] ?? false,
       titleFontSize: json['titleFontSize']?.toDouble() ?? 1.0,
       memoFontSize: json['memoFontSize']?.toDouble() ?? 1.0,
       descriptionFontSize: json['descriptionFontSize']?.toDouble() ?? 1.0,
@@ -342,6 +348,11 @@ class TaskProjectLayoutSettingsNotifier extends StateNotifier<TaskProjectLayoutS
 
   void toggleAutoAdjustLayout() {
     state = state.copyWith(autoAdjustLayout: !state.autoAdjustLayout);
+    _saveSettings();
+  }
+
+  void toggleAutoAdjustCardHeight() {
+    state = state.copyWith(autoAdjustCardHeight: !state.autoAdjustCardHeight);
     _saveSettings();
   }
 

@@ -2375,6 +2375,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         
         const SizedBox(height: 16),
         
+        // カード高さ自動調整
+        SwitchListTile(
+          title: const Text('カード高さ自動調整'),
+          subtitle: const Text('コンテンツ量に応じてカードの高さを自動調整（手動設定の高さを最小値として使用）'),
+          value: taskProjectLayoutSettings.autoAdjustCardHeight,
+          onChanged: (value) => notifier.toggleAutoAdjustCardHeight(),
+        ),
+        
+        const SizedBox(height: 16),
+        
         // カード設定
         Card(
           child: Padding(

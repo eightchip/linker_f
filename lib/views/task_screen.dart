@@ -5768,17 +5768,33 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                       ],
                     ),
                   )
-                : GridView.builder(
-                    padding: EdgeInsets.all(layoutSettings.defaultGridSpacing * 0.75),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: childAspectRatio,
-                      crossAxisSpacing: layoutSettings.defaultGridSpacing,
-                      mainAxisSpacing: layoutSettings.defaultGridSpacing,
-                    ),
-                    itemCount: sortedTasks.length,
-                    itemBuilder: (context, index) {
-                      final task = sortedTasks[index];
+                : layoutSettings.autoAdjustCardHeight
+                    ? _buildAutoHeightGrid(
+                        sortedTasks,
+                        crossAxisCount,
+                        cardWidth,
+                        cardHeight,
+                        layoutSettings.defaultGridSpacing,
+                        now,
+                        fontSize,
+                        titleFontSize,
+                        titleFontFamily,
+                        memoFontSize,
+                        memoFontFamily,
+                        descriptionFontSize,
+                        descriptionFontFamily,
+                      )
+                    : GridView.builder(
+                        padding: EdgeInsets.all(layoutSettings.defaultGridSpacing * 0.75),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: childAspectRatio,
+                          crossAxisSpacing: layoutSettings.defaultGridSpacing,
+                          mainAxisSpacing: layoutSettings.defaultGridSpacing,
+                        ),
+                        itemCount: sortedTasks.length,
+                        itemBuilder: (context, index) {
+                          final task = sortedTasks[index];
                       
                       // カードカラー（期限日に基づいた色分け）
                       final Color? dueColor = task.dueDate != null
@@ -6116,6 +6132,373 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
             ),
           ),
         ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 自動高さ調整対応のグリッドビューを構築
+  Widget _buildAutoHeightGrid(
+    List<TaskItem> tasks,
+    int crossAxisCount,
+    double cardWidth,
+    double minCardHeight,
+    double gridSpacing,
+    DateTime now,
+    double fontSize,
+    double titleFontSize,
+    String titleFontFamily,
+    double memoFontSize,
+    String memoFontFamily,
+    double descriptionFontSize,
+    String descriptionFontFamily,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 利用可能な幅を計算
+        final availableWidth = constraints.maxWidth;
+        final padding = gridSpacing * 0.75;
+        final effectiveWidth = availableWidth - (padding * 2);
+        final crossAxisSpacing = gridSpacing;
+        final itemWidth = (effectiveWidth - (crossAxisCount - 1) * crossAxisSpacing) / crossAxisCount;
+        
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(padding),
+          child: Wrap(
+            spacing: crossAxisSpacing,
+            runSpacing: gridSpacing,
+            alignment: WrapAlignment.start,
+            children: tasks.map((task) {
+              return SizedBox(
+                width: itemWidth,
+                child: _buildAutoHeightCard(
+                  task,
+                  itemWidth,
+                  minCardHeight,
+                  now,
+                  fontSize,
+                  titleFontSize,
+                  titleFontFamily,
+                  memoFontSize,
+                  memoFontFamily,
+                  descriptionFontSize,
+                  descriptionFontFamily,
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 自動高さ調整対応のカードを構築
+  Widget _buildAutoHeightCard(
+    TaskItem task,
+    double cardWidth,
+    double minCardHeight,
+    DateTime now,
+    double fontSize,
+    double titleFontSize,
+    String titleFontFamily,
+    double memoFontSize,
+    String memoFontFamily,
+    double descriptionFontSize,
+    String descriptionFontFamily,
+  ) {
+    // カードカラー（期限日に基づいた色分け）
+    final Color cardBg = _getCardBackgroundColor(task, now);
+    final Color borderColor = _getCardBorderColor(task, now);
+    final statusBadge = _getTaskStatusBadge(task.status);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: borderColor, width: 1),
+      ),
+      color: cardBg,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        focusColor: Colors.transparent,
+        canRequestFocus: false,
+        onTap: () {
+          if (_isSelectionMode) {
+            setState(() {
+              if (_selectedTaskIds.contains(task.id)) {
+                _selectedTaskIds.remove(task.id);
+              } else {
+                _selectedTaskIds.add(task.id);
+              }
+            });
+          } else {
+            showDialog(
+              context: context,
+              builder: (context) => TaskDialog(task: task),
+            );
+          }
+        },
+        child: Padding(
+          padding: EdgeInsets.all(8 * fontSize),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // タイトル
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_isSelectionMode)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4, top: 2),
+                      child: Checkbox(
+                        value: _selectedTaskIds.contains(task.id),
+                        onChanged: (_) {
+                          setState(() {
+                            if (_selectedTaskIds.contains(task.id)) {
+                              _selectedTaskIds.remove(task.id);
+                            } else {
+                              _selectedTaskIds.add(task.id);
+                            }
+                          });
+                        },
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  Expanded(
+                    child: Text(
+                      task.title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14 * fontSize * titleFontSize,
+                        fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
+                        color: _getTextColorForCardBackground(cardBg),
+                      ),
+                      maxLines: null, // 自動高さ調整時は行数制限を緩和
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  // ステータスバッジ
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6 * fontSize, vertical: 2 * fontSize),
+                    decoration: BoxDecoration(
+                      color: statusBadge['color'].withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: statusBadge['color'].withOpacity(0.4), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          statusBadge['icon'] as IconData,
+                          size: 10 * fontSize,
+                          color: statusBadge['color'],
+                        ),
+                        SizedBox(width: 2 * fontSize),
+                        Text(
+                          statusBadge['text'] as String,
+                          style: TextStyle(
+                            color: statusBadge['color'],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 9 * fontSize,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              // 期限
+              if (task.dueDate != null) ...[
+                SizedBox(height: 4 * fontSize),
+                Builder(
+                  builder: (context) {
+                    final Color badgeColor;
+                    final difference = task.dueDate!.difference(now).inDays;
+                    if (difference < 0) {
+                      badgeColor = Colors.red.shade700;
+                    } else if (difference == 0) {
+                      badgeColor = Colors.orange.shade700;
+                    } else if (difference <= 3) {
+                      badgeColor = Colors.amber.shade700;
+                    } else {
+                      badgeColor = Colors.blue.shade700;
+                    }
+                    
+                    return Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8 * fontSize, vertical: 5 * fontSize),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: badgeColor, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                          BoxShadow(
+                            color: badgeColor.withOpacity(0.1),
+                            blurRadius: 2,
+                            offset: const Offset(0, 0),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.schedule, size: 13 * fontSize, color: badgeColor),
+                          SizedBox(width: 4 * fontSize),
+                          Text(
+                            DateFormat('MM/dd').format(task.dueDate!),
+                            style: TextStyle(
+                              color: badgeColor,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12 * fontSize,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ] else ...[
+                SizedBox(height: 4 * fontSize),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8 * fontSize, vertical: 6 * fontSize),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12 * fontSize),
+                    border: Border.all(color: Colors.green.shade300, width: 2),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.schedule, size: 13 * fontSize, color: Colors.green.shade900),
+                      SizedBox(width: 4 * fontSize),
+                      Text(
+                        '未設定',
+                        style: TextStyle(
+                          color: Colors.green.shade900,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11 * fontSize,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              // メモまたは依頼先
+              if (task.assignedTo != null && task.assignedTo!.isNotEmpty) ...[
+                SizedBox(height: 4 * fontSize),
+                Row(
+                  children: [
+                    Icon(Icons.person, size: 10 * fontSize, color: Colors.grey[600]),
+                    SizedBox(width: 2 * fontSize),
+                    Expanded(
+                      child: Text(
+                        task.assignedTo!,
+                        style: TextStyle(
+                          color: Color(ref.watch(memoTextColorProvider)),
+                          fontSize: 10 * fontSize * memoFontSize,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
+                        ),
+                        maxLines: null, // 自動高さ調整時は行数制限を緩和
+                        overflow: TextOverflow.visible,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (task.notes != null && task.notes!.isNotEmpty) ...[
+                SizedBox(height: 4 * fontSize),
+                Row(
+                  children: [
+                    Icon(Icons.note, size: 10 * fontSize, color: Colors.grey[600]),
+                    SizedBox(width: 2 * fontSize),
+                    Expanded(
+                      child: Text(
+                        task.notes!,
+                        style: TextStyle(
+                          color: Color(ref.watch(memoTextColorProvider)),
+                          fontSize: 10 * fontSize * memoFontSize,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
+                        ),
+                        maxLines: null, // 自動高さ調整時は行数制限を緩和
+                        overflow: TextOverflow.visible,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              // 本文（説明）
+              if (task.description != null && task.description!.isNotEmpty) ...[
+                SizedBox(height: 4 * fontSize),
+                _buildDescriptionWithTooltipGrid(
+                  task.description!,
+                  fontSize,
+                  descriptionFontSize,
+                  descriptionFontFamily,
+                ),
+              ],
+              // サブタスク進捗
+              if (task.hasSubTasks && task.totalSubTasksCount > 0) ...[
+                SizedBox(height: 4 * fontSize),
+                _buildSubTaskProgressWithTooltip(task, fontSize),
+              ],
+              // タグ
+              if (task.tags.isNotEmpty) ...[
+                SizedBox(height: 4 * fontSize),
+                Wrap(
+                  spacing: 2 * fontSize,
+                  runSpacing: 2 * fontSize,
+                  children: task.tags.map((tag) {
+                    return Container(
+                      padding: EdgeInsets.symmetric(horizontal: 4 * fontSize, vertical: 2 * fontSize),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        tag,
+                        style: TextStyle(
+                          fontSize: 8 * fontSize,
+                          color: Colors.grey[700],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+              // 推定時間
+              if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) ...[
+                SizedBox(height: 4 * fontSize),
+                Row(
+                  children: [
+                    Icon(Icons.access_time, size: 10 * fontSize, color: Colors.grey[600]),
+                    SizedBox(width: 2 * fontSize),
+                    Text(
+                      task.estimatedMinutes! >= 60
+                          ? '${task.estimatedMinutes! ~/ 60}時間${task.estimatedMinutes! % 60 > 0 ? '${task.estimatedMinutes! % 60}分' : ''}'
+                          : '${task.estimatedMinutes}分',
+                      style: TextStyle(
+                        fontSize: 9 * fontSize,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ),
         ),
       ),
