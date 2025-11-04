@@ -3481,7 +3481,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
   void _showProjectOverview() {
     showDialog(
       context: context,
-      builder: (context) => _ProjectOverviewDialog(),
+      builder: (context) => _ProjectOverviewDialog(
+        onPinChanged: () {
+          // ピン状態が変更されたら、親の状態も再読み込み
+          setState(() {
+            _loadPinnedTasks();
+          });
+        },
+      ),
     );
   }
 
@@ -5454,6 +5461,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
 
 /// タスクグリッドビューダイアログ
 class _ProjectOverviewDialog extends ConsumerStatefulWidget {
+  final VoidCallback? onPinChanged; // ピン状態変更時のコールバック
+  
+  const _ProjectOverviewDialog({this.onPinChanged});
+  
   @override
   ConsumerState<_ProjectOverviewDialog> createState() => _ProjectOverviewDialogState();
 }
@@ -5529,6 +5540,8 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
         _pinnedTaskIds.add(taskId);
       }
       _savePinnedTasks();
+      // 親の状態も更新するためにコールバックを呼び出す
+      widget.onPinChanged?.call();
     });
   }
 
