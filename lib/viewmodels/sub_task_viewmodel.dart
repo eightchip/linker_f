@@ -241,11 +241,17 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
   // サブタスクの並び替えを処理
   Future<void> updateSubTaskOrders(List<SubTask> reorderedSubTasks) async {
     try {
+      if (_subTaskBox == null || !_subTaskBox!.isOpen) {
+        await _loadSubTasks();
+      }
+      
       // 新しい順序でサブタスクを保存
       for (int i = 0; i < reorderedSubTasks.length; i++) {
         final subTask = reorderedSubTasks[i].copyWith(order: i);
         await _subTaskBox!.put(subTask.id, subTask);
       }
+      
+      await _subTaskBox!.flush(); // データの永続化を確実にする
       
       // 状態を更新
       final allSubTasks = _subTaskBox!.values.toList();
@@ -253,7 +259,7 @@ class SubTaskViewModel extends StateNotifier<List<SubTask>> {
       state = allSubTasks;
       
       if (kDebugMode) {
-        print('サブタスクの並び替えが完了しました');
+        print('サブタスクの並び替えが完了しました: ${reorderedSubTasks.length}件');
       }
     } catch (e) {
       if (kDebugMode) {

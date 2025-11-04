@@ -842,11 +842,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         
         const SizedBox(height: 16),
         
-        // メモ設定
+        // 本文設定
         _buildFieldSettings(
           context, 
           ref, 
-          '依頼先やメモ', 
+          '本文', 
           memoTextColorProvider, 
           memoFontSizeProvider, 
           memoFontFamilyProvider,
@@ -855,11 +855,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         
         const SizedBox(height: 16),
         
-        // 説明設定
+        // 依頼先への説明設定
         _buildFieldSettings(
           context, 
           ref, 
-          '説明', 
+          '依頼先への説明', 
           descriptionTextColorProvider, 
           descriptionFontSizeProvider, 
           descriptionFontFamilyProvider,

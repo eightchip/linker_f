@@ -312,7 +312,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
             ),
             const SizedBox(height: 16),
             
-            // サブタスクリスト
+            // サブタスクリスト（並び替え可能）
             Expanded(
               child: subTasks.isEmpty
                   ? const Center(
@@ -324,19 +324,44 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                         ),
                       ),
                     )
-                  : ListView.builder(
+                  : ReorderableListView.builder(
                       itemCount: subTasks.length,
+                      onReorder: (oldIndex, newIndex) async {
+                        if (oldIndex < newIndex) {
+                          newIndex -= 1;
+                        }
+                        final List<SubTask> reorderedSubTasks = List.from(subTasks);
+                        final SubTask movedSubTask = reorderedSubTasks.removeAt(oldIndex);
+                        reorderedSubTasks.insert(newIndex, movedSubTask);
+                        
+                        // 順序を更新してViewModelに保存
+                        final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
+                        await subTaskViewModel.updateSubTaskOrders(reorderedSubTasks);
+                        
+                        // UIを更新
+                        ref.invalidate(subTaskViewModelProvider);
+                        setState(() {});
+                      },
                       itemBuilder: (context, index) {
                         final subTask = subTasks[index];
                         return Card(
                           key: ValueKey(subTask.id),
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
-                            leading: Checkbox(
-                              value: subTask.isCompleted,
-                              onChanged: (value) {
-                                _toggleSubTaskCompletion(subTask.id, subTask.isCompleted);
-                              },
+                            leading: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Checkbox(
+                                  value: subTask.isCompleted,
+                                  onChanged: (value) {
+                                    _toggleSubTaskCompletion(subTask.id, subTask.isCompleted);
+                                  },
+                                ),
+                                Icon(
+                                  Icons.drag_handle,
+                                  color: Colors.grey[400],
+                                ),
+                              ],
                             ),
                             title: Text(
                               subTask.title,

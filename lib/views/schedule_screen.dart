@@ -19,7 +19,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now().add(const Duration(days: 30));
   final Map<String, Map<String, DateTime?>> _taskDatesCache = {};
-  TaskStatus? _filterStatus;
+  Set<TaskStatus> _filterStatuses = {}; // 複数ステータス選択に対応
   TaskPriority? _filterPriority;
   bool _showPeriodBarLegend = true; // 期間バーの凡例を表示
 
@@ -68,9 +68,9 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     // 期限日があるタスクのみをフィルタリング
     var filteredTasks = tasks.where((task) => task.dueDate != null).toList();
     
-    // ステータスフィルター適用
-    if (_filterStatus != null) {
-      filteredTasks = filteredTasks.where((task) => task.status == _filterStatus).toList();
+    // ステータスフィルター適用（複数選択対応）
+    if (_filterStatuses.isNotEmpty) {
+      filteredTasks = filteredTasks.where((task) => _filterStatuses.contains(task.status)).toList();
     }
     
     // 優先度フィルター適用
@@ -132,7 +132,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             icon: Stack(
               children: [
                 const Icon(Icons.filter_list),
-                if (_filterStatus != null || _filterPriority != null)
+                if (_filterStatuses.isNotEmpty || _filterPriority != null)
                   Positioned(
                     right: 0,
                     top: 0,
@@ -1790,7 +1790,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
   /// フィルターダイアログを表示
   Future<void> _showFilterDialog() async {
-    TaskStatus? selectedStatus = _filterStatus;
+    Set<TaskStatus> selectedStatuses = Set<TaskStatus>.from(_filterStatuses);
     TaskPriority? selectedPriority = _filterPriority;
 
     await showDialog(
@@ -1803,7 +1803,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'ステータス',
+                'ステータス（複数選択可）',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 8),
@@ -1811,43 +1811,69 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _buildFilterChip<TaskStatus?>(
+                  _buildFilterChip<bool>(
                     'すべて',
-                    null,
-                    selectedStatus == null,
+                    true,
+                    selectedStatuses.isEmpty,
                     (value) {
                       setDialogState(() {
-                        selectedStatus = null;
+                        selectedStatuses.clear();
                       });
                     },
                   ),
                   _buildFilterChip<TaskStatus>(
                     '未着手',
                     TaskStatus.pending,
-                    selectedStatus == TaskStatus.pending,
+                    selectedStatuses.contains(TaskStatus.pending),
                     (value) {
                       setDialogState(() {
-                        selectedStatus = value;
+                        if (selectedStatuses.contains(value)) {
+                          selectedStatuses.remove(value);
+                        } else {
+                          selectedStatuses.add(value);
+                        }
                       });
                     },
                   ),
                   _buildFilterChip<TaskStatus>(
                     '進行中',
                     TaskStatus.inProgress,
-                    selectedStatus == TaskStatus.inProgress,
+                    selectedStatuses.contains(TaskStatus.inProgress),
                     (value) {
                       setDialogState(() {
-                        selectedStatus = value;
+                        if (selectedStatuses.contains(value)) {
+                          selectedStatuses.remove(value);
+                        } else {
+                          selectedStatuses.add(value);
+                        }
                       });
                     },
                   ),
                   _buildFilterChip<TaskStatus>(
                     '完了',
                     TaskStatus.completed,
-                    selectedStatus == TaskStatus.completed,
+                    selectedStatuses.contains(TaskStatus.completed),
                     (value) {
                       setDialogState(() {
-                        selectedStatus = value;
+                        if (selectedStatuses.contains(value)) {
+                          selectedStatuses.remove(value);
+                        } else {
+                          selectedStatuses.add(value);
+                        }
+                      });
+                    },
+                  ),
+                  _buildFilterChip<TaskStatus>(
+                    '取消',
+                    TaskStatus.cancelled,
+                    selectedStatuses.contains(TaskStatus.cancelled),
+                    (value) {
+                      setDialogState(() {
+                        if (selectedStatuses.contains(value)) {
+                          selectedStatuses.remove(value);
+                        } else {
+                          selectedStatuses.add(value);
+                        }
                       });
                     },
                   ),
@@ -1921,7 +1947,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  _filterStatus = null;
+                  _filterStatuses.clear();
                   _filterPriority = null;
                 });
                 Navigator.pop(context);
@@ -1935,7 +1961,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             ElevatedButton(
               onPressed: () {
                 setState(() {
-                  _filterStatus = selectedStatus;
+                  _filterStatuses = selectedStatuses;
                   _filterPriority = selectedPriority;
                 });
                 Navigator.pop(context);

@@ -18,6 +18,7 @@ import '../models/sent_mail_log.dart';
 import '../widgets/app_button_styles.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../widgets/link_association_dialog.dart';
+import '../views/home_screen.dart'; // UrlPreviewWidget, FilePreviewWidget用
 import 'package:hive/hive.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
@@ -991,6 +992,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         _buildReminderToggle(context),
         const SizedBox(height: 12),
         _buildLinkAssociationButton(context),
+        if (widget.task != null) ...[
+          const SizedBox(height: 8),
+          _buildRelatedLinksList(context),
+        ],
         const SizedBox(height: 12),
         _buildPinButton(context),
       ],
@@ -1430,6 +1435,131 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     );
   }
 
+  /// 関連リンクの一覧を構築（クリック可能）
+  Widget _buildRelatedLinksList(BuildContext context) {
+    if (widget.task == null) return const SizedBox.shrink();
+    
+    // 最新のタスクデータを取得
+    final tasks = ref.watch(taskViewModelProvider);
+    final currentTask = tasks.firstWhere(
+      (t) => t.id == widget.task!.id,
+      orElse: () => widget.task!,
+    );
+    
+    final relatedLinks = _getRelatedLinks(currentTask);
+    if (relatedLinks.isEmpty) return const SizedBox.shrink();
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)
+              : Colors.grey.shade200,
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.3)
+            : Colors.grey.shade50,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '関連リンク',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...relatedLinks.map((link) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: InkWell(
+                onTap: () {
+                  try {
+                    final linkViewModel = ref.read(linkViewModelProvider.notifier);
+                    linkViewModel.launchLink(link);
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('リンクを開けませんでした: ${link.label}')),
+                      );
+                    }
+                  }
+                },
+                child: Row(
+                  children: [
+                    // Faviconまたはアイコンを表示
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: _buildFaviconOrIconForDialog(link, Theme.of(context)),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Tooltip(
+                        message: link.memo != null && link.memo!.isNotEmpty 
+                            ? link.memo! 
+                            : 'メモはリンク管理画面から追加可能',
+                        waitDuration: const Duration(milliseconds: 500),
+                        child: Text(
+                          link.label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.blue[800],
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.blue[800],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  /// Faviconまたはアイコンを構築（タスク編集モーダル用）
+  Widget _buildFaviconOrIconForDialog(LinkItem link, ThemeData theme) {
+    if (link.type == LinkType.url) {
+      return UrlPreviewWidget(
+        url: link.path, 
+        isDark: theme.brightness == Brightness.dark,
+        fallbackDomain: link.faviconFallbackDomain,
+      );
+    } else if (link.type == LinkType.file) {
+      return FilePreviewWidget(
+        path: link.path,
+        isDark: theme.brightness == Brightness.dark,
+      );
+    } else {
+      // フォルダの場合
+      if (link.iconData != null) {
+        return Icon(
+          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
+          color: link.iconColor != null ? Color(link.iconColor!) : Colors.orange,
+          size: 16,
+        );
+      } else {
+        return Icon(
+          Icons.folder,
+          color: Colors.orange,
+          size: 16,
+        );
+      }
+    }
+  }
+
   // サブタスク編集セクション（トグル版）
   Widget _buildSubTaskSectionToggle() {
     final subTasks = ref.watch(subTaskViewModelProvider)
@@ -1685,26 +1815,53 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
               ),
             if (widget.task != null)
-              ListView.builder(
+              ReorderableListView.builder(
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
                 itemCount: subTasks.length,
+                onReorder: (oldIndex, newIndex) async {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
+                  final List<SubTask> reorderedSubTasks = List.from(subTasks);
+                  final SubTask movedSubTask = reorderedSubTasks.removeAt(oldIndex);
+                  reorderedSubTasks.insert(newIndex, movedSubTask);
+                  
+                  // 順序を更新してViewModelに保存
+                  final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
+                  await subTaskViewModel.updateSubTaskOrders(reorderedSubTasks);
+                  
+                  // UIを更新
+                  ref.invalidate(subTaskViewModelProvider);
+                  setState((){});
+                },
                 itemBuilder: (context, index) {
                   final s = subTasks[index];
                   return ListTile(
+                    key: ValueKey(s.id),
                     dense: true,
-                    leading: Checkbox(
-                      value: s.isCompleted,
-                      onChanged: (_) async {
-                        final vm = ref.read(subTaskViewModelProvider.notifier);
-                        if (s.isCompleted) {
-                          await vm.uncompleteSubTask(s.id);
-                        } else {
-                          await vm.completeSubTask(s.id);
-                        }
-                        await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(widget.task!.id);
-                        setState((){});
-                      },
+                    leading: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Checkbox(
+                          value: s.isCompleted,
+                          onChanged: (_) async {
+                            final vm = ref.read(subTaskViewModelProvider.notifier);
+                            if (s.isCompleted) {
+                              await vm.uncompleteSubTask(s.id);
+                            } else {
+                              await vm.completeSubTask(s.id);
+                            }
+                            await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(widget.task!.id);
+                            setState((){});
+                          },
+                        ),
+                        Icon(
+                          Icons.drag_handle,
+                          color: Colors.grey[400],
+                          size: 20,
+                        ),
+                      ],
                     ),
                     title: Text(s.title, overflow: TextOverflow.ellipsis),
                     subtitle: Row(children: [
