@@ -41,6 +41,63 @@ import '../widgets/app_button_styles.dart';
 import '../widgets/app_spacing.dart';
 import '../widgets/link_association_dialog.dart';
 
+// ショートカットキー用のIntentクラス
+class _ToggleHeaderIntent extends Intent {
+  const _ToggleHeaderIntent();
+}
+
+class _ShowProjectOverviewIntent extends Intent {
+  const _ShowProjectOverviewIntent();
+}
+
+class _ShowSortMenuIntent extends Intent {
+  const _ShowSortMenuIntent();
+}
+
+class _ShowTaskDialogIntent extends Intent {
+  const _ShowTaskDialogIntent();
+}
+
+class _ToggleSelectionModeIntent extends Intent {
+  const _ToggleSelectionModeIntent();
+}
+
+class _ExportCsvIntent extends Intent {
+  const _ExportCsvIntent();
+}
+
+class _ShowSettingsIntent extends Intent {
+  const _ShowSettingsIntent();
+}
+
+class _ShowGroupMenuIntent extends Intent {
+  const _ShowGroupMenuIntent();
+}
+
+class _ShowTaskTemplateIntent extends Intent {
+  const _ShowTaskTemplateIntent();
+}
+
+class _ShowScheduleIntent extends Intent {
+  const _ShowScheduleIntent();
+}
+
+class _NavigateHomeIntent extends Intent {
+  const _NavigateHomeIntent();
+}
+
+class _ShowPopupMenuIntent extends Intent {
+  const _ShowPopupMenuIntent();
+}
+
+class _FocusMenuIntent extends Intent {
+  const _FocusMenuIntent();
+}
+
+class _ShowShortcutHelpIntent extends Intent {
+  const _ShowShortcutHelpIntent();
+}
+
 class TaskScreen extends ConsumerStatefulWidget {
   const TaskScreen({super.key});
 
@@ -167,6 +224,45 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
 
     // 検索クエリの同期はonChangedで処理
     print('=== TaskScreen initState 終了 ===');
+    
+    // WidgetsBindingObserverを追加
+    WidgetsBinding.instance.addObserver(this);
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 画面が再表示されたときにフォーカスを復元（複数回試行で確実に）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _restoreFocusIfNeeded();
+    });
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) _restoreFocusIfNeeded();
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _restoreFocusIfNeeded();
+    });
+  }
+  
+  /// フォーカスを復元する必要がある場合に復元
+  void _restoreFocusIfNeeded() {
+    if (!mounted) return;
+    final route = ModalRoute.of(context);
+    if (route?.isCurrent != true) return; // この画面が表示されていない場合はスキップ
+    
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    final focusWidget = primaryFocus?.context?.widget;
+    
+    // TextField、Dialog、PopupMenuButton以外の場合、フォーカスを復元
+    final shouldRestore = focusWidget is! EditableText && 
+        focusWidget is! Dialog &&
+        primaryFocus?.context?.findAncestorWidgetOfExactType<Dialog>() == null &&
+        primaryFocus?.context?.findAncestorWidgetOfExactType<PopupMenuButton>() == null;
+    
+    if (shouldRestore && !_rootKeyFocus.hasFocus) {
+      print('🔄 フォーカス復元: _rootKeyFocusにフォーカスを戻す');
+      _rootKeyFocus.requestFocus();
+    }
   }
 
   void _loadPinnedTasks() {
@@ -623,76 +719,205 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
       print('🚨 タスクが存在しません！');
     }
 
+    // 画面が表示されたときに確実にフォーカスを復元
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _restoreFocusIfNeeded();
+    });
+    
     return KeyboardShortcutWidget(
-      child: FocusScope(
-        autofocus: false,
-        child: Focus(
-          autofocus: false,
-          canRequestFocus: true,
-          skipTraversal: true,
-          onKeyEvent: (node, event) {
-            if (event is KeyDownEvent) {
-              print('🔑 キーイベント受信: ${event.logicalKey.keyLabel}, Ctrl=${HardwareKeyboard.instance.isControlPressed}, Shift=${HardwareKeyboard.instance.isShiftPressed}');
-              
-              final isControlPressed = HardwareKeyboard.instance.isControlPressed;
-              final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-              
-              // Ctrl+H: 統計・検索バーの表示/非表示（常に有効）
-              if (event.logicalKey == LogicalKeyboardKey.keyH && isControlPressed && !isShiftPressed) {
-                print('✅ Ctrl+H 検出: 統計・検索バー切り替え');
+      child: Shortcuts(
+        shortcuts: <LogicalKeySet, Intent>{
+          // ショートカットキーを定義（フォーカスに依存しない）
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyH): const _ToggleHeaderIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyP): const _ShowProjectOverviewIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO): const _ShowSortMenuIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN): const _ShowTaskDialogIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB): const _ToggleSelectionModeIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyE): const _ExportCsvIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyS): const _ShowSettingsIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyG): const _ShowGroupMenuIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyT): const _ShowTaskTemplateIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyC): const _ShowScheduleIntent(),
+          LogicalKeySet(LogicalKeyboardKey.arrowLeft): const _NavigateHomeIntent(),
+          LogicalKeySet(LogicalKeyboardKey.arrowRight): const _ShowPopupMenuIntent(),
+          LogicalKeySet(LogicalKeyboardKey.arrowDown): const _FocusMenuIntent(),
+          LogicalKeySet(LogicalKeyboardKey.f1): const _ShowShortcutHelpIntent(),
+        },
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            _ToggleHeaderIntent: CallbackAction<_ToggleHeaderIntent>(
+              onInvoke: (_) {
                 setState(() {
                   _showHeaderSection = !_showHeaderSection;
                 });
-                return KeyEventResult.handled;
-              }
-              
-              // F1: ショートカットヘルプ（常に有効）
-              if (event.logicalKey == LogicalKeyboardKey.f1) {
-                print('✅ F1 検出: ショートカットヘルプ表示');
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ShowProjectOverviewIntent: CallbackAction<_ShowProjectOverviewIntent>(
+              onInvoke: (_) {
+                _showProjectOverview();
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ShowSortMenuIntent: CallbackAction<_ShowSortMenuIntent>(
+              onInvoke: (_) {
+                _showSortMenu(context);
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ShowTaskDialogIntent: CallbackAction<_ShowTaskDialogIntent>(
+              onInvoke: (_) {
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  _showTaskDialog();
+                }
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ToggleSelectionModeIntent: CallbackAction<_ToggleSelectionModeIntent>(
+              onInvoke: (_) {
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  _toggleSelectionMode();
+                }
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ExportCsvIntent: CallbackAction<_ExportCsvIntent>(
+              onInvoke: (_) {
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  _exportTasksToCsv();
+                }
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ShowSettingsIntent: CallbackAction<_ShowSettingsIntent>(
+              onInvoke: (_) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ShowGroupMenuIntent: CallbackAction<_ShowGroupMenuIntent>(
+              onInvoke: (_) {
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  _showGroupMenu(context);
+                }
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ShowTaskTemplateIntent: CallbackAction<_ShowTaskTemplateIntent>(
+              onInvoke: (_) {
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  _showTaskTemplate();
+                }
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ShowScheduleIntent: CallbackAction<_ShowScheduleIntent>(
+              onInvoke: (_) {
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ScheduleScreen()),
+                  );
+                }
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _NavigateHomeIntent: CallbackAction<_NavigateHomeIntent>(
+              onInvoke: (_) {
+                _navigateToHome(context);
+                return null;
+              },
+            ),
+            _ShowPopupMenuIntent: CallbackAction<_ShowPopupMenuIntent>(
+              onInvoke: (_) {
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  _showPopupMenu(context);
+                }
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _FocusMenuIntent: CallbackAction<_FocusMenuIntent>(
+              onInvoke: (_) {
+                _appBarMenuFocusNode.requestFocus();
+                return null;
+              },
+            ),
+            _ShowShortcutHelpIntent: CallbackAction<_ShowShortcutHelpIntent>(
+              onInvoke: (_) {
                 _showShortcutHelp(context);
-                return KeyEventResult.handled;
-              }
-              
-              // その他のショートカット処理
-              final result = _handleKeyEventShortcut(event, isControlPressed, isShiftPressed);
-              if (result) {
-                return KeyEventResult.handled;
-              }
-            }
-            return KeyEventResult.ignored;
+                return null;
+              },
+            ),
           },
-          child: Focus(
-            focusNode: _rootKeyFocus,
-            autofocus: false,
+          child: FocusScope(
+            autofocus: true,
             canRequestFocus: true,
-            skipTraversal: true,
-            onKeyEvent: (node, e) {
-              // フォールバック処理
-              if (e is KeyDownEvent) {
-                final isControlPressed = HardwareKeyboard.instance.isControlPressed;
-                final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-                _handleKeyEventShortcut(e, isControlPressed, isShiftPressed);
-              }
-              return KeyEventResult.ignored;
-            },
-            // フォーカスが失われた場合に自動的に復元
             onFocusChange: (hasFocus) {
-              if (!hasFocus) {
-                // フォーカスが失われた場合、少し待ってから復元を試みる
-                // ただし、他のウィジェット（TextField等）やダイアログにフォーカスがある場合は復元しない
+              if (hasFocus) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  final primaryFocus = FocusManager.instance.primaryFocus;
-                  // TextFieldやDialogにフォーカスがない場合のみ復元
-                  if (primaryFocus?.context?.widget is! EditableText && 
-                      primaryFocus?.context?.widget is! Dialog &&
-                      primaryFocus?.context?.findAncestorWidgetOfExactType<Dialog>() == null &&
-                      mounted) {
+                  if (mounted && !_rootKeyFocus.hasFocus) {
                     _rootKeyFocus.requestFocus();
                   }
                 });
               }
             },
-            child: Scaffold(
+            child: Focus(
+              focusNode: _rootKeyFocus,
+              autofocus: true,
+              canRequestFocus: true,
+              skipTraversal: true,
+              onKeyEvent: (node, event) {
+                // フォールバック処理（Shortcutsで処理されなかった場合）
+                if (event is KeyDownEvent) {
+                  final isControlPressed = HardwareKeyboard.instance.isControlPressed;
+                  final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+                  final result = _handleKeyEventShortcut(event, isControlPressed, isShiftPressed);
+                  if (result) {
+                    return KeyEventResult.handled;
+                  }
+                }
+                return KeyEventResult.ignored;
+              },
+              // フォーカスが失われた場合に自動的に復元
+              onFocusChange: (hasFocus) {
+                if (!hasFocus) {
+                  // フォーカスが失われた場合、少し待ってから復元を試みる
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _restoreFocusIfNeeded();
+                  });
+                  // より確実に復元するため、複数回試行
+                  Future.delayed(const Duration(milliseconds: 50), () {
+                    if (mounted) _restoreFocusIfNeeded();
+                  });
+                  Future.delayed(const Duration(milliseconds: 200), () {
+                    if (mounted) _restoreFocusIfNeeded();
+                  });
+                } else {
+                  print('✅ フォーカス取得: _rootKeyFocusにフォーカスが当たった');
+                }
+              },
+              child: Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.98),
           appBar: AppBar(
             title: _isSelectionMode 
@@ -959,10 +1184,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
           ),//Expanded
           ],//children
         ),//Column
-          ),//Scaffold
-          ),//KeyboardListener
-        ),//Focus
-      ),//FocusScope
+      ),//Scaffold
+    ),//Focus
+          ),//FocusScope
+        ),//Actions
+      ),//Shortcuts
     );//KeyboardShortcutWidget
   }//build
 
@@ -3140,6 +3366,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     // TextField編集中は一部のショートカットのみ有効
     final focused = FocusManager.instance.primaryFocus;
     final isEditing = focused?.context?.widget is EditableText;
+    
+    // フォーカスが失われている場合は復元を試みる
+    if (!_rootKeyFocus.hasFocus && !isEditing && focused?.context?.findAncestorWidgetOfExactType<Dialog>() == null) {
+      print('🔍 ショートカット処理前にフォーカスを復元');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_rootKeyFocus.hasFocus) {
+          _rootKeyFocus.requestFocus();
+        }
+      });
+    }
     
     if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
       print('✅ ← 検出: ホーム画面に戻る');
