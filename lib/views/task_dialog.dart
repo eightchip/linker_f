@@ -20,6 +20,8 @@ import '../viewmodels/font_size_provider.dart';
 import '../widgets/link_association_dialog.dart';
 import '../views/home_screen.dart'; // UrlPreviewWidget, FilePreviewWidget用
 import 'package:hive/hive.dart';
+import '../models/schedule_item.dart';
+import '../viewmodels/schedule_viewmodel.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
@@ -80,6 +82,19 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   
   // サブタスク機能の表示状態
   bool _isSubTaskSectionExpanded = false;
+  
+  // 予定機能の表示状態
+  bool _isScheduleSectionExpanded = false;
+  ScheduleItem? _editingSchedule;
+  
+  // 予定用のコントローラー
+  final _scheduleTitleController = TextEditingController();
+  final _scheduleLocationController = TextEditingController();
+  final _scheduleNotesController = TextEditingController();
+  DateTime? _scheduleStartDate;
+  TimeOfDay? _scheduleStartTime;
+  DateTime? _scheduleEndDate;
+  TimeOfDay? _scheduleEndTime;
   
   // メールテンプレート
   final List<Map<String, String>> _emailTemplates = [
@@ -209,6 +224,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     _subTaskMinutesController.dispose();
     _subTaskDescriptionController.dispose();
     _toController.dispose();
+    _scheduleTitleController.dispose();
+    _scheduleLocationController.dispose();
+    _scheduleNotesController.dispose();
     super.dispose();
   }
 
@@ -648,6 +666,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         // サブタスク編集セクション（トグル）
                         _buildSubTaskSectionToggle(),
                         
+                        // 予定セクション（トグル）
+                        _buildScheduleSectionToggle(),
+                        
                         // メール送信セクション（アコーディオン）
                         _buildMailSectionAccordion(),
                       ],
@@ -918,8 +939,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         );
         Widget descField = TextFormField(
           controller: _descriptionController,
-          maxLines: isWide ? 8 : 3,
-          minLines: 1,
+          maxLines: isWide ? 8 : 4,
+          minLines: isWide ? 8 : 4,
           enableInteractiveSelection: true,
           style: TextStyle(
             color: Color(ref.watch(descriptionTextColorProvider)),
@@ -1435,7 +1456,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     );
   }
 
-  /// 関連リンクの一覧を構築（クリック可能）
+  /// 関連リンクの一覧を構築（並び替え・削除機能付き）
   Widget _buildRelatedLinksList(BuildContext context) {
     if (widget.task == null) return const SizedBox.shrink();
     
@@ -1448,6 +1469,18 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     
     final relatedLinks = _getRelatedLinks(currentTask);
     if (relatedLinks.isEmpty) return const SizedBox.shrink();
+    
+    // relatedLinkIdsの順序に従ってリンクを並び替え
+    final orderedLinks = <LinkItem>[];
+    for (final linkId in currentTask.relatedLinkIds) {
+      try {
+        final link = relatedLinks.firstWhere((l) => l.id == linkId);
+        orderedLinks.add(link);
+      } catch (e) {
+        // リンクが見つからない場合はスキップ
+        continue;
+      }
+    }
     
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1475,55 +1508,99 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             ),
           ),
           const SizedBox(height: 8),
-          ...relatedLinks.map((link) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: InkWell(
-                onTap: () {
-                  try {
-                    final linkViewModel = ref.read(linkViewModelProvider.notifier);
-                    linkViewModel.launchLink(link);
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('リンクを開けませんでした: ${link.label}')),
-                      );
-                    }
-                  }
-                },
-                child: Row(
-                  children: [
-                    // Faviconまたはアイコンを表示
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: _buildFaviconOrIconForDialog(link, Theme.of(context)),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Tooltip(
-                        message: link.memo != null && link.memo!.isNotEmpty 
-                            ? link.memo! 
-                            : 'メモはリンク管理画面から追加可能',
-                        waitDuration: const Duration(milliseconds: 500),
-                        child: Text(
-                          link.label,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.blue[800],
-                            decoration: TextDecoration.underline,
-                            decorationColor: Colors.blue[800],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+          ReorderableListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            onReorder: (oldIndex, newIndex) async {
+              if (oldIndex < newIndex) {
+                newIndex -= 1;
+              }
+              final reorderedLinkIds = List<String>.from(currentTask.relatedLinkIds);
+              final item = reorderedLinkIds.removeAt(oldIndex);
+              reorderedLinkIds.insert(newIndex, item);
+              
+              // タスクを更新
+              final updatedTask = currentTask.copyWith(relatedLinkIds: reorderedLinkIds);
+              await ref.read(taskViewModelProvider.notifier).updateTask(updatedTask);
+              
+              // UIを更新
+              setState(() {});
+            },
+            children: orderedLinks.asMap().entries.map((entry) {
+              final index = entry.key;
+              final link = entry.value;
+              
+              return Container(
+                key: ValueKey(link.id),
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                child: ReorderableDragStartListener(
+                  index: index,
+                  child: Row(
+                    children: [
+                      // ドラッグハンドル（左側のみ）
+                      Container(
+                        width: 32,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.drag_handle,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                          size: 20,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      // リンクアイコンと名前
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            try {
+                              final linkViewModel = ref.read(linkViewModelProvider.notifier);
+                              linkViewModel.launchLink(link);
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('リンクを開けませんでした: ${link.label}')),
+                                );
+                              }
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              // Faviconまたはアイコンを表示
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: _buildFaviconOrIconForDialog(link, Theme.of(context)),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Tooltip(
+                                  message: link.memo != null && link.memo!.isNotEmpty 
+                                      ? link.memo! 
+                                      : 'メモはリンク管理画面から追加可能',
+                                  waitDuration: const Duration(milliseconds: 500),
+                                  child: Text(
+                                    link.label,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.blue[800],
+                                      decoration: TextDecoration.underline,
+                                      decorationColor: Colors.blue[800],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );
@@ -1864,14 +1941,34 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       ],
                     ),
                     title: Text(s.title, overflow: TextOverflow.ellipsis),
-                    subtitle: Row(children: [
-                      if (s.estimatedMinutes!=null)
-                        Text('推定: ${s.estimatedMinutes}分', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                      if (s.completedAt!=null) ...[
-                        const SizedBox(width: 8),
-                        Text('完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 説明を常時表示
+                        if (s.description != null && s.description!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              s.description!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        // 推定時間と完了日時
+                        Row(children: [
+                          if (s.estimatedMinutes!=null)
+                            Text('推定: ${s.estimatedMinutes}分', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                          if (s.completedAt!=null) ...[
+                            const SizedBox(width: 8),
+                            Text('完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                          ],
+                        ]),
                       ],
-                    ]),
+                    ),
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
@@ -1899,6 +1996,511 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         ),
       ),
     );
+  }
+
+  // 予定編集セクション（トグル版）
+  Widget _buildScheduleSectionToggle() {
+    if (widget.task == null) return const SizedBox.shrink();
+    
+    final schedules = ref.watch(scheduleViewModelProvider)
+        .where((s) => s.taskId == widget.task!.id)
+        .toList()
+      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    
+    final hasSchedules = schedules.isNotEmpty;
+    
+    return Column(
+      children: [
+        // 予定ヘッダー（トグル）
+        InkWell(
+          onTap: () => setState(() => _isScheduleSectionExpanded = !_isScheduleSectionExpanded),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  color: Colors.orange.shade600,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  '予定',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                if (hasSchedules)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${schedules.length}件',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade800,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                Icon(
+                  _isScheduleSectionExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: Colors.grey.shade600,
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        // 予定詳細（展開時のみ表示）
+        if (_isScheduleSectionExpanded) ...[
+          const SizedBox(height: 12),
+          _buildScheduleSection(),
+        ],
+      ],
+    );
+  }
+
+  // 予定編集セクション
+  Widget _buildScheduleSection() {
+    if (widget.task == null) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Text('※ タスク作成後に予定編集が可能になります'),
+        ),
+      );
+    }
+
+    final schedules = ref.watch(scheduleViewModelProvider)
+        .where((s) => s.taskId == widget.task!.id)
+        .toList()
+      ..sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, color: Colors.orange),
+                const SizedBox(width: 8),
+                const Text('予定', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Text(
+                  '${schedules.length}件',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // 予定追加フォーム
+            Column(
+              children: [
+                TextField(
+                  controller: _scheduleTitleController,
+                  decoration: InputDecoration(
+                    labelText: '予定タイトル *',
+                    hintText: widget.task?.title ?? '予定タイトル',
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.orange.shade600, width: 2.5),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectScheduleDate(context, true),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            labelText: '開始日時 *',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _scheduleStartDate != null && _scheduleStartTime != null
+                                      ? '${DateFormat('yyyy/MM/dd').format(_scheduleStartDate!)} ${_scheduleStartTime!.format(context)}'
+                                      : '日時を選択',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                              if (_scheduleStartDate != null && _scheduleStartTime != null)
+                                IconButton(
+                                  onPressed: () => setState(() {
+                                    _scheduleStartDate = null;
+                                    _scheduleStartTime = null;
+                                  }),
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  padding: EdgeInsets.zero,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectScheduleDate(context, false),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            labelText: '終了日時',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _scheduleEndDate != null && _scheduleEndTime != null
+                                      ? '${DateFormat('yyyy/MM/dd').format(_scheduleEndDate!)} ${_scheduleEndTime!.format(context)}'
+                                      : '日時を選択（オプション）',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                              if (_scheduleEndDate != null && _scheduleEndTime != null)
+                                IconButton(
+                                  onPressed: () => setState(() {
+                                    _scheduleEndDate = null;
+                                    _scheduleEndTime = null;
+                                  }),
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  padding: EdgeInsets.zero,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _scheduleLocationController,
+                  decoration: InputDecoration(
+                    labelText: '場所',
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.orange.shade600, width: 2.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _scheduleNotesController,
+                  decoration: InputDecoration(
+                    labelText: 'メモ',
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.orange.shade600, width: 2.5),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (widget.task == null) {
+                      SnackBarService.showInfo(context, '先にタスクを作成してください');
+                      return;
+                    }
+                    if (_scheduleStartDate == null || _scheduleStartTime == null) {
+                      SnackBarService.showError(context, '開始日時は必須です');
+                      return;
+                    }
+                    
+                    final vm = ref.read(scheduleViewModelProvider.notifier);
+                    final title = _scheduleTitleController.text.trim().isEmpty
+                        ? widget.task!.title
+                        : _scheduleTitleController.text.trim();
+                    
+                    final startDateTime = DateTime(
+                      _scheduleStartDate!.year,
+                      _scheduleStartDate!.month,
+                      _scheduleStartDate!.day,
+                      _scheduleStartTime!.hour,
+                      _scheduleStartTime!.minute,
+                    );
+                    
+                    DateTime? endDateTime;
+                    if (_scheduleEndDate != null && _scheduleEndTime != null) {
+                      endDateTime = DateTime(
+                        _scheduleEndDate!.year,
+                        _scheduleEndDate!.month,
+                        _scheduleEndDate!.day,
+                        _scheduleEndTime!.hour,
+                        _scheduleEndTime!.minute,
+                      );
+                    }
+                    
+                    if (_editingSchedule == null) {
+                      // 追加
+                      final newSchedule = vm.createSchedule(
+                        taskId: widget.task!.id,
+                        title: title,
+                        startDateTime: startDateTime,
+                        endDateTime: endDateTime,
+                        location: _scheduleLocationController.text.trim().isEmpty
+                            ? null
+                            : _scheduleLocationController.text.trim(),
+                        notes: _scheduleNotesController.text.trim().isEmpty
+                            ? null
+                            : _scheduleNotesController.text.trim(),
+                      );
+                      await vm.addSchedule(newSchedule);
+                    } else {
+                      // 更新
+                      final updated = _editingSchedule!.copyWith(
+                        title: title,
+                        startDateTime: startDateTime,
+                        endDateTime: endDateTime,
+                        location: _scheduleLocationController.text.trim().isEmpty
+                            ? null
+                            : _scheduleLocationController.text.trim(),
+                        notes: _scheduleNotesController.text.trim().isEmpty
+                            ? null
+                            : _scheduleNotesController.text.trim(),
+                      );
+                      await vm.updateSchedule(updated);
+                      _editingSchedule = null;
+                    }
+                    
+                    _scheduleTitleController.clear();
+                    _scheduleLocationController.clear();
+                    _scheduleNotesController.clear();
+                    _scheduleStartDate = null;
+                    _scheduleStartTime = null;
+                    _scheduleEndDate = null;
+                    _scheduleEndTime = null;
+                    setState(() {});
+                  },
+                  child: Text(_editingSchedule == null ? '予定を追加' : '予定を更新'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // 予定一覧
+            if (schedules.isNotEmpty) ...[
+              const Divider(),
+              const SizedBox(height: 8),
+              ...schedules.map((schedule) {
+                return _buildScheduleItem(schedule);
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScheduleItem(ScheduleItem schedule) {
+    final timeFormat = DateFormat('MM/dd HH:mm');
+    final hasEndTime = schedule.endDateTime != null;
+    final timeText = hasEndTime
+        ? '${timeFormat.format(schedule.startDateTime)} - ${timeFormat.format(schedule.endDateTime!)}'
+        : timeFormat.format(schedule.startDateTime);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey.shade50,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 4),
+              Text(
+                timeText,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blue, size: 18),
+                onPressed: () {
+                  _scheduleTitleController.text = schedule.title;
+                  _scheduleLocationController.text = schedule.location ?? '';
+                  _scheduleNotesController.text = schedule.notes ?? '';
+                  _scheduleStartDate = schedule.startDateTime;
+                  _scheduleStartTime = TimeOfDay.fromDateTime(schedule.startDateTime);
+                  if (schedule.endDateTime != null) {
+                    _scheduleEndDate = schedule.endDateTime;
+                    _scheduleEndTime = TimeOfDay.fromDateTime(schedule.endDateTime!);
+                  } else {
+                    _scheduleEndDate = null;
+                    _scheduleEndTime = null;
+                  }
+                  _editingSchedule = schedule;
+                  setState(() {});
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('予定を削除'),
+                      content: Text('「${schedule.title}」を削除しますか？'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('キャンセル'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                          child: const Text('削除'),
+                        ),
+                      ],
+                    ),
+                  );
+                  
+                  if (confirm == true && mounted) {
+                    final vm = ref.read(scheduleViewModelProvider.notifier);
+                    await vm.deleteSchedule(schedule.id);
+                    // データを再読み込みしてUIを更新
+                    await vm.loadSchedules();
+                    setState(() {});
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            schedule.title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (schedule.location != null && schedule.location!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  schedule.location!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (schedule.notes != null && schedule.notes!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              schedule.notes!,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectScheduleDate(BuildContext context, bool isStart) async {
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: isStart
+          ? (_scheduleStartDate ?? now)
+          : (_scheduleEndDate ?? _scheduleStartDate ?? now),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    
+    if (pickedDate != null) {
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: isStart
+            ? (_scheduleStartTime ?? TimeOfDay.now())
+            : (_scheduleEndTime ?? TimeOfDay.now()),
+      );
+      
+      if (pickedTime != null) {
+        setState(() {
+          if (isStart) {
+            _scheduleStartDate = pickedDate;
+            _scheduleStartTime = pickedTime;
+          } else {
+            _scheduleEndDate = pickedDate;
+            _scheduleEndTime = pickedTime;
+          }
+        });
+      }
+    }
   }
 
   int _getPriorityColor(TaskPriority priority) {

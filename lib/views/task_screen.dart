@@ -26,6 +26,7 @@ import '../utils/csv_export.dart';
 import 'task_dialog.dart';
 import 'sub_task_dialog.dart';
 import 'schedule_screen.dart';
+import 'schedule_calendar_screen.dart';
 import '../widgets/mail_badge.dart';
 import '../services/mail_service.dart';
 import '../models/sent_mail_log.dart';
@@ -723,7 +724,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _restoreFocusIfNeeded();
     });
-    
+
     return KeyboardShortcutWidget(
       child: Shortcuts(
         shortcuts: <LogicalKeySet, Intent>{
@@ -834,7 +835,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 if (focused?.context?.widget is! EditableText) {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ScheduleScreen()),
+                    MaterialPageRoute(builder: (context) => const ScheduleCalendarScreen()),
                   );
                 }
                 _restoreFocusIfNeeded();
@@ -870,7 +871,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
               },
             ),
           },
-          child: FocusScope(
+      child: FocusScope(
             autofocus: true,
             canRequestFocus: true,
             onFocusChange: (hasFocus) {
@@ -882,23 +883,23 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 });
               }
             },
-            child: Focus(
+        child: Focus(
               focusNode: _rootKeyFocus,
               autofocus: true,
-              canRequestFocus: true,
-              skipTraversal: true,
-              onKeyEvent: (node, event) {
+          canRequestFocus: true,
+          skipTraversal: true,
+          onKeyEvent: (node, event) {
                 // フォールバック処理（Shortcutsで処理されなかった場合）
-                if (event is KeyDownEvent) {
-                  final isControlPressed = HardwareKeyboard.instance.isControlPressed;
-                  final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-                  final result = _handleKeyEventShortcut(event, isControlPressed, isShiftPressed);
-                  if (result) {
-                    return KeyEventResult.handled;
-                  }
-                }
-                return KeyEventResult.ignored;
-              },
+            if (event is KeyDownEvent) {
+              final isControlPressed = HardwareKeyboard.instance.isControlPressed;
+              final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+              final result = _handleKeyEventShortcut(event, isControlPressed, isShiftPressed);
+              if (result) {
+                return KeyEventResult.handled;
+              }
+            }
+            return KeyEventResult.ignored;
+          },
               // フォーカスが失われた場合に自動的に復元
               onFocusChange: (hasFocus) {
                 if (!hasFocus) {
@@ -915,9 +916,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                   });
                 } else {
                   print('✅ フォーカス取得: _rootKeyFocusにフォーカスが当たった');
-                }
-              },
-              child: Scaffold(
+              }
+            },
+            child: Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.98),
           appBar: AppBar(
             title: _isSelectionMode 
@@ -1037,8 +1038,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
               child: Builder(
                 key: _menuButtonKey,
                 builder: (context) => PopupMenuButton<String>(
-                  onSelected: (value) => _handleMenuAction(value),
-                  itemBuilder: (context) => [
+            onSelected: (value) => _handleMenuAction(value),
+            itemBuilder: (context) => [
               // 新しいタスク作成
               PopupMenuItem(
                 value: 'add_task',
@@ -1154,10 +1155,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                   ],
                 ),
               ),
-                  ],//itemBuilder
+            ],//itemBuilder
                 ),
-              ),
-            ),
+          ),
+          ),
          ],//else
          ],//actions
        ),
@@ -1180,13 +1181,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                   )
                 : (groupedTasks != null && groupedTasks.isNotEmpty)
                     ? _buildGroupedTaskList(groupedTasks)
-                    : _buildPinnedAndScrollableTaskList(sortedTasks),
+                : _buildPinnedAndScrollableTaskList(sortedTasks),
           ),//Expanded
           ],//children
         ),//Column
-      ),//Scaffold
-    ),//Focus
-          ),//FocusScope
+          ),//Scaffold
+        ),//Focus
+      ),//FocusScope
         ),//Actions
       ),//Shortcuts
     );//KeyboardShortcutWidget
@@ -1785,9 +1786,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
     
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hoveredTaskIds.add(task.id)),
-      onExit: (_) => setState(() => _hoveredTaskIds.remove(task.id)),
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hoveredTaskIds.add(task.id)),
+        onExit: (_) => setState(() => _hoveredTaskIds.remove(task.id)),
       child: GestureDetector(
         onTap: () {
           // タスクをタップした時にタスクダイアログを開く
@@ -1855,7 +1856,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
           ],
         ),
       ),
-      ),
+     ),
     );
   }
   
@@ -2013,12 +2014,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
       ),
       subtitle: IntrinsicHeight(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
-          children: [
+        children: [
             // 依頼先/メモ（テキストのみ）：展開時は完全表示、折りたたみ時は省略表示
             if (task.assignedTo != null && task.assignedTo!.isNotEmpty) ...[
-              const SizedBox(height: 4),
+            const SizedBox(height: 4),
               if (isExpanded)
                 // 展開時：完全表示（UI設定の色を維持）
                 Text(
@@ -2037,23 +2038,23 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 )
               else
                 // 折りたたみ時：省略表示（従来通り）
-                _buildClickableMemoText(task.assignedTo!, task, showRelatedLinks: false),
-            ],
+            _buildClickableMemoText(task.assignedTo!, task, showRelatedLinks: false),
+          ],
             // 依頼先への説明：展開時のみ完全表示、折りたたみ時は省略表示
-            if (task.description != null && task.description!.isNotEmpty) ...[
-              const SizedBox(height: 4),
+          if (task.description != null && task.description!.isNotEmpty) ...[
+            const SizedBox(height: 4),
               if (isExpanded)
                 // 展開時：完全表示（UI設定の色を維持）
-                Text(
-                  task.description!,
-                  style: TextStyle(
+            Text(
+              task.description!,
+              style: TextStyle(
                     color: Color(ref.watch(descriptionTextColorProvider)), // UI設定から取得
                     fontSize: 13 * ref.watch(descriptionFontSizeProvider),
-                    fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w500,
                     fontFamily: ref.watch(descriptionFontFamilyProvider).isEmpty 
                         ? null 
                         : ref.watch(descriptionFontFamilyProvider),
-                  ),
+              ),
                   maxLines: null, // 行数制限なし
                   overflow: TextOverflow.visible,
                   softWrap: true,
@@ -2083,23 +2084,23 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              overflow: TextOverflow.ellipsis,
                     ),
                   );
                 }).toList(),
-              ),
-            ],
-            // 展開時のみ表示される詳細情報（関連資料）
-            if (isExpanded) ...[
-              const SizedBox(height: 8),
-              if (_hasValidLinks(task)) ...[
-                const SizedBox(height: 6),
-                _buildRelatedLinksDisplay(_getRelatedLinks(task), onAnyLinkTap: () {
-                  // 詳細折りたたみ中の誤タップ防止はしない。ここは展開中のみ表示
-                }),
-              ],
+            ),
+          ],
+          // 展開時のみ表示される詳細情報（関連資料）
+          if (isExpanded) ...[
+            const SizedBox(height: 8),
+            if (_hasValidLinks(task)) ...[
+              const SizedBox(height: 6),
+              _buildRelatedLinksDisplay(_getRelatedLinks(task), onAnyLinkTap: () {
+                // 詳細折りたたみ中の誤タップ防止はしない。ここは展開中のみ表示
+              }),
             ],
           ],
+        ],
         ),
       ),
       trailing: Row(
@@ -2113,7 +2114,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
               size: 20,
             ),
           if (task.reminderTime != null)
-            const SizedBox(width: 4),
+          const SizedBox(width: 4),
           // サブタスク: あるときだけバッジ表示し、クリックで編集ダイアログ
           Builder(
             builder: (context) {
@@ -2308,28 +2309,28 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
       
       if (difference < 0) {
         // 期限切れ
-        backgroundColor = Colors.red.shade50;
-        textColor = Colors.red.shade900;
-        borderColor = Colors.red.shade300;
-        icon = Icons.warning;
+      backgroundColor = Colors.red.shade50;
+      textColor = Colors.red.shade900;
+      borderColor = Colors.red.shade300;
+      icon = Icons.warning;
       } else if (difference == 0) {
         // 今日が期限
-        backgroundColor = Colors.orange.shade50;
-        textColor = Colors.orange.shade900;
-        borderColor = Colors.orange.shade300;
-        icon = Icons.today;
+      backgroundColor = Colors.orange.shade50;
+      textColor = Colors.orange.shade900;
+      borderColor = Colors.orange.shade300;
+      icon = Icons.today;
       } else if (difference <= 3) {
         // 3日以内（黄色/アンバー）
         backgroundColor = Colors.amber.shade50;
         textColor = Colors.amber.shade900;
         borderColor = Colors.amber.shade300;
         icon = Icons.calendar_today;
-      } else {
+    } else {
         // それ以外（グレー/青）
-        backgroundColor = Colors.blue.shade50;
-        textColor = Colors.blue.shade900;
-        borderColor = Colors.blue.shade300;
-        icon = Icons.calendar_today;
+      backgroundColor = Colors.blue.shade50;
+      textColor = Colors.blue.shade900;
+      borderColor = Colors.blue.shade300;
+      icon = Icons.calendar_today;
       }
     }
     
@@ -2511,7 +2512,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const ScheduleScreen(),
+            builder: (context) => const ScheduleCalendarScreen(),
           ),
         );
         break;
@@ -2772,56 +2773,56 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
         message: tooltipMessage,
         waitDuration: const Duration(milliseconds: 500),
         child: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.transparent,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(8),
-            color: Colors.transparent,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () => _showLinkAssociationDialog(task),
-              child: Stack(
-                children: [
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade600,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
+            onTap: () => _showLinkAssociationDialog(task),
+            child: Stack(
+              children: [
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade600,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.shade600.withValues(alpha: 0.4),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.orange.shade600.withValues(alpha: 0.4),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                      ],
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 24,
+                    ),
+                    child: Text(
+                      '$validLinkCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        height: 1.0,
                       ),
-                      constraints: const BoxConstraints(
-                        minWidth: 36,
-                        minHeight: 24,
-                      ),
-                      child: Text(
-                        '$validLinkCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          height: 1.0,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.visible,
-                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
                     ),
                   ),
-                ],
+                ),
+              ],
               ),
             ),
           ),
@@ -3432,11 +3433,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
       return true;
     } else if (event.logicalKey == LogicalKeyboardKey.keyC && isControlPressed && isShiftPressed) {
       if (isEditing) return false;
-      print('✅ Ctrl+Shift+C 検出: スケジュール一覧');
+      print('✅ Ctrl+Shift+C 検出: 予定表');
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const ScheduleScreen(),
+          builder: (context) => const ScheduleCalendarScreen(),
         ),
       );
       return true;
@@ -3680,17 +3681,27 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     buffer.writeln('完了: ${task.completedSubTasksCount}個');
     buffer.writeln('');
     
-    for (int i = 0; i < subTasks.length && i < 10; i++) {
+    // 最大20個まで表示
+    final displayCount = subTasks.length < 20 ? subTasks.length : 20;
+    for (int i = 0; i < displayCount; i++) {
       final subTask = subTasks[i];
       final status = subTask.isCompleted ? '✓' : '×';
-      final title = subTask.title.length > 20 
-        ? '${subTask.title.substring(0, 20)}...' 
+      final title = subTask.title.length > 30 
+        ? '${subTask.title.substring(0, 30)}...' 
         : subTask.title;
       buffer.writeln('$status $title');
+      
+      // 説明がある場合は表示
+      if (subTask.description != null && subTask.description!.isNotEmpty) {
+        final desc = subTask.description!.length > 40 
+          ? '  ${subTask.description!.substring(0, 40)}...' 
+          : '  ${subTask.description!}';
+        buffer.writeln(desc);
+      }
     }
     
-    if (subTasks.length > 10) {
-      buffer.writeln('... 他${subTasks.length - 10}個');
+    if (subTasks.length > 20) {
+      buffer.writeln('... 他${subTasks.length - 20}個');
     }
     
     return buffer.toString().trim();
@@ -3830,14 +3841,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
   /// タスクの期限日に応じたカード色を取得
   /// カード背景色は常にUI設定の色を使用（期限日による色分けは期限バッジのみに適用）
   Color _getTaskCardColor(TaskItem task) {
-    return Theme.of(context).colorScheme.surface;
+      return Theme.of(context).colorScheme.surface;
   }
 
   /// タスクの期限日に応じたボーダー色を取得
   /// ボーダー色は常にUI設定の色を使用（期限日による色分けは期限バッジのみに適用）
   Color _getTaskBorderColor(TaskItem task) {
-    return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
-  }
+      return Theme.of(context).colorScheme.outline.withValues(alpha: 0.4);
+    }
 
   /// タスクの期限日に応じたボーダー色を取得（ダークモード対応強化版）
   Color _getTaskBorderColorEnhanced(TaskItem task) {
@@ -5395,31 +5406,31 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
       runSpacing: 6,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: links.map((link) {
-        final isImage = link.type == LinkType.file && _isImageFile(link.path);
-        
+          final isImage = link.type == LinkType.file && _isImageFile(link.path);
+          
         // 画像の場合は大きく表示
         if (isImage) {
           return GestureDetector(
-            onTap: () {
+                    onTap: () {
               if (onAnyLinkTap != null) onAnyLinkTap();
-              _showFullScreenImage(context, link.path);
-            },
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  File(link.path),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 32),
-                ),
-              ),
-            ),
+                      _showFullScreenImage(context, link.path);
+                    },
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(link.path),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 32),
+                        ),
+                      ),
+                    ),
           );
         }
         
@@ -5429,11 +5440,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
               ? link.memo! 
               : 'メモはリンク管理画面から追加可能',
           waitDuration: const Duration(milliseconds: 500),
-          child: GestureDetector(
-            onTap: () {
-              if (onAnyLinkTap != null) onAnyLinkTap();
-              _openRelatedLink(link);
-            },
+                  child: GestureDetector(
+                    onTap: () {
+                      if (onAnyLinkTap != null) onAnyLinkTap();
+                      _openRelatedLink(link);
+                    },
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -5445,21 +5456,21 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  link.label,
-                  style: TextStyle(
-                    color: Colors.blue[800],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    decoration: TextDecoration.underline,
-                    decorationColor: Colors.blue[800],
-                  ),
+                      link.label,
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Colors.blue[800],
+                      ),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                      overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ),
-        );
+            ),
+          );
       }).toList(),
     );
   }
@@ -5624,7 +5635,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
       }
     }
   }
-
+  
   /// 展開時の本文表示（タスクグリッドビューと同じスタイル）
   Widget _buildDescriptionExpanded(String description) {
     return Align(
@@ -5642,7 +5653,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
         textAlign: TextAlign.left,
       ),
     );
-  }
+}
 
   /// リストビュー用の本文表示（ツールチップ付き）
   Widget _buildDescriptionWithTooltip(String description) {
@@ -6267,8 +6278,8 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
       if (_filterDueDateColors.isNotEmpty) {
         final taskDueDateColor = _getDueDateColorForFilter(task, now);
         if (!_filterDueDateColors.contains(taskDueDateColor)) {
-          return false;
-        }
+        return false;
+      }
       }
       
       // ステータスフィルター（複数選択対応）
@@ -6315,7 +6326,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
       if (b.dueDate == null) return -1;
       return a.dueDate!.compareTo(b.dueDate!);
     });
-    
+
     // グリッド設定を計算
     final crossAxisCount = layoutSettings.autoAdjustLayout
         ? (MediaQuery.of(context).size.width > 1400 ? layoutSettings.defaultCrossAxisCount
@@ -6332,21 +6343,21 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
     return PopScope(
       canPop: true,
       child: Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: FocusScope(
           autofocus: false,
           child: FocusScope(
             autofocus: false,
-            child: Container(
-            width: MediaQuery.of(context).size.width * 0.98,
-            height: MediaQuery.of(context).size.height * 0.95,
-            constraints: const BoxConstraints(
-              minWidth: 1000,
-              minHeight: 700,
-              maxWidth: 1600,
-              maxHeight: 1200,
-            ),
-            child: Column(
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.98,
+        height: MediaQuery.of(context).size.height * 0.95,
+        constraints: const BoxConstraints(
+          minWidth: 1000,
+          minHeight: 700,
+          maxWidth: 1600,
+          maxHeight: 1200,
+        ),
+        child: Column(
           children: [
             // ヘッダー
             Container(
@@ -6369,14 +6380,14 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                       ),
                     )
                   else
-                    Text(
-                      'タスク一覧',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  Text(
+                    'タスク一覧',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
                         fontSize: (Theme.of(context).textTheme.headlineSmall?.fontSize ?? 20) * fontSize,
                         fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
-                      ),
                     ),
+                  ),
                   const Spacer(),
                   if (_isSelectionMode) ...[
                     // 選択モード時のアクション
@@ -6411,7 +6422,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                         const PopupMenuItem(
                           value: 'status',
                           child: Row(
-                            children: [
+                    children: [
                               Icon(Icons.play_circle_outline, size: 20),
                               SizedBox(width: 8),
                               Text('ステータス変更'),
@@ -6450,7 +6461,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                           _selectedTaskIds.clear();
                         });
                       },
-                    ),
+                      ),
                   ] else ...[
                     // 通常モード時のアクション
                     IconButton(
@@ -6461,8 +6472,8 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                           _isSelectionMode = true;
                         });
                       },
-                    ),
-                    const SizedBox(width: 8),
+                      ),
+                      const SizedBox(width: 8),
                     // フィルターダイアログボタン
                     IconButton(
                       icon: Stack(
@@ -6484,8 +6495,8 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                 ),
                               ),
                             ),
-                        ],
-                      ),
+                    ],
+                  ),
                       tooltip: 'フィルター',
                       onPressed: () => _showFilterDialogForGrid(context, now),
                     ),
@@ -6590,18 +6601,18 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                         memoFontFamily,
                         descriptionFontSize,
                         descriptionFontFamily,
-                      )
-                    : GridView.builder(
+                  )
+                : GridView.builder(
                         padding: EdgeInsets.all(layoutSettings.defaultGridSpacing * 0.75),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
                           childAspectRatio: childAspectRatio,
                           crossAxisSpacing: layoutSettings.defaultGridSpacing,
                           mainAxisSpacing: layoutSettings.defaultGridSpacing,
-                        ),
-                        itemCount: sortedTasks.length,
-                        itemBuilder: (context, index) {
-                          final task = sortedTasks[index];
+                    ),
+                    itemCount: sortedTasks.length,
+                    itemBuilder: (context, index) {
+                      final task = sortedTasks[index];
                       
                       // カード背景色は期限日に基づいて色分け
                       final Color cardBg = _getCardBackgroundColor(task, now);
@@ -6618,7 +6629,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                           side: BorderSide(color: borderColor, width: 1),
                         ),
                         color: cardBg,
-                          child: InkWell(
+                        child: InkWell(
                           borderRadius: BorderRadius.circular(8),
                           focusColor: Colors.transparent,
                           canRequestFocus: false,
@@ -6634,9 +6645,9 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                               });
                             } else {
                               // 通常モード時はタスクダイアログを開く
-                              showDialog(
-                                context: context,
-                                builder: (context) => TaskDialog(task: task),
+                            showDialog(
+                              context: context,
+                              builder: (context) => TaskDialog(task: task),
                               ).then((_) {
                                 // タスクダイアログを閉じた時にタスクグリッドビューに戻る
                                 // ダイアログが既に閉じられているため、何もしない
@@ -6757,9 +6768,9 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                       
                                       return Container(
                                         padding: EdgeInsets.symmetric(horizontal: 8 * fontSize, vertical: 5 * fontSize),
-                                        decoration: BoxDecoration(
+                                    decoration: BoxDecoration(
                                           color: Colors.white, // 常に白色背景で視認性を確保
-                                          borderRadius: BorderRadius.circular(6),
+                                      borderRadius: BorderRadius.circular(6),
                                           border: Border.all(
                                             color: badgeColor,
                                             width: 2, // 太いボーダーで強調
@@ -6778,12 +6789,12 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                               offset: const Offset(0, 0),
                                             ),
                                           ],
-                                        ),
-                                        child: Row(
+                                    ),
+                                    child: Row(
                                           mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.schedule,
+                                      children: [
+                                        Icon(
+                                          Icons.schedule,
                                               size: 13 * fontSize,
                                               color: badgeColor, // 濃い色で視認性を確保
                                             ),
@@ -6816,7 +6827,7 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                         color: Colors.green.shade300, // タスクリストビューと同じボーダー色
                                         width: 2, // タスクリストビューと同じボーダー幅
                                       ),
-                                    ),
+                                        ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
@@ -6847,20 +6858,20 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                     children: [
                                       Icon(Icons.person, size: 10 * fontSize, color: Colors.grey[600]),
                                       SizedBox(width: 2 * fontSize),
-                                      Expanded(
-                                        child: Text(
+                                        Expanded(
+                                          child: Text(
                                           task.assignedTo!,
-                                          style: TextStyle(
+                                            style: TextStyle(
                                             color: Color(ref.watch(memoTextColorProvider)),
                                             fontSize: 10 * fontSize * memoFontSize,
                                             fontWeight: FontWeight.w600,
                                             fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                    ],
+                                      ],
                                   ),
                                 ] else if (task.notes != null && task.notes!.isNotEmpty) ...[
                                   SizedBox(height: 4 * fontSize),
@@ -6879,9 +6890,9 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
+                                  ),
+                                ],
                                   ),
                                 ],
                                 // 本文（説明）
@@ -7655,17 +7666,27 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
     buffer.writeln('完了: ${task.completedSubTasksCount}個');
     buffer.writeln('');
     
-    for (int i = 0; i < subTasks.length && i < 10; i++) {
+    // 最大20個まで表示
+    final displayCount = subTasks.length < 20 ? subTasks.length : 20;
+    for (int i = 0; i < displayCount; i++) {
       final subTask = subTasks[i];
       final status = subTask.isCompleted ? '✓' : '×';
-      final title = subTask.title.length > 20 
-        ? '${subTask.title.substring(0, 20)}...' 
+      final title = subTask.title.length > 30 
+        ? '${subTask.title.substring(0, 30)}...' 
         : subTask.title;
       buffer.writeln('$status $title');
+      
+      // 説明がある場合は表示
+      if (subTask.description != null && subTask.description!.isNotEmpty) {
+        final desc = subTask.description!.length > 40 
+          ? '  ${subTask.description!.substring(0, 40)}...' 
+          : '  ${subTask.description!}';
+        buffer.writeln(desc);
+      }
     }
     
-    if (subTasks.length > 10) {
-      buffer.writeln('... 他${subTasks.length - 10}個');
+    if (subTasks.length > 20) {
+      buffer.writeln('... 他${subTasks.length - 20}個');
     }
     
     return buffer.toString().trim();

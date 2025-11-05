@@ -11,6 +11,7 @@ import 'models/task_item.dart';
 import 'models/sub_task.dart';
 import 'models/sent_mail_log.dart';
 import 'models/email_contact.dart';
+import 'models/schedule_item.dart';
 import 'views/link_launcher_app.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screen_retriever/screen_retriever.dart';
@@ -163,6 +164,11 @@ Future<void> _initializeHive() async {
     } catch (e) {
       print('EmailContactAdapter登録エラー: $e');
     }
+    try {
+      Hive.registerAdapter(ScheduleItemAdapter());
+    } catch (e) {
+      print('ScheduleItemAdapter登録エラー: $e');
+    }
     
     print('Hive初期化完了');
   } catch (e) {
@@ -271,6 +277,9 @@ void _initializeAdvancedFeatures() {
       
       // ピン留めタスク用ボックスを開く
       await Hive.openBox('pinnedTasks');
+      
+      // 予定管理用ボックスを開く
+      await Hive.openBox<ScheduleItem>('taskSchedules');
       
       // Google Calendar自動同期の初期化
       await _initializeGoogleCalendarSync();
