@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -18,6 +17,13 @@ class ScheduleCalendarScreen extends ConsumerStatefulWidget {
 
 class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen> {
   bool _localeInitialized = false;
+  final ScrollController _scrollController = ScrollController();
+  
+  // 日付範囲フィルター: 'all', 'future', 'past'
+  String _dateFilter = 'all';
+  
+  // 今日の日付の位置を保持
+  GlobalKey? _todayKey;
 
   @override
   void initState() {
@@ -35,9 +41,19 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         // Riverpodの状態を強制的に更新
         if (mounted) {
           ref.invalidate(scheduleViewModelProvider);
+          // 今日の位置にジャンプ
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToToday();
+          });
         }
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeLocale() async {
@@ -54,18 +70,21 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
   Widget build(BuildContext context) {
     final schedules = ref.watch(scheduleViewModelProvider);
     final tasks = ref.watch(taskViewModelProvider);
+    final now = DateTime.now();
     
-    // デバッグ用: 予定の数を表示
-    if (kDebugMode) {
-      print('予定表画面: 予定数 = ${schedules.length}');
-      for (final schedule in schedules) {
-        print('  予定: ${schedule.title} (${schedule.startDateTime})');
+    // 日付範囲フィルターを適用
+    final filteredSchedules = schedules.where((schedule) {
+      if (_dateFilter == 'future') {
+        return schedule.startDateTime.isAfter(now);
+      } else if (_dateFilter == 'past') {
+        return schedule.startDateTime.isBefore(now);
       }
-    }
+      return true; // 'all'
+    }).toList();
     
     // 日付ごとにグループ化
     final schedulesByDate = <DateTime, List<ScheduleItem>>{};
-    for (final schedule in schedules) {
+    for (final schedule in filteredSchedules) {
       final dateKey = DateTime(
         schedule.startDateTime.year,
         schedule.startDateTime.month,
@@ -83,29 +102,144 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('予定表'),
-        actions: const [],
+        actions: [
+          // 今日へのジャンプボタン
+          IconButton(
+            icon: const Icon(Icons.today),
+            tooltip: '今日にジャンプ',
+            onPressed: _scrollToToday,
+          ),
+          // フィルターメニュー
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.filter_list),
+            tooltip: 'フィルター',
+            onSelected: (value) {
+              setState(() {
+                _dateFilter = value;
+              });
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'all',
+                child: Text('すべて'),
+              ),
+              const PopupMenuItem(
+                value: 'future',
+                child: Text('未来のみ'),
+              ),
+              const PopupMenuItem(
+                value: 'past',
+                child: Text('過去のみ'),
+              ),
+            ],
+          ),
+        ],
       ),
-      body: schedules.isEmpty
-          ? const Center(
-              child: Text('予定がありません'),
+      body: filteredSchedules.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.calendar_today, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text(
+                    _dateFilter == 'future' ? '未来の予定がありません'
+                        : _dateFilter == 'past' ? '過去の予定がありません'
+                        : '予定がありません',
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
+              ),
             )
           : ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               itemCount: sortedDates.length,
               itemBuilder: (context, index) {
                 final date = sortedDates[index];
                 final dateSchedules = schedulesByDate[date]!;
+                final isToday = date.year == now.year &&
+                    date.month == now.month &&
+                    date.day == now.day;
                 
-                return _buildDateSection(date, dateSchedules, tasks);
+                // 今日の日付のキーを保持
+                if (isToday && _todayKey == null) {
+                  _todayKey = GlobalKey();
+                }
+                
+                return _buildDateSection(
+                  date,
+                  dateSchedules,
+                  tasks,
+                  isToday ? _todayKey : null,
+                );
               },
             ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddScheduleDialog,
+        tooltip: '予定を追加',
+        child: const Icon(Icons.add),
+      ),
     );
+  }
+
+  void _scrollToToday() {
+    if (_todayKey?.currentContext != null) {
+      Scrollable.ensureVisible(
+        _todayKey!.currentContext!,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  Future<void> _showAddScheduleDialog() async {
+    final tasks = ref.read(taskViewModelProvider);
+    if (tasks.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('予定を追加するには、まずタスクを作成してください')),
+        );
+      }
+      return;
+    }
+
+    // タスク選択ダイアログ
+    final selectedTask = await showDialog<TaskItem>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('タスクを選択'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: tasks.length,
+            itemBuilder: (context, index) {
+              final task = tasks[index];
+              return ListTile(
+                title: Text(task.title),
+                onTap: () => Navigator.pop(context, task),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (selectedTask != null && mounted) {
+      // タスク編集モーダルを開く（予定セクションを展開）
+      showDialog(
+        context: context,
+        builder: (context) => TaskDialog(task: selectedTask),
+      );
+    }
   }
 
   Widget _buildDateSection(
     DateTime date,
     List<ScheduleItem> schedules,
     List<TaskItem> tasks,
+    GlobalKey? dateKey,
   ) {
     // ロケールが初期化されていない場合はデフォルト形式を使用
     final dateFormat = _localeInitialized
@@ -119,6 +253,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
+          key: dateKey,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: isToday ? Colors.blue.shade100 : Colors.grey.shade200,
@@ -195,6 +330,9 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           } catch (e) {
             // タスクが見つからない場合は何もしない
           }
+        },
+        onLongPress: () {
+          _showScheduleMenu(schedule, task);
         },
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -285,6 +423,146 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         ),
       ),
     );
+  }
+
+  void _showScheduleMenu(ScheduleItem schedule, TaskItem task) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('編集'),
+              onTap: () {
+                Navigator.pop(context);
+                _editSchedule(schedule, task);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: const Text('コピー'),
+              onTap: () {
+                Navigator.pop(context);
+                _copySchedule(schedule, task);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('削除', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteSchedule(schedule);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editSchedule(ScheduleItem schedule, TaskItem task) async {
+    // タスク編集モーダルを開く（予定セクションを展開）
+    await showDialog(
+      context: context,
+      builder: (context) => TaskDialog(task: task),
+    );
+    
+    // モーダルが閉じた後にデータを再読み込み
+    if (mounted) {
+      final vm = ref.read(scheduleViewModelProvider.notifier);
+      await vm.loadSchedules();
+    }
+  }
+
+  Future<void> _copySchedule(ScheduleItem schedule, TaskItem task) async {
+    // 日時選択ダイアログ
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: schedule.startDateTime.add(const Duration(days: 7)),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    
+    if (pickedDate == null || !mounted) return;
+    
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(schedule.startDateTime),
+    );
+    
+    if (pickedTime == null || !mounted) return;
+    
+    // 終了日時の計算
+    DateTime? newEndDateTime;
+    if (schedule.endDateTime != null) {
+      final duration = schedule.endDateTime!.difference(schedule.startDateTime);
+      newEndDateTime = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      ).add(duration);
+    }
+    
+    // 新しい予定を作成
+    final vm = ref.read(scheduleViewModelProvider.notifier);
+    final newSchedule = vm.createSchedule(
+      taskId: schedule.taskId,
+      title: schedule.title,
+      startDateTime: DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      ),
+      endDateTime: newEndDateTime,
+      location: schedule.location,
+      notes: schedule.notes,
+    );
+    
+    await vm.addSchedule(newSchedule);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('予定をコピーしました')),
+      );
+    }
+  }
+
+  Future<void> _deleteSchedule(ScheduleItem schedule) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('予定を削除'),
+        content: Text('「${schedule.title}」を削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm == true && mounted) {
+      final vm = ref.read(scheduleViewModelProvider.notifier);
+      await vm.deleteSchedule(schedule.id);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('予定を削除しました')),
+        );
+      }
+    }
   }
 }
 
