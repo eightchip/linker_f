@@ -28,6 +28,7 @@ class TaskDialog extends ConsumerStatefulWidget {
   final String? relatedLinkId;
   final DateTime? initialDueDate; // 新規作成時の初期期限日
   final VoidCallback? onMailSent; // メール送信後のコールバック
+  final VoidCallback? onPinChanged; // ピン止め状態変更後のコールバック
 
   const TaskDialog({
     super.key,
@@ -35,6 +36,7 @@ class TaskDialog extends ConsumerStatefulWidget {
     this.relatedLinkId,
     this.initialDueDate,
     this.onMailSent,
+    this.onPinChanged,
   });
 
   @override
@@ -811,6 +813,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       _isPinned = !_isPinned;
     });
     _savePinnedState();
+    // ピン止め状態変更を親に通知
+    widget.onPinChanged?.call();
   }
 
   /// 左カラム（タイトル+本文+説明）を構築
@@ -1537,17 +1541,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   index: index,
                   child: Row(
                     children: [
-                      // ドラッグハンドル（左側のみ）
-                      Container(
-                        width: 32,
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.drag_handle,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
                       // リンクアイコンと名前
                       Expanded(
                         child: InkWell(
@@ -1593,6 +1586,16 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                               ),
                             ],
                           ),
+                        ),
+                      ),
+                      // ドラッグハンドル（右側のみ）
+                      Container(
+                        width: 32,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.drag_handle,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                          size: 20,
                         ),
                       ),
                     ],
@@ -2380,7 +2383,47 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               ),
               const Spacer(),
               IconButton(
+                icon: const Icon(Icons.copy, color: Colors.orange, size: 18),
+                tooltip: 'コピー',
+                onPressed: () async {
+                  if (widget.task == null) return;
+                  
+                  // 日時は7日後をデフォルトに設定
+                  final newStartDate = schedule.startDateTime.add(const Duration(days: 7));
+                  DateTime? newEndDate;
+                  if (schedule.endDateTime != null) {
+                    final duration = schedule.endDateTime!.difference(schedule.startDateTime);
+                    newEndDate = newStartDate.add(duration);
+                  }
+                  
+                  // 新しい予定を作成して即座に追加
+                  final vm = ref.read(scheduleViewModelProvider.notifier);
+                  final newSchedule = vm.createSchedule(
+                    taskId: schedule.taskId,
+                    title: schedule.title,
+                    startDateTime: newStartDate,
+                    endDateTime: newEndDate,
+                    location: schedule.location,
+                    notes: schedule.notes,
+                  );
+                  
+                  await vm.addSchedule(newSchedule);
+                  
+                  // データを再読み込みしてUIを更新
+                  await vm.loadSchedules();
+                  setState(() {});
+                  
+                  // スナックバーで通知
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('予定をコピーして追加しました')),
+                    );
+                  }
+                },
+              ),
+              IconButton(
                 icon: const Icon(Icons.edit, color: Colors.blue, size: 18),
+                tooltip: '編集',
                 onPressed: () {
                   _scheduleTitleController.text = schedule.title;
                   _scheduleLocationController.text = schedule.location ?? '';
@@ -2400,6 +2443,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               ),
               IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                tooltip: '削除',
                 onPressed: () async {
                   final confirm = await showDialog<bool>(
                     context: context,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../services/keyboard_shortcut_service.dart';
 import '../services/settings_service.dart';
+import '../services/schedule_reminder_service.dart';
 import 'home_screen.dart';
 import 'task_screen.dart';
 
@@ -76,6 +77,13 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
     
     // 調整されたアクセントカラーを計算
     final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
+    
+    // リマインダーサービスのコンテキストを設定
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        ScheduleReminderService.setContext(context);
+      }
+    });
     
     return MaterialApp(
       navigatorKey: navigatorKey,

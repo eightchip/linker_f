@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:async';
 import '../models/schedule_item.dart';
+import '../services/schedule_reminder_service.dart';
 
 final scheduleViewModelProvider = StateNotifierProvider<ScheduleViewModel, List<ScheduleItem>>((ref) {
   return ScheduleViewModel();
@@ -52,6 +54,9 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       schedules.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
       state = schedules;
       
+      // リマインダーを復元
+      await ScheduleReminderService.restoreReminders(schedules);
+      
       if (kDebugMode) {
         print('予定読み込み完了: ${schedules.length}件');
       }
@@ -73,6 +78,9 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       await _scheduleBox!.flush();
       // データベースから最新のデータを読み込む
       await _loadSchedules();
+      
+      // リマインダーを設定
+      await ScheduleReminderService.scheduleReminder(schedule);
 
       if (kDebugMode) {
         print('予定追加: ${schedule.title}');
@@ -88,10 +96,16 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       if (_scheduleBox == null || !_scheduleBox!.isOpen) {
         await _loadSchedules();
       }
+      // 既存のリマインダーをキャンセル
+      await ScheduleReminderService.cancelReminder(schedule.id);
+      
       final updatedSchedule = schedule.copyWith(updatedAt: DateTime.now());
       await _scheduleBox!.put(updatedSchedule.id, updatedSchedule);
       await _scheduleBox!.flush();
       await _loadSchedules();
+      
+      // 新しいリマインダーを設定
+      await ScheduleReminderService.scheduleReminder(updatedSchedule);
 
       if (kDebugMode) {
         print('予定更新: ${schedule.title}');
@@ -107,6 +121,9 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       if (_scheduleBox == null || !_scheduleBox!.isOpen) {
         await _loadSchedules();
       }
+      // リマインダーをキャンセル
+      await ScheduleReminderService.cancelReminder(scheduleId);
+      
       await _scheduleBox!.delete(scheduleId);
       await _scheduleBox!.flush();
       await _loadSchedules();

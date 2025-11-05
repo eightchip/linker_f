@@ -1794,7 +1794,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
           // タスクをタップした時にタスクダイアログを開く
           showDialog(
             context: context,
-            builder: (context) => TaskDialog(task: task),
+            builder: (context) => TaskDialog(
+              task: task,
+              onPinChanged: () {
+                _loadPinnedTasks();
+                setState(() {});
+              },
+            ),
           );
         },
         child: AnimatedContainer(
@@ -2467,6 +2473,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
         task: task,
         onMailSent: () {
           // メール送信後にタスクリストを更新
+          setState(() {});
+        },
+        onPinChanged: () {
+          // ピン止め状態変更後にタスクリストを更新
+          _loadPinnedTasks();
           setState(() {});
         },
       ),

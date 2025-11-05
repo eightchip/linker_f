@@ -7,6 +7,7 @@ import '../models/task_item.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import '../viewmodels/task_viewmodel.dart';
 import 'task_dialog.dart';
+import 'home_screen.dart'; // HighlightedText用
 
 class ScheduleCalendarScreen extends ConsumerStatefulWidget {
   const ScheduleCalendarScreen({super.key});
@@ -18,9 +19,17 @@ class ScheduleCalendarScreen extends ConsumerStatefulWidget {
 class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen> {
   bool _localeInitialized = false;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   
   // 日付範囲フィルター: 'all', 'future', 'past'
   String _dateFilter = 'all';
+  
+  // タスク別フィルター
+  String? _selectedTaskId;
+  
+  // 検索クエリ
+  String _searchQuery = '';
   
   // 今日の日付の位置を保持
   GlobalKey? _todayKey;
@@ -53,6 +62,8 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -72,8 +83,14 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     final tasks = ref.watch(taskViewModelProvider);
     final now = DateTime.now();
     
+    // タスク別フィルターを適用
+    List<ScheduleItem> taskFilteredSchedules = schedules;
+    if (_selectedTaskId != null) {
+      taskFilteredSchedules = schedules.where((s) => s.taskId == _selectedTaskId).toList();
+    }
+    
     // 日付範囲フィルターを適用
-    final filteredSchedules = schedules.where((schedule) {
+    final filteredSchedules = taskFilteredSchedules.where((schedule) {
       if (_dateFilter == 'future') {
         return schedule.startDateTime.isAfter(now);
       } else if (_dateFilter == 'past') {
@@ -82,9 +99,28 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       return true; // 'all'
     }).toList();
     
+    // 検索フィルターを適用
+    final searchFilteredSchedules = _searchQuery.isEmpty
+        ? filteredSchedules
+        : filteredSchedules.where((schedule) {
+            final task = tasks.firstWhere(
+              (t) => t.id == schedule.taskId,
+              orElse: () => TaskItem(
+                id: schedule.taskId,
+                title: '',
+                createdAt: DateTime.now(),
+              ),
+            );
+            final queryLower = _searchQuery.toLowerCase();
+            return schedule.title.toLowerCase().contains(queryLower) ||
+                task.title.toLowerCase().contains(queryLower) ||
+                (schedule.location != null && schedule.location!.toLowerCase().contains(queryLower)) ||
+                (schedule.notes != null && schedule.notes!.toLowerCase().contains(queryLower));
+          }).toList();
+    
     // 日付ごとにグループ化
     final schedulesByDate = <DateTime, List<ScheduleItem>>{};
-    for (final schedule in filteredSchedules) {
+    for (final schedule in searchFilteredSchedules) {
       final dateKey = DateTime(
         schedule.startDateTime.year,
         schedule.startDateTime.month,
@@ -135,7 +171,87 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           ),
         ],
       ),
-      body: filteredSchedules.isEmpty
+      body: Column(
+        children: [
+          // 検索バーとタスクフィルター
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // 検索バー
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    decoration: InputDecoration(
+                      hintText: '予定タイトル、タスク名、場所、メモで検索',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // タスクフィルター
+                DropdownButton<String?>(
+                  value: _selectedTaskId,
+                  hint: const Text('タスク'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('すべて'),
+                    ),
+                    ...tasks.map((task) => DropdownMenuItem<String?>(
+                      value: task.id,
+                      child: SizedBox(
+                        width: 200,
+                        child: Text(
+                          task.title,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedTaskId = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          // 予定リスト
+          Expanded(
+            child: searchFilteredSchedules.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -151,30 +267,34 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                 ],
               ),
             )
-          : ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: sortedDates.length,
-              itemBuilder: (context, index) {
-                final date = sortedDates[index];
-                final dateSchedules = schedulesByDate[date]!;
-                final isToday = date.year == now.year &&
-                    date.month == now.month &&
-                    date.day == now.day;
-                
-                // 今日の日付のキーを保持
-                if (isToday && _todayKey == null) {
-                  _todayKey = GlobalKey();
-                }
-                
-                return _buildDateSection(
-                  date,
-                  dateSchedules,
-                  tasks,
-                  isToday ? _todayKey : null,
-                );
-              },
+              : ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: sortedDates.length,
+                  itemBuilder: (context, index) {
+                    final date = sortedDates[index];
+                    final dateSchedules = schedulesByDate[date]!;
+                    final isToday = date.year == now.year &&
+                        date.month == now.month &&
+                        date.day == now.day;
+                    
+                    // 今日の日付のキーを保持
+                    if (isToday && _todayKey == null) {
+                      _todayKey = GlobalKey();
+                    }
+                    
+                    return _buildDateSection(
+                      date,
+                      dateSchedules,
+                      tasks,
+                      isToday ? _todayKey : null,
+                      now,
+                    );
+                  },
+                ),
             ),
+          ],
+        ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddScheduleDialog,
         tooltip: '予定を追加',
@@ -189,6 +309,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         _todayKey!.currentContext!,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
+        alignment: 0.0, // 画面の上部に配置
       );
     }
   }
@@ -240,6 +361,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     List<ScheduleItem> schedules,
     List<TaskItem> tasks,
     GlobalKey? dateKey,
+    DateTime now,
   ) {
     // ロケールが初期化されていない場合はデフォルト形式を使用
     final dateFormat = _localeInitialized
@@ -301,22 +423,26 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             );
           }
           
-          return _buildScheduleCard(schedule, task);
+          return _buildScheduleCard(schedule, task, now);
         }),
         const SizedBox(height: 16),
       ],
     );
   }
 
-  Widget _buildScheduleCard(ScheduleItem schedule, TaskItem task) {
+  Widget _buildScheduleCard(ScheduleItem schedule, TaskItem task, DateTime now) {
     final timeFormat = DateFormat('HH:mm');
     final hasEndTime = schedule.endDateTime != null;
     final timeText = hasEndTime
         ? '${timeFormat.format(schedule.startDateTime)} - ${timeFormat.format(schedule.endDateTime!)}'
         : timeFormat.format(schedule.startDateTime);
+    
+    // 過去の予定かどうかを判定
+    final isPast = schedule.startDateTime.isBefore(now);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      color: isPast ? Colors.grey.shade200 : null,
       child: InkWell(
         onTap: () {
           // タスク編集モーダルを開く
@@ -377,13 +503,24 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                schedule.title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              _searchQuery.isEmpty
+                  ? Text(
+                      schedule.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isPast ? Colors.grey.shade600 : null,
+                      ),
+                    )
+                  : HighlightedText(
+                      text: schedule.title,
+                      highlight: _searchQuery,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isPast ? Colors.grey.shade600 : null,
+                      ),
+                    ),
               const SizedBox(height: 4),
               InkWell(
                 onTap: () {
@@ -399,24 +536,70 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                     // タスクが見つからない場合は何もしない
                   }
                 },
-                child: Text(
-                  task.title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.blue.shade800,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
+                child: _searchQuery.isEmpty
+                    ? Text(
+                        task.title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blue.shade800,
+                          decoration: TextDecoration.underline,
+                        ),
+                      )
+                    : HighlightedText(
+                        text: task.title,
+                        highlight: _searchQuery,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.blue.shade800,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
               ),
+              if (schedule.location != null && schedule.location!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _searchQuery.isEmpty
+                          ? Text(
+                              schedule.location!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            )
+                          : HighlightedText(
+                              text: schedule.location!,
+                              highlight: _searchQuery,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ],
               if (schedule.notes != null && schedule.notes!.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(
-                  schedule.notes!,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
+                _searchQuery.isEmpty
+                    ? Text(
+                        schedule.notes!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      )
+                    : HighlightedText(
+                        text: schedule.notes!,
+                        highlight: _searchQuery,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
               ],
             ],
           ),
