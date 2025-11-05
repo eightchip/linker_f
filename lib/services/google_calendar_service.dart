@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/task_item.dart';
 import '../models/sub_task.dart';
+import '../models/schedule_item.dart';
 import '../utils/error_handler.dart';
 
 /// 同期結果クラス
@@ -1689,6 +1690,270 @@ class GoogleCalendarService {
 
       if (response.statusCode == 200) {
         print('Google Calendarイベント更新成功: $eventId');
+        return true;
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = _getErrorMessage(response.statusCode, errorBody);
+        ErrorHandler.logError('Google Calendar更新', 'HTTP ${response.statusCode}: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      ErrorHandler.logError('Google Calendar更新', e);
+      return false;
+    }
+  }
+
+  /// 予定のGoogle Calendarイベントを作成
+  Future<SyncResult> createCalendarEventFromSchedule(ScheduleItem schedule) async {
+    if (!_isInitialized || _accessToken == null) {
+      ErrorHandler.logError('Google Calendar送信', '認証されていません');
+      return SyncResult(
+        success: false,
+        errorMessage: 'Google Calendarが認証されていません。設定画面でOAuth2認証を実行してください。',
+        errorCode: 'AUTH_REQUIRED',
+      );
+    }
+
+    try {
+      // アクセストークンの有効性を確認
+      if (_tokenExpiry != null && DateTime.now().isAfter(_tokenExpiry!)) {
+        final refreshed = await _refreshAccessToken();
+        if (!refreshed) {
+          ErrorHandler.logError('Google Calendar送信', 'トークンの更新に失敗しました');
+          return SyncResult(
+            success: false,
+            errorMessage: 'アクセストークンの更新に失敗しました。再認証が必要です。',
+            errorCode: 'TOKEN_REFRESH_FAILED',
+          );
+        }
+      }
+
+      // 既存イベントを検索（ScheduleIDで検索）
+      final startTime = schedule.startDateTime;
+      final existingEvents = await getEvents(
+        startTime: startTime.subtract(const Duration(days: 30)),
+        endTime: startTime.add(const Duration(days: 30)),
+        maxResults: 200,
+      );
+
+      // ScheduleIDで既存イベントを検索
+      Map<String, dynamic>? existingEvent;
+      for (final event in existingEvents) {
+        final scheduleId = event['extendedProperties']?['private']?['scheduleId'];
+        if (scheduleId == schedule.id) {
+          existingEvent = event;
+          if (kDebugMode) {
+            print('予定IDで既存イベントを発見: ${event['summary']} (ID: $scheduleId)');
+          }
+          break;
+        }
+      }
+
+      // 既存イベントが見つかった場合は更新
+      if (existingEvent != null) {
+        if (kDebugMode) {
+          print('既存イベントを更新: ${existingEvent['summary']}');
+        }
+        final success = await updateCalendarEventFromSchedule(schedule, existingEvent['id']);
+        
+        if (success) {
+          return SyncResult(
+            success: true,
+            details: {'eventId': existingEvent['id'], 'action': 'updated'},
+          );
+        } else {
+          return SyncResult(
+            success: false,
+            errorMessage: '既存イベントの更新に失敗しました: ${existingEvent['summary']}',
+            errorCode: 'UPDATE_FAILED',
+          );
+        }
+      }
+
+      // イベントデータを構築
+      final eventData = <String, dynamic>{
+        'summary': schedule.title.trim(),
+      };
+
+      // 日時を設定（終日イベントではなく、日時指定）
+      final startDateTime = schedule.startDateTime;
+      final endDateTime = schedule.endDateTime ?? startDateTime.add(const Duration(hours: 1));
+
+      eventData['start'] = {
+        'dateTime': startDateTime.toUtc().toIso8601String(),
+        'timeZone': 'Asia/Tokyo',
+      };
+      eventData['end'] = {
+        'dateTime': endDateTime.toUtc().toIso8601String(),
+        'timeZone': 'Asia/Tokyo',
+      };
+
+      // 説明文を構築
+      final descriptionParts = <String>[];
+      if (schedule.notes != null && schedule.notes!.isNotEmpty) {
+        descriptionParts.add('メモ: ${schedule.notes}');
+      }
+      if (descriptionParts.isNotEmpty) {
+        eventData['description'] = descriptionParts.join('\n');
+      }
+
+      // extendedPropertiesにScheduleIDを保存
+      eventData['extendedProperties'] = {
+        'private': {
+          'scheduleId': schedule.id,
+          'taskId': schedule.taskId,
+        }
+      };
+
+      // 場所情報がある場合のみ追加
+      if (schedule.location != null && schedule.location!.isNotEmpty) {
+        eventData['location'] = schedule.location;
+      }
+
+      // デバッグ用: 送信データをログ出力
+      if (kDebugMode) {
+        print('=== Google Calendar API送信データ（予定） ===');
+        print('予定: ${schedule.title}');
+        print('開始: ${startDateTime}');
+        print('終了: ${endDateTime}');
+        print('場所: ${schedule.location}');
+        print('送信データ: ${jsonEncode(eventData)}');
+        print('===============================');
+      }
+
+      // Google Calendar APIに送信
+      final response = await http.post(
+        Uri.parse('$_calendarApiUrl/calendars/primary/events'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(eventData),
+      );
+
+      if (kDebugMode) {
+        print('レスポンスステータス: ${response.statusCode}');
+        print('レスポンスボディ: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (kDebugMode) {
+          print('Google Calendarイベント作成成功: ${responseData['id']}');
+        }
+        return SyncResult(
+          success: true,
+          details: {'eventId': responseData['id']},
+        );
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final errorMessage = _getErrorMessage(response.statusCode, errorBody);
+        ErrorHandler.logError('Google Calendar送信', 'HTTP ${response.statusCode}: ${response.body}');
+        return SyncResult(
+          success: false,
+          errorMessage: errorMessage,
+          errorCode: 'HTTP_${response.statusCode}',
+          details: errorBody,
+        );
+      }
+    } catch (e) {
+      ErrorHandler.logError('Google Calendar送信', e);
+      return SyncResult(
+        success: false,
+        errorMessage: 'ネットワークエラーまたは予期しないエラーが発生しました: ${e.toString()}',
+        errorCode: 'NETWORK_ERROR',
+      );
+    }
+  }
+
+  /// 予定のGoogle Calendarイベントを更新
+  Future<bool> updateCalendarEventFromSchedule(ScheduleItem schedule, String eventId) async {
+    if (!_isInitialized || _accessToken == null) {
+      ErrorHandler.logError('Google Calendar更新', '認証されていません');
+      return false;
+    }
+
+    try {
+      // アクセストークンの有効性を確認
+      if (_tokenExpiry != null && DateTime.now().isAfter(_tokenExpiry!)) {
+        final refreshed = await _refreshAccessToken();
+        if (!refreshed) {
+          ErrorHandler.logError('Google Calendar更新', 'トークンの更新に失敗しました');
+          return false;
+        }
+      }
+
+      // イベントデータを構築
+      final eventData = <String, dynamic>{
+        'summary': schedule.title.trim(),
+      };
+
+      // 日時を設定
+      final startDateTime = schedule.startDateTime;
+      final endDateTime = schedule.endDateTime ?? startDateTime.add(const Duration(hours: 1));
+
+      eventData['start'] = {
+        'dateTime': startDateTime.toUtc().toIso8601String(),
+        'timeZone': 'Asia/Tokyo',
+      };
+      eventData['end'] = {
+        'dateTime': endDateTime.toUtc().toIso8601String(),
+        'timeZone': 'Asia/Tokyo',
+      };
+
+      // 説明文を構築
+      final descriptionParts = <String>[];
+      if (schedule.notes != null && schedule.notes!.isNotEmpty) {
+        descriptionParts.add('メモ: ${schedule.notes}');
+      }
+      if (descriptionParts.isNotEmpty) {
+        eventData['description'] = descriptionParts.join('\n');
+      }
+
+      // extendedPropertiesにScheduleIDを保存
+      eventData['extendedProperties'] = {
+        'private': {
+          'scheduleId': schedule.id,
+          'taskId': schedule.taskId,
+        }
+      };
+
+      // 場所情報がある場合のみ追加
+      if (schedule.location != null && schedule.location!.isNotEmpty) {
+        eventData['location'] = schedule.location;
+      }
+
+      // デバッグ用: 送信データをログ出力
+      if (kDebugMode) {
+        print('=== Google Calendar API更新データ（予定） ===');
+        print('予定: ${schedule.title}');
+        print('イベントID: $eventId');
+        print('開始: ${startDateTime}');
+        print('終了: ${endDateTime}');
+        print('場所: ${schedule.location}');
+        print('送信データ: ${jsonEncode(eventData)}');
+        print('===============================');
+      }
+
+      // Google Calendar APIに送信
+      final response = await http.put(
+        Uri.parse('$_calendarApiUrl/calendars/primary/events/$eventId'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(eventData),
+      );
+
+      if (kDebugMode) {
+        print('レスポンスステータス: ${response.statusCode}');
+        print('レスポンスボディ: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          print('Google Calendarイベント更新成功: $eventId');
+        }
         return true;
       } else {
         final errorBody = jsonDecode(response.body);

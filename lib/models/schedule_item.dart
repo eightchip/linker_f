@@ -31,6 +31,12 @@ class ScheduleItem extends HiveObject {
   @HiveField(8)
   DateTime? updatedAt; // 更新日時
 
+  @HiveField(9)
+  String? googleCalendarEventId; // Google CalendarイベントID（連携用）
+
+  @HiveField(10)
+  String? outlookEntryId; // Outlook EntryID（重複チェック・更新用）
+
   ScheduleItem({
     required this.id,
     required this.taskId,
@@ -41,6 +47,8 @@ class ScheduleItem extends HiveObject {
     this.notes,
     required this.createdAt,
     this.updatedAt,
+    this.googleCalendarEventId,
+    this.outlookEntryId,
   });
 
   ScheduleItem copyWith({
@@ -53,6 +61,8 @@ class ScheduleItem extends HiveObject {
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? googleCalendarEventId,
+    String? outlookEntryId,
   }) {
     return ScheduleItem(
       id: id ?? this.id,
@@ -64,6 +74,8 @@ class ScheduleItem extends HiveObject {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      googleCalendarEventId: googleCalendarEventId ?? this.googleCalendarEventId,
+      outlookEntryId: outlookEntryId ?? this.outlookEntryId,
     );
   }
 
@@ -78,6 +90,8 @@ class ScheduleItem extends HiveObject {
       'notes': notes,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'googleCalendarEventId': googleCalendarEventId,
+      'outlookEntryId': outlookEntryId,
     };
   }
 
@@ -92,6 +106,8 @@ class ScheduleItem extends HiveObject {
       notes: json['notes'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      googleCalendarEventId: json['googleCalendarEventId'],
+      outlookEntryId: json['outlookEntryId'],
     );
   }
 }

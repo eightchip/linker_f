@@ -22,6 +22,7 @@ import '../views/home_screen.dart'; // UrlPreviewWidget, FilePreviewWidget用
 import 'package:hive/hive.dart';
 import '../models/schedule_item.dart';
 import '../viewmodels/schedule_viewmodel.dart';
+import 'outlook_calendar_import_dialog.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
@@ -2039,6 +2040,27 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   ),
                 ),
                 const Spacer(),
+                // Outlook連携ボタン
+                TextButton.icon(
+                  onPressed: () async {
+                    final result = await showDialog(
+                      context: context,
+                      builder: (context) => OutlookCalendarImportDialog(task: widget.task!),
+                    );
+                    if (result == true) {
+                      // 予定を取り込んだ場合は、データを再読み込み
+                      final vm = ref.read(scheduleViewModelProvider.notifier);
+                      await vm.loadSchedules();
+                      setState(() {});
+                    }
+                  },
+                  icon: const Icon(Icons.cloud_download, size: 16),
+                  label: const Text('Outlookから取り込む', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 if (hasSchedules)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
