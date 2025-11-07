@@ -23,6 +23,7 @@ import 'package:hive/hive.dart';
 import '../models/schedule_item.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import 'outlook_calendar_import_dialog.dart';
+import 'outlook_calendar_import_dialog_v2.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
@@ -30,6 +31,7 @@ class TaskDialog extends ConsumerStatefulWidget {
   final DateTime? initialDueDate; // 新規作成時の初期期限日
   final VoidCallback? onMailSent; // メール送信後のコールバック
   final VoidCallback? onPinChanged; // ピン止め状態変更後のコールバック
+  final VoidCallback? onLinkReordered; // リンク並び替え後のコールバック
 
   const TaskDialog({
     super.key,
@@ -38,6 +40,7 @@ class TaskDialog extends ConsumerStatefulWidget {
     this.initialDueDate,
     this.onMailSent,
     this.onPinChanged,
+    this.onLinkReordered,
   });
 
   @override
@@ -1528,6 +1531,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               final updatedTask = currentTask.copyWith(relatedLinkIds: reorderedLinkIds);
               await ref.read(taskViewModelProvider.notifier).updateTask(updatedTask);
               
+              // タスク管理画面をリフレッシュするためのコールバック
+              widget.onLinkReordered?.call();
+              
               // UIを更新
               setState(() {});
             },
@@ -2040,12 +2046,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   ),
                 ),
                 const Spacer(),
-                // Outlook連携ボタン
+                // Outlook連携ボタン（新バージョン）
                 TextButton.icon(
                   onPressed: () async {
                     final result = await showDialog(
                       context: context,
-                      builder: (context) => OutlookCalendarImportDialog(task: widget.task!),
+                      builder: (context) => const OutlookCalendarImportDialogV2(),
                     );
                     if (result == true) {
                       // 予定を取り込んだ場合は、データを再読み込み

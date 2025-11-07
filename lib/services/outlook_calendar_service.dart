@@ -45,47 +45,61 @@ class OutlookCalendarService {
       final start = startDate ?? DateTime.now();
       final end = endDate ?? DateTime.now().add(const Duration(days: 30));
 
-      // PowerShellスクリプトを実行
+      // PowerShellスクリプトを実行（COMオブジェクトの適切な解放を追加）
       final script = '''
-\$outlook = New-Object -ComObject Outlook.Application
-\$namespace = \$outlook.GetNamespace("MAPI")
-\$calendar = \$namespace.GetDefaultFolder(9)  # olFolderCalendar = 9
+try {
+    \$outlook = New-Object -ComObject Outlook.Application
+    \$namespace = \$outlook.GetNamespace("MAPI")
+    \$calendar = \$namespace.GetDefaultFolder(9)  # olFolderCalendar = 9
 
-\$items = \$calendar.Items
-\$items.Sort("[Start]", \$true)  # 開始日時で昇順ソート
+    \$items = \$calendar.Items
+    \$items.Sort("[Start]", \$true)  # 開始日時で昇順ソート
 
-\$events = @()
-\$startDate = [DateTime]::Parse("${start.toIso8601String()}")
-\$endDate = [DateTime]::Parse("${end.toIso8601String()}")
+    \$events = @()
+    \$startDate = [DateTime]::Parse("${start.toIso8601String()}")
+    \$endDate = [DateTime]::Parse("${end.toIso8601String()}")
 
-foreach (\$item in \$items) {
-    try {
-        if (\$item.Start -ge \$startDate -and \$item.Start -le \$endDate) {
-            \$event = @{
-                Subject = if (\$item.Subject) { \$item.Subject } else { "" }
-                Start = \$item.Start.ToString("yyyy-MM-ddTHH:mm:ss")
-                End = if (\$item.End) { \$item.End.ToString("yyyy-MM-ddTHH:mm:ss") } else { "" }
-                Location = if (\$item.Location) { \$item.Location } else { "" }
-                Body = if (\$item.Body) { \$item.Body } else { "" }
-                EntryID = if (\$item.EntryID) { \$item.EntryID } else { "" }
-                LastModificationTime = if (\$item.LastModificationTime) { \$item.LastModificationTime.ToString("yyyy-MM-ddTHH:mm:ss") } else { "" }
+    foreach (\$item in \$items) {
+        try {
+            if (\$item.Start -ge \$startDate -and \$item.Start -le \$endDate) {
+                \$event = @{
+                    Subject = if (\$item.Subject) { \$item.Subject } else { "" }
+                    Start = \$item.Start.ToString("yyyy-MM-ddTHH:mm:ss")
+                    End = if (\$item.End) { \$item.End.ToString("yyyy-MM-ddTHH:mm:ss") } else { "" }
+                    Location = if (\$item.Location) { \$item.Location } else { "" }
+                    Body = if (\$item.Body) { \$item.Body } else { "" }
+                    EntryID = if (\$item.EntryID) { \$item.EntryID } else { "" }
+                    LastModificationTime = if (\$item.LastModificationTime) { \$item.LastModificationTime.ToString("yyyy-MM-ddTHH:mm:ss") } else { "" }
+                }
+                \$events += \$event
             }
-            \$events += \$event
+        } catch {
+            # エラーが発生したアイテムはスキップ
+            continue
+        } finally {
+            # 各アイテムのCOMオブジェクトを解放
+            if (\$item) {
+                [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null
+            }
         }
-    } catch {
-        # エラーが発生したアイテムはスキップ
-        continue
     }
+
+    # JSON形式で出力
+    \$events | ConvertTo-Json -Depth 10
+
+    # COMオブジェクトを適切に解放（順序重要）
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$items) | Out-Null
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$calendar) | Out-Null
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$namespace) | Out-Null
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null
+    
+    # ガベージコレクションを強制実行
+    [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
+} catch {
+    Write-Error \$_.Exception.Message
+    throw
 }
-
-# JSON形式で出力
-\$events | ConvertTo-Json -Depth 10
-
-# COMオブジェクトを解放
-[System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null
-[System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$namespace) | Out-Null
-[System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$calendar) | Out-Null
-[System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$items) | Out-Null
 ''';
 
       final result = await Process.run('powershell.exe', [

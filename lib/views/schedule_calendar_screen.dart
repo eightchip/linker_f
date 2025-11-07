@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -8,6 +9,7 @@ import '../viewmodels/schedule_viewmodel.dart';
 import '../viewmodels/task_viewmodel.dart';
 import 'task_dialog.dart';
 import 'home_screen.dart'; // HighlightedText用
+import 'outlook_calendar_import_dialog_v2.dart';
 
 class ScheduleCalendarScreen extends ConsumerStatefulWidget {
   const ScheduleCalendarScreen({super.key});
@@ -22,8 +24,14 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   
-  // 日付範囲フィルター: 'all', 'future', 'past'
-  String _dateFilter = 'all';
+  // 日付範囲フィルター: 'future'（デフォルト）、'past'
+  String _dateFilter = 'future'; // デフォルトは未来のみ
+  
+  // 過去表示チェックボックス
+  bool _showPast = false;
+  
+  // 選択された日付（エクセルコピー用）
+  Set<DateTime> _selectedDates = {};
   
   // タスク別フィルター
   String? _selectedTaskId;
@@ -89,7 +97,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       taskFilteredSchedules = schedules.where((s) => s.taskId == _selectedTaskId).toList();
     }
     
-    // 日付範囲フィルターを適用
+    // 日付範囲フィルターを適用（未来/過去のみ）
     final filteredSchedules = taskFilteredSchedules.where((schedule) {
       if (_dateFilter == 'future') {
         return schedule.startDateTime.isAfter(now);
@@ -139,35 +147,92 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       appBar: AppBar(
         title: const Text('予定表'),
         actions: [
-          // 今日へのジャンプボタン
-          IconButton(
-            icon: const Icon(Icons.today),
-            tooltip: '今日にジャンプ',
-            onPressed: _scrollToToday,
+          // 一括選択ボタン
+          if (_selectedDates.isNotEmpty || sortedDates.isNotEmpty)
+            IconButton(
+              icon: Icon(_selectedDates.length == sortedDates.length ? Icons.deselect : Icons.select_all),
+              tooltip: _selectedDates.length == sortedDates.length ? '全解除' : '全選択',
+              onPressed: () {
+                setState(() {
+                  if (_selectedDates.length == sortedDates.length) {
+                    // 全解除
+                    _selectedDates.clear();
+                  } else {
+                    // 全選択
+                    _selectedDates = Set.from(sortedDates);
+                  }
+                });
+              },
+            ),
+          // 過去表示チェックボックス
+          Row(
+            children: [
+              Checkbox(
+                value: _showPast,
+                onChanged: (value) {
+                  setState(() {
+                    _showPast = value ?? false;
+                    _dateFilter = _showPast ? 'past' : 'future';
+                    // フィルター変更時は選択をクリア
+                    _selectedDates.clear();
+                  });
+                },
+              ),
+              const Text('過去を表示', style: TextStyle(fontSize: 14)),
+              const SizedBox(width: 8),
+            ],
           ),
-          // フィルターメニュー
+          // エクセルにコピーボタン（形式選択メニュー付き、選択された日付の予定のみ）
           PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
-            tooltip: 'フィルター',
+            icon: const Icon(Icons.content_copy),
+            tooltip: _selectedDates.isEmpty 
+                ? 'エクセルにコピー（日付を選択してください）'
+                : 'エクセルにコピー（選択された${_selectedDates.length}日分の予定をクリップボードにコピー）',
             onSelected: (value) {
-              setState(() {
-                _dateFilter = value;
-              });
+              if (value == 'table') {
+                _copyToExcel(isOneCellForm: false);
+              } else if (value == 'onecell') {
+                _copyToExcel(isOneCellForm: true);
+              }
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
-                value: 'all',
-                child: Text('すべて'),
+                value: 'table',
+                child: Row(
+                  children: [
+                    Icon(Icons.table_chart, size: 20),
+                    SizedBox(width: 8),
+                    Text('表形式（複数列）'),
+                  ],
+                ),
               ),
               const PopupMenuItem(
-                value: 'future',
-                child: Text('未来のみ'),
-              ),
-              const PopupMenuItem(
-                value: 'past',
-                child: Text('過去のみ'),
+                value: 'onecell',
+                child: Row(
+                  children: [
+                    Icon(Icons.list, size: 20),
+                    SizedBox(width: 8),
+                    Text('1セル形式（列挙）'),
+                  ],
+                ),
               ),
             ],
+          ),
+          // Outlook連携ボタン
+          IconButton(
+            icon: const Icon(Icons.cloud_download),
+            tooltip: 'Outlookから予定を取り込む',
+            onPressed: () async {
+              final result = await showDialog(
+                context: context,
+                builder: (context) => const OutlookCalendarImportDialogV2(),
+              );
+              if (result == true) {
+                final vm = ref.read(scheduleViewModelProvider.notifier);
+                await vm.loadSchedules();
+                setState(() {});
+              }
+            },
           ),
         ],
       ),
@@ -220,7 +285,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                   ),
                 ),
                 const SizedBox(width: 8),
-                // タスクフィルター
+                // タスクフィルター（予定あり未完了タスクのみ）
                 DropdownButton<String?>(
                   value: _selectedTaskId,
                   hint: const Text('タスク'),
@@ -229,7 +294,12 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                       value: null,
                       child: Text('すべて'),
                     ),
-                    ...tasks.map((task) => DropdownMenuItem<String?>(
+                    // 予定があり、未完了のタスクのみ表示
+                    ...tasks.where((task) {
+                      if (task.status == TaskStatus.completed) return false;
+                      // このタスクに紐づく予定があるかチェック
+                      return schedules.any((s) => s.taskId == task.id);
+                    }).map((task) => DropdownMenuItem<String?>(
                       value: task.id,
                       child: SizedBox(
                         width: 200,
@@ -303,6 +373,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     );
   }
 
+
   void _scrollToToday() {
     if (_todayKey?.currentContext != null) {
       Scrollable.ensureVisible(
@@ -370,6 +441,13 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     final isToday = date.year == DateTime.now().year &&
         date.month == DateTime.now().month &&
         date.day == DateTime.now().day;
+    
+    // 日付のみ（時刻を0に）で比較
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final isSelected = _selectedDates.any((selectedDate) =>
+        selectedDate.year == dateOnly.year &&
+        selectedDate.month == dateOnly.month &&
+        selectedDate.day == dateOnly.day);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,6 +461,23 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           ),
           child: Row(
             children: [
+              // チェックボックス
+              Checkbox(
+                value: isSelected,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      _selectedDates.add(dateOnly);
+                    } else {
+                      _selectedDates.removeWhere((selectedDate) =>
+                          selectedDate.year == dateOnly.year &&
+                          selectedDate.month == dateOnly.month &&
+                          selectedDate.day == dateOnly.day);
+                    }
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
               Text(
                 dateFormat.format(date),
                 style: TextStyle(
@@ -465,36 +560,38 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 日時と場所（大きく表示、重複なし）
               Row(
                 children: [
                   Icon(
                     Icons.access_time,
-                    size: 16,
-                    color: Colors.grey.shade600,
+                    size: 18,
+                    color: Colors.grey.shade700,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 6),
                   Text(
                     timeText,
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade700,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
                     ),
                   ),
                   if (schedule.location != null && schedule.location!.isNotEmpty) ...[
                     const SizedBox(width: 16),
                     Icon(
                       Icons.location_on,
-                      size: 16,
-                      color: Colors.grey.shade600,
+                      size: 18,
+                      color: Colors.grey.shade700,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         schedule.location!,
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -502,12 +599,13 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                   ],
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
+              // タイトル（重複なし）
               _searchQuery.isEmpty
                   ? Text(
                       schedule.title,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: isPast ? Colors.grey.shade600 : null,
                       ),
@@ -516,12 +614,13 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                       text: schedule.title,
                       highlight: _searchQuery,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: isPast ? Colors.grey.shade600 : null,
                       ),
                     ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
+              // タスク名（クリック可能）
               InkWell(
                 onTap: () {
                   // タスク編集モーダルを開く
@@ -555,51 +654,13 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                         ),
                       ),
               ),
-              if (schedule.location != null && schedule.location!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: _searchQuery.isEmpty
-                          ? Text(
-                              schedule.location!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            )
-                          : HighlightedText(
-                              text: schedule.location!,
-                              highlight: _searchQuery,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
-              ],
+              // メモ（toggle、デフォルトで開く）
               if (schedule.notes != null && schedule.notes!.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                _searchQuery.isEmpty
-                    ? Text(
-                        schedule.notes!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      )
-                    : HighlightedText(
-                        text: schedule.notes!,
-                        highlight: _searchQuery,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
+                _ScheduleNotesExpansionWidget(
+                  notes: schedule.notes!,
+                  searchQuery: _searchQuery,
+                ),
               ],
             ],
           ),
@@ -637,6 +698,14 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
               onTap: () {
                 Navigator.pop(context);
                 _deleteSchedule(schedule);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_copy),
+              title: const Text('エクセルにコピー'),
+              onTap: () {
+                Navigator.pop(context);
+                _copyToExcel();
               },
             ),
           ],
@@ -746,6 +815,207 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         );
       }
     }
+  }
+
+  /// 予定をエクセル形式でクリップボードにコピー
+  /// [isOneCellForm] trueの場合は1セル形式（列挙）、falseの場合は表形式（複数列）
+  Future<void> _copyToExcel({bool isOneCellForm = false}) async {
+    final schedules = ref.read(scheduleViewModelProvider);
+    final tasks = ref.read(taskViewModelProvider);
+    final now = DateTime.now();
+    
+    // フィルタリング（現在のフィルター設定を適用）
+    List<ScheduleItem> filteredSchedules = schedules;
+    
+    // タスク別フィルター
+    if (_selectedTaskId != null) {
+      filteredSchedules = filteredSchedules.where((s) => s.taskId == _selectedTaskId).toList();
+    }
+    
+    // 日付範囲フィルター
+    filteredSchedules = filteredSchedules.where((schedule) {
+      if (_dateFilter == 'future') {
+        return schedule.startDateTime.isAfter(now);
+      } else if (_dateFilter == 'past') {
+        return schedule.startDateTime.isBefore(now);
+      }
+      return true;
+    }).toList();
+    
+    // 検索フィルター
+    if (_searchQuery.isNotEmpty) {
+      filteredSchedules = filteredSchedules.where((schedule) {
+        final task = tasks.firstWhere(
+          (t) => t.id == schedule.taskId,
+          orElse: () => TaskItem(
+            id: schedule.taskId,
+            title: '',
+            createdAt: DateTime.now(),
+          ),
+        );
+        final queryLower = _searchQuery.toLowerCase();
+        return schedule.title.toLowerCase().contains(queryLower) ||
+            task.title.toLowerCase().contains(queryLower) ||
+            (schedule.location != null && schedule.location!.toLowerCase().contains(queryLower)) ||
+            (schedule.notes != null && schedule.notes!.toLowerCase().contains(queryLower));
+      }).toList();
+    }
+    
+    // 選択された日付の予定のみにフィルター
+    if (_selectedDates.isNotEmpty) {
+      filteredSchedules = filteredSchedules.where((schedule) {
+        final scheduleDate = DateTime(
+          schedule.startDateTime.year,
+          schedule.startDateTime.month,
+          schedule.startDateTime.day,
+        );
+        return _selectedDates.any((selectedDate) =>
+            selectedDate.year == scheduleDate.year &&
+            selectedDate.month == scheduleDate.month &&
+            selectedDate.day == scheduleDate.day);
+      }).toList();
+    }
+    
+    // 選択された日付がない場合は警告
+    if (_selectedDates.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('コピーする日付を選択してください'),
+          ),
+        );
+      }
+      return;
+    }
+    
+    // 日付順にソート
+    filteredSchedules.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    
+    final buffer = StringBuffer();
+    final timeFormat = DateFormat('HH:mm');
+    
+    if (isOneCellForm) {
+      // 1セル形式（列挙形式）
+      for (final schedule in filteredSchedules) {
+        final task = tasks.firstWhere(
+          (t) => t.id == schedule.taskId,
+          orElse: () => TaskItem(
+            id: schedule.taskId,
+            title: 'タスクが見つかりません',
+            createdAt: DateTime.now(),
+          ),
+        );
+        
+        final startTime = timeFormat.format(schedule.startDateTime);
+        final location = schedule.location != null && schedule.location!.isNotEmpty
+            ? ' ${schedule.location}'
+            : '';
+        final taskTitle = task.title;
+        
+        buffer.writeln('・$startTime $taskTitle$location');
+      }
+    } else {
+      // 表形式（タブ区切り、複数列）
+      final dateFormat = DateFormat('yyyy/MM/dd');
+      
+      // ヘッダー
+      buffer.writeln('日付\t開始時刻\t終了時刻\tタイトル\t場所\tタスク名\tメモ');
+      
+      // データ行
+      for (final schedule in filteredSchedules) {
+        final task = tasks.firstWhere(
+          (t) => t.id == schedule.taskId,
+          orElse: () => TaskItem(
+            id: schedule.taskId,
+            title: 'タスクが見つかりません',
+            createdAt: DateTime.now(),
+          ),
+        );
+        
+        final date = dateFormat.format(schedule.startDateTime);
+        final startTime = timeFormat.format(schedule.startDateTime);
+        final endTime = schedule.endDateTime != null
+            ? timeFormat.format(schedule.endDateTime!)
+            : '';
+        final title = schedule.title.replaceAll('\t', ' ').replaceAll('\n', ' ');
+        final location = (schedule.location ?? '').replaceAll('\t', ' ').replaceAll('\n', ' ');
+        final taskTitle = task.title.replaceAll('\t', ' ').replaceAll('\n', ' ');
+        final notes = (schedule.notes ?? '').replaceAll('\t', ' ').replaceAll('\n', ' ');
+        
+        buffer.writeln('$date\t$startTime\t$endTime\t$title\t$location\t$taskTitle\t$notes');
+      }
+    }
+    
+    // クリップボードにコピー
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+    
+    if (mounted) {
+      final formatText = isOneCellForm ? '1セル形式' : '表形式';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${filteredSchedules.length}件の予定を$formatTextでクリップボードにコピーしました（エクセルに貼り付け可能）'),
+        ),
+      );
+    }
+  }
+}
+
+/// メモ表示用のExpansionTile（デフォルトで開く）
+class _ScheduleNotesExpansionWidget extends StatefulWidget {
+  final String notes;
+  final String searchQuery;
+
+  const _ScheduleNotesExpansionWidget({
+    super.key,
+    required this.notes,
+    required this.searchQuery,
+  });
+
+  @override
+  State<_ScheduleNotesExpansionWidget> createState() => _ScheduleNotesExpansionWidgetState();
+}
+
+class _ScheduleNotesExpansionWidgetState extends State<_ScheduleNotesExpansionWidget> {
+  bool _isExpanded = false; // デフォルトで閉じる
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionTile(
+      initiallyExpanded: _isExpanded,
+      onExpansionChanged: (expanded) {
+        setState(() {
+          _isExpanded = expanded;
+        });
+      },
+      title: const Text(
+        'メモ',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: widget.searchQuery.isEmpty
+              ? Text(
+                  widget.notes,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                )
+              : HighlightedText(
+                  text: widget.notes,
+                  highlight: widget.searchQuery,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+        ),
+      ],
+    );
   }
 }
 

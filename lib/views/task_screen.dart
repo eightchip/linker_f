@@ -28,6 +28,8 @@ import 'sub_task_dialog.dart';
 import 'schedule_screen.dart';
 import 'schedule_calendar_screen.dart';
 import '../widgets/mail_badge.dart';
+import '../viewmodels/schedule_viewmodel.dart';
+import '../models/schedule_item.dart';
 import '../services/mail_service.dart';
 import '../models/sent_mail_log.dart';
 import '../models/sub_task.dart';
@@ -1371,12 +1373,27 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                       isDense: true,
                     ),
                     value: _filterPriority,
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('すべて')),
-                      DropdownMenuItem(value: 'low', child: Text('低')),
-                      DropdownMenuItem(value: 'medium', child: Text('中')),
-                      DropdownMenuItem(value: 'high', child: Text('高')),
-                      DropdownMenuItem(value: 'urgent', child: Text('緊急')),
+                    items: [
+                      const DropdownMenuItem(
+                        value: 'all',
+                        child: Text('すべて'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'low',
+                        child: _buildPriorityDropdownItem('低', Colors.green),
+                      ),
+                      DropdownMenuItem(
+                        value: 'medium',
+                        child: _buildPriorityDropdownItem('中', Colors.orange),
+                      ),
+                      DropdownMenuItem(
+                        value: 'high',
+                        child: _buildPriorityDropdownItem('高', Colors.red),
+                      ),
+                      DropdownMenuItem(
+                        value: 'urgent',
+                        child: _buildPriorityDropdownItem('緊急', Colors.purple),
+                      ),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -1800,6 +1817,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 _loadPinnedTasks();
                 setState(() {});
               },
+              onLinkReordered: () {
+                // リンク並び替え後にタスク管理画面をリフレッシュ
+                ref.read(taskViewModelProvider.notifier).forceReloadTasks();
+                setState(() {});
+              },
             ),
           );
         },
@@ -2212,6 +2234,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
               }
             },
           ),
+          // 優先度表示（色と文字1文字）
+          _buildPriorityIndicatorForList(task.priority),
+          const SizedBox(width: 4),
+          // 予定バッジ（カレンダーアイコン）
+          _buildScheduleBadge(task.id),
+          const SizedBox(width: 4),
           // メールバッジ
           _buildMailBadges(task.id),
           const SizedBox(width: 4),
@@ -2379,7 +2407,30 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
   }
 
 
-  Widget _buildPriorityIndicator(TaskPriority priority) {
+  Widget _buildPriorityIndicator(TaskPriority priority, [double? fontSize]) {
+    // グリッドビュー用（色と文字1文字）
+    if (fontSize != null) {
+      final priorityInfo = _getPriorityInfo(priority);
+      return Container(
+        width: 16 * fontSize,
+        height: 16 * fontSize,
+        decoration: BoxDecoration(
+          color: priorityInfo['color'] as Color,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            priorityInfo['text'] as String,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 10 * fontSize,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+    // タスク管理画面用（縦のバー）
     return Container(
       width: 4,
       height: 40,
@@ -2388,6 +2439,19 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
         borderRadius: BorderRadius.circular(2),
       ),
     );
+  }
+
+  Map<String, dynamic> _getPriorityInfo(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return {'color': Colors.green, 'text': '低'};
+      case TaskPriority.medium:
+        return {'color': Colors.orange, 'text': '中'};
+      case TaskPriority.high:
+        return {'color': Colors.red, 'text': '高'};
+      case TaskPriority.urgent:
+        return {'color': Colors.purple, 'text': '緊'};
+    }
   }
 
   int _getPriorityColor(TaskPriority priority) {
@@ -2466,6 +2530,71 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     );
   }
 
+  /// タスク管理画面用の優先度表示（色と文字1文字）
+  Widget _buildPriorityIndicatorForList(TaskPriority priority) {
+    final priorityInfo = _getPriorityInfoForList(priority);
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: priorityInfo['color'] as Color,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          priorityInfo['text'] as String,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 優先度フィルター用のドロップダウンアイテム（色アイコン＋文字）
+  Widget _buildPriorityDropdownItem(String text, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(text),
+      ],
+    );
+  }
+
+  /// タスク管理画面用の優先度情報を取得
+  Map<String, dynamic> _getPriorityInfoForList(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return {'color': Colors.green, 'text': '低'};
+      case TaskPriority.medium:
+        return {'color': Colors.orange, 'text': '中'};
+      case TaskPriority.high:
+        return {'color': Colors.red, 'text': '高'};
+      case TaskPriority.urgent:
+        return {'color': Colors.purple, 'text': '緊'};
+    }
+  }
+
   void _showTaskDialog({TaskItem? task}) async {
     await showDialog(
       context: context,
@@ -2478,6 +2607,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
         onPinChanged: () {
           // ピン止め状態変更後にタスクリストを更新
           _loadPinnedTasks();
+          setState(() {});
+        },
+        onLinkReordered: () {
+          // リンク並び替え後にタスク管理画面をリフレッシュ
+          ref.read(taskViewModelProvider.notifier).forceReloadTasks();
           setState(() {});
         },
       ),
@@ -4996,6 +5130,69 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
   }
   
   /// メールバッジを構築
+  /// 予定バッジ（カレンダーアイコン、ホバーで予定リスト表示）
+  Widget _buildScheduleBadge(String taskId) {
+    final schedules = ref.watch(scheduleViewModelProvider);
+    final taskSchedules = schedules.where((s) => s.taskId == taskId).toList();
+    
+    if (taskSchedules.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // 日時昇順でソート
+    taskSchedules.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    
+    // ツールチップコンテンツを生成
+    final tooltipContent = _buildScheduleTooltipContent(taskSchedules);
+    
+    return MouseRegion(
+      cursor: SystemMouseCursors.help,
+      child: Tooltip(
+        message: tooltipContent,
+        waitDuration: const Duration(milliseconds: 500),
+        preferBelow: false,
+        verticalOffset: 10,
+        textStyle: const TextStyle(fontSize: 12, color: Colors.white),
+        decoration: BoxDecoration(
+          color: Colors.grey[900]?.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Icon(
+          Icons.calendar_today,
+          size: 20,
+          color: Colors.orange.shade700,
+        ),
+      ),
+    );
+  }
+
+  /// 予定ツールチップのコンテンツを生成
+  String _buildScheduleTooltipContent(List<ScheduleItem> schedules) {
+    final buffer = StringBuffer();
+    final dateFormat = DateFormat('MM/dd');
+    final timeFormat = DateFormat('HH:mm');
+    
+    for (final schedule in schedules) {
+      final date = dateFormat.format(schedule.startDateTime);
+      final time = timeFormat.format(schedule.startDateTime);
+      final endTime = schedule.endDateTime != null
+          ? ' - ${timeFormat.format(schedule.endDateTime!)}'
+          : '';
+      final location = schedule.location != null && schedule.location!.isNotEmpty
+          ? ' @ ${schedule.location}'
+          : '';
+      
+      buffer.writeln('$date $time$endTime$location');
+      buffer.writeln('  ${schedule.title}');
+      if (buffer.length > 0) {
+        buffer.writeln('');
+      }
+    }
+    
+    return buffer.toString().trim();
+  }
+
   Widget _buildEmailBadge(TaskItem task) {
     return Positioned(
       top: 8,
@@ -6728,6 +6925,12 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                                       ),
                                     ),
                                     const SizedBox(width: 4),
+                                    // 優先度表示（色と文字1文字）
+                                    _buildPriorityIndicator(task.priority, fontSize),
+                                    const SizedBox(width: 4),
+                                    // 予定バッジ（カレンダーアイコン）
+                                    _buildScheduleBadgeForGrid(task.id, fontSize),
+                                    const SizedBox(width: 4),
                                     // ステータスバッジ（タスク管理画面と統一）
                                     Container(
                                       padding: EdgeInsets.symmetric(horizontal: 6 * fontSize, vertical: 2 * fontSize),
@@ -7159,6 +7362,12 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                             overflow: TextOverflow.visible,
                           ),
                   ),
+                  const SizedBox(width: 4),
+                  // 優先度表示（色と文字1文字）
+                  _buildPriorityIndicator(task.priority, fontSize),
+                  const SizedBox(width: 4),
+                  // 予定バッジ（カレンダーアイコン）
+                  _buildScheduleBadgeForGrid(task.id, fontSize),
                   const SizedBox(width: 4),
                   // ステータスバッジ（タスク管理画面と統一）
                   Container(
@@ -8052,6 +8261,106 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
         }
       }
     }
+  }
+
+  /// 優先度表示（色と文字1文字）を構築
+  Widget _buildPriorityIndicator(TaskPriority priority, double fontSize) {
+    final priorityInfo = _getPriorityInfo(priority);
+    return Container(
+      width: 16 * fontSize,
+      height: 16 * fontSize,
+      decoration: BoxDecoration(
+        color: priorityInfo['color'] as Color,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          priorityInfo['text'] as String,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 10 * fontSize,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 優先度情報を取得
+  Map<String, dynamic> _getPriorityInfo(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return {'color': Colors.green, 'text': '低'};
+      case TaskPriority.medium:
+        return {'color': Colors.orange, 'text': '中'};
+      case TaskPriority.high:
+        return {'color': Colors.red, 'text': '高'};
+      case TaskPriority.urgent:
+        return {'color': Colors.purple, 'text': '緊'};
+    }
+  }
+
+  /// グリッドビュー用の予定バッジ（カレンダーアイコン、ホバーで予定リスト表示）
+  Widget _buildScheduleBadgeForGrid(String taskId, double fontSize) {
+    final schedules = ref.watch(scheduleViewModelProvider);
+    final taskSchedules = schedules.where((s) => s.taskId == taskId).toList();
+    
+    if (taskSchedules.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // 日時昇順でソート
+    taskSchedules.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    
+    // ツールチップコンテンツを生成
+    final tooltipContent = _buildScheduleTooltipContent(taskSchedules);
+    
+    return MouseRegion(
+      cursor: SystemMouseCursors.help,
+      child: Tooltip(
+        message: tooltipContent,
+        waitDuration: const Duration(milliseconds: 500),
+        preferBelow: false,
+        verticalOffset: 10,
+        textStyle: const TextStyle(fontSize: 12, color: Colors.white),
+        decoration: BoxDecoration(
+          color: Colors.grey[900]?.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Icon(
+          Icons.calendar_today,
+          size: 16 * fontSize,
+          color: Colors.orange.shade700,
+        ),
+      ),
+    );
+  }
+
+  /// 予定ツールチップのコンテンツを生成
+  String _buildScheduleTooltipContent(List<ScheduleItem> schedules) {
+    final buffer = StringBuffer();
+    final dateFormat = DateFormat('MM/dd');
+    final timeFormat = DateFormat('HH:mm');
+    
+    for (final schedule in schedules) {
+      final date = dateFormat.format(schedule.startDateTime);
+      final time = timeFormat.format(schedule.startDateTime);
+      final endTime = schedule.endDateTime != null
+          ? ' - ${timeFormat.format(schedule.endDateTime!)}'
+          : '';
+      final location = schedule.location != null && schedule.location!.isNotEmpty
+          ? ' @ ${schedule.location}'
+          : '';
+      
+      buffer.writeln('$date $time$endTime$location');
+      buffer.writeln('  ${schedule.title}');
+      if (buffer.length > 0) {
+        buffer.writeln('');
+      }
+    }
+    
+    return buffer.toString().trim();
   }
 
   /// タスクのステータスバッジ情報を取得

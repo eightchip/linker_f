@@ -4815,68 +4815,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Gmail API連携トグル
-                SwitchListTile(
-                  title: const Text('Gmail API連携'),
-                  subtitle: const Text('Gmail APIを使用してメール送信機能を利用します'),
-                  value: settingsState.gmailApiEnabled,
-                  onChanged: (value) {
-                    settingsNotifier.updateGmailApiEnabled(value);
-                  },
-                  secondary: const Icon(Icons.email),
-                ),
-                const SizedBox(height: 16),
-                
-                // Gmail API説明（トグルがオンの時のみ表示）
-                if (settingsState.gmailApiEnabled) ...[
+                // Gmail連携説明（常時表示、Outlookと同様）
+                // メール送信方法についての説明
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                            Icon(Icons.info, color: Theme.of(context).colorScheme.primary, size: 20),
+                          Icon(Icons.info, color: Theme.of(context).colorScheme.primary, size: 20),
                           const SizedBox(width: 8),
                           Text(
-                            'Gmail API連携について',
+                            'Gmail連携について',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Gmail APIを使用して、メール送信機能を利用できます。\n'
-                        'タスク管理からGmailでメールを送信できます。',
+                        'タスク編集モーダルからGmailのメール作成画面を起動できます。\n'
+                        'APIやアクセストークンの設定は不要です。',
                         style: TextStyle(
                           fontSize: 14,
-                            color: Theme.of(context).colorScheme.onSurface,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '使い方：\n'
+                        '1. タスク編集モーダルを開く\n'
+                        '2. メール送信セクションでGmailを選択\n'
+                        '3. 宛先を入力して「メール送信」ボタンをクリック\n'
+                        '4. Gmailのメール作成画面が開きます',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                ],
-                
-                // アクセストークン設定（トグルがオンの時のみ表示）
-                if (settingsState.gmailApiEnabled) ...[
-                _buildAccessTokenSection(),
-                
-                const SizedBox(height: 16),
-                
-                
-                // 設定情報
-                _buildGmailApiInfo(),
-                ],
               ],
             ),
           ),
