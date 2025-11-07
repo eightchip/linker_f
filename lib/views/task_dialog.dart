@@ -830,6 +830,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         TextFormField(
           controller: _titleController,
           enableInteractiveSelection: true,
+          textInputAction: TextInputAction.next,
           style: TextStyle(
             color: _getTaskTitleColor(),
             fontSize: 16 * ref.watch(titleFontSizeProvider),
@@ -903,7 +904,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           textAlignVertical: TextAlignVertical.top,
           enableInteractiveSelection: true,
           keyboardType: TextInputType.multiline,
-          textInputAction: TextInputAction.newline,
+          textInputAction: TextInputAction.next,
           style: TextStyle(
             color: Color(ref.watch(memoTextColorProvider)),
             fontSize: 16 * ref.watch(memoFontSizeProvider),
@@ -1341,8 +1342,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       orElse: () => widget.task!,
     );
     
-    // リンクの数を取得
-    final linkCount = currentTask.relatedLinkIds.length;
+    // 実際に存在するリンクの数を取得（relatedLinkIdsではなく、実際に取得できるリンク数）
+    final relatedLinks = _getRelatedLinks(currentTask);
+    final linkCount = relatedLinks.length;
     
     return InkWell(
       onTap: () => _showLinkAssociationDialog(context),

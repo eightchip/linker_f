@@ -179,6 +179,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
   bool _searchInTags = true;
   bool _searchInRequester = true;
   List<String> _searchHistory = [];
+  List<String> _searchSuggestions = [];
+  bool _showSearchSuggestions = false;
   bool _showSearchOptions = false;
 
   // グループ化機能
@@ -1169,6 +1171,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
           // 統計情報と検索・フィルターを1行に配置
           if (_showHeaderSection) _buildCompactHeaderSection(statistics),
           
+          // 検索候補リスト
+          if (_showSearchSuggestions && _showHeaderSection) _buildSearchSuggestions(),
+          
           // 検索オプション（折りたたみ可能）
           if (_showSearchOptions && _showHeaderSection) _buildSearchOptionsSection(),
           
@@ -1208,7 +1213,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
         children: [
           // 左半分: 統計情報（コンパクト）
           Expanded(
-            flex: 3,
+            flex: 2,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -1264,7 +1269,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
           
           // 右半分: 検索とフィルター
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Row(
               children: [
                 const SizedBox(width: AppSpacing.lg),
@@ -1281,8 +1286,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                         textInputAction: TextInputAction.search,
                         decoration: InputDecoration(
                           hintText: _useRegex 
-                            ? '正規表現で検索（例: ^プロジェクト.*完了\$）...'
-                            : 'タスクを検索（タイトル・説明・タグ・依頼先）...',
+                            ? '正規表現で検索（例: ^プロジェクト.*完了\$）'
+                            : 'タスクを検索（タイトル・説明・タグ・依頼先）',
+                          hintStyle: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).hintColor,
+                          ),
                           prefixIcon: Icon(Icons.search, size: AppIconSizes.medium),
                           suffixIcon: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -1340,6 +1349,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                           print('========================');
                         },
                         onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                            _userTypedSearch = value.isNotEmpty;
+                            // 検索候補を更新
+                            _updateSearchSuggestions(value);
+                            _showSearchSuggestions = value.isNotEmpty && _searchSuggestions.isNotEmpty;
+                          });
                           // 設定を保存
                           _saveFilterSettings();
                           // フォーカスを再主張（親に奪われた直後でも戻す）
@@ -1362,13 +1378,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 
                 const SizedBox(width: AppSpacing.sm),
                 
-                // 優先度フィルター
-                Expanded(
-                  flex: 1, // 優先度ドロップダウンを狭く
+                // 優先度フィルター（幅を狭く）
+                SizedBox(
+                  width: 120, // 固定幅で狭く
                   child: DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                       labelText: '優先度',
                       isDense: true,
                     ),
@@ -1429,23 +1445,120 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
   }
 
   Widget _buildStatItem(String label, int count, IconData icon, [Color? color]) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: AppIconSizes.medium),
-        const SizedBox(height: 2),
-        Text(
-          count.toString(),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: color,
-            fontWeight: FontWeight.bold,
+    return Tooltip(
+      message: count == 0 ? '$label: 0件' : '$label: $count件（タップで詳細表示）',
+      waitDuration: const Duration(milliseconds: 500),
+      child: InkWell(
+        onTap: () => _showStatisticsDetail(label, count),
+        borderRadius: BorderRadius.circular(8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: count == 0 ? Colors.grey : color, size: AppIconSizes.medium),
+            const SizedBox(height: 2),
+            Text(
+              count.toString(),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: count == 0 ? Colors.grey : color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 10,
+                color: count == 0 ? Colors.grey : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 統計詳細モーダルを表示
+  void _showStatisticsDetail(String label, int count) {
+    final tasks = ref.read(taskViewModelProvider);
+    List<TaskItem> filteredTasks = [];
+    
+    switch (label) {
+      case '総タスク':
+        filteredTasks = tasks;
+        break;
+      case '未着手':
+        filteredTasks = tasks.where((t) => t.status == TaskStatus.pending).toList();
+        break;
+      case '完了':
+        filteredTasks = tasks.where((t) => t.status == TaskStatus.completed).toList();
+        break;
+      case '進行中':
+        filteredTasks = tasks.where((t) => t.status == TaskStatus.inProgress).toList();
+        break;
+      case '期限切れ':
+        final now = DateTime.now();
+        filteredTasks = tasks.where((t) => 
+          t.dueDate != null && t.dueDate!.isBefore(now) && t.status != TaskStatus.completed
+        ).toList();
+        break;
+      case '今日':
+        final today = DateTime.now();
+        final todayStart = DateTime(today.year, today.month, today.day);
+        final todayEnd = todayStart.add(const Duration(days: 1));
+        filteredTasks = tasks.where((t) => 
+          t.dueDate != null && 
+          t.dueDate!.isAfter(todayStart) && 
+          t.dueDate!.isBefore(todayEnd)
+        ).toList();
+        break;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$label: $count件'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: filteredTasks.isEmpty
+              ? const Text('該当するタスクがありません')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: filteredTasks.length,
+                  itemBuilder: (context, index) {
+                    final task = filteredTasks[index];
+                    return ListTile(
+                      title: Text(task.title),
+                      subtitle: task.dueDate != null
+                          ? Text('期限: ${DateFormat('yyyy/MM/dd').format(task.dueDate!)}')
+                          : const Text('期限: 未設定'),
+                      trailing: _buildStatusChip(task.status),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        showDialog(
+                          context: context,
+                          builder: (context) => TaskDialog(
+                            task: task,
+                            onPinChanged: () {
+                              _loadPinnedTasks();
+                              setState(() {});
+                            },
+                            onLinkReordered: () {
+                              ref.read(taskViewModelProvider.notifier).forceReloadTasks();
+                              setState(() {});
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('閉じる'),
           ),
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1825,15 +1938,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
             ),
           );
         },
-        child: AnimatedContainer(
-        key: ValueKey(task.id),
-        duration: Duration(milliseconds: uiState.animationDuration), // UIカスタマイズのアニメーション時間
-        curve: Curves.easeOutCubic, // より滑らかなカーブ
-        margin: EdgeInsets.symmetric(
-          horizontal: uiState.spacing * 1.5, 
-          vertical: uiState.spacing
-        ), // UIカスタマイズのスペーシング
-        decoration: BoxDecoration(
+        child: Transform.scale(
+          scale: isHovered && !_isSelectionMode ? 1.02 : 1.0,
+          child: AnimatedContainer(
+          key: ValueKey(task.id),
+          duration: Duration(milliseconds: uiState.animationDuration), // UIカスタマイズのアニメーション時間
+          curve: Curves.easeOutCubic, // より滑らかなカーブ
+          margin: EdgeInsets.symmetric(
+            horizontal: uiState.spacing * 1.5, 
+            vertical: uiState.spacing
+          ), // UIカスタマイズのスペーシング
+          decoration: BoxDecoration(
           color: _isSelectionMode && isSelected 
             ? Theme.of(context).primaryColor.withValues(alpha: 0.15) 
             : isHovered
@@ -1876,23 +1991,26 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 offset: Offset(0, uiState.cardElevation * 6),
               ),
           ],
+          ),
+          child: Stack(
+            children: [
+              _buildImprovedTaskListTile(task, isSelected),
+              if (isAutoGenerated) _buildEmailBadge(task),
+            ],
+          ),
         ),
-        child: Stack(
-          children: [
-            _buildImprovedTaskListTile(task, isSelected),
-            if (isAutoGenerated) _buildEmailBadge(task),
-          ],
         ),
       ),
-     ),
     );
   }
   
   /// 改善されたタスクのListTileを構築（指示書に基づく）
   Widget _buildImprovedTaskListTile(TaskItem task, bool isSelected) {
     bool isExpanded = _expandedTaskIds.contains(task.id);
+    // リンクがなくても、説明や依頼先があれば詳細トグルを表示
     final bool hasDetails =
         (task.description != null && task.description!.isNotEmpty) ||
+        (task.assignedTo != null && task.assignedTo!.isNotEmpty) ||
         _hasValidLinks(task);
     
     // UIカスタマイズ設定を取得
@@ -2393,11 +2511,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
           const SizedBox(width: 4),
           Text(
             task.dueDate != null 
-              ? DateFormat('MM/dd').format(task.dueDate!)
+              ? _getRemainingDaysText(task.dueDate!)
               : '未設定',
             style: TextStyle(
               color: textColor,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -2406,6 +2524,25 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     );
   }
 
+  /// 期限日までの残り日数をテキストで返す
+  String _getRemainingDaysText(DateTime dueDate) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    final difference = due.difference(today).inDays;
+    
+    if (difference < 0) {
+      return '${-difference}日超過';
+    } else if (difference == 0) {
+      return '今日';
+    } else if (difference == 1) {
+      return 'あと1日';
+    } else if (difference <= 3) {
+      return 'あと$difference日';
+    } else {
+      return DateFormat('MM/dd').format(dueDate);
+    }
+  }
 
   Widget _buildPriorityIndicator(TaskPriority priority, [double? fontSize]) {
     // グリッドビュー用（色と文字1文字）
@@ -2553,30 +2690,37 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     );
   }
 
-  /// 優先度フィルター用のドロップダウンアイテム（色アイコン＋文字）
+  /// 優先度フィルター用のドロップダウンアイテム（色アイコン＋文字、コンパクト版）
   Widget _buildPriorityDropdownItem(String text, Color color) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 16,
-          height: 16,
+          width: 14,
+          height: 14,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
-              text,
+              text.length > 1 ? text[0] : text, // 1文字のみ表示（「緊急」→「緊」）
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        Text(text),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 13),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     );
   }
@@ -4052,6 +4196,85 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
       _searchHistory.clear();
     });
     _saveSearchHistory();
+  }
+
+  /// 検索候補を更新
+  void _updateSearchSuggestions(String query) {
+    if (query.trim().isEmpty) {
+      _searchSuggestions = [];
+      return;
+    }
+    
+    final queryLower = query.toLowerCase();
+    final suggestions = <String>[];
+    
+    // 検索履歴から候補を取得
+    for (final history in _searchHistory) {
+      if (history.toLowerCase().contains(queryLower) && !suggestions.contains(history)) {
+        suggestions.add(history);
+      }
+    }
+    
+    // タスクタイトルから候補を取得
+    final tasks = ref.read(taskViewModelProvider);
+    for (final task in tasks) {
+      if (task.title.toLowerCase().contains(queryLower) && !suggestions.contains(task.title)) {
+        suggestions.add(task.title);
+      }
+    }
+    
+    // 最大5件まで
+    _searchSuggestions = suggestions.take(5).toList();
+  }
+
+  /// 検索候補リストを構築
+  Widget _buildSearchSuggestions() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: _searchSuggestions.map((suggestion) {
+          return InkWell(
+            onTap: () {
+              setState(() {
+                _searchController.text = suggestion;
+                _searchQuery = suggestion;
+                _userTypedSearch = true;
+                _showSearchSuggestions = false;
+              });
+              _searchFocusNode.unfocus();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.history, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      suggestion,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 
   /// 強化された検索クエリマッチング
@@ -5952,25 +6175,6 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
         _searchQuery = _searchController.text;
       });
     });
-    
-    // ダイアログが開いた後に検索バーにフォーカスを設定（複数回試行で確実に）
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _searchFocusNode.requestFocus();
-        // 少し待ってから再度試行
-        Future.delayed(const Duration(milliseconds: 200), () {
-          if (mounted && !_searchFocusNode.hasFocus) {
-            _searchFocusNode.requestFocus();
-          }
-        });
-        // さらに少し待ってから最終試行
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted && !_searchFocusNode.hasFocus) {
-            _searchFocusNode.requestFocus();
-          }
-        });
-      }
-    });
   }
   
   void _loadPinnedTasks() {
@@ -6717,59 +6921,52 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
                 ],
               ),
             ),
-            // 検索バー（独立したフォーカススコープで保護）
-            Builder(
-              builder: (context) {
-                return FocusScope(
-                  autofocus: false,
-                  child: Focus(
-                    focusNode: _searchFocusNode,
-                    canRequestFocus: true,
-                    skipTraversal: false,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        border: Border(
-                          bottom: BorderSide(
-                            color: Theme.of(context).dividerColor,
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        autofocus: true,
-                        enabled: true,
-                        decoration: InputDecoration(
-                          hintText: 'タスクを検索（タイトル・説明・タグ・依頼先）...',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _searchQuery = '';
-                                    });
-                                  },
-                                )
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        ),
-                        onTap: () {
-                          // タップ時に確実にフォーカスを設定
-                          _searchFocusNode.requestFocus();
-                        },
-                      ),
-                    ),
+            // 検索バー（シンプルな実装）
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).dividerColor,
+                    width: 1,
                   ),
-                );
-              },
+                ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'タスクを検索（タイトル・説明・タグ・依頼先）...',
+                  hintStyle: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).hintColor,
+                  ),
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
             ),
             // タスク一覧
             Expanded(
