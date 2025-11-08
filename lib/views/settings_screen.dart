@@ -4843,7 +4843,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'タスク編集モーダルからGmailのメール作成画面を起動できます。\n'
-                        'APIやアクセストークンの設定は不要です。',
+                        'APIやアクセストークンの設定は不要です。\n'
+                        'Googleアカウントにログイン済みのブラウザがあれば、そのままGmailの新規作成タブが開きます。',
                         style: TextStyle(
                           fontSize: 14,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -4855,7 +4856,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         '1. タスク編集モーダルを開く\n'
                         '2. メール送信セクションでGmailを選択\n'
                         '3. 宛先を入力して「メール送信」ボタンをクリック\n'
-                        '4. Gmailのメール作成画面が開きます',
+                        '4. Gmailのメール作成画面が開くので、内容を確認して送信します\n'
+                        '（送信履歴はタスク側に記録され、Gmail API設定がなくても利用できます）',
                         style: TextStyle(
                           fontSize: 13,
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),

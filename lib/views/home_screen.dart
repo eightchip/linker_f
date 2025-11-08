@@ -1,31 +1,34 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart';
-import 'dart:async';
-
-import '../viewmodels/link_viewmodel.dart';
-import '../viewmodels/ui_customization_provider.dart';
-import '../viewmodels/font_size_provider.dart';
-import '../viewmodels/layout_settings_provider.dart';
-import '../models/group.dart';
-import '../models/link_item.dart';
-import 'group_card.dart';
-import 'settings_screen.dart';
-import 'task_screen.dart';
 import 'dart:io';
 
-
-import 'package:hive/hive.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:collection/collection.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:pdfx/pdfx.dart' as pdfx;
+
+import '../models/group.dart';
+import '../models/link_item.dart';
 import '../utils/favicon_service.dart';
-import '../widgets/unified_dialog.dart';
+import '../services/settings_service.dart';
+import '../services/snackbar_service.dart';
+import '../services/windows_notification_service.dart';
+import '../utils/csv_export.dart';
+import '../viewmodels/font_size_provider.dart';
+import '../viewmodels/layout_settings_provider.dart';
+import '../viewmodels/link_viewmodel.dart';
+import '../viewmodels/ui_customization_provider.dart';
 import '../widgets/app_button_styles.dart';
-import 'package:window_manager/window_manager.dart';
+import 'group_card.dart';
+import '../widgets/unified_dialog.dart';
+import '../widgets/window_control_buttons.dart';
+import 'help_center_screen.dart';
+import 'settings_screen.dart';
+import 'task_screen.dart';
 
 
 // ハイライト用のウィジェット
@@ -145,20 +148,13 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
-  final bool _isDragOver = false;
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? draggingGroupId;
   Offset? draggingPosition;
-  List<Group> _orderedGroups = [];
-  String? _centerMessage;
   final ScrollController _scrollController = ScrollController();
   bool _showSearchBar = true;
   String _searchQuery = '';
   LinkType? _selectedLinkTypeFilter; // リンクタイプフィルター
-  bool _tutorialShown = false;
-  bool _isWindowMaximized = false;
-  bool get _isDesktopPlatform =>
-      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
   // 色の濃淡とコントラストを調整した色を取得
   Color _getAdjustedColor(int baseColor, double intensity, double contrast) {
@@ -187,14 +183,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   
   // 追加: ジャンプボタン表示制御用
   OverlayEntry? _jumpButtonOverlay;
-  Offset? _lastMousePosition;
-  DateTime? _lastMoveTime;
   BuildContext? _scaffoldBodyContext;
-  final Map<String, bool> _showBottomSpaceMap = {};
-  
-  // 追加: カスタムアイコン情報管理
-  int? _pendingIconData;
-  int? _pendingIconColor;
 
   // ショートカットキー用のFocusNode
   final FocusNode _shortcutFocusNode = FocusNode();
@@ -204,137 +193,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   @override
   void initState() {
     super.initState();
-    final groups = ref.read(linkViewModelProvider).groups;
-    _orderedGroups = List<Group>.from(groups);
-    
-    if (_isDesktopPlatform) {
-      windowManager.addListener(this);
-      windowManager.isMaximized().then((value) {
-        if (mounted) {
-          setState(() {
-            _isWindowMaximized = value;
-          });
-        }
-      });
-    }
-    
+
     // FocusNodeのリスナーを追加
     _shortcutFocusNode.addListener(() {
-      print('ショートカットFocusNode状態: hasFocus=${_shortcutFocusNode.hasFocus}');
+      debugPrint('ショートカットFocusNode状態: hasFocus=${_shortcutFocusNode.hasFocus}');
     });
-    
-    // ScrollControllerの初期化を遅延させる
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        // setState(() {}); // この行を削除
         _updateAvailableTags();
       }
     });
-    _checkAndShowTutorial();
   }
 
-  // 利用可能なタグを更新（setStateを最適化）
   void _updateAvailableTags() {
     final groups = ref.read(linkViewModelProvider).groups;
     final allTags = <String>{};
-    
     for (final group in groups) {
       for (final link in group.items) {
         allTags.addAll(link.tags);
       }
     }
-    
     final newTags = allTags.toList()..sort();
-    
-    // タグが実際に変更された場合のみsetStateを実行
     if (!_areTagsEqual(_availableTags, newTags)) {
-      setState(() {
-        _availableTags = newTags;
-      });
+      setState(() => _availableTags = newTags);
     }
   }
 
-  // タグの等価性をチェックするヘルパーメソッド
-  bool _areTagsEqual(List<String> tags1, List<String> tags2) {
-    if (tags1.length != tags2.length) return false;
-    for (int i = 0; i < tags1.length; i++) {
-      if (tags1[i] != tags2[i]) return false;
+  bool _areTagsEqual(List<String> current, List<String> next) {
+    if (identical(current, next)) return true;
+    if (current.length != next.length) return false;
+    for (var i = 0; i < current.length; i++) {
+      if (current[i] != next[i]) return false;
     }
     return true;
   }
 
   @override
   void dispose() {
-    if (_isDesktopPlatform) {
-      windowManager.removeListener(this);
-    }
     _scrollController.dispose();
     _shortcutFocusNode.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _minimizeWindow() async {
-    if (!_isDesktopPlatform) return;
-    await windowManager.minimize();
-  }
-
-  Future<void> _toggleWindowSize() async {
-    if (!_isDesktopPlatform) return;
-    final isMax = await windowManager.isMaximized();
-    if (isMax) {
-      await windowManager.unmaximize();
-      _updateWindowMaximized(false);
-    } else {
-      await windowManager.maximize();
-      _updateWindowMaximized(true);
-    }
-  }
-
-  void _updateWindowMaximized(bool value) {
-    if (!mounted) return;
-    setState(() {
-      _isWindowMaximized = value;
-    });
-  }
-
-  List<Widget> _buildWindowControlButtons() {
-    if (!_isDesktopPlatform) {
-      return const [];
-    }
-    return [
-      IconButton(
-        icon: const Icon(Icons.remove, size: 18),
-        tooltip: '最小化',
-        visualDensity: VisualDensity.compact,
-        onPressed: _minimizeWindow,
-      ),
-      IconButton(
-        icon: Icon(
-          _isWindowMaximized ? Icons.filter_none : Icons.crop_square,
-          size: 18,
-        ),
-        tooltip: _isWindowMaximized ? '元のサイズに戻す' : '最大化',
-        visualDensity: VisualDensity.compact,
-        onPressed: _toggleWindowSize,
-      ),
-    ];
-  }
-
-  @override
-  void onWindowMaximize() {
-    _updateWindowMaximized(true);
-  }
-
-  @override
-  void onWindowUnmaximize() {
-    _updateWindowMaximized(false);
-  }
-
-  @override
-  void onWindowRestore() {
-    _updateWindowMaximized(false);
-  }
+  List<Widget> _buildWindowControlButtons() => const [WindowControlButtons()];
 
   // ショートカットキー処理
   void _handleShortcut(KeyEvent event) {
@@ -517,6 +420,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
             ],
           ),
         ),
+        // ⑧ヘルプセンター
+        PopupMenuItem(
+          value: 'help_center',
+          child: Row(
+            children: [
+              Icon(Icons.help_outline, color: Colors.indigo, size: 20),
+              SizedBox(width: 8),
+              const Text('ヘルプセンター'),
+            ],
+          ),
+        ),
       ],
     ).then((value) {
       if (value != null) {
@@ -542,22 +456,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
           case 'settings':
             _showSettingsScreen(context);
             break;
+          case 'help_center':
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HelpCenterScreen(),
+              ),
+            );
+            break;
         }
       }
     });
   }
-
-  // ショートカットアクション実装
-  void _showAddLinkDialogShortcut(BuildContext context) {
-    // 既存のリンク追加ロジックを使用
-    // 最初のグループを選択してダイアログを表示
-    final groups = ref.read(linkViewModelProvider).groups;
-    if (groups.isNotEmpty) {
-      _showAddLinkDialog(context, groups.first.id);
-    }
-  }
-
-
 
   // 設定画面
   void _showSettingsScreen(BuildContext context) {
@@ -626,7 +536,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
     final groups = linkState.groups;
     final isLoading = linkState.isLoading;
     final error = linkState.error;
-    final isDarkMode = ref.watch(darkModeProvider);
     final accentColor = ref.watch(accentColorProvider);
     final colorIntensity = ref.watch(colorIntensityProvider);
     final colorContrast = ref.watch(colorContrastProvider);
@@ -764,6 +673,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                         case 'settings':
                           _showSettingsScreen(context);
                           break;
+                        case 'help_center':
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HelpCenterScreen(),
+                            ),
+                          );
+                          break;
                       }
                     },
                     itemBuilder: (context) => [
@@ -833,6 +750,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                           ],
                         ),
                       ),
+                      // ⑧ヘルプセンター
+                      PopupMenuItem(
+                        value: 'help_center',
+                        child: Row(
+                          children: [
+                            Icon(Icons.help_outline, color: Colors.indigo, size: 20),
+                            SizedBox(width: 8),
+                            const Text('ヘルプセンター'),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                   ..._buildWindowControlButtons(),
@@ -847,9 +775,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                             children: [
                               // 検索テキストフィールドとラジオボタンを横並びに配置
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   // 検索テキストフィールド（左側）
                                   Expanded(
+                                    flex: MediaQuery.of(context).size.width < 960 ? 1 : 2,
                                     child: TextField(
                                       focusNode: _searchFocusNode,
                                       keyboardType: TextInputType.text,
@@ -876,76 +806,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                                           _searchQuery = v;
                                         });
                                       },
-                                      onSubmitted: (v) {
-                                        // エンターキーを押したときの特別な処理は行わない
-                                      },
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  // リンクタイプフィルターラジオボタン（右側）
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).cardColor,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: Theme.of(context).dividerColor,
-                                        width: 1,
+                                  if (MediaQuery.of(context).size.width >= 960)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).cardColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Theme.of(context).dividerColor,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: _buildLinkTypeRadios(),
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Text('タイプ: ', style: TextStyle(fontSize: 10)),
-                                        Radio<LinkType?>(
-                                          value: null,
-                                          groupValue: _selectedLinkTypeFilter,
-                                          onChanged: (LinkType? value) {
-                                            setState(() {
-                                              _selectedLinkTypeFilter = value;
-                                            });
-                                          },
-                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        const Text('すべて', style: TextStyle(fontSize: 10)),
-                                        Radio<LinkType?>(
-                                          value: LinkType.file,
-                                          groupValue: _selectedLinkTypeFilter,
-                                          onChanged: (LinkType? value) {
-                                            setState(() {
-                                              _selectedLinkTypeFilter = value;
-                                            });
-                                          },
-                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        const Text('ファイル', style: TextStyle(fontSize: 10)),
-                                        Radio<LinkType?>(
-                                          value: LinkType.folder,
-                                          groupValue: _selectedLinkTypeFilter,
-                                          onChanged: (LinkType? value) {
-                                            setState(() {
-                                              _selectedLinkTypeFilter = value;
-                                            });
-                                          },
-                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        const Text('フォルダ', style: TextStyle(fontSize: 10)),
-                                        Radio<LinkType?>(
-                                          value: LinkType.url,
-                                          groupValue: _selectedLinkTypeFilter,
-                                          onChanged: (LinkType? value) {
-                                            setState(() {
-                                              _selectedLinkTypeFilter = value;
-                                            });
-                                          },
-                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        const Text('URL', style: TextStyle(fontSize: 10)),
-                                      ],
-                                    ),
-                                  ),
                                 ],
                               ),
+                              if (MediaQuery.of(context).size.width < 960)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
+                                    alignment: WrapAlignment.center,
+                                    children: _buildLinkTypeRadios(),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -1338,18 +1229,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
     );
   }
 
-
-  IconData _iconForType(LinkType type) {
-    switch (type) {
-      case LinkType.file:
-        return Icons.insert_drive_file;
-      case LinkType.folder:
-        return Icons.folder;
-      case LinkType.url:
-        return Icons.link;
-    }
-  }
-
   void _showAddGroupDialog(BuildContext context) {
     final titleController = TextEditingController();
     int selectedColor = Colors.black.value; // デフォルト黒
@@ -1515,31 +1394,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
     );
   }
 
-  void _handleDrop(BuildContext context, dynamic detail) async {
-    if (detail.files != null && detail.files.isNotEmpty) {
-      bool hasUrl = false;
-      for (final file in detail.files) {
-        final path = file.path;
-        if (path.startsWith('http://') || path.startsWith('https://')) {
-          hasUrl = true;
-        }
-      }
-      if (hasUrl) {
-        setState(() {
-          _centerMessage = 'URLのドラッグ＆ドロップは未対応です\nリンク追加ボタンから直接入力してください。';
-        });
-        await Future.delayed(const Duration(seconds: 2));
-        setState(() {
-          _centerMessage = null;
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${detail.files.length}件のファイル/フォルダをドロップしました。グループにドラッグして追加できます。')),
-        );
-      }
-    }
-  }
-
   void _deleteGroup(String groupId) {
     showDialog(
       context: context,
@@ -1650,37 +1504,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
       ),
     );
   }
-
-  Future<void> _checkAndShowTutorial() async {
-    final box = await Hive.openBox('settings');
-    // チュートリアル表示を削除
-    // final shown = box.get('tutorial_shown', defaultValue: false);
-    // if (!shown) {
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     showDialog(
-    //       context: context,
-    //       barrierDismissible: false,
-    //       builder: (context) => TutorialDialog(
-    //         onFinish: () async {
-    //           await box.put('tutorial_shown', true);
-    //           setState(() => _tutorialShown = true);
-    //         },
-    //       ),
-    //     );
-    //   });
-    // } else {
-    //   setState(() => _tutorialShown = true);
-    // }
-    setState(() => _tutorialShown = true);
-  }
-
-  // チュートリアルメソッドを削除
-  // void _showTutorial() {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => TutorialDialog(),
-  //   );
-  // }
 
   void _onMouseMove(PointerEvent event) {
     // 画面端ホバー時のジャンプボタン表示ロジックを削除
@@ -1811,93 +1634,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
     return dynamicHeight.clamp(minHeight, maxHeight);
   }
 
-  Future<void> _exportMemoLinksToPdf(BuildContext context) async {
-    final groups = ref.read(linkViewModelProvider).groups;
-    final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
-      .where((entry) => entry.value.memo?.isNotEmpty == true)
-      .toList();
-    if (memoLinks.isEmpty) {
-      _showCenterMessage('メモ付きリンクがありません', icon: Icons.info, color: Colors.blueGrey);
-      return;
-    }
-    // 日本語フォントを読み込む
-    final fontData = await rootBundle.load('assets/fonts/NotoSansJP-Regular.ttf');
-    final ttf = pw.Font.ttf(fontData);
-    final pdf = pw.Document();
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4.landscape, // Change to landscape orientation
-        build: (context) => [
-          pw.Header(
-            level: 0,
-            child: pw.Text(
-              'メモ付きリンク一覧',
-              style: pw.TextStyle(font: ttf, fontSize: 24),
-            ),
-          ),
-          pw.Table.fromTextArray(
-            headers: [
-              'グループ',
-              'リンク名',
-              'メモ内容',
-            ],
-            data: memoLinks.map((entry) => [
-              entry.key.title,
-              entry.value.label,
-              entry.value.memo ?? '',
-            ]).toList(),
-            cellStyle: pw.TextStyle(font: ttf, fontSize: 12),
-            headerStyle: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 14),
-            headerDecoration: pw.BoxDecoration(color: PdfColors.grey300),
-            border: null,
-          ),
-        ],
-      ),
-    );
-    final tempDir = Directory.systemTemp;
-    final tempPreviewFileName = '${tempDir.path}/memo_links_preview.pdf';
-    final tempFile = File(tempPreviewFileName);
-    await tempFile.writeAsBytes(await pdf.save());
-
-    // Display PDF content on screen with error handling
-    try {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('PDFプレビュー'),
-          content: SizedBox(
-            width: MediaQuery.of(context).size.width * 1.0, // 80% of screen width
-            height: MediaQuery.of(context).size.height * 1.0, // 80% of screen height
-            child: pdfx.PdfView(
-              controller: pdfx.PdfController(
-                document: pdfx.PdfDocument.openFile(tempPreviewFileName),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                final now = DateTime.now();
-                final formatted = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
-                final fileName = 'memo_links_$formatted.pdf';
-                final output = File(fileName);
-                await output.writeAsBytes(await pdf.save());
-                _showCenterMessage('PDFを保存しました: ${output.absolute.path}', icon: Icons.check_circle, color: Colors.green[700]);
-              },
-              child: const Text('PDF出力'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('閉じる'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      print('Error displaying PDF: $e');
-      _showCenterMessage('PDFの表示に失敗しました', icon: Icons.error, color: Colors.red[700]);
-    }
-  }
+  // _exportMemoLinksToPdf was removed because the feature is unused.
+  // ... existing code ...
 
 
 
@@ -1928,7 +1666,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
               child: ListView(
                 children: memoLinks.map((entry) {
                   final link = entry.value;
-                  final group = entry.key;
                   final controller = memoControllers[link.id]!;
                   final isOverflow = (link.memo?.split('\n').length ?? 0) > 5 || (link.memo?.length ?? 0) > 100;
                   return Padding(
@@ -2009,14 +1746,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
               onPressed: () async {
                 for (final entry in memoLinks) {
                   final link = entry.value;
-                  final group = entry.key;
                   final newMemo = memoControllers[link.id]!.text;
                   // 空文字列の場合はセンチネル値を使用（メモ削除）
                   final memoValue = newMemo.trim().isEmpty ? LinkItem.nullSentinel : newMemo.trim();
                   if (memoValue != link.memo) {
                     final updated = link.copyWith(memo: memoValue);
                     await ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
-                      groupId: group.id,
+                      groupId: entry.key.id,
                       updated: updated,
                     );
                   }
@@ -2029,6 +1765,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildLinkTypeRadios() {
+    return [
+      const Text('タイプ: ', style: TextStyle(fontSize: 10)),
+      Radio<LinkType?>(
+        value: null,
+        groupValue: _selectedLinkTypeFilter,
+        onChanged: (LinkType? value) {
+          setState(() {
+            _selectedLinkTypeFilter = null;
+          });
+        },
+      ),
+      const Text('すべて', style: TextStyle(fontSize: 11)),
+      Radio<LinkType?>(
+        value: LinkType.url,
+        groupValue: _selectedLinkTypeFilter,
+        onChanged: (LinkType? value) {
+          setState(() {
+            _selectedLinkTypeFilter = LinkType.url;
+          });
+        },
+      ),
+      const Text('URL', style: TextStyle(fontSize: 11)),
+      Radio<LinkType?>(
+        value: LinkType.folder,
+        groupValue: _selectedLinkTypeFilter,
+        onChanged: (LinkType? value) {
+          setState(() {
+            _selectedLinkTypeFilter = LinkType.folder;
+          });
+        },
+      ),
+      const Text('フォルダ', style: TextStyle(fontSize: 11)),
+      Radio<LinkType?>(
+        value: LinkType.file,
+        groupValue: _selectedLinkTypeFilter,
+        onChanged: (LinkType? value) {
+          setState(() {
+            _selectedLinkTypeFilter = LinkType.file;
+          });
+        },
+      ),
+      const Text('ファイル', style: TextStyle(fontSize: 11)),
+    ];
   }
 }
 
@@ -2125,9 +1907,6 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
     String? title;
     try {
       final uri = Uri.parse(url);
-      final response = Uri.base.resolve(url).isAbsolute
-        ? Uri.parse(url).resolve('').toString() == url ? null : null
-        : null;
       // タイトル取得は簡易的に省略（本格実装はhttpパッケージでHTML取得＆<title>抽出）
       // ここではURLのホスト名をタイトル代わりに表示
       title = uri.host.isNotEmpty ? uri.host : url;
@@ -2182,19 +1961,12 @@ class FilePreviewWidget extends StatefulWidget {
 }
 class _FilePreviewWidgetState extends State<FilePreviewWidget> {
   String? _textPreview;
-  List<String>? _textFull;
   bool _isImage = false;
   bool _isPdf = false;
   bool _loading = true;
-  OverlayEntry? _previewOverlay;
-  Timer? _overlayShowTimer;
-  Timer? _overlayHideTimer;
 
   @override
   void dispose() {
-    _overlayShowTimer?.cancel();
-    _overlayHideTimer?.cancel();
-    _removePreviewOverlay();
     super.dispose();
   }
 
@@ -2225,92 +1997,24 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       return;
     }
 
-    // テキストファイル判定
-    if (ext.endsWith('.txt') || ext.endsWith('.md') || ext.endsWith('.csv') || ext.endsWith('.log')) {
-      try {
-        final file = File(widget.path);
-        final lines = await file.readAsLines();
-        if (mounted) {
-          setState(() {
-            _textPreview = lines.take(3).join('\n');
-            _textFull = lines;
-            _loading = false;
-          });
-        }
-      } catch (e, st) {
-        print('テキストファイル読み込みエラー: $e\n$st');
-        if (mounted) {
-          setState(() {
-            _textPreview = null;
-            _textFull = null;
-            _loading = false;
-          });
-        }
+    if (await File(widget.path).length() > 1024 * 1024) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
       }
       return;
     }
-    // その他
+
+    // テキストファイルのプレビューを読み込む
+    final content = await File(widget.path).readAsString();
+    final lines = content.split('\n');
     if (mounted) {
       setState(() {
+        _textPreview = lines.take(20).join('\n');
         _loading = false;
       });
     }
-  }
-
-
-
-  void _showPreviewOverlay(Widget child, {double width = 480, double height = 400}) {
-    // 既にオーバーレイが表示されている場合は何もしない
-    if (_previewOverlay != null) return;
-    
-    // 既存のタイマーをキャンセル
-    _overlayShowTimer?.cancel();
-    _overlayHideTimer?.cancel();
-    
-    // 少し遅延を入れてオーバーレイを表示（ちらつき防止）
-    _overlayShowTimer = Timer(const Duration(milliseconds: 1350), () {
-      if (mounted && _previewOverlay == null) {
-        final overlay = Overlay.of(context);
-        _previewOverlay = OverlayEntry(
-          builder: (context) => Positioned.fill(
-            child: Container(
-              alignment: Alignment.center,
-              color: Colors.black.withValues(alpha: 0.3),
-              child: Material(
-                elevation: 8,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: width,
-                  height: height,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300, width: 1),
-                  ),
-                  child: child,
-                ),
-              ),
-            ),
-          ),
-        );
-        overlay.insert(_previewOverlay!);
-      }
-    });
-  }
-
-  void _removePreviewOverlay() {
-    // 既存のタイマーをキャンセル
-    _overlayShowTimer?.cancel();
-    _overlayHideTimer?.cancel();
-    
-    // 少し遅延を入れてオーバーレイを削除（ちらつき防止）
-    _overlayHideTimer = Timer(const Duration(milliseconds: 1800), () {
-      if (mounted && _previewOverlay != null) {
-        _previewOverlay!.remove();
-        _previewOverlay = null;
-      }
-    });
   }
 
   void _showFullScreenImage(BuildContext context) {
@@ -2467,7 +2171,6 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       );
     }
     if (_textPreview != null) {
-      final isEmpty = (_textFull == null || _textFull!.isEmpty || (_textFull!.length == 1 && _textFull![0].trim().isEmpty));
       return MouseRegion(
         // テキストプレビュー機能を無効化（フリーズ防止のため）
         onEnter: (_) {
@@ -2495,23 +2198,14 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       return FaIcon(FontAwesomeIcons.envelope, color: Colors.blue[800], size: 16); // メール
     }
     
-
+    
     // その他
     return Icon(Icons.insert_drive_file, color: widget.isDark ? Colors.white70 : Colors.grey, size: 16);
   }
 }
 
 // --- カスタムFABロケーション ---
-class _BottomRightWithMarginFabLocation extends FloatingActionButtonLocation {
-  const _BottomRightWithMarginFabLocation();
-  @override
-  Offset getOffset(ScaffoldPrelayoutGeometry scaffoldGeometry) {
-    const double bottomMargin = 64; // タスクバー分
-    final double fabX = scaffoldGeometry.scaffoldSize.width - scaffoldGeometry.floatingActionButtonSize.width - 16;
-    final double fabY = scaffoldGeometry.scaffoldSize.height - scaffoldGeometry.floatingActionButtonSize.height - bottomMargin;
-    return Offset(fabX, fabY);
-  }
-}
+// （未使用のカスタムFABロケーションは削除済み）
 
 // 複数キーワードがすべて含まれているかチェックするヘルパーメソッド
 bool _matchesKeywords(String text, List<String> keywords) {
@@ -2596,8 +2290,6 @@ class _IconSelectorState extends State<IconSelector> {
   }
 
   void _showIconPicker() {
-    bool useWindowsIcons = false;
-    
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(

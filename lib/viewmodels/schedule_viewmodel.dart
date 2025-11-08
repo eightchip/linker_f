@@ -6,6 +6,7 @@ import 'dart:async';
 import '../models/schedule_item.dart';
 import '../services/schedule_reminder_service.dart';
 import '../services/google_calendar_service.dart';
+import '../services/snackbar_service.dart';
 
 final scheduleViewModelProvider = StateNotifierProvider<ScheduleViewModel, List<ScheduleItem>>((ref) {
   return ScheduleViewModel();
@@ -125,15 +126,18 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
               print('予定をGoogle Calendarに同期: ${schedule.title} -> $googleCalendarEventId');
             }
           } else {
+            final message = result.errorMessage ?? '詳細不明';
             if (kDebugMode) {
-              print('予定のGoogle Calendar同期失敗: ${result.errorMessage}');
+              print('予定のGoogle Calendar同期失敗: $message');
             }
+            SnackBarService.showGlobalWarning('Googleカレンダー同期に失敗しました: $message');
           }
         }
       } catch (e) {
         if (kDebugMode) {
           print('予定のGoogle Calendar同期エラー（無視）: $e');
         }
+        SnackBarService.showGlobalWarning('Googleカレンダー同期中にエラーが発生しました: $e');
       }
       
       // Google CalendarイベントIDを設定して保存
@@ -153,6 +157,7 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       }
     } catch (e) {
       print('予定追加エラー: $e');
+      SnackBarService.showGlobalError('予定の保存に失敗しました。もう一度お試しください。');
     }
   }
 
@@ -180,6 +185,9 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
             if (!success && kDebugMode) {
               print('予定のGoogle Calendar更新失敗: ${schedule.title}');
             }
+            if (!success) {
+              SnackBarService.showGlobalWarning('Googleカレンダーの予定更新に失敗しました: ${schedule.title}');
+            }
           } else {
             // 新規作成（既存イベントが見つからなかった場合）
             final result = await googleCalendarService.createCalendarEventFromSchedule(schedule);
@@ -188,6 +196,9 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
               if (kDebugMode) {
                 print('予定をGoogle Calendarに新規作成: ${schedule.title} -> $googleCalendarEventId');
               }
+            } else if (!result.success) {
+              final message = result.errorMessage ?? '詳細不明';
+              SnackBarService.showGlobalWarning('Googleカレンダーの予定作成に失敗しました: $message');
             }
           }
         }
@@ -195,6 +206,7 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
         if (kDebugMode) {
           print('予定のGoogle Calendar同期エラー（無視）: $e');
         }
+        SnackBarService.showGlobalWarning('Googleカレンダー同期中にエラーが発生しました: $e');
       }
       
       final updatedSchedule = schedule.copyWith(
@@ -213,6 +225,7 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       }
     } catch (e) {
       print('予定更新エラー: $e');
+      SnackBarService.showGlobalError('予定の更新に失敗しました。再度お試しください。');
     }
   }
 
@@ -244,11 +257,15 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
                 print('予定のGoogle Calendar削除失敗: $googleCalendarEventId');
               }
             }
+            if (!success) {
+              SnackBarService.showGlobalWarning('Googleカレンダーから予定を削除できませんでした。($googleCalendarEventId)');
+            }
           }
         } catch (e) {
           if (kDebugMode) {
             print('予定のGoogle Calendar削除エラー（無視）: $e');
           }
+          SnackBarService.showGlobalWarning('Googleカレンダー予定削除時にエラーが発生しました: $e');
         }
       }
       
@@ -261,6 +278,7 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       }
     } catch (e) {
       print('予定削除エラー: $e');
+      SnackBarService.showGlobalError('予定の削除に失敗しました。');
     }
   }
 

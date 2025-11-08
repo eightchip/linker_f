@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'keyboard_shortcut_service.dart';
 
 class SnackBarService {
+  static BuildContext? _globalContext() {
+    final key = KeyboardShortcutService.getNavigatorKey();
+    return key?.currentContext;
+  }
+
   static void showCenteredSnackBar(
     BuildContext context, 
     String message, {
@@ -105,6 +112,15 @@ class SnackBarService {
     );
   }
 
+  static void showGlobalError(String message) {
+    final context = _globalContext();
+    if (context != null) {
+      showError(context, message);
+    } else {
+      debugPrint('Global error notification (context unavailable): $message');
+    }
+  }
+
   // 情報メッセージ用
   static void showInfo(BuildContext context, String message) {
     showCenteredSnackBar(
@@ -123,5 +139,14 @@ class SnackBarService {
       backgroundColor: Colors.orange,
       icon: Icons.warning,
     );
+  }
+
+  static void showGlobalWarning(String message) {
+    final context = _globalContext();
+    if (context != null) {
+      showWarning(context, message);
+    } else {
+      debugPrint('Global warning notification (context unavailable): $message');
+    }
   }
 }
