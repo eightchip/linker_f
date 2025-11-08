@@ -18,12 +18,9 @@ class OutlookCalendarImportDialogV2 extends ConsumerStatefulWidget {
 
 class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarImportDialogV2> {
   final OutlookCalendarService _outlookService = OutlookCalendarService();
-  final _uuid = const Uuid();
-  
   // 状態管理
   bool _isLoading = false;
   String? _loadingMessage;
-  List<Map<String, dynamic>> _outlookEvents = [];
   List<ScheduleItem> _existingSchedules = [];
   List<TaskItem> _incompleteTasks = [];
   
@@ -52,7 +49,6 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
     setState(() {
       _isLoading = true;
       _loadingMessage = 'Outlookから予定を取得中...';
-      _outlookEvents = [];
       _filteredEvents = [];
       _selectedIndices.clear();
     });
@@ -79,9 +75,25 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
         _loadingMessage = '予定を取得中...';
       });
       
+      final startForFetch = _startDate != null
+          ? DateTime(_startDate!.year, _startDate!.month, _startDate!.day)
+          : null;
+      final endForFetch = _endDate != null
+          ? DateTime(
+              _endDate!.year,
+              _endDate!.month,
+              _endDate!.day,
+              23,
+              59,
+              59,
+              999,
+              999,
+            )
+          : null;
+
       final events = await _outlookService.getCalendarEvents(
-        startDate: _startDate,
-        endDate: _endDate,
+        startDate: startForFetch,
+        endDate: endForFetch,
       );
 
       setState(() {
@@ -113,7 +125,6 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
 
       setState(() {
         _isLoading = false;
-        _outlookEvents = events;
       });
 
       if (_filteredEvents.isEmpty && mounted) {

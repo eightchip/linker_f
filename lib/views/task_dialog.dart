@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -22,7 +24,6 @@ import '../views/home_screen.dart'; // UrlPreviewWidget, FilePreviewWidget用
 import 'package:hive/hive.dart';
 import '../models/schedule_item.dart';
 import '../viewmodels/schedule_viewmodel.dart';
-import 'outlook_calendar_import_dialog.dart';
 import 'outlook_calendar_import_dialog_v2.dart';
 
 class TaskDialog extends ConsumerStatefulWidget {
@@ -102,30 +103,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   DateTime? _scheduleEndDate;
   TimeOfDay? _scheduleEndTime;
   
-  // メールテンプレート
-  final List<Map<String, String>> _emailTemplates = [
-    {
-      'name': '報告書について',
-      'subject': '報告書について',
-      'body': 'お疲れ様です。\n\n以下についてご確認をお願いいたします。\n\n',
-    },
-    {
-      'name': '会議資料の確認',
-      'subject': '会議資料の確認',
-      'body': 'いつもお世話になっております。\n\n件名の件について、以下をご連絡いたします。\n\n',
-    },
-    {
-      'name': '進捗状況の共有',
-      'subject': '進捗状況の共有',
-      'body': 'お疲れ様です。\n\n進捗状況についてご報告いたします。\n\n',
-    },
-    {
-      'name': '質問・相談事項',
-      'subject': '質問・相談事項',
-      'body': 'いつもお世話になっております。\n\n以下についてご質問・ご相談がございます。\n\n',
-    },
-  ];
-
   DateTime? _dueDate;
   DateTime? _reminderTime;
   TaskPriority _priority = TaskPriority.medium;
@@ -2687,7 +2664,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           ],
         ),
         subtitle: Text(
-          _isMailSectionExpanded ? 'メール機能を折りたたむ' : 'メール送信とテンプレート機能',
+          _isMailSectionExpanded ? 'メール機能を折りたたむ' : 'メール送信機能を開く',
           style: TextStyle(
             fontSize: 12,
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -2719,12 +2696,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        children: [
           Row(
-            children: [
-              const Icon(Icons.email, color: Colors.blue),
-              const SizedBox(width: 8),
-              const Text(
+            children: const [
+              Icon(Icons.email, color: Colors.blue),
+              SizedBox(width: 8),
+              Text(
                 'メール送信',
                 style: TextStyle(
                   fontSize: 16,
@@ -2734,8 +2711,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             ],
           ),
           const SizedBox(height: 16),
-          
-          // チェックボックス
           Column(
             children: [
               CheckboxListTile(
@@ -2762,15 +2737,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               ),
             ],
           ),
-          
           const SizedBox(height: 16),
-          
-          // 連絡先選択セクション
           _buildContactSelectionSection(),
-          
           const SizedBox(height: 16),
-          
-          // 宛先入力欄
           TextFormField(
             controller: _toController,
             style: TextStyle(
@@ -2803,10 +2772,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             ),
           ),
-          
           const SizedBox(height: 16),
-          
-          // 送信アプリ選択（縦並びでレイアウト）
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2818,14 +2784,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     value: 'outlook',
                     groupValue: _selectedMailApp,
                     onChanged: (value) {
-                      setState(() {
-                        _selectedMailApp = value!;
-                      });
+                      setState(() => _selectedMailApp = value!);
                     },
                   ),
-                  const Expanded(
-                    child: Text('Outlook（デスクトップ）'),
-                  ),
+                  const Expanded(child: Text('Outlook（デスクトップ）')),
                 ],
               ),
               Row(
@@ -2834,25 +2796,17 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     value: 'gmail',
                     groupValue: _selectedMailApp,
                     onChanged: (value) {
-                      setState(() {
-                        _selectedMailApp = value!;
-                      });
+                      setState(() => _selectedMailApp = value!);
                     },
                   ),
-                  const Expanded(
-                    child: Text('Gmail（Web）'),
-                  ),
+                  const Expanded(child: Text('Gmail（Web）')),
                 ],
               ),
             ],
           ),
-          
           const SizedBox(height: 12),
-          
-          // 各メーラー個別テストボタン（縦並びでレイアウト）
           Column(
             children: [
-              // Outlookテストボタン
               SizedBox(
                 width: double.infinity,
                 child: Container(
@@ -2865,7 +2819,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     color: _selectedMailApp == 'outlook' ? Colors.blue.shade50 : Colors.grey.shade50,
                   ),
                   child: ElevatedButton.icon(
-                    onPressed: () => _testOutlookConnection(),
+                    onPressed: _testOutlookConnection,
                     icon: const Icon(Icons.business, size: 16),
                     label: const Text('Outlookテスト'),
                     style: ElevatedButton.styleFrom(
@@ -2878,7 +2832,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-              // Gmailテストボタン
               SizedBox(
                 width: double.infinity,
                 child: Container(
@@ -2891,7 +2844,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     color: _selectedMailApp == 'gmail' ? Colors.red.shade50 : Colors.grey.shade50,
                   ),
                   child: ElevatedButton.icon(
-                    onPressed: () => _testGmailConnection(),
+                    onPressed: _testGmailConnection,
                     icon: const Icon(Icons.mail, size: 16),
                     label: const Text('Gmailテスト'),
                     style: ElevatedButton.styleFrom(
@@ -2905,57 +2858,29 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               ),
             ],
           ),
-          
           const SizedBox(height: 16),
-          
-        // テンプレートと履歴ボタン
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _showTemplateDialog,
-                icon: const Icon(Icons.description),
-                label: const Text('テンプレート'),
-                style: AppButtonStyles.secondary(context),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ElevatedButton.icon(
                 onPressed: _showHistoryDialog,
                 icon: const Icon(Icons.history),
                 label: const Text('送信履歴'),
+                style: AppButtonStyles.secondary(context),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _sendMail,
+                icon: const Icon(Icons.send),
+                label: const Text('メーラーを起動'),
                 style: AppButtonStyles.primary(context),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        
-        // メール送信ボタン
-        Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _sendMail,
-                    icon: const Icon(Icons.send),
-                    label: const Text('メーラーを起動'),
-                    style: AppButtonStyles.primary(context),
-                  ),
-                ),
-              ],
-            ),
               const SizedBox(height: 8),
-              // 送信完了ボタン
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _pendingMailTo != null ? _markMailAsSent : null,
-                  icon: const Icon(Icons.check_circle),
-                  label: Text(_pendingMailTo != null ? 'メール送信完了' : 'メーラーを先に起動してください'),
-                  style: _pendingMailTo != null 
+              ElevatedButton.icon(
+                onPressed: _pendingMailTo != null ? _markMailAsSent : null,
+                icon: const Icon(Icons.check_circle),
+                label: Text(_pendingMailTo != null ? 'メール送信完了' : 'メーラーを先に起動してください'),
+                style: _pendingMailTo != null
                     ? AppButtonStyles.primary(context)
                     : ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey,
@@ -2963,10 +2888,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                ),
               ),
               const SizedBox(height: 4),
-              // デバッグ情報を表示
               if (kDebugMode)
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -2986,9 +2909,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   ),
                 ),
               Text(
-                _pendingMailTo != null 
-                  ? '※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください'
-                  : '※まず「メーラーを起動」ボタンでメーラーを開いてください',
+                _pendingMailTo != null
+                    ? '※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください'
+                    : '※まず「メーラーを起動」ボタンでメーラーを開いてください',
                 style: TextStyle(
                   fontSize: 11,
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -3701,123 +3624,6 @@ ${linksInfo.isNotEmpty ? '──────────────────
       if (kDebugMode) {
         print('タスク更新エラー: $e');
       }
-    }
-  }
-
-  /// テンプレートダイアログを表示
-  Future<void> _showTemplateDialog() async {
-    final selectedTemplate = await showDialog<Map<String, String>>(
-        context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.description, color: Colors.purple),
-              const SizedBox(width: 8),
-              const Text('メールテンプレート'),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _emailTemplates.length,
-              itemBuilder: (context, index) {
-                final template = _emailTemplates[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.of(context).pop(template);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  template['name']!,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                              const Icon(Icons.arrow_forward_ios, size: 16),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceVariant,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '件名: ${template['subject']!}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '本文: ${template['body']!.replaceAll('\n', ' ').substring(0, template['body']!.length > 50 ? 50 : template['body']!.length)}${template['body']!.length > 50 ? '...' : ''}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('キャンセル'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (selectedTemplate != null) {
-      // テンプレートを適用
-      setState(() {
-        _toController.text = _toController.text.isNotEmpty ? _toController.text : '';
-        
-        // 件名と本文をテンプレートで更新（既存の内容がある場合は追加）
-        final currentSubject = _titleController.text.trim();
-        final newSubject = currentSubject.isNotEmpty 
-            ? '$currentSubject - ${selectedTemplate['subject']}'
-            : selectedTemplate['subject']!;
-        
-        final currentBody = _assignedToController.text.trim();
-        final newBody = currentBody.isNotEmpty 
-            ? '$currentBody\n\n${selectedTemplate['body']}'
-            : selectedTemplate['body']!;
-        
-        _titleController.text = newSubject;
-        _assignedToController.text = newBody;
-      });
-      
-      SnackBarService.showSuccess(context, 'テンプレート「${selectedTemplate['name']}」を適用しました');
     }
   }
 

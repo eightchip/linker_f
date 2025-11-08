@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hive/hive.dart';
+import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
@@ -118,7 +119,8 @@ enum GroupByOption {
   priority,  // 優先度でグループ化
 }
 
-class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObserver {
+class _TaskScreenState extends ConsumerState<TaskScreen>
+    with WidgetsBindingObserver, WindowListener {
   late SettingsService _settingsService;
   Set<String> _filterStatuses = {'all'}; // 複数選択可能
   String _filterPriority = 'all'; // all, low, medium, high, urgent
@@ -173,6 +175,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
   // ピン留めされたタスクID
   Set<String> _pinnedTaskIds = <String>{};
   
+  // ウィンドウ状態
+  bool _isWindowMaximized = false;
+
+  bool get _isDesktopPlatform =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+  
   // 検索機能強化
   bool _useRegex = false;
   bool _searchInDescription = true;
@@ -182,6 +190,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
   List<String> _searchSuggestions = [];
   bool _showSearchSuggestions = false;
   bool _showSearchOptions = false;
+  
+  // 名前付きフィルター
+  Map<String, Map<String, dynamic>> _savedFilterPresets = {};
+  
+  // カスタム順序（ドラッグ&ドロップ用）
+  List<String> _customTaskOrder = [];
+  bool _suppressNextTap = false;
 
   // グループ化機能
   GroupByOption _groupByOption = GroupByOption.none;
@@ -194,6 +209,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     _searchFocusNode = FocusNode();
     _searchController = TextEditingController();
 
+    if (_isDesktopPlatform) {
+      windowManager.addListener(this);
+      windowManager.isMaximized().then((value) {
+        if (mounted) {
+          setState(() {
+            _isWindowMaximized = value;
+          });
+        }
+      });
+    }
+
     _searchQuery = '';
     print('初期化時の_searchQuery: "$_searchQuery"');
     
@@ -201,6 +227,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     _loadSearchHistory();
     // ピン留めを読み込み
     _loadPinnedTasks();
+    // 保存されたフィルターを読み込み
+    _loadSavedFilterPresets();
+    // カスタム順序を読み込み
+    _loadCustomTaskOrder();
     
     // 検索コントローラーのリスナーを追加（初期化直後）
     _searchController.addListener(() {
@@ -295,8 +325,73 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     });
   }
 
+  Future<void> _minimizeWindow() async {
+    if (!_isDesktopPlatform) return;
+    await windowManager.minimize();
+  }
+
+  Future<void> _toggleWindowSize() async {
+    if (!_isDesktopPlatform) return;
+    final isMax = await windowManager.isMaximized();
+    if (isMax) {
+      await windowManager.unmaximize();
+      _updateWindowMaximized(false);
+    } else {
+      await windowManager.maximize();
+      _updateWindowMaximized(true);
+    }
+  }
+
+  void _updateWindowMaximized(bool value) {
+    if (!mounted) return;
+    setState(() {
+      _isWindowMaximized = value;
+    });
+  }
+
+  List<Widget> _buildWindowControlButtons() {
+    if (!_isDesktopPlatform) {
+      return const [];
+    }
+    return [
+      IconButton(
+        icon: const Icon(Icons.remove, size: 18),
+        tooltip: '最小化',
+        visualDensity: VisualDensity.compact,
+        onPressed: _minimizeWindow,
+      ),
+      IconButton(
+        icon: Icon(
+          _isWindowMaximized ? Icons.filter_none : Icons.crop_square,
+          size: 18,
+        ),
+        tooltip: _isWindowMaximized ? '元のサイズに戻す' : '最大化',
+        visualDensity: VisualDensity.compact,
+        onPressed: _toggleWindowSize,
+      ),
+    ];
+  }
+
+  @override
+  void onWindowMaximize() {
+    _updateWindowMaximized(true);
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    _updateWindowMaximized(false);
+  }
+
+  @override
+  void onWindowRestore() {
+    _updateWindowMaximized(false);
+  }
+
   @override
   void dispose() {
+    if (_isDesktopPlatform) {
+      windowManager.removeListener(this);
+    }
     WidgetsBinding.instance.removeObserver(this);
     _rootKeyFocus.dispose();
     _searchController.dispose();
@@ -615,6 +710,184 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     } catch (e) {
       if (mounted) {
         SnackBarService.showError(context, '優先度変更に失敗しました: $e');
+      }
+    }
+  }
+
+  /// 一括期限日変更ダイアログを表示
+  void _showBulkDueDateDialog(BuildContext context) {
+    DateTime? selectedDate;
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('期限日を一括変更'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('期限日を選択'),
+                subtitle: Text(
+                  selectedDate != null
+                      ? DateFormat('yyyy/MM/dd').format(selectedDate!)
+                      : '未選択',
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (date != null) {
+                      setDialogState(() {
+                        selectedDate = date;
+                      });
+                    }
+                  },
+                ),
+              ),
+              CheckboxListTile(
+                title: const Text('期限日をクリア'),
+                value: selectedDate == null,
+                onChanged: (value) {
+                  setDialogState(() {
+                    selectedDate = value == true ? null : (selectedDate ?? DateTime.now());
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _bulkChangeDueDate(selectedDate);
+              },
+              child: const Text('適用'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 選択されたタスクの期限日を一括変更
+  Future<void> _bulkChangeDueDate(DateTime? dueDate) async {
+    if (_selectedTaskIds.isEmpty) return;
+
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final tasks = ref.read(taskViewModelProvider);
+      final selectedTasks = tasks.where((t) => _selectedTaskIds.contains(t.id)).toList();
+      final updatedCount = selectedTasks.length;
+
+      for (final task in selectedTasks) {
+        final updatedTask = task.copyWith(dueDate: dueDate);
+        await taskViewModel.updateTask(updatedTask);
+      }
+
+      // 選択をクリア
+      setState(() {
+        _selectedTaskIds.clear();
+      });
+
+      if (mounted) {
+        SnackBarService.showSuccess(
+          context,
+          '$updatedCount件のタスクの期限日を変更しました',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, '期限日変更に失敗しました: $e');
+      }
+    }
+  }
+
+  /// 一括タグ変更ダイアログを表示
+  void _showBulkTagsDialog(BuildContext context) {
+    final tagController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('タグを一括変更'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: tagController,
+              decoration: const InputDecoration(
+                labelText: 'タグ（カンマ区切り）',
+                hintText: '例: 緊急,重要,プロジェクトA',
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '既存のタグに追加されます',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final tags = tagController.text
+                  .split(',')
+                  .map((t) => t.trim())
+                  .where((t) => t.isNotEmpty)
+                  .toList();
+              Navigator.of(context).pop();
+              await _bulkChangeTags(tags);
+            },
+            child: const Text('適用'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 選択されたタスクのタグを一括変更
+  Future<void> _bulkChangeTags(List<String> tags) async {
+    if (_selectedTaskIds.isEmpty) return;
+
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final tasks = ref.read(taskViewModelProvider);
+      final selectedTasks = tasks.where((t) => _selectedTaskIds.contains(t.id)).toList();
+      final updatedCount = selectedTasks.length;
+
+      for (final task in selectedTasks) {
+        final currentTags = task.tags ?? [];
+        final updatedTags = [...currentTags, ...tags].toSet().toList();
+        final updatedTask = task.copyWith(tags: updatedTags);
+        await taskViewModel.updateTask(updatedTask);
+      }
+
+      // 選択をクリア
+      setState(() {
+        _selectedTaskIds.clear();
+      });
+
+      if (mounted) {
+        SnackBarService.showSuccess(
+          context,
+          '$updatedCount件のタスクにタグを追加しました',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, 'タグ変更に失敗しました: $e');
       }
     }
   }
@@ -982,6 +1255,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                   case 'priority':
                     _showBulkPriorityMenu(context);
                     break;
+                  case 'dueDate':
+                    _showBulkDueDateDialog(context);
+                    break;
+                  case 'tags':
+                    _showBulkTagsDialog(context);
+                    break;
                   case 'delete':
                     await _deleteSelectedTasks();
                     break;
@@ -1008,6 +1287,26 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                     ],
                   ),
                 ),
+                const PopupMenuItem(
+                  value: 'dueDate',
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 20),
+                      SizedBox(width: 8),
+                      Text('期限日変更'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'tags',
+                  child: Row(
+                    children: [
+                      Icon(Icons.label, size: 20),
+                      SizedBox(width: 8),
+                      Text('タグ変更'),
+                    ],
+                  ),
+                ),
                 const PopupMenuDivider(),
                 const PopupMenuItem(
                   value: 'delete',
@@ -1021,6 +1320,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 ),
               ],
             ),
+            ..._buildWindowControlButtons(),
              ] else ...[
             // 3点ドットメニューに統合
             Focus(
@@ -1160,9 +1460,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 ),
               ),
             ],//itemBuilder
-                ),
           ),
           ),
+          ),
+          ..._buildWindowControlButtons(),
          ],//else
          ],//actions
        ),
@@ -1424,6 +1725,43 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                 
                 const SizedBox(width: AppSpacing.sm),
                 
+                // フィルター保存・読み込みボタン
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.bookmark, size: AppIconSizes.medium),
+                  tooltip: 'フィルターの保存・読み込み',
+                  onSelected: (value) {
+                    if (value == 'save') {
+                      _showSaveFilterDialog();
+                    } else if (value == 'load') {
+                      _showLoadFilterDialog();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'save',
+                      child: Row(
+                        children: [
+                          Icon(Icons.save, size: 20),
+                          SizedBox(width: 8),
+                          Text('現在のフィルターを保存'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'load',
+                      child: Row(
+                        children: [
+                          Icon(Icons.folder_open, size: 20),
+                          SizedBox(width: 8),
+                          Text('保存したフィルターを読み込み'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(width: AppSpacing.sm),
+                
                 // フィルター表示/非表示ボタン
                 IconButton(
                   icon: Icon(_showFilters ? Icons.expand_less : Icons.expand_more, size: AppIconSizes.medium),
@@ -1452,25 +1790,25 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
         onTap: () => _showStatisticsDetail(label, count),
         borderRadius: BorderRadius.circular(8),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      mainAxisSize: MainAxisSize.min,
+      children: [
             Icon(icon, color: count == 0 ? Colors.grey : color, size: AppIconSizes.medium),
-            const SizedBox(height: 2),
-            Text(
-              count.toString(),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        const SizedBox(height: 2),
+        Text(
+          count.toString(),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: count == 0 ? Colors.grey : color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              label,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontSize: 10,
                 color: count == 0 ? Colors.grey : null,
               ),
-            ),
-          ],
+        ),
+      ],
         ),
       ),
     );
@@ -1895,7 +2233,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     );
   }
 
-  Widget _buildTaskCard(TaskItem task) {
+  Widget _buildTaskCard(TaskItem task, {int? reorderIndex}) {
     print('=== _buildTaskCard呼び出し ===');
     print('task.title: "${task.title}"');
     print('_userTypedSearch: $_userTypedSearch');
@@ -1915,12 +2253,85 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     final colorContrast = ref.watch(colorContrastProvider);
     final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
     
+    Widget cardContent = AnimatedContainer(
+        key: ValueKey(task.id),
+        duration: Duration(milliseconds: uiState.animationDuration), // UIカスタマイズのアニメーション時間
+        curve: Curves.easeOutCubic, // より滑らかなカーブ
+        margin: EdgeInsets.symmetric(
+          horizontal: uiState.spacing * 1.5, 
+          vertical: uiState.spacing
+        ), // UIカスタマイズのスペーシング
+        decoration: BoxDecoration(
+          color: _isSelectionMode && isSelected 
+            ? Theme.of(context).primaryColor.withValues(alpha: 0.15) 
+            : isHovered
+              ? Theme.of(context).primaryColor.withValues(alpha: uiState.hoverEffectIntensity) // UIカスタマイズのホバー効果
+              : _getTaskCardColor(task), // 期限日に応じた色
+          borderRadius: BorderRadius.circular(uiState.cardBorderRadius), // UIカスタマイズの角丸半径
+          border: Border.all(
+            color: _isSelectionMode && isSelected
+              ? Theme.of(context).primaryColor.withValues(alpha: 0.6)
+              : isHovered
+                ? Theme.of(context).primaryColor.withValues(alpha: 0.8)
+                  : _getTaskBorderColorEnhanced(task), // 期限日に応じたボーダー色（ダークモード対応）
+          width: _isSelectionMode && isSelected ? 3 : isHovered ? 4 : 2.5, // 通常時も少し太く
+          ),
+          boxShadow: [
+            BoxShadow(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.6) // ダークモードではより濃い影
+                : Theme.of(context).colorScheme.shadow.withValues(alpha: uiState.shadowIntensity),
+            blurRadius: isHovered ? uiState.cardElevation * 8 : uiState.cardElevation * 5, // 少し大きめに
+            offset: Offset(0, isHovered ? uiState.cardElevation * 4 : uiState.cardElevation * 2.5),
+            ),
+            if (_isSelectionMode && isSelected)
+              BoxShadow(
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            if (isHovered && !_isSelectionMode)
+              BoxShadow(
+                color: Theme.of(context).primaryColor.withValues(alpha: uiState.shadowIntensity * 1.5),
+                blurRadius: uiState.cardElevation * 12,
+                offset: Offset(0, uiState.cardElevation * 5),
+              ),
+            if (isHovered && !_isSelectionMode)
+              BoxShadow(
+                color: Theme.of(context).primaryColor.withValues(alpha: uiState.gradientIntensity),
+                blurRadius: uiState.cardElevation * 16,
+                offset: Offset(0, uiState.cardElevation * 6),
+              ),
+          ],
+        ),
+        child: Stack(
+          children: [
+          _buildImprovedTaskListTile(task, isSelected, reorderIndex: reorderIndex),
+            if (isAutoGenerated) _buildEmailBadge(task),
+          ],
+        ),
+    );
+
+    if (reorderIndex != null) {
+      cardContent = Tooltip(
+        message: 'クリックで編集\nドラッグアイコンで順序変更',
+        waitDuration: const Duration(milliseconds: 500),
+        child: cardContent,
+      );
+    }
+
     return MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hoveredTaskIds.add(task.id)),
         onExit: (_) => setState(() => _hoveredTaskIds.remove(task.id)),
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () {
+          if (_suppressNextTap) {
+            _suppressNextTap = false;
+            return;
+          }
+          _suppressNextTap = false;
           // タスクをタップした時にタスクダイアログを開く
           showDialog(
             context: context,
@@ -1938,80 +2349,24 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
             ),
           );
         },
+        onTapCancel: () => _suppressNextTap = false,
         child: Transform.scale(
           scale: isHovered && !_isSelectionMode ? 1.02 : 1.0,
-          child: AnimatedContainer(
-          key: ValueKey(task.id),
-          duration: Duration(milliseconds: uiState.animationDuration), // UIカスタマイズのアニメーション時間
-          curve: Curves.easeOutCubic, // より滑らかなカーブ
-          margin: EdgeInsets.symmetric(
-            horizontal: uiState.spacing * 1.5, 
-            vertical: uiState.spacing
-          ), // UIカスタマイズのスペーシング
-          decoration: BoxDecoration(
-          color: _isSelectionMode && isSelected 
-            ? Theme.of(context).primaryColor.withValues(alpha: 0.15) 
-            : isHovered
-              ? Theme.of(context).primaryColor.withValues(alpha: uiState.hoverEffectIntensity) // UIカスタマイズのホバー効果
-              : _getTaskCardColor(task), // 期限日に応じた色
-          borderRadius: BorderRadius.circular(uiState.cardBorderRadius), // UIカスタマイズの角丸半径
-          border: Border.all(
-            color: _isSelectionMode && isSelected
-              ? Theme.of(context).primaryColor.withValues(alpha: 0.6)
-              : isHovered
-                ? Theme.of(context).primaryColor.withValues(alpha: 0.8)
-                : _getTaskBorderColorEnhanced(task), // 期限日に応じたボーダー色（ダークモード対応）
-            width: _isSelectionMode && isSelected ? 3 : isHovered ? 4 : 2.5, // 通常時も少し太く
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.black.withValues(alpha: 0.6) // ダークモードではより濃い影
-                  : Theme.of(context).colorScheme.shadow.withValues(alpha: uiState.shadowIntensity),
-              blurRadius: isHovered ? uiState.cardElevation * 8 : uiState.cardElevation * 5, // 少し大きめに
-              offset: Offset(0, isHovered ? uiState.cardElevation * 4 : uiState.cardElevation * 2.5),
-            ),
-            if (_isSelectionMode && isSelected)
-              BoxShadow(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            if (isHovered && !_isSelectionMode)
-              BoxShadow(
-                color: Theme.of(context).primaryColor.withValues(alpha: uiState.shadowIntensity * 1.5),
-                blurRadius: uiState.cardElevation * 12,
-                offset: Offset(0, uiState.cardElevation * 5),
-              ),
-            // 追加のグロー効果
-            if (isHovered && !_isSelectionMode)
-              BoxShadow(
-                color: Theme.of(context).primaryColor.withValues(alpha: uiState.gradientIntensity),
-                blurRadius: uiState.cardElevation * 16,
-                offset: Offset(0, uiState.cardElevation * 6),
-              ),
-          ],
-          ),
-          child: Stack(
-            children: [
-              _buildImprovedTaskListTile(task, isSelected),
-              if (isAutoGenerated) _buildEmailBadge(task),
-            ],
-          ),
-        ),
-        ),
+          child: cardContent,
       ),
+     ),
     );
   }
   
   /// 改善されたタスクのListTileを構築（指示書に基づく）
-  Widget _buildImprovedTaskListTile(TaskItem task, bool isSelected) {
+  Widget _buildImprovedTaskListTile(TaskItem task, bool isSelected, {int? reorderIndex}) {
     bool isExpanded = _expandedTaskIds.contains(task.id);
     // リンクがなくても、説明や依頼先があれば詳細トグルを表示
     final bool hasDetails =
         (task.description != null && task.description!.isNotEmpty) ||
         (task.assignedTo != null && task.assignedTo!.isNotEmpty) ||
         _hasValidLinks(task);
+    final bool hasSubTaskBadge = task.hasSubTasks || task.totalSubTasksCount > 0;
     
     // UIカスタマイズ設定を取得
     final uiState = ref.watch(uiCustomizationProvider);
@@ -2252,15 +2607,24 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // リマインダーアイコン
-          if (task.reminderTime != null)
+          // リマインダーアイコン（常に幅を確保）
+          Visibility(
+            visible: task.reminderTime != null,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
             Icon(
               Icons.notifications_active,
               color: Colors.orange,
               size: 20,
             ),
-          if (task.reminderTime != null)
-          const SizedBox(width: 4),
+                SizedBox(width: 4),
+              ],
+            ),
+          ),
           // サブタスク: あるときだけバッジ表示し、クリックで編集ダイアログ
           Builder(
             builder: (context) {
@@ -2269,11 +2633,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
               print('hasSubTasks: ${task.hasSubTasks}');
               print('totalSubTasksCount: ${task.totalSubTasksCount}');
               print('completedSubTasksCount: ${task.completedSubTasksCount}');
-              print('表示条件: ${task.hasSubTasks || task.totalSubTasksCount > 0}');
+              print('表示条件: $hasSubTaskBadge');
               print('===============================');
               
-              if (task.hasSubTasks || task.totalSubTasksCount > 0) {
-                return Tooltip(
+              return Visibility(
+                visible: hasSubTaskBadge,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Tooltip(
                   message: _buildSubTaskTooltipContent(task),
                   preferBelow: false,
                   verticalOffset: 20,
@@ -2345,16 +2716,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
                         ),
                       ),
                     ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
                   ),
                 );
-              } else {
-                return const SizedBox.shrink();
-              }
             },
           ),
-          // 優先度表示（色と文字1文字）
-          _buildPriorityIndicatorForList(task.priority),
-          const SizedBox(width: 4),
           // 予定バッジ（カレンダーアイコン）
           _buildScheduleBadge(task.id),
           const SizedBox(width: 4),
@@ -2364,8 +2733,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
           // 関連リンクボタン
           _buildRelatedLinksButton(task),
           const SizedBox(width: 4),
-          // ステータスチップ
+          // ステータスチップと優先度（必須バッジ）
           _buildStatusChip(task.status),
+          const SizedBox(width: 4),
+          _buildPriorityIndicatorForList(task.priority),
           const SizedBox(width: 8),
           // アクションメニュー
           PopupMenuButton<String>(
@@ -2435,6 +2806,31 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
               ),
             ],
           ),
+          if (reorderIndex != null) ...[
+            const SizedBox(width: 6),
+            Tooltip(
+              message: 'ドラッグで順序変更',
+              waitDuration: const Duration(milliseconds: 400),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.grab,
+                child: GestureDetector(
+                  onTapDown: (_) => _suppressNextTap = true,
+                  onTapUp: (_) => _suppressNextTap = false,
+                  onTapCancel: () => _suppressNextTap = false,
+                  child: ReorderableDragStartListener(
+                    index: reorderIndex!,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Icon(
+                        Icons.drag_indicator,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -4277,6 +4673,144 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     );
   }
 
+  /// 保存されたフィルタープリセットを読み込み
+  void _loadSavedFilterPresets() {
+    try {
+      final box = Hive.box('filterPresets');
+      final presets = box.get('taskFilterPresets', defaultValue: <String, Map>{});
+      _savedFilterPresets = Map<String, Map<String, dynamic>>.from(
+        presets.map((key, value) => MapEntry(key.toString(), Map<String, dynamic>.from(value)))
+      );
+    } catch (e) {
+      print('フィルタープリセット読み込みエラー: $e');
+      _savedFilterPresets = {};
+    }
+  }
+
+  /// 保存されたフィルタープリセットを保存
+  void _saveFilterPresets() {
+    try {
+      final box = Hive.box('filterPresets');
+      box.put('taskFilterPresets', _savedFilterPresets);
+    } catch (e) {
+      print('フィルタープリセット保存エラー: $e');
+    }
+  }
+
+  /// フィルター保存ダイアログを表示
+  void _showSaveFilterDialog() {
+    final nameController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('フィルターを保存'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: 'フィルター名',
+            hintText: '例: 今週の緊急タスク',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                _savedFilterPresets[name] = {
+                  'statuses': _filterStatuses.toList(),
+                  'priority': _filterPriority,
+                  'sortOrders': _sortOrders,
+                  'searchQuery': _searchQuery,
+                };
+                _saveFilterPresets();
+                Navigator.of(context).pop();
+                SnackBarService.showSuccess(context, 'フィルター「$name」を保存しました');
+              }
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// フィルター読み込みダイアログを表示
+  void _showLoadFilterDialog() {
+    if (_savedFilterPresets.isEmpty) {
+      SnackBarService.showInfo(context, '保存されたフィルターがありません');
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('フィルターを読み込み'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _savedFilterPresets.length,
+            itemBuilder: (context, index) {
+              final presetName = _savedFilterPresets.keys.elementAt(index);
+              final preset = _savedFilterPresets[presetName]!;
+              return ListTile(
+                title: Text(presetName),
+                subtitle: Text(
+                  'ステータス: ${preset['statuses']?.length ?? 0}件, '
+                  '優先度: ${preset['priority'] ?? 'すべて'}, '
+                  '検索: ${preset['searchQuery']?.toString().isEmpty ?? true ? 'なし' : 'あり'}'
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.delete, size: 20),
+                      onPressed: () {
+                        _savedFilterPresets.remove(presetName);
+                        _saveFilterPresets();
+                        Navigator.of(context).pop();
+                        _showLoadFilterDialog();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.check, size: 20),
+                      onPressed: () {
+                        setState(() {
+                          final statusList = (preset['statuses'] as List?);
+                          _filterStatuses = statusList != null 
+                              ? statusList.map((e) => e.toString()).toSet() 
+                              : {'all'};
+                          _filterPriority = preset['priority']?.toString() ?? 'all';
+                          _sortOrders = (preset['sortOrders'] as List?)?.map((e) => Map<String, String>.from(e)).toList() ?? [{'field': 'dueDate', 'order': 'asc'}];
+                          _searchQuery = preset['searchQuery']?.toString() ?? '';
+                          _searchController.text = _searchQuery;
+                        });
+                        _saveFilterSettings();
+                        Navigator.of(context).pop();
+                        SnackBarService.showSuccess(context, 'フィルター「$presetName」を読み込みました');
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 強化された検索クエリマッチング
   bool _matchesSearchQuery(TaskItem task, String query) {
     if (query.trim().isEmpty) return true;
@@ -5157,27 +5691,97 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
               children: pinnedTasks.map((task) => _buildTaskCard(task)).toList(),
             ),
           ),
-          // 通常タスク（スクロール可能）
+          // 通常タスク（スクロール可能、ドラッグ&ドロップ対応）
           Expanded(
             child: unpinnedTasks.isEmpty
                 ? const Center(child: Text('その他のタスクはありません'))
-                : ListView.builder(
-                    itemCount: unpinnedTasks.length,
-                    itemBuilder: (context, index) {
-                      return _buildTaskCard(unpinnedTasks[index]);
-                    },
-                  ),
+                : _buildReorderableTaskList(unpinnedTasks),
           ),
         ],
       );
     }
     
-    // ピン留めタスクがない場合は通常のリスト表示
-    return ListView.builder(
-      itemCount: unpinnedTasks.length,
-      itemBuilder: (context, index) {
-        return _buildTaskCard(unpinnedTasks[index]);
+    // ピン留めタスクがない場合はドラッグ&ドロップ対応リストを表示
+    return _buildReorderableTaskList(unpinnedTasks);
+  }
+
+  /// カスタム順序を読み込み
+  void _loadCustomTaskOrder() {
+    try {
+      final box = Hive.box('taskOrder');
+      final order = box.get('customOrder', defaultValue: <String>[]);
+      _customTaskOrder = List<String>.from(order);
+    } catch (e) {
+      print('カスタム順序読み込みエラー: $e');
+      _customTaskOrder = [];
+    }
+  }
+
+  /// カスタム順序を保存
+  void _saveCustomTaskOrder() {
+    try {
+      final box = Hive.box('taskOrder');
+      box.put('customOrder', _customTaskOrder);
+    } catch (e) {
+      print('カスタム順序保存エラー: $e');
+    }
+  }
+
+  /// 並び替え可能なタスクリストを構築
+  Widget _buildReorderableTaskList(List<TaskItem> tasks) {
+    // カスタム順序を使用
+    final orderedTasks = <TaskItem>[];
+    for (final taskId in _customTaskOrder) {
+      TaskItem? task;
+      try {
+        task = tasks.firstWhere((t) => t.id == taskId);
+      } catch (e) {
+        task = null;
+      }
+      if (task != null && task.id.isNotEmpty) {
+        orderedTasks.add(task);
+      }
+    }
+    // カスタム順序にないタスクを追加
+    for (final task in tasks) {
+      if (!_customTaskOrder.contains(task.id)) {
+        orderedTasks.add(task);
+        _customTaskOrder.add(task.id);
+      }
+    }
+    
+    return ReorderableListView.builder(
+      buildDefaultDragHandles: false,
+      itemCount: orderedTasks.length,
+      onReorder: (oldIndex, newIndex) {
+        if (oldIndex < newIndex) {
+          newIndex -= 1;
+        }
+        setState(() {
+          final movedTask = orderedTasks.removeAt(oldIndex);
+          orderedTasks.insert(newIndex, movedTask);
+          final movedTaskId = movedTask.id;
+          _customTaskOrder.remove(movedTaskId);
+          _customTaskOrder.insert(newIndex, movedTaskId);
+          _saveCustomTaskOrder();
+          _suppressNextTap = false;
+        });
       },
+      itemBuilder: (context, index) {
+        return _buildTaskCardWithKey(
+          orderedTasks[index],
+          key: ValueKey(orderedTasks[index].id),
+          index: index,
+        );
+      },
+    );
+  }
+
+  /// キー付きタスクカードを構築（ReorderableListView用）
+  Widget _buildTaskCardWithKey(TaskItem task, {required Key key, required int index}) {
+    return Container(
+      key: key,
+      child: _buildTaskCard(task, reorderIndex: index),
     );
   }
 
@@ -5359,7 +5963,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     final taskSchedules = schedules.where((s) => s.taskId == taskId).toList();
     
     if (taskSchedules.isEmpty) {
-      return const SizedBox.shrink();
+      return const SizedBox(width: 28);
     }
     
     // 日時昇順でソート
@@ -5368,23 +5972,29 @@ class _TaskScreenState extends ConsumerState<TaskScreen> with WidgetsBindingObse
     // ツールチップコンテンツを生成
     final tooltipContent = _buildScheduleTooltipContent(taskSchedules);
     
-    return MouseRegion(
-      cursor: SystemMouseCursors.help,
-      child: Tooltip(
-        message: tooltipContent,
-        waitDuration: const Duration(milliseconds: 500),
-        preferBelow: false,
-        verticalOffset: 10,
-        textStyle: const TextStyle(fontSize: 12, color: Colors.white),
-        decoration: BoxDecoration(
-          color: Colors.grey[900]?.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Icon(
-          Icons.calendar_today,
-          size: 20,
-          color: Colors.orange.shade700,
+    return SizedBox(
+      width: 28,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.help,
+        child: Tooltip(
+          message: tooltipContent,
+          waitDuration: const Duration(milliseconds: 500),
+          preferBelow: false,
+          verticalOffset: 10,
+          textStyle: const TextStyle(fontSize: 12, color: Colors.white),
+          decoration: BoxDecoration(
+            color: Colors.grey[900]?.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Icon(
+              Icons.calendar_today,
+              size: 20,
+              color: Colors.orange.shade700,
+            ),
+          ),
         ),
       ),
     );

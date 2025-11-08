@@ -25,6 +25,7 @@ import 'package:pdfx/pdfx.dart' as pdfx;
 import '../utils/favicon_service.dart';
 import '../widgets/unified_dialog.dart';
 import '../widgets/app_button_styles.dart';
+import 'package:window_manager/window_manager.dart';
 
 
 // ハイライト用のウィジェット
@@ -144,7 +145,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   final bool _isDragOver = false;
   String? draggingGroupId;
   Offset? draggingPosition;
@@ -155,6 +156,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _searchQuery = '';
   LinkType? _selectedLinkTypeFilter; // リンクタイプフィルター
   bool _tutorialShown = false;
+  bool _isWindowMaximized = false;
+  bool get _isDesktopPlatform =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
   // 色の濃淡とコントラストを調整した色を取得
   Color _getAdjustedColor(int baseColor, double intensity, double contrast) {
@@ -203,6 +207,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final groups = ref.read(linkViewModelProvider).groups;
     _orderedGroups = List<Group>.from(groups);
     
+    if (_isDesktopPlatform) {
+      windowManager.addListener(this);
+      windowManager.isMaximized().then((value) {
+        if (mounted) {
+          setState(() {
+            _isWindowMaximized = value;
+          });
+        }
+      });
+    }
+    
     // FocusNodeのリスナーを追加
     _shortcutFocusNode.addListener(() {
       print('ショートカットFocusNode状態: hasFocus=${_shortcutFocusNode.hasFocus}');
@@ -250,10 +265,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
+    if (_isDesktopPlatform) {
+      windowManager.removeListener(this);
+    }
     _scrollController.dispose();
     _shortcutFocusNode.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _minimizeWindow() async {
+    if (!_isDesktopPlatform) return;
+    await windowManager.minimize();
+  }
+
+  Future<void> _toggleWindowSize() async {
+    if (!_isDesktopPlatform) return;
+    final isMax = await windowManager.isMaximized();
+    if (isMax) {
+      await windowManager.unmaximize();
+      _updateWindowMaximized(false);
+    } else {
+      await windowManager.maximize();
+      _updateWindowMaximized(true);
+    }
+  }
+
+  void _updateWindowMaximized(bool value) {
+    if (!mounted) return;
+    setState(() {
+      _isWindowMaximized = value;
+    });
+  }
+
+  List<Widget> _buildWindowControlButtons() {
+    if (!_isDesktopPlatform) {
+      return const [];
+    }
+    return [
+      IconButton(
+        icon: const Icon(Icons.remove, size: 18),
+        tooltip: '最小化',
+        visualDensity: VisualDensity.compact,
+        onPressed: _minimizeWindow,
+      ),
+      IconButton(
+        icon: Icon(
+          _isWindowMaximized ? Icons.filter_none : Icons.crop_square,
+          size: 18,
+        ),
+        tooltip: _isWindowMaximized ? '元のサイズに戻す' : '最大化',
+        visualDensity: VisualDensity.compact,
+        onPressed: _toggleWindowSize,
+      ),
+    ];
+  }
+
+  @override
+  void onWindowMaximize() {
+    _updateWindowMaximized(true);
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    _updateWindowMaximized(false);
+  }
+
+  @override
+  void onWindowRestore() {
+    _updateWindowMaximized(false);
   }
 
   // ショートカットキー処理
@@ -755,6 +835,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
+                  ..._buildWindowControlButtons(),
                 ],
                 bottom: _showSearchBar
                     ? PreferredSize(

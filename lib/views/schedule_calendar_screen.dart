@@ -534,10 +534,24 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     
     // 過去の予定かどうかを判定
     final isPast = schedule.startDateTime.isBefore(now);
+    
+    // 重複チェック
+    final schedules = ref.read(scheduleViewModelProvider);
+    final hasOverlap = _checkScheduleOverlap(schedule, schedules);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: isPast ? Colors.grey.shade200 : null,
+      color: isPast 
+          ? Colors.grey.shade200 
+          : hasOverlap 
+              ? Colors.orange.shade50 
+              : null,
+      shape: hasOverlap 
+          ? RoundedRectangleBorder(
+              side: BorderSide(color: Colors.orange.shade300, width: 2),
+              borderRadius: BorderRadius.circular(12),
+            )
+          : null,
       child: InkWell(
         onTap: () {
           // タスク編集モーダルを開く
@@ -783,6 +797,23 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         const SnackBar(content: Text('予定をコピーしました')),
       );
     }
+  }
+
+  bool _checkScheduleOverlap(ScheduleItem schedule, List<ScheduleItem> allSchedules) {
+    for (final otherSchedule in allSchedules) {
+      if (otherSchedule.id == schedule.id) continue;
+      if (otherSchedule.taskId == schedule.taskId) continue;
+
+      final scheduleStart = schedule.startDateTime;
+      final scheduleEnd = schedule.endDateTime ?? scheduleStart.add(const Duration(hours: 1));
+      final otherStart = otherSchedule.startDateTime;
+      final otherEnd = otherSchedule.endDateTime ?? otherStart.add(const Duration(hours: 1));
+
+      if (scheduleStart.isBefore(otherEnd) && scheduleEnd.isAfter(otherStart)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _deleteSchedule(ScheduleItem schedule) async {
