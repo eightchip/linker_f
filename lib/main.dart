@@ -299,9 +299,13 @@ Future<void> _initializeWindow() async {
     
     await windowManager.ensureInitialized();
 
-    // 全画面起動のウィンドウ設定
+    // ウィンドウ設定（ユーザーがサイズ変更できるように調整）
+    const initialSize = Size(1440, 900);
+    const minimumSize = Size(1024, 720);
+
     WindowOptions windowOptions = WindowOptions(
-      size: const Size(1920, 1080), // フルHDサイズ
+      size: initialSize,
+      minimumSize: minimumSize,
       center: true, // メインモニターの中央に配置
       backgroundColor: const Color(0xFFF4F5F7),
       skipTaskbar: false,
@@ -314,9 +318,10 @@ Future<void> _initializeWindow() async {
       await windowManager.show();
       await windowManager.focus();
       await windowManager.setTitle('Link Navigator');
-      // 起動時に最大化
-      await windowManager.maximize();
-      print('ウィンドウ表示完了（最大化）');
+      await windowManager.setResizable(true);
+      await windowManager.setMinimumSize(minimumSize);
+      await windowManager.setSize(initialSize);
+      print('ウィンドウ表示完了（リサイズ可能）');
     });
     
     print('ウィンドウ初期化完了');
