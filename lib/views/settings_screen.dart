@@ -310,9 +310,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildMenuItem(context, ref, '通知設定', Icons.notifications, 'notifications'),
         ]),
         _buildMenuSection('連携', [
-          _buildMenuItem(context, ref, 'Google Calendar', Icons.calendar_today, 'google_calendar'),
+          _buildMenuItem(context, ref, 'Google Calendar', FontAwesomeIcons.calendarCheck, 'google_calendar'),
           _buildMenuItem(context, ref, 'Outlook', FontAwesomeIcons.microsoft, 'outlook'),
-          _buildMenuItem(context, ref, 'Gmail API', FontAwesomeIcons.envelope, 'gmail_api'),
+          _buildMenuItem(context, ref, 'Gmail連携', FontAwesomeIcons.envelope, 'gmail_api'),
         ], subtitle: '各連携機能には個別の設定が必要です'),
         _buildMenuSection('その他', [
           _buildMenuItem(context, ref, 'リセット', Icons.restore, 'reset'),
@@ -3673,7 +3673,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 8),
             _buildResetItem('テーマ設定', 'ダークモード: OFF、アクセントカラー: ブルー、濃淡: 100%、コントラスト: 100%'),
             _buildResetItem('通知設定', '通知: ON、通知音: ON'),
-            _buildResetItem('連携設定', 'Google Calendar: OFF、Gmail API: OFF、Outlook: OFF'),
+            _buildResetItem('連携設定', 'Google Calendar: OFF、Gmail連携: OFF、Outlook: OFF'),
             _buildResetItem('バックアップ設定', '自動バックアップ: ON、間隔: 7日'),
             const SizedBox(height: 12),
             
@@ -4801,12 +4801,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  /// Gmail API設定セクション
+  /// Gmail連携セクション
   Widget _buildGmailApiSection(SettingsState settingsState, SettingsNotifier settingsNotifier) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Gmail API連携', FontAwesomeIcons.envelope),
+        _buildSectionHeader('Gmail 連携', FontAwesomeIcons.envelope),
         const SizedBox(height: 16),
         
         Card(
@@ -4857,7 +4857,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         '2. メール送信セクションでGmailを選択\n'
                         '3. 宛先を入力して「メール送信」ボタンをクリック\n'
                         '4. Gmailのメール作成画面が開くので、内容を確認して送信します\n'
-                        '（送信履歴はタスク側に記録され、Gmail API設定がなくても利用できます）',
+                        '（送信履歴はタスク側に記録されます）',
                         style: TextStyle(
                           fontSize: 13,
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
@@ -4871,83 +4871,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  /// アクセストークン設定セクション
-  Widget _buildAccessTokenSection() {
-    return Consumer(
-      builder: (context, ref, child) {
-        final settingsService = ref.watch(settingsServiceProvider);
-        final currentToken = settingsService.gmailApiAccessToken ?? '';
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'アクセストークン設定',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Gmail APIのアクセストークンを設定してください。',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 12),
-            
-            // アクセストークン入力フィールド
-            TextFormField(
-              initialValue: currentToken,
-              decoration: const InputDecoration(
-                labelText: 'アクセストークン',
-                hintText: 'Gmail APIのアクセストークンを入力',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.key),
-              ),
-              obscureText: true,
-              maxLines: 1,
-              onChanged: (value) {
-                // アクセストークンを保存
-                _saveGmailAccessToken(value);
-              },
-            ),
-        
-            const SizedBox(height: 8),
-            
-            // アクセストークン取得ボタン
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ElevatedButton.icon(
-                    onPressed: _openGmailApiSetupGuide,
-                    icon: const Icon(Icons.help_outline),
-                    label: const Text('設定方法を確認'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ElevatedButton.icon(
-                    onPressed: _testGmailConnection,
-                    icon: const Icon(Icons.wifi_protected_setup),
-                    label: const Text('接続テスト'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -5156,155 +5079,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
 
-  /// Gmail API情報セクション
-  Widget _buildGmailApiInfo() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Gmail API設定情報',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '• 必要な権限: Gmail送信\n'
-            '• 対応機能: メール送信\n'
-            '• 使用方法: タスク管理からGmailでメールを送信',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Gmail API設定ガイドを開く
-  void _openGmailApiSetupGuide() {
-    showDialog(
-      context: context,
-      builder: (context) => UnifiedDialog(
-        title: 'Gmail API設定ガイド',
-        icon: Icons.help_outline,
-        iconColor: Colors.orange,
-        width: 700,
-        height: 700,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Gmail APIを使用するための設定手順:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildGuideStep('1', 'Google Cloud Consoleにアクセス'),
-            const Text('https://console.cloud.google.com/'),
-            const SizedBox(height: 12),
-            _buildGuideStep('2', '新しいプロジェクトを作成または既存プロジェクトを選択'),
-            const SizedBox(height: 12),
-            _buildGuideStep('3', 'Gmail APIを有効化'),
-            const Text('「APIとサービス」→「ライブラリ」→「Gmail API」を検索して有効化'),
-            const SizedBox(height: 12),
-            _buildGuideStep('4', '認証情報を作成'),
-            const Text('「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuth 2.0 クライアント ID」'),
-            const SizedBox(height: 12),
-            _buildGuideStep('5', 'アクセストークンを取得'),
-            const Text('OAuth 2.0 Playground (https://developers.google.com/oauthplayground/) を使用'),
-            const Text('1. 左側で「Gmail API v1」→「https://www.googleapis.com/auth/gmail.readonly」を選択'),
-            const Text('2. 「Authorize APIs」をクリックしてGoogleアカウントで認証'),
-            const Text('3. 右側の「Exchange authorization code for tokens」をクリック'),
-            const Text('4. 生成された「Access token」をコピー'),
-            const SizedBox(height: 12),
-            _buildGuideStep('6', 'アクセストークンを入力'),
-            const Text('上記の「アクセストークン」フィールドに取得したトークンを入力'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: AppButtonStyles.text(context),
-            child: const Text('閉じる'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              try {
-                await Process.run('cmd', ['/c', 'start', 'https://console.cloud.google.com/']);
-                Navigator.pop(context);
-              } catch (e) {
-                SnackBarService.showError(context, 'ブラウザを開けませんでした: $e');
-              }
-            },
-            icon: const Icon(Icons.open_in_browser),
-            label: const Text('Google Cloud Consoleを開く'),
-            style: AppButtonStyles.primary(context),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton.icon(
-            onPressed: () async {
-              try {
-                await Process.run('cmd', ['/c', 'start', 'https://developers.google.com/oauthplayground/']);
-                Navigator.pop(context);
-              } catch (e) {
-                SnackBarService.showError(context, 'ブラウザを開けませんでした: $e');
-              }
-            },
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('OAuth 2.0 Playgroundを開く'),
-            style: AppButtonStyles.secondary(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGuideStep(String number, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                number,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Google Calendar設定ガイドを開く
   void _openGoogleCalendarSetupGuide() {
     showDialog(
@@ -5446,49 +5220,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  /// Gmail接続をテスト
-  Future<void> _testGmailConnection() async {
-    try {
-      final settingsService = ref.read(settingsServiceProvider);
-      final accessToken = settingsService.gmailApiAccessToken;
-      
-      if (accessToken == null || accessToken.isEmpty) {
-        SnackBarService.showError(context, 'アクセストークンが設定されていません。先にアクセストークンを入力してください。');
-        return;
-      }
-      
-      // ローディング表示
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-      
-      // Gmail API接続テスト（簡易版）
-      if (accessToken.isNotEmpty) {
-        _saveGmailAccessToken(accessToken);
-      }
-      
-      // ローディングを閉じる
-      Navigator.pop(context);
-      
-      if (accessToken.isNotEmpty) {
-        SnackBarService.showSuccess(context, 'Gmail APIアクセストークンを保存しました！');
-      } else {
-        SnackBarService.showError(context, 'アクセストークンが空です。');
-      }
-    } catch (e) {
-      // ローディングを閉じる（エラー時）
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-      SnackBarService.showError(context, 'Gmail接続テストエラー: $e');
-    }
+  Widget _buildGuideStep(String number, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
   }
-
-
 
   /// Outlook接続をテスト
   Future<void> _testOutlookConnection() async {
@@ -5521,22 +5287,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   
 
 
-  /// Gmailアクセストークンを保存
-  void _saveGmailAccessToken(String token) async {
-    try {
-      final settingsService = SettingsService.instance;
-      await settingsService.setGmailApiAccessToken(token.isEmpty ? null : token);
-      
-      if (kDebugMode) {
-        print('Gmailアクセストークンを保存: ${token.isNotEmpty ? '${token.substring(0, 10)}...' : '削除'}');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Gmailアクセストークン保存エラー: $e');
-      }
-    }
-  }
-  
 }
 
 // 設定セクション管理用プロバイダー
