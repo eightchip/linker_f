@@ -509,6 +509,55 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
+  Future<void> setTaskStatus(String taskId, TaskStatus status) async {
+    switch (status) {
+      case TaskStatus.inProgress:
+        await startTask(taskId);
+        return;
+      case TaskStatus.completed:
+        await completeTask(taskId);
+        return;
+      case TaskStatus.pending:
+      case TaskStatus.cancelled:
+        try {
+          final task = state.firstWhere((t) => t.id == taskId);
+          final shouldClearReminder = status == TaskStatus.cancelled;
+
+          final updatedTask = task.copyWith(
+            status: status,
+            completedAt: status == TaskStatus.pending ? null : task.completedAt,
+            reminderTime: shouldClearReminder ? null : task.reminderTime,
+            isRecurringReminder: shouldClearReminder ? false : task.isRecurringReminder,
+            recurringReminderPattern: shouldClearReminder ? '' : task.recurringReminderPattern,
+            nextReminderTime: shouldClearReminder ? null : task.nextReminderTime,
+          );
+
+          await updateTask(updatedTask);
+        } catch (e) {
+          if (kDebugMode) {
+            print('タスクステータス更新エラー: $e');
+          }
+        }
+        return;
+    }
+  }
+
+  Future<void> setTaskPriority(String taskId, TaskPriority priority) async {
+    try {
+      final task = state.firstWhere((t) => t.id == taskId);
+      if (task.priority == priority) {
+        return;
+      }
+
+      final updatedTask = task.copyWith(priority: priority);
+      await updateTask(updatedTask);
+    } catch (e) {
+      if (kDebugMode) {
+        print('タスク優先度更新エラー: $e');
+      }
+    }
+  }
+
   Future<void> completeTask(String taskId) async {
     try {
       final task = state.firstWhere((t) => t.id == taskId);

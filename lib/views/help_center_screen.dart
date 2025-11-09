@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -42,9 +42,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
   };
 
   static const Map<String, String> _videoMap = {
-    'demo-link': 'assets/help/videos/demo_link.mp4',
-    'demo-task': 'assets/help/videos/demo_task.mp4',
-    'demo-schedule': 'assets/help/videos/demo_schedule.mp4',
+    'add_new_group': 'assets/help/videos/add_new_group.mp4',
+    'new_memo_task_add': 'assets/help/videos/new_memo_task_add.mp4',
+    'task_screen': 'assets/help/videos/task_screen.mp4',
   };
 
   final TextEditingController _searchController = TextEditingController();
@@ -251,11 +251,17 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 
     VideoPlayerController? videoController;
     ChewieController? chewieController;
+    File? tempVideoFile;
+    bool launchedExternally = false;
     try {
       if (source.startsWith('http')) {
         videoController = VideoPlayerController.networkUrl(Uri.parse(source));
       } else {
-        videoController = VideoPlayerController.asset(source);
+        tempVideoFile = await _copyAssetToTemp(source);
+        if (tempVideoFile == null) {
+          throw Exception('アセット動画を一時ファイルへ展開できませんでした。');
+        }
+        videoController = VideoPlayerController.file(tempVideoFile);
       }
       await videoController.initialize();
       chewieController = ChewieController(
@@ -313,16 +319,83 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           );
         },
       );
-    } catch (e) {
-      if (mounted) {
+    } catch (e, stack) {
+      debugPrint('HelpCenter: video load error for $source -> $e');
+      debugPrintStack(stackTrace: stack);
+
+      if (!source.startsWith('http')) {
+        tempVideoFile ??= await _copyAssetToTemp(source);
+        if (tempVideoFile != null && await tempVideoFile.exists()) {
+          try {
+            await Process.start(
+              tempVideoFile.path,
+              const [],
+              mode: ProcessStartMode.normal,
+            );
+            launchedExternally = true;
+            if (mounted) {
+              SnackBarService.showInfo(
+                context,
+                '内蔵プレーヤーで再生できなかったため、既定のアプリで動画を開きました。',
+              );
+            }
+          } catch (launchError, launchStack) {
+            debugPrint('HelpCenter: fallback launch error -> $launchError');
+            debugPrintStack(stackTrace: launchStack);
+            try {
+              await Process.run(
+                'cmd',
+                ['/c', 'start', '', tempVideoFile.path],
+                runInShell: true,
+              );
+              launchedExternally = true;
+              if (mounted) {
+                SnackBarService.showInfo(
+                  context,
+                  '既定のアプリで動画を開きました。',
+                );
+              }
+            } catch (fallbackError, fallbackStack) {
+              debugPrint('HelpCenter: secondary fallback error -> $fallbackError');
+              debugPrintStack(stackTrace: fallbackStack);
+            }
+          }
+        }
+      }
+
+      if (!launchedExternally && mounted) {
         SnackBarService.showWarning(
           context,
-          '動画を再生できませんでした。ファイルの配置と形式を確認してください。\n($source)',
+          '動画を再生できませんでした。\n$e\n($source)',
         );
       }
     } finally {
       chewieController?.dispose();
       videoController?.dispose();
+      if (!launchedExternally &&
+          tempVideoFile != null &&
+          await tempVideoFile.exists()) {
+        try {
+          await tempVideoFile.delete();
+        } catch (_) {}
+      }
+    }
+  }
+
+  Future<File?> _copyAssetToTemp(String assetPath) async {
+    try {
+      final byteData = await rootBundle.load(assetPath);
+      final tempDir = await getTemporaryDirectory();
+      final fileName = assetPath.split('/').last;
+      final file = File('${tempDir.path}/$fileName');
+      final Uint8List bytes =
+          byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
+      await file.writeAsBytes(bytes, flush: true);
+      return file;
+    } catch (e, stack) {
+      debugPrint('HelpCenter: asset copy error for $assetPath -> $e');
+      debugPrintStack(stackTrace: stack);
+      return null;
     }
   }
 

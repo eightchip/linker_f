@@ -2760,24 +2760,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           _buildRelatedLinksButton(task),
           const SizedBox(width: 4),
           // ステータスチップと優先度（必須バッジ）
-          _buildStatusChip(task.status),
+          _buildStatusSelector(task),
           const SizedBox(width: 4),
-          _buildPriorityIndicatorForList(task.priority),
+          _buildPrioritySelector(task),
           const SizedBox(width: 8),
           // アクションメニュー
           PopupMenuButton<String>(
             onSelected: (value) => _handleTaskAction(value, task),
             itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit),
-                    SizedBox(width: 8),
-                    Text('編集'),
-                  ],
-                ),
-              ),
               PopupMenuItem(
                 value: 'copy',
                 child: Row(
@@ -2788,28 +2778,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   ],
                 ),
               ),
-              if (task.status == TaskStatus.pending)
-                PopupMenuItem(
-                  value: 'start',
-                  child: Row(
-                    children: [
-                      Icon(Icons.play_arrow, color: Colors.blue),
-                      SizedBox(width: 8),
-                      Text('進行中', style: TextStyle(color: Colors.blue)),
-                    ],
-                  ),
-                ),
-              if (task.status == TaskStatus.inProgress)
-                PopupMenuItem(
-                  value: 'complete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.check),
-                      SizedBox(width: 8),
-                      Text('完了'),
-                    ],
-                  ),
-                ),
               PopupMenuItem(
                 value: 'sync_to_calendar',
                 child: Row(
@@ -3111,6 +3079,129 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     );
   }
 
+  Map<String, dynamic> _getStatusMenuInfo(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return {
+          'icon': Icons.hourglass_empty,
+          'text': '未着手',
+          'color': Colors.green,
+        };
+      case TaskStatus.inProgress:
+        return {
+          'icon': Icons.play_circle,
+          'text': '進行中',
+          'color': Colors.blue,
+        };
+      case TaskStatus.completed:
+        return {
+          'icon': Icons.check_circle,
+          'text': '完了',
+          'color': Colors.grey,
+        };
+      case TaskStatus.cancelled:
+        return {
+          'icon': Icons.cancel,
+          'text': 'キャンセル',
+          'color': Colors.red,
+        };
+    }
+  }
+
+  Widget _buildStatusSelector(TaskItem task) {
+    return PopupMenuButton<TaskStatus>(
+      tooltip: 'ステータスを変更',
+      initialValue: task.status,
+      padding: EdgeInsets.zero,
+      offset: const Offset(0, 8),
+      onSelected: (status) {
+        ref.read(taskViewModelProvider.notifier).setTaskStatus(task.id, status);
+      },
+      itemBuilder: (context) {
+        return TaskStatus.values.map((status) {
+          final info = _getStatusMenuInfo(status);
+          final isSelected = status == task.status;
+          return PopupMenuItem<TaskStatus>(
+            value: status,
+            child: Row(
+              children: [
+                Icon(
+                  info['icon'] as IconData,
+                  color: info['color'] as Color,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    info['text'] as String,
+                    style: TextStyle(
+                      color: Colors.grey.shade900,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 18,
+                  ),
+              ],
+            ),
+          );
+        }).toList();
+      },
+      child: _buildStatusChip(task.status),
+    );
+  }
+
+  Widget _buildPrioritySelector(TaskItem task) {
+    return PopupMenuButton<TaskPriority>(
+      tooltip: '優先度を変更',
+      initialValue: task.priority,
+      padding: EdgeInsets.zero,
+      offset: const Offset(0, 8),
+      onSelected: (priority) {
+        ref.read(taskViewModelProvider.notifier).setTaskPriority(task.id, priority);
+      },
+      itemBuilder: (context) {
+        return TaskPriority.values.map((priority) {
+          final info = _getPriorityInfoForList(priority);
+          final isSelected = priority == task.priority;
+          return PopupMenuItem<TaskPriority>(
+            value: priority,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.circle,
+                  color: info['color'] as Color,
+                  size: 14,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    info['text'] as String,
+                    style: TextStyle(
+                      color: Colors.grey.shade900,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 18,
+                  ),
+              ],
+            ),
+          );
+        }).toList();
+      },
+      child: _buildPriorityIndicatorForList(task.priority),
+    );
+  }
+
   /// 優先度フィルター用のドロップダウンアイテム（色アイコン＋文字、コンパクト版）
   Widget _buildPriorityDropdownItem(String text, Color color) {
     return Row(
@@ -3290,17 +3381,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     final taskViewModel = ref.read(taskViewModelProvider.notifier);
 
     switch (action) {
-      case 'edit':
-        _showTaskDialog(task: task);
-        break;
       case 'copy':
         _showCopyTaskDialog(task);
-        break;
-      case 'start':
-        taskViewModel.startTask(task.id);
-        break;
-      case 'complete':
-        taskViewModel.completeTask(task.id);
         break;
       case 'sync_to_calendar':
         _syncTaskToCalendar(task);
@@ -9023,33 +9105,4 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
     return buffer.toString().trim();
   }
 
-  /// タスクのステータスバッジ情報を取得
-  Map<String, dynamic> _getTaskStatusBadge(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.pending:
-        return {
-          'icon': Icons.hourglass_empty,
-          'text': '未着手',
-          'color': Colors.green,
-        };
-      case TaskStatus.inProgress:
-        return {
-          'icon': Icons.play_circle,
-          'text': '進行中',
-          'color': Colors.blue,
-        };
-      case TaskStatus.completed:
-        return {
-          'icon': Icons.check_circle,
-          'text': '完了',
-          'color': Colors.grey,
-        };
-      case TaskStatus.cancelled:
-        return {
-          'icon': Icons.cancel,
-          'text': 'キャンセル',
-          'color': Colors.red,
-        };
-    }
-  }
 }
