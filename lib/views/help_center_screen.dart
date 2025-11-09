@@ -760,11 +760,32 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           final colorScheme = theme.colorScheme;
           final useWideLayout = constraints.maxWidth >= 900;
           final tocWidth = useWideLayout ? 260.0 : constraints.maxWidth;
+          final baseTextColor = theme.brightness == Brightness.dark
+              ? colorScheme.onSurface.withOpacity(0.94)
+              : Colors.grey.shade900;
+          final secondaryTextColor = theme.brightness == Brightness.dark
+              ? colorScheme.onSurfaceVariant.withOpacity(0.88)
+              : Colors.grey.shade700;
           final sectionColors = <Color>[
             colorScheme.surface,
-            Color.alphaBlend(accentColor.withOpacity(0.04), colorScheme.surface),
-            Color.alphaBlend(secondaryColor.withOpacity(0.04), colorScheme.surface),
-            Color.alphaBlend(tertiaryColor.withOpacity(0.04), colorScheme.surface),
+            Color.alphaBlend(
+              (theme.brightness == Brightness.dark
+                      ? accentColor.withOpacity(0.08)
+                      : accentColor.withOpacity(0.04)),
+              colorScheme.surface,
+            ),
+            Color.alphaBlend(
+              (theme.brightness == Brightness.dark
+                      ? secondaryColor.withOpacity(0.09)
+                      : secondaryColor.withOpacity(0.04)),
+              colorScheme.surface,
+            ),
+            Color.alphaBlend(
+              (theme.brightness == Brightness.dark
+                      ? tertiaryColor.withOpacity(0.09)
+                      : tertiaryColor.withOpacity(0.04)),
+              colorScheme.surface,
+            ),
           ];
           final textTheme = theme.textTheme;
           final heroCard = _buildHeroCard(
@@ -827,23 +848,45 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                   h3: textTheme.titleMedium?.copyWith(
-                                    color: accentColor.withOpacity(0.85),
+                                    color: theme.brightness == Brightness.dark
+                                        ? accentColor.withOpacity(0.9)
+                                        : accentColor.withOpacity(0.85),
                                     fontWeight: FontWeight.w600,
                                   ),
                                   p: textTheme.bodyLarge?.copyWith(
                                     height: 1.8,
-                                    color: Colors.grey[900],
+                                    color: baseTextColor,
+                                  ),
+                                  listBullet: textTheme.bodyLarge?.copyWith(
+                                    color: baseTextColor,
+                                  ),
+                                  em: textTheme.bodyLarge?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    color: secondaryTextColor,
+                                  ),
+                                  strong: textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: baseTextColor,
                                   ),
                                   tableBorder: TableBorder.all(
                                     color: accentColor.withOpacity(0.18),
                                   ),
                                   tableHeadAlign: TextAlign.left,
+                                  tableHead: textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: baseTextColor,
+                                  ),
+                                  tableBody: textTheme.bodyMedium?.copyWith(
+                                    color: baseTextColor,
+                                  ),
                                   tableCellsPadding: const EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 10,
                                   ),
                                   blockquoteDecoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.58),
+                                    color: theme.brightness == Brightness.dark
+                                        ? colorScheme.primary.withOpacity(0.12)
+                                        : Colors.white.withOpacity(0.58),
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border(
                                       left: BorderSide(
@@ -859,7 +902,10 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                                     14,
                                   ),
                                   codeblockDecoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.04),
+                                    color: theme.brightness == Brightness.dark
+                                        ? colorScheme.surfaceContainerHighest
+                                            .withOpacity(0.4)
+                                        : Colors.black.withOpacity(0.04),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   codeblockPadding: const EdgeInsets.fromLTRB(
