@@ -1454,6 +1454,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   }//build
 
   Widget _buildCompactHeaderSection(Map<String, int> statistics) {
+    final total = statistics['total'] ?? 0;
+    final pending = statistics['pending'] ?? 0;
+    final inProgress = statistics['inProgress'] ?? 0;
+    final completed = statistics['completed'] ?? 0;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1467,68 +1471,49 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           // 左半分: 統計情報（コンパクト）
           Expanded(
             flex: 2,
-            child: LayoutBuilder(
-              builder: (context, statsConstraints) {
-                final availableWidth = statsConstraints.maxWidth;
-                final statTiles = <Widget>[
-                _buildStatItem('総タスク', statistics['total'] ?? 0, Icons.list),
-                _buildStatItem('未着手', statistics['pending'] ?? 0, Icons.radio_button_unchecked, Colors.grey),
-                _buildStatItem('完了', statistics['completed'] ?? 0, Icons.check_circle, Colors.green),
-                _buildStatItem('進行中', statistics['inProgress'] ?? 0, Icons.pending, Colors.blue),
-                _buildStatItem('期限切れ', statistics['overdue'] ?? 0, Icons.warning, Colors.red),
-                _buildStatItem('今日', statistics['today'] ?? 0, Icons.today, Colors.orange),
-                ];
-
-                if (availableWidth < 760) {
-                  return SizedBox(
-                    height: 86,
-                    child: ListView.separated(
-                      padding: EdgeInsets.zero,
-                      scrollDirection: Axis.horizontal,
-                      itemCount: statTiles.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (_, index) => SizedBox(width: 170, child: statTiles[index]),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _buildStatItem('総タスク', total, Icons.list),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _buildStatItem(
+                      '未着手',
+                      pending,
+                      Icons.radio_button_unchecked,
+                      Colors.grey,
                     ),
-                  );
-                }
-
-                if (availableWidth < 1280) {
-                  final columns = availableWidth < 1040 ? 2 : 3;
-                  const spacing = 12.0;
-                  final availableForTiles = availableWidth - (columns - 1) * spacing;
-                  final tileWidth = (availableForTiles / columns).clamp(180.0, 260.0).toDouble();
-
-                  return Align(
-                    alignment: Alignment.topLeft,
-                    child: Wrap(
-                      spacing: spacing,
-                      runSpacing: spacing,
-                      children: statTiles
-                          .map(
-                            (tile) => SizedBox(
-                              width: tileWidth,
-                              child: tile,
-                            ),
-                          )
-                          .toList(),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _buildStatItem(
+                      '進行中',
+                      inProgress,
+                      Icons.pending,
+                      Colors.blue,
                     ),
-                  );
-                }
-
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: statTiles
-                      .map(
-                        (tile) => Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: tile,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                );
-              },
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _buildStatItem(
+                      '完了',
+                      completed,
+                      Icons.check_circle,
+                      Colors.green,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           
@@ -1569,13 +1554,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           
           // 右半分: 検索とフィルター
           Expanded(
-            flex: 3,
+            flex: 2,
             child: Row(
               children: [
                 const SizedBox(width: AppSpacing.lg),
                 // 強化された検索バー
                 Expanded(
-                  flex: 3, // 検索バーを広く
+                  flex: 2, // 検索バーを広く
                   child: Builder(
                     builder: (context) {
                       print('TextField構築時: _searchFocusNode.hasFocus=${_searchFocusNode.hasFocus}');
@@ -1851,51 +1836,169 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('$label: $count件'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: filteredTasks.isEmpty
-              ? const Text('該当するタスクがありません')
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: filteredTasks.length,
-                  itemBuilder: (context, index) {
-                    final task = filteredTasks[index];
-                    return ListTile(
-                      title: Text(task.title),
-                      subtitle: task.dueDate != null
-                          ? Text('期限: ${DateFormat('yyyy/MM/dd').format(task.dueDate!)}')
-                          : const Text('期限: 未設定'),
-                      trailing: _buildStatusChip(task.status),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        showDialog(
-                          context: context,
-                          builder: (context) => TaskDialog(
-                            task: task,
-                            onPinChanged: () {
-                              _loadPinnedTasks();
-                              setState(() {});
-                            },
-                            onLinkReordered: () {
-                              ref.read(taskViewModelProvider.notifier).forceReloadTasks();
-                              setState(() {});
-                            },
-                          ),
-                        );
-                      },
-                    );
-                  },
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        final accentColor = colorScheme.primary;
+
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 120, vertical: 64),
+          backgroundColor: colorScheme.surface,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    color: accentColor.withOpacity(0.08),
+                  ),
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$label',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: accentColor,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$count件のタスク',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
+                const Divider(height: 1),
+                Expanded(
+                  child: filteredTasks.isEmpty
+                      ? const Center(child: Text('該当するタスクがありません'))
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          itemCount: filteredTasks.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final task = filteredTasks[index];
+                            final dueDate = task.dueDate;
+                            final isOverdue = dueDate != null &&
+                                dueDate.isBefore(DateTime.now()) &&
+                                task.status != TaskStatus.completed;
+                            final dueText = dueDate != null
+                                ? DateFormat('yyyy/MM/dd').format(dueDate)
+                                : '未設定';
+                            final dueColor = dueDate == null
+                                ? Colors.grey
+                                : isOverdue
+                                    ? Colors.red.shade600
+                                    : Colors.blue.shade600;
+
+                            return Material(
+                              color: colorScheme.surface,
+                              elevation: 0,
+                              borderRadius: BorderRadius.circular(18),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(18),
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => TaskDialog(
+                                      task: task,
+                                      onPinChanged: () {
+                                        _loadPinnedTasks();
+                                        setState(() {});
+                                      },
+                                      onLinkReordered: () {
+                                        ref.read(taskViewModelProvider.notifier).forceReloadTasks();
+                                        setState(() {});
+                                      },
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              task.title,
+                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: dueColor.withOpacity(0.12),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    border: Border.all(color: dueColor.withOpacity(0.3)),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.event,
+                                                        size: 14,
+                                                        color: dueColor,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '期限: $dueText',
+                                                        style: TextStyle(
+                                                          color: dueColor,
+                                                          fontWeight: FontWeight.w600,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                _buildStatusChip(task.status),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(Icons.chevron_right, color: colorScheme.outline),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                const Divider(height: 1),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text('閉じる'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

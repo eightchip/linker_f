@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:io';
 import 'dart:async';
+import 'dart:ffi' as ffi;
+import 'package:ffi/ffi.dart';
+import 'package:win32/win32.dart' as win32;
 import 'models/link_item.dart';
 import 'models/group.dart';
 import 'models/task_item.dart';
@@ -14,7 +16,6 @@ import 'models/email_contact.dart';
 import 'models/schedule_item.dart';
 import 'views/link_launcher_app.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:screen_retriever/screen_retriever.dart';
 import 'services/notification_service.dart';
 import 'services/windows_notification_service.dart';
 import 'services/system_tray_service.dart';
@@ -178,6 +179,7 @@ Future<void> _initializeHive() async {
 }
 
 // データマイグレーション初期化
+// ignore: unused_element
 Future<void> _initializeDataMigration() async {
   try {
     print('データマイグレーション開始');
@@ -292,12 +294,51 @@ void _initializeAdvancedFeatures() {
   });
 }
 
+Future<void> _forceShowNativeTitleBar() async {
+  final classNamePtr = 'FLUTTER_RUNNER_WIN32_WINDOW'.toNativeUtf16();
+  final windowNamePtr = 'Link Navigator'.toNativeUtf16();
+  final hwnd = win32.FindWindow(classNamePtr, ffi.nullptr);
+  calloc.free(classNamePtr);
+
+  if (hwnd == 0) {
+    calloc.free(windowNamePtr);
+    return;
+  }
+
+  final currentStyle = win32.GetWindowLongPtr(hwnd, win32.GWL_STYLE);
+  final desiredStyle = currentStyle |
+      win32.WS_CAPTION |
+      win32.WS_SYSMENU |
+      win32.WS_THICKFRAME |
+      win32.WS_MINIMIZEBOX |
+      win32.WS_MAXIMIZEBOX;
+  win32.SetWindowLongPtr(hwnd, win32.GWL_STYLE, desiredStyle);
+  win32.SetWindowPos(
+    hwnd,
+    0,
+    0,
+    0,
+    0,
+    0,
+    win32.SWP_NOMOVE |
+        win32.SWP_NOSIZE |
+        win32.SWP_NOZORDER |
+        win32.SWP_FRAMECHANGED |
+        win32.SWP_NOACTIVATE,
+  );
+  win32.SetWindowText(hwnd, windowNamePtr);
+  calloc.free(windowNamePtr);
+}
+
 // ウィンドウ初期化
 Future<void> _initializeWindow() async {
   try {
     print('ウィンドウ初期化開始');
     
     await windowManager.ensureInitialized();
+
+    // Flutter window_managerでは既定がhiddenになるため、明示的に標準キャプションを有効化
+    await _forceShowNativeTitleBar();
 
     // ウィンドウ設定（ユーザーがサイズ変更できるように調整）
     const initialSize = Size(1440, 900);
@@ -317,7 +358,10 @@ Future<void> _initializeWindow() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
-      await windowManager.setTitle('Link Navigator');
+      await _forceShowNativeTitleBar();
+      Future.delayed(const Duration(milliseconds: 800), () {
+        _forceShowNativeTitleBar();
+      });
       await windowManager.setResizable(true);
       await windowManager.setMinimumSize(minimumSize);
       await windowManager.setSize(initialSize);
