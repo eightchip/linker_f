@@ -8,6 +8,8 @@ import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
 import 'task_dialog.dart';
 
+enum ScheduleLayout { detailed, compact }
+
 class ScheduleScreen extends ConsumerStatefulWidget {
   const ScheduleScreen({super.key});
 
@@ -22,6 +24,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   Set<TaskStatus> _filterStatuses = {}; // 複数ステータス選択に対応
   TaskPriority? _filterPriority;
   bool _showPeriodBarLegend = true; // 期間バーの凡例を表示
+  ScheduleLayout _layoutMode = ScheduleLayout.detailed;
 
   @override
   void initState() {
@@ -152,6 +155,48 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
           ],
         ),
         actions: [
+          Tooltip(
+            message: 'ショートカット一覧 (F1)',
+            child: IconButton(
+              icon: const Icon(Icons.help_outline),
+              color: colorScheme.primary,
+              onPressed: () => _showShortcutHelp(context),
+            ),
+          ),
+          PopupMenuButton<ScheduleLayout>(
+            tooltip: 'レイアウト切り替え',
+            icon: Icon(
+              _layoutMode == ScheduleLayout.detailed ? Icons.view_agenda : Icons.view_day,
+              color: colorScheme.primary,
+            ),
+            onSelected: (mode) {
+              setState(() {
+                _layoutMode = mode;
+              });
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: ScheduleLayout.detailed,
+                child: Row(
+                  children: [
+                    Icon(Icons.view_agenda, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text('カード表示'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: ScheduleLayout.compact,
+                child: Row(
+                  children: [
+                    Icon(Icons.view_list, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text('コンパクト表示'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           IconButton(
             icon: Stack(
               children: [
@@ -248,7 +293,8 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                 child: Column(
                   children: [
                     // 期間バーの凡例
-                    if (_showPeriodBarLegend) _buildPeriodBarLegend(fontSize),
+                    if (_layoutMode == ScheduleLayout.detailed && _showPeriodBarLegend)
+                      _buildPeriodBarLegend(fontSize),
                     // タスクリスト
                     Expanded(
                       child: FutureBuilder<Map<String, List<TaskItem>>>(
@@ -259,7 +305,9 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                           }
                           final groupedTasks = snapshot.data!;
                           return ListView.builder(
-                            padding: const EdgeInsets.all(20),
+                            padding: _layoutMode == ScheduleLayout.compact
+                                ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                                : const EdgeInsets.all(20),
                             itemCount: groupedTasks.length,
                             itemBuilder: (context, index) {
                               final dateKey = groupedTasks.keys.elementAt(index);
@@ -358,6 +406,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         date.month == now.month &&
         date.day == now.day;
     final isPast = date.isBefore(now) && !isToday;
+    final isCompact = _layoutMode == ScheduleLayout.compact;
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -381,7 +430,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       children: [
         // 日付ヘッダー
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 14 : 16,
+            vertical: isCompact ? 10 : 12,
+          ),
           decoration: BoxDecoration(
             color: headerColor,
             borderRadius: BorderRadius.circular(14),
@@ -411,7 +463,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   return Text(
                     DateFormat('yyyy年MM月dd日').format(date),
                     style: TextStyle(
-                      fontSize: 16 * fontSize,
+                  fontSize: (isCompact ? 14.5 : 16) * fontSize,
                       fontWeight: FontWeight.bold,
                       color: textColor,
                     ),
@@ -431,7 +483,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   return Text(
                     '(${_getDayOfWeek(date)})',
                     style: TextStyle(
-                      fontSize: 14 * fontSize,
+                      fontSize: (isCompact ? 13 : 14) * fontSize,
                       fontWeight: FontWeight.w700,
                       color: textColor,
                     ),
@@ -442,12 +494,37 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               // 統計情報
               Builder(
                 builder: (context) {
-                  // 週/月の集計を計算
+                  final completedCount = tasks.where((t) => t.status == TaskStatus.completed).length;
+                  final overdueCount = tasks.where((t) {
+                    if (t.dueDate == null) return false;
+                    return t.dueDate!.isBefore(now) && t.status != TaskStatus.completed;
+                  }).length;
+
+                  if (isCompact) {
+                    final summaryColor = _getDateTextColorWithBackground(context, headerColor, isPast)
+                        .withOpacity(0.85);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '計${tasks.length}件 ・ 完了$completedCount ・ 期限切れ$overdueCount',
+                        style: TextStyle(
+                          fontSize: 11 * fontSize,
+                          fontWeight: FontWeight.w600,
+                          color: summaryColor,
+                        ),
+                      ),
+                    );
+                  }
+
                   final weekTasks = _getWeekTasks(date, allFilteredTasks);
                   final monthTasks = _getMonthTasks(date, allFilteredTasks);
                   final weekCount = weekTasks.length;
                   final monthCount = monthTasks.length;
-                  
+
                   return Row(
                     children: [
                       // 週の集計（月曜日または週の最初の日の場合のみ表示）
@@ -496,7 +573,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            '${tasks.where((t) => t.status == TaskStatus.completed).length}完了',
+                            '$completedCount完了',
                             style: TextStyle(
                               fontSize: 9 * fontSize,
                               color: Colors.white,
@@ -505,35 +582,23 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                           ),
                         ),
                       // 期限切れタスク数
-                      Builder(
-                        builder: (context) {
-                          final now = DateTime.now();
-                          final overdueCount = tasks.where((t) {
-                            if (t.dueDate == null) return false;
-                            return t.dueDate!.isBefore(now) && t.status != TaskStatus.completed;
-                          }).length;
-                          
-                          if (overdueCount > 0) {
-                            return Container(
-                              margin: const EdgeInsets.only(right: 4),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: colorScheme.error.withOpacity(0.85),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '$overdueCount期限切れ',
-                                style: TextStyle(
-                                  fontSize: 9 * fontSize,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
+                      if (overdueCount > 0)
+                        Container(
+                          margin: const EdgeInsets.only(right: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: colorScheme.error.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '$overdueCount期限切れ',
+                            style: TextStyle(
+                              fontSize: 9 * fontSize,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       // 総タスク数
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -560,7 +625,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         const SizedBox(height: 8),
         // タスクリスト（ReorderableListViewで並び替え可能）
         _buildReorderableTaskList(tasks, date, fontSize),
-        const SizedBox(height: 24),
+        SizedBox(height: isCompact ? 16 : 24),
       ],
     );
   }
@@ -624,17 +689,20 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         final isOverdue = task.dueDate != null &&
             task.dueDate!.isBefore(now) &&
             task.status != TaskStatus.completed;
+        final isCompact = _layoutMode == ScheduleLayout.compact;
         final tertiaryColor = colorScheme.tertiary;
+        final startOpacity = isCompact ? 0.12 : 0.18;
+        final endOpacity = isCompact ? 0.03 : 0.05;
         final gradientStart = isCompleted
-            ? Color.alphaBlend(tertiaryColor.withOpacity(0.18), colorScheme.surface)
+            ? Color.alphaBlend(tertiaryColor.withOpacity(startOpacity), colorScheme.surface)
             : isOverdue
-                ? Color.alphaBlend(colorScheme.error.withOpacity(0.2), colorScheme.surface)
-                : Color.alphaBlend(colorScheme.primary.withOpacity(0.16), colorScheme.surface);
+                ? Color.alphaBlend(colorScheme.error.withOpacity(startOpacity + 0.02), colorScheme.surface)
+                : Color.alphaBlend(colorScheme.primary.withOpacity(startOpacity), colorScheme.surface);
         final gradientEnd = isCompleted
-            ? Color.alphaBlend(tertiaryColor.withOpacity(0.05), colorScheme.surface)
+            ? Color.alphaBlend(tertiaryColor.withOpacity(endOpacity), colorScheme.surface)
             : isOverdue
-                ? Color.alphaBlend(colorScheme.error.withOpacity(0.08), colorScheme.surface)
-                : Color.alphaBlend(colorScheme.primary.withOpacity(0.05), colorScheme.surface);
+                ? Color.alphaBlend(colorScheme.error.withOpacity(endOpacity + 0.02), colorScheme.surface)
+                : Color.alphaBlend(colorScheme.primary.withOpacity(endOpacity), colorScheme.surface);
 
         return Dismissible(
           key: Key(task.id),
@@ -675,12 +743,12 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             return false; // カードを削除しない
           },
           child: Card(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: EdgeInsets.only(bottom: isCompact ? 10 : 12),
             elevation: isDarkMode ? 4 : 2,
             color: Colors.transparent,
             shadowColor: colorScheme.primary.withOpacity(0.12),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
               side: BorderSide(
                 color: colorScheme.outlineVariant.withOpacity(isDarkMode ? 0.45 : 0.2),
                 width: 1,
@@ -697,7 +765,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
               onLongPress: () {
                 _showQuickActionMenu(context, task);
               },
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -706,7 +774,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isCompact ? 12 : 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -717,7 +785,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                         child: Text(
                           task.title,
                           style: TextStyle(
-                            fontSize: 14 * fontSize,
+                            fontSize: (isCompact ? 13.5 : 14) * fontSize,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -725,14 +793,14 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                       _buildStatusBadge(task.status, fontSize),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: isCompact ? 6 : 8),
                   // 期間バー（着手日がある場合のみ表示）
-                  if (startedAt != null) ...[
+                  if (!isCompact && startedAt != null) ...[
                     _buildPeriodBar(startedAt, completedAt, dueDate, fontSize),
                     const SizedBox(height: 8),
                   ],
                   // 遅延警告（着手日が期限日より遅い場合）
-                  if (startedAt != null) ...[
+                  if (!isCompact && startedAt != null) ...[
                     Builder(
                       builder: (context) {
                         final startDate = DateTime(startedAt.year, startedAt.month, startedAt.day);
@@ -776,7 +844,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                     spacing: 8,
                     runSpacing: 4,
                     children: [
-                      if (startedAt != null)
+                      if (!isCompact && startedAt != null)
                         _buildDateBadge(
                           '着手',
                           startedAt,
@@ -784,7 +852,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                           dueDate,
                           fontSize,
                         ),
-                      if (completedAt != null)
+                      if (!isCompact && completedAt != null)
                         _buildDateBadge(
                           '完了',
                           completedAt,
@@ -803,7 +871,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   ),
                   // 優先度
                   if (task.priority != TaskPriority.medium) ...[
-                    const SizedBox(height: 8),
+                    SizedBox(height: isCompact ? 6 : 8),
                     _buildPriorityBadge(task.priority, fontSize),
                   ],
                 ],

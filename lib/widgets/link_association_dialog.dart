@@ -746,35 +746,49 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
   }
 
   Widget _buildFaviconOrIcon(LinkItem link, ThemeData theme) {
-    if (link.type == LinkType.url) {
+    final isLikelyUrl = link.type == LinkType.url ||
+        link.path.toLowerCase().startsWith('http://') ||
+        link.path.toLowerCase().startsWith('https://');
+
+    if (isLikelyUrl) {
       return UrlPreviewWidget(
-        url: link.path, 
+        url: link.path,
         isDark: theme.brightness == Brightness.dark,
         fallbackDomain: link.faviconFallbackDomain,
       );
-    } else if (link.type == LinkType.file) {
+    }
+
+    if (link.type == LinkType.file ||
+        link.path.toLowerCase().startsWith('file://') ||
+        link.path.contains('\\')) {
       return FilePreviewWidget(
         path: link.path,
         isDark: theme.brightness == Brightness.dark,
       );
-    } else {
-      if (link.iconData != null) {
-        return Icon(
-          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
-          color: link.iconColor != null ? Color(link.iconColor!) : Colors.orange,
-          size: 16,
-        );
-      } else {
-        return Icon(
-          Icons.folder,
-          color: Colors.orange,
-          size: 16,
-        );
-      }
     }
+
+    if (link.iconData != null) {
+      return Icon(
+        IconData(link.iconData!, fontFamily: 'MaterialIcons'),
+        color: link.iconColor != null
+            ? Color(link.iconColor!)
+            : theme.colorScheme.primary,
+        size: 16,
+      );
+    }
+
+    return Icon(
+      Icons.folder,
+      color: theme.colorScheme.outline,
+      size: 16,
+    );
   }
 
   Color _getGroupColor(Group group) {
+    if (group.color != null) {
+      return Color(group.color!);
+    }
+
     switch (group.title.toLowerCase()) {
       case 'favorites':
         return Colors.blue;
@@ -793,17 +807,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
     try {
       final taskViewModel = ref.read(taskViewModelProvider.notifier);
       
-      final currentLinkIds = Set.from(widget.task.relatedLinkIds);
-      final linksToAdd = _selectedLinkIds.difference(currentLinkIds);
-      final linksToRemove = currentLinkIds.difference(_selectedLinkIds);
-      
-      for (final linkId in linksToAdd) {
-        await taskViewModel.addLinkToTask(widget.task.id, linkId);
-      }
-      
-      for (final linkId in linksToRemove) {
-        await taskViewModel.removeLinkFromTask(widget.task.id, linkId);
-      }
+      await taskViewModel.setTaskLinks(widget.task.id, _selectedLinkIds);
       
       SnackBarService.showSuccess(
         context,

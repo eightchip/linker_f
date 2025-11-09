@@ -23,6 +23,114 @@ import '../services/snackbar_service.dart';
 import '../viewmodels/sync_status_provider.dart';
 import '../viewmodels/ui_customization_provider.dart';
 
+class _ColorPreset {
+  const _ColorPreset({
+    required this.id,
+    required this.name,
+    required this.accentColor,
+    required this.intensity,
+    required this.contrast,
+    required this.swatch,
+    this.darkMode,
+    this.description,
+  });
+
+  final String id;
+  final String name;
+  final int accentColor;
+  final double intensity;
+  final double contrast;
+  final List<int> swatch;
+  final bool? darkMode;
+  final String? description;
+}
+
+const List<_ColorPreset> _colorPresets = [
+  _ColorPreset(
+    id: 'sunrise',
+    name: 'サンライズ',
+    accentColor: 0xFFEA580C,
+    intensity: 1.1,
+    contrast: 1.05,
+    swatch: [0xFFFFB86C, 0xFFEA580C, 0xFF9A3412],
+    description: '温かみのあるオレンジ系',
+  ),
+  _ColorPreset(
+    id: 'forest',
+    name: 'フォレスト',
+    accentColor: 0xFF15803D,
+    intensity: 1.0,
+    contrast: 1.0,
+    swatch: [0xFF22C55E, 0xFF15803D, 0xFF065F46],
+    description: '落ち着いたグリーン系',
+  ),
+  _ColorPreset(
+    id: 'breeze',
+    name: 'ブルーブリーズ',
+    accentColor: 0xFF2563EB,
+    intensity: 1.05,
+    contrast: 0.95,
+    swatch: [0xFF60A5FA, 0xFF2563EB, 0xFF1D4ED8],
+    description: '爽やかなブルー系',
+  ),
+  _ColorPreset(
+    id: 'midnight',
+    name: 'ミッドナイト',
+    accentColor: 0xFF312E81,
+    intensity: 0.85,
+    contrast: 1.2,
+    swatch: [0xFF6366F1, 0xFF312E81, 0xFF1E1B4B],
+    darkMode: true,
+    description: '夜間作業に合うダークテイスト',
+  ),
+  _ColorPreset(
+    id: 'sakura',
+    name: 'サクラ',
+    accentColor: 0xFFE11D48,
+    intensity: 1.05,
+    contrast: 0.9,
+    swatch: [0xFFFDA4AF, 0xFFE11D48, 0xFFBE123C],
+    description: '柔らかなピンク系',
+  ),
+  _ColorPreset(
+    id: 'citrus',
+    name: 'シトラス',
+    accentColor: 0xFF65A30D,
+    intensity: 1.15,
+    contrast: 1.05,
+    swatch: [0xFFA3E635, 0xFF65A30D, 0xFF3F6212],
+    description: 'フレッシュな黄緑系',
+  ),
+  _ColorPreset(
+    id: 'slate',
+    name: 'スレート',
+    accentColor: 0xFF1E3A8A,
+    intensity: 0.95,
+    contrast: 1.15,
+    swatch: [0xFF94A3B8, 0xFF1E3A8A, 0xFF0F172A],
+    description: '落ち着いたブルーグレー',
+  ),
+  _ColorPreset(
+    id: 'amber',
+    name: 'アンバー',
+    accentColor: 0xFFF59E0B,
+    intensity: 1.2,
+    contrast: 1.0,
+    swatch: [0xFFFCD34D, 0xFFF59E0B, 0xFFB45309],
+    description: '視認性の高いゴールド調',
+  ),
+  _ColorPreset(
+    id: 'graphite',
+    name: 'グラファイト',
+    accentColor: 0xFF334155,
+    intensity: 0.9,
+    contrast: 1.25,
+    swatch: [0xFF94A3B8, 0xFF475569, 0xFF0F172A],
+    darkMode: true,
+    description: 'モダンなモノトーン',
+  ),
+];
+
 final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService.instance;
 });
@@ -273,6 +381,173 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
       ),
     );
+  }
+
+  Widget _buildColorPresetSelector(BuildContext context, WidgetRef ref) {
+    final accentColor = ref.watch(accentColorProvider);
+    final intensity = ref.watch(colorIntensityProvider);
+    final contrast = ref.watch(colorContrastProvider);
+    final isDarkMode = ref.watch(darkModeProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('カラープリセット', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8),
+            Icon(Icons.auto_awesome, size: 18, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 6),
+            Text(
+              'ワンタップでおすすめ配色を適用',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: _colorPresets.map((preset) {
+            final isSelected =
+                accentColor == preset.accentColor &&
+                (intensity - preset.intensity).abs() < 0.01 &&
+                (contrast - preset.contrast).abs() < 0.01 &&
+                (preset.darkMode == null || preset.darkMode == isDarkMode);
+
+            final gradientColors = preset.swatch.map((c) => Color(c)).toList();
+
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 150,
+              constraints: const BoxConstraints(minHeight: 80),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected ? Colors.white : Colors.white.withOpacity(0.4),
+                  width: isSelected ? 2 : 1,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: Color(preset.accentColor).withOpacity(0.45),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _applyColorPreset(context, ref, preset),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                preset.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            if (isSelected)
+                              const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                          ],
+                        ),
+                        if (preset.description != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            preset.description!,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${(preset.intensity * 100).round()}% / ${(preset.contrast * 100).round()}%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                            if (preset.darkMode != null)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 6),
+                                child: Icon(
+                                  preset.darkMode! ? Icons.dark_mode : Icons.light_mode,
+                                  size: 16,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _applyColorPreset(BuildContext context, WidgetRef ref, _ColorPreset preset) async {
+    try {
+      final settings = SettingsService.instance;
+      ref.read(accentColorProvider.notifier).state = preset.accentColor;
+      ref.read(colorIntensityProvider.notifier).state = preset.intensity;
+      ref.read(colorContrastProvider.notifier).state = preset.contrast;
+      await settings.setAccentColor(preset.accentColor);
+      await settings.setColorIntensity(preset.intensity);
+      await settings.setColorContrast(preset.contrast);
+
+      if (preset.darkMode != null) {
+        ref.read(darkModeProvider.notifier).state = preset.darkMode!;
+        await settings.setDarkMode(preset.darkMode!);
+      }
+
+      SnackBarService.showSuccess(context, '「${preset.name}」プリセットを適用しました');
+    } catch (e) {
+      SnackBarService.showError(context, 'プリセットの適用に失敗しました: $e');
+    }
   }
 
   // キーボードショートカットを処理
@@ -566,6 +841,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 const SizedBox(height: 16),
                 
+                _buildColorPresetSelector(context, ref),
+
+                const SizedBox(height: 24),
+
                 const Text('アクセントカラー', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 _buildAccentColorGrid(context, ref, currentAccentColor),

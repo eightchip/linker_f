@@ -10,6 +10,18 @@ import '../viewmodels/task_viewmodel.dart';
 import 'task_dialog.dart';
 import 'home_screen.dart'; // HighlightedText用
 import 'outlook_calendar_import_dialog_v2.dart';
+import '../widgets/shortcut_help_dialog.dart';
+import '../services/snackbar_service.dart';
+
+enum ScheduleCalendarView { list, week, month }
+
+class _FocusSearchIntent extends Intent {
+  const _FocusSearchIntent();
+}
+
+class _OpenShortcutIntent extends Intent {
+  const _OpenShortcutIntent();
+}
 
 class ScheduleCalendarScreen extends ConsumerStatefulWidget {
   const ScheduleCalendarScreen({super.key});
@@ -41,6 +53,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
   
   // 今日の日付の位置を保持
   GlobalKey? _todayKey;
+  ScheduleCalendarView _currentView = ScheduleCalendarView.list;
 
   @override
   void initState() {
@@ -143,10 +156,88 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     // 日付順にソート
     final sortedDates = schedulesByDate.keys.toList()..sort();
 
-    return Scaffold(
+    return Shortcuts(
+      shortcuts: {
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyF): const _FocusSearchIntent(),
+        LogicalKeySet(LogicalKeyboardKey.f1): const _OpenShortcutIntent(),
+      },
+      child: Actions(
+        actions: {
+          _FocusSearchIntent: CallbackAction<_FocusSearchIntent>(
+            onInvoke: (intent) {
+              _focusSearchField();
+              return null;
+            },
+          ),
+          _OpenShortcutIntent: CallbackAction<_OpenShortcutIntent>(
+            onInvoke: (intent) {
+              _showShortcutGuide(context);
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
       appBar: AppBar(
         title: const Text('予定表'),
         actions: [
+          Tooltip(
+            message: 'ショートカット一覧 (F1)',
+            child: IconButton(
+              icon: Icon(Icons.help_outline, color: Theme.of(context).colorScheme.primary),
+              onPressed: () => _showShortcutGuide(context),
+            ),
+          ),
+          PopupMenuButton<ScheduleCalendarView>(
+            tooltip: '表示切り替え',
+            icon: Icon(
+              _currentView == ScheduleCalendarView.list
+                  ? Icons.view_list
+                  : _currentView == ScheduleCalendarView.week
+                      ? Icons.view_week
+                      : Icons.calendar_month,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            onSelected: (layout) {
+              setState(() {
+                _currentView = layout;
+                _todayKey = null;
+              });
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: ScheduleCalendarView.list,
+                child: Row(
+                  children: [
+                    Icon(Icons.view_list),
+                    SizedBox(width: 8),
+                    Text('リスト表示'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: ScheduleCalendarView.week,
+                child: Row(
+                  children: [
+                    Icon(Icons.view_week),
+                    SizedBox(width: 8),
+                    Text('週次表示'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: ScheduleCalendarView.month,
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month),
+                    SizedBox(width: 8),
+                    Text('月次表示'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           // 一括選択ボタン
           if (_selectedDates.isNotEmpty || sortedDates.isNotEmpty)
             IconButton(
@@ -189,6 +280,10 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                 ? 'エクセルにコピー（日付を選択してください）'
                 : 'エクセルにコピー（選択された${_selectedDates.length}日分の予定をクリップボードにコピー）',
             onSelected: (value) {
+              if (_currentView != ScheduleCalendarView.list) {
+                SnackBarService.showInfo(context, 'エクセルコピーはリスト表示時のみ利用できます。');
+                return;
+              }
               if (value == 'table') {
                 _copyToExcel(isOneCellForm: false);
               } else if (value == 'onecell') {
@@ -322,53 +417,39 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           // 予定リスト
           Expanded(
             child: searchFilteredSchedules.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.calendar_today, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  Text(
-                    _dateFilter == 'future' ? '未来の予定がありません'
-                        : _dateFilter == 'past' ? '過去の予定がありません'
-                        : '予定がありません',
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.calendar_today, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        Text(
+                          _dateFilter == 'future'
+                              ? '未来の予定がありません'
+                              : _dateFilter == 'past'
+                                  ? '過去の予定がありません'
+                                  : '予定がありません',
+                          style: const TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  )
+                : _buildCurrentView(
+                    sortedDates: sortedDates,
+                    schedulesByDate: schedulesByDate,
+                    tasks: tasks,
+                    now: now,
                   ),
-                ],
-              ),
-            )
-              : ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: sortedDates.length,
-                  itemBuilder: (context, index) {
-                    final date = sortedDates[index];
-                    final dateSchedules = schedulesByDate[date]!;
-                    final isToday = date.year == now.year &&
-                        date.month == now.month &&
-                        date.day == now.day;
-                    
-                    // 今日の日付のキーを保持
-                    if (isToday && _todayKey == null) {
-                      _todayKey = GlobalKey();
-                    }
-                    
-                    return _buildDateSection(
-                      date,
-                      dateSchedules,
-                      tasks,
-                      isToday ? _todayKey : null,
-                      now,
-                    );
-                  },
-                ),
-            ),
+          ),
           ],
         ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddScheduleDialog,
         tooltip: '予定を追加',
         child: const Icon(Icons.add),
+      ),
+    ),
+        ),
       ),
     );
   }
@@ -385,13 +466,19 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     }
   }
 
+  void _focusSearchField() {
+    _searchFocusNode.requestFocus();
+    _searchController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _searchController.text.length,
+    );
+  }
+
   Future<void> _showAddScheduleDialog() async {
     final tasks = ref.read(taskViewModelProvider);
     if (tasks.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('予定を追加するには、まずタスクを作成してください')),
-        );
+        SnackBarService.showInfo(context, '予定を追加するには、まずタスクを作成してください');
       }
       return;
     }
@@ -434,6 +521,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     GlobalKey? dateKey,
     DateTime now,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     // ロケールが初期化されていない場合はデフォルト形式を使用
     final dateFormat = _localeInitialized
         ? DateFormat('yyyy年MM月dd日(E)', 'ja_JP')
@@ -441,6 +529,14 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     final isToday = date.year == DateTime.now().year &&
         date.month == DateTime.now().month &&
         date.day == DateTime.now().day;
+    final isPast = DateTime(date.year, date.month, date.day).isBefore(DateTime(now.year, now.month, now.day));
+    final headerBaseColor = isToday
+        ? colorScheme.primary
+        : isPast
+            ? colorScheme.error
+            : colorScheme.secondary;
+    final headerColor =
+        Color.alphaBlend(headerBaseColor.withOpacity(0.12), colorScheme.surface);
     
     // 日付のみ（時刻を0に）で比較
     final dateOnly = DateTime(date.year, date.month, date.day);
@@ -454,10 +550,21 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       children: [
         Container(
           key: dateKey,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: isToday ? Colors.blue.shade100 : Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(8),
+            color: headerColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: headerBaseColor.withOpacity(0.4),
+              width: isToday ? 2 : 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withOpacity(0.06),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -481,24 +588,28 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
               Text(
                 dateFormat.format(date),
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: isToday ? Colors.blue.shade900 : Colors.grey.shade800,
+                  color: isToday
+                      ? colorScheme.onPrimary
+                      : isPast
+                          ? colorScheme.onErrorContainer.withOpacity(0.9)
+                          : colorScheme.onSecondaryContainer,
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isToday ? Colors.blue.shade300 : Colors.grey.shade400,
+                  color: headerBaseColor.withOpacity(0.65),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${schedules.length}件',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onPrimary,
                   ),
                 ),
               ),
@@ -525,7 +636,12 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     );
   }
 
-  Widget _buildScheduleCard(ScheduleItem schedule, TaskItem task, DateTime now) {
+  Widget _buildScheduleCard(
+    ScheduleItem schedule,
+    TaskItem task,
+    DateTime now,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
     final timeFormat = DateFormat('HH:mm');
     final hasEndTime = schedule.endDateTime != null;
     final timeText = hasEndTime
@@ -534,24 +650,36 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     
     // 過去の予定かどうかを判定
     final isPast = schedule.startDateTime.isBefore(now);
+    final isToday = DateUtils.isSameDay(schedule.startDateTime, now);
     
     // 重複チェック
     final schedules = ref.read(scheduleViewModelProvider);
     final hasOverlap = _checkScheduleOverlap(schedule, schedules);
+    final Color baseColor;
+    if (hasOverlap) {
+      baseColor = colorScheme.secondary;
+    } else if (isPast) {
+      baseColor = colorScheme.outline;
+    } else if (isToday) {
+      baseColor = colorScheme.primary;
+    } else {
+      baseColor = colorScheme.tertiary;
+    }
+    final gradientStart = Color.alphaBlend(baseColor.withOpacity(0.1), colorScheme.surface);
+    final gradientEnd = Color.alphaBlend(baseColor.withOpacity(0.03), colorScheme.surface);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: isPast 
-          ? Colors.grey.shade200 
-          : hasOverlap 
-              ? Colors.orange.shade50 
-              : null,
-      shape: hasOverlap 
-          ? RoundedRectangleBorder(
-              side: BorderSide(color: Colors.orange.shade300, width: 2),
-              borderRadius: BorderRadius.circular(12),
-            )
-          : null,
+      margin: const EdgeInsets.only(bottom: 6),
+      color: Colors.transparent,
+      elevation: 1,
+      shadowColor: baseColor.withOpacity(0.18),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: hasOverlap ? baseColor.withOpacity(0.6) : baseColor.withOpacity(0.25),
+          width: hasOverlap ? 1.6 : 1,
+        ),
+      ),
       child: InkWell(
         onTap: () {
           // タスク編集モーダルを開く
@@ -571,115 +699,342 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         },
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 日時と場所（大きく表示、重複なし）
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 18,
-                    color: Colors.grey.shade700,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    timeText,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  if (schedule.location != null && schedule.location!.isNotEmpty) ...[
-                    const SizedBox(width: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [gradientStart, gradientEnd],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                     Icon(
-                      Icons.location_on,
+                      Icons.access_time,
                       size: 18,
-                      color: Colors.grey.shade700,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        schedule.location!,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade800,
+                    Text(
+                      timeText,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    if (schedule.location != null && schedule.location!.isNotEmpty) ...[
+                      const SizedBox(width: 14),
+                      Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          schedule.location!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                    ],
                   ],
-                ],
-              ),
-              const SizedBox(height: 12),
-              // タイトル（重複なし）
-              _searchQuery.isEmpty
-                  ? Text(
-                      schedule.title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isPast ? Colors.grey.shade600 : null,
-                      ),
-                    )
-                  : HighlightedText(
-                      text: schedule.title,
-                      highlight: _searchQuery,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isPast ? Colors.grey.shade600 : null,
-                      ),
-                    ),
-              const SizedBox(height: 8),
-              // タスク名（クリック可能）
-              InkWell(
-                onTap: () {
-                  // タスク編集モーダルを開く
-                  final tasks = ref.read(taskViewModelProvider);
-                  try {
-                    final task = tasks.firstWhere((t) => t.id == schedule.taskId);
-                    showDialog(
-                      context: context,
-                      builder: (context) => TaskDialog(task: task),
-                    );
-                  } catch (e) {
-                    // タスクが見つからない場合は何もしない
-                  }
-                },
-                child: _searchQuery.isEmpty
+                ),
+                const SizedBox(height: 8),
+                _searchQuery.isEmpty
                     ? Text(
-                        task.title,
+                        schedule.title,
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.blue.shade800,
-                          decoration: TextDecoration.underline,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
                         ),
                       )
                     : HighlightedText(
-                        text: task.title,
+                        text: schedule.title,
                         highlight: _searchQuery,
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.blue.shade800,
-                          decoration: TextDecoration.underline,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
                         ),
                       ),
-              ),
-              // メモ（toggle、デフォルトで開く）
-              if (schedule.notes != null && schedule.notes!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _ScheduleNotesExpansionWidget(
-                  notes: schedule.notes!,
-                  searchQuery: _searchQuery,
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: () {
+                    final tasks = ref.read(taskViewModelProvider);
+                    try {
+                      final task = tasks.firstWhere((t) => t.id == schedule.taskId);
+                      showDialog(
+                        context: context,
+                        builder: (context) => TaskDialog(task: task),
+                      );
+                    } catch (e) {
+                      SnackBarService.showWarning(context, '関連タスクが見つかりませんでした');
+                    }
+                  },
+                  child: _searchQuery.isEmpty
+                      ? Text(
+                          task.title,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.primary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        )
+                      : HighlightedText(
+                          text: task.title,
+                          highlight: _searchQuery,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.primary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
                 ),
+                if (schedule.notes != null && schedule.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _ScheduleNotesExpansionWidget(
+                    notes: schedule.notes!,
+                    searchQuery: _searchQuery,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCurrentView({
+    required List<DateTime> sortedDates,
+    required Map<DateTime, List<ScheduleItem>> schedulesByDate,
+    required List<TaskItem> tasks,
+    required DateTime now,
+  }) {
+    final taskMap = {for (final task in tasks) task.id: task};
+
+    switch (_currentView) {
+      case ScheduleCalendarView.list:
+        return _buildListView(sortedDates, schedulesByDate, tasks, now);
+      case ScheduleCalendarView.week:
+        return _buildWeekView(schedulesByDate, taskMap);
+      case ScheduleCalendarView.month:
+        return _buildMonthView(schedulesByDate, taskMap);
+    }
+  }
+
+  Widget _buildListView(
+    List<DateTime> sortedDates,
+    Map<DateTime, List<ScheduleItem>> schedulesByDate,
+    List<TaskItem> tasks,
+    DateTime now,
+  ) {
+    _todayKey = null;
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      itemCount: sortedDates.length,
+      itemBuilder: (context, index) {
+        final date = sortedDates[index];
+        final dateSchedules = schedulesByDate[date]!;
+        final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+
+        if (isToday && _todayKey == null) {
+          _todayKey = GlobalKey();
+        }
+
+        return _buildDateSection(
+          date,
+          dateSchedules,
+          tasks,
+          isToday ? _todayKey : null,
+          now,
+        );
+      },
+    );
+  }
+
+  Widget _buildWeekView(
+    Map<DateTime, List<ScheduleItem>> schedulesByDate,
+    Map<String, TaskItem> taskMap,
+  ) {
+    final sortedDates = schedulesByDate.keys.toList()..sort();
+    final Map<DateTime, List<DateTime>> weekGroups = {};
+    for (final date in sortedDates) {
+      final weekStart = date.subtract(Duration(days: date.weekday - 1));
+      weekGroups.putIfAbsent(weekStart, () => []);
+      weekGroups[weekStart]!.add(date);
+    }
+    final weekStarts = weekGroups.keys.toList()..sort();
+    final dayLabelFormat =
+        _localeInitialized ? DateFormat('M/d(E)', 'ja_JP') : DateFormat('M/d (E)');
+    final headerFormat = DateFormat('yyyy/MM/dd');
+    final timeFormat = DateFormat('HH:mm');
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      itemCount: weekStarts.length,
+      itemBuilder: (context, index) {
+        final weekStart = weekStarts[index];
+        final weekEnd = weekStart.add(const Duration(days: 6));
+        final days = List.generate(7, (offset) => weekStart.add(Duration(days: offset)));
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 1,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${headerFormat.format(weekStart)} 〜 ${headerFormat.format(weekEnd)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                const SizedBox(height: 8),
+                ...days
+                    .where((day) => (schedulesByDate[day] ?? []).isNotEmpty)
+                    .map((day) {
+                  final entries = schedulesByDate[day] ?? [];
+                  final label = dayLabelFormat.format(day);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 90,
+                          child: Text(
+                            label,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: entries.map((schedule) {
+                              final task = taskMap[schedule.taskId];
+                              final title = schedule.title.isNotEmpty
+                                  ? schedule.title
+                                  : task?.title ?? '';
+                              final time = timeFormat.format(schedule.startDateTime);
+                              return Text('$time  $title',
+                                  style: const TextStyle(height: 1.3));
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMonthView(
+    Map<DateTime, List<ScheduleItem>> schedulesByDate,
+    Map<String, TaskItem> taskMap,
+  ) {
+    final sortedDates = schedulesByDate.keys.toList()..sort();
+    final Map<DateTime, List<DateTime>> monthGroups = {};
+    for (final date in sortedDates) {
+      final monthStart = DateTime(date.year, date.month, 1);
+      monthGroups.putIfAbsent(monthStart, () => []);
+      monthGroups[monthStart]!.add(date);
+    }
+    final monthStarts = monthGroups.keys.toList()..sort();
+    final dayLabelFormat =
+        _localeInitialized ? DateFormat('d日(E)', 'ja_JP') : DateFormat('d (E)');
+    final monthHeaderFormat =
+        _localeInitialized ? DateFormat('yyyy年MM月', 'ja_JP') : DateFormat('yyyy/MM');
+    final timeFormat = DateFormat('HH:mm');
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      itemCount: monthStarts.length,
+      itemBuilder: (context, index) {
+        final monthStart = monthStarts[index];
+        final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
+        final daysInMonth = monthEnd.day;
+        final days = List.generate(
+          daysInMonth,
+          (offset) => DateTime(monthStart.year, monthStart.month, offset + 1),
+        );
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 1,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  monthHeaderFormat.format(monthStart),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                const SizedBox(height: 8),
+                ...days
+                    .where((day) => (schedulesByDate[day] ?? []).isNotEmpty)
+                    .map((day) {
+                  final entries = schedulesByDate[day] ?? [];
+                  final label = dayLabelFormat.format(day);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 90,
+                          child: Text(
+                            label,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: entries.map((schedule) {
+                              final task = taskMap[schedule.taskId];
+                              final title = schedule.title.isNotEmpty
+                                  ? schedule.title
+                                  : task?.title ?? '';
+                              final time = timeFormat.format(schedule.startDateTime);
+                              return Text(
+                                '$time  $title',
+                                style: const TextStyle(height: 1.3),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -725,6 +1080,17 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           ],
         ),
       ),
+    );
+  }
+
+  void _showShortcutGuide(BuildContext context) {
+    showShortcutHelpDialog(
+      context,
+      title: '予定表ショートカット',
+      entries: const [
+        ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
+        ShortcutHelpEntry('Ctrl + F', '検索バーにフォーカス'),
+      ],
     );
   }
 
@@ -793,9 +1159,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     await vm.addSchedule(newSchedule);
     
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('予定をコピーしました')),
-      );
+      SnackBarService.showSuccess(context, '予定をコピーしました');
     }
   }
 
@@ -841,9 +1205,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       await vm.deleteSchedule(schedule.id);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('予定を削除しました')),
-        );
+        SnackBarService.showSuccess(context, '予定を削除しました');
       }
     }
   }
@@ -910,11 +1272,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     // 選択された日付がない場合は警告
     if (_selectedDates.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('コピーする日付を選択してください'),
-          ),
-        );
+        SnackBarService.showWarning(context, 'コピーする日付を選択してください');
       }
       return;
     }
@@ -982,11 +1340,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     
     if (mounted) {
       final formatText = isOneCellForm ? '1セル形式' : '表形式';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${filteredSchedules.length}件の予定を$formatTextでクリップボードにコピーしました（エクセルに貼り付け可能）'),
-        ),
-      );
+      SnackBarService.showSuccess(context, '${filteredSchedules.length}件の予定を$formatTextでクリップボードにコピーしました（エクセルに貼り付け可能）');
     }
   }
 }
@@ -997,7 +1351,6 @@ class _ScheduleNotesExpansionWidget extends StatefulWidget {
   final String searchQuery;
 
   const _ScheduleNotesExpansionWidget({
-    super.key,
     required this.notes,
     required this.searchQuery,
   });

@@ -90,16 +90,6 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       print('🚨 読み込まれたタスク数: ${tasks.length}');
       
-      // リンク保持機能の検証と修正（簡略化）
-      for (int i = 0; i < tasks.length; i++) {
-        final task = tasks[i];
-        if (task.relatedLinkIds.isEmpty && task.relatedLinkId != null) {
-          final restoredTask = task.copyWith(relatedLinkIds: [task.relatedLinkId!]);
-          tasks[i] = restoredTask;
-          await _taskBox?.put(task.id, restoredTask);
-        }
-      }
-      
       state = tasks;
       
       // サブタスク統計を更新
@@ -121,6 +111,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       
       // 更新されたタスクリストでstateを更新
       state = tasks;
+      await _cleanupInvalidLinkReferences();
       await _removeHolidayTasksOnStartup();
       print('🚨 タスク読み込み完了: ${state.length}件');
     } catch (e) {
@@ -643,10 +634,9 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         
         final updatedTask = task.copyWith(
           relatedLinkIds: updatedRelatedLinkIds,
-          // 削除したリンクが最初のリンクだった場合は、次のリンクを設定
-          relatedLinkId: task.relatedLinkId == linkId 
-            ? (updatedRelatedLinkIds.isNotEmpty ? updatedRelatedLinkIds.first : null)
-            : task.relatedLinkId,
+          relatedLinkId: task.relatedLinkId == linkId
+              ? (updatedRelatedLinkIds.isNotEmpty ? updatedRelatedLinkIds.first : null)
+              : task.relatedLinkId,
         );
         
         state[taskIndex] = updatedTask;
@@ -902,6 +892,163 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
         print('リンクのタスク状態更新エラー: $e');
         print('エラーの詳細: ${e.toString()}');
       }
+    }
+  }
+
+  Future<void> clearInvalidLinkReferences(String taskId) async {
+    try {
+      final taskIndex = state.indexWhere((task) => task.id == taskId);
+      if (taskIndex == -1) return;
+
+      if (_taskBox == null || !_taskBox!.isOpen) {
+        _taskBox = await Hive.openBox<TaskItem>(_boxName);
+      }
+
+      final task = state[taskIndex];
+      final linkState = _ref.read(linkViewModelProvider);
+      final validLinkIds = <String>{};
+      for (final group in linkState.groups) {
+        for (final link in group.items) {
+          validLinkIds.add(link.id);
+        }
+      }
+
+    final filteredIds = <String>{};
+    for (final id in task.relatedLinkIds) {
+      if (validLinkIds.contains(id)) {
+        filteredIds.add(id);
+      }
+    }
+    if (task.relatedLinkId != null &&
+        task.relatedLinkId!.isNotEmpty &&
+        task.relatedLinkIds.contains(task.relatedLinkId!) &&
+        validLinkIds.contains(task.relatedLinkId!)) {
+      filteredIds.add(task.relatedLinkId!);
+    }
+
+    final filteredList = filteredIds.toList();
+    final filteredPrimary =
+        filteredList.isNotEmpty ? filteredList.first : null;
+
+      if (filteredList.length == task.relatedLinkIds.length &&
+          filteredPrimary == task.relatedLinkId) {
+        return;
+      }
+
+      final updatedTask = task.copyWith(
+        relatedLinkIds: filteredList,
+        relatedLinkId: filteredPrimary,
+      );
+
+      await _taskBox?.put(taskId, updatedTask);
+      await _taskBox?.flush();
+
+      final newState = [...state];
+      newState[taskIndex] = updatedTask;
+      state = newState;
+      await _updateLinkTaskStatus();
+    } catch (e) {
+      if (kDebugMode) {
+        print('リンク参照クリア中にエラー: $e');
+      }
+    }
+  }
+
+  Future<void> setTaskLinks(String taskId, Set<String> linkIds) async {
+    try {
+      if (!Hive.isBoxOpen(_boxName)) {
+        _taskBox = await Hive.openBox<TaskItem>(_boxName);
+      } else {
+        _taskBox ??= Hive.box<TaskItem>(_boxName);
+      }
+      final box = _taskBox!;
+
+      final taskIndex = state.indexWhere((task) => task.id == taskId);
+      if (taskIndex == -1) return;
+
+      final task = state[taskIndex];
+      final linkState = _ref.read(linkViewModelProvider);
+      final validLinkIds = <String>{};
+      for (final group in linkState.groups) {
+        for (final link in group.items) {
+          validLinkIds.add(link.id);
+        }
+      }
+
+      final filteredIds = linkIds.where(validLinkIds.contains).toList();
+      final filteredPrimary =
+          filteredIds.isNotEmpty ? filteredIds.first : null;
+
+      final updatedTask = task.copyWith(
+        relatedLinkIds: filteredIds,
+        relatedLinkId: filteredPrimary,
+      );
+
+      await box.put(taskId, updatedTask);
+      await box.flush();
+
+      final newState = [...state];
+      newState[taskIndex] = updatedTask;
+      state = newState;
+
+      await _updateLinkTaskStatus();
+    } catch (e) {
+      if (kDebugMode) {
+        print('リンク更新中にエラー: $e');
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _cleanupInvalidLinkReferences() async {
+    if (_taskBox == null || !_taskBox!.isOpen) return;
+
+    final linkState = _ref.read(linkViewModelProvider);
+    final validLinkIds = <String>{};
+    for (final group in linkState.groups) {
+      for (final link in group.items) {
+        validLinkIds.add(link.id);
+      }
+    }
+
+    bool updated = false;
+    final updatedTasks = [...state];
+
+    for (var i = 0; i < updatedTasks.length; i++) {
+      final task = updatedTasks[i];
+      final filteredIds = <String>{};
+
+      for (final id in task.relatedLinkIds) {
+        if (validLinkIds.contains(id)) {
+          filteredIds.add(id);
+        }
+      }
+      if (task.relatedLinkId != null &&
+          task.relatedLinkId!.isNotEmpty &&
+          task.relatedLinkIds.contains(task.relatedLinkId!) &&
+          validLinkIds.contains(task.relatedLinkId!)) {
+        filteredIds.add(task.relatedLinkId!);
+      }
+
+      final filteredList = filteredIds.toList();
+      final primary = filteredList.isNotEmpty ? filteredList.first : null;
+
+      if (!listEquals(filteredList, task.relatedLinkIds) ||
+          primary != task.relatedLinkId) {
+        final updatedTask = task.copyWith(
+          relatedLinkIds: filteredList,
+          relatedLinkId: primary,
+        );
+        await _taskBox!.put(task.id, updatedTask);
+        updatedTasks[i] = updatedTask;
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      await _taskBox!.flush();
+      state = updatedTasks;
+      await _updateLinkTaskStatus();
     }
   }
 

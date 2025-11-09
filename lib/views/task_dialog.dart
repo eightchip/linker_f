@@ -102,7 +102,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   TimeOfDay? _scheduleStartTime;
   DateTime? _scheduleEndDate;
   TimeOfDay? _scheduleEndTime;
-  
+
   DateTime? _dueDate;
   DateTime? _reminderTime;
   TaskPriority _priority = TaskPriority.medium;
@@ -1910,17 +1910,17 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Checkbox(
-                          value: s.isCompleted,
-                          onChanged: (_) async {
-                            final vm = ref.read(subTaskViewModelProvider.notifier);
-                            if (s.isCompleted) {
-                              await vm.uncompleteSubTask(s.id);
-                            } else {
-                              await vm.completeSubTask(s.id);
-                            }
-                            await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(widget.task!.id);
-                            setState((){});
-                          },
+                      value: s.isCompleted,
+                      onChanged: (_) async {
+                        final vm = ref.read(subTaskViewModelProvider.notifier);
+                        if (s.isCompleted) {
+                          await vm.uncompleteSubTask(s.id);
+                        } else {
+                          await vm.completeSubTask(s.id);
+                        }
+                        await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(widget.task!.id);
+                        setState((){});
+                      },
                         ),
                         Icon(
                           Icons.drag_handle,
@@ -1949,13 +1949,13 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                           ),
                         // 推定時間と完了日時
                         Row(children: [
-                          if (s.estimatedMinutes!=null)
-                            Text('推定: ${s.estimatedMinutes}分', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                          if (s.completedAt!=null) ...[
-                            const SizedBox(width: 8),
-                            Text('完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}', style: const TextStyle(fontSize: 11, color: Colors.green)),
-                          ],
-                        ]),
+                      if (s.estimatedMinutes!=null)
+                        Text('推定: ${s.estimatedMinutes}分', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      if (s.completedAt!=null) ...[
+                        const SizedBox(width: 8),
+                        Text('完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                      ],
+                    ]),
                       ],
                     ),
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -2696,7 +2696,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+            children: [
           Row(
             children: const [
               Icon(Icons.email, color: Colors.blue),
@@ -2861,33 +2861,33 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           const SizedBox(height: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+          children: [
               ElevatedButton.icon(
                 onPressed: _showHistoryDialog,
                 icon: const Icon(Icons.history),
                 label: const Text('送信履歴'),
                 style: AppButtonStyles.secondary(context),
-              ),
-              const SizedBox(height: 12),
+        ),
+        const SizedBox(height: 12),
               ElevatedButton.icon(
-                onPressed: _sendMail,
-                icon: const Icon(Icons.send),
-                label: const Text('メーラーを起動'),
-                style: AppButtonStyles.primary(context),
-              ),
+                    onPressed: _sendMail,
+                    icon: const Icon(Icons.send),
+                    label: const Text('メーラーを起動'),
+                    style: AppButtonStyles.primary(context),
+            ),
               const SizedBox(height: 8),
               ElevatedButton.icon(
-                onPressed: _pendingMailTo != null ? _markMailAsSent : null,
-                icon: const Icon(Icons.check_circle),
-                label: Text(_pendingMailTo != null ? 'メール送信完了' : 'メーラーを先に起動してください'),
-                style: _pendingMailTo != null
+                  onPressed: _pendingMailTo != null ? _markMailAsSent : null,
+                  icon: const Icon(Icons.check_circle),
+                  label: Text(_pendingMailTo != null ? 'メール送信完了' : 'メーラーを先に起動してください'),
+                  style: _pendingMailTo != null 
                     ? AppButtonStyles.primary(context)
                     : ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey,
                         foregroundColor: Theme.of(context).colorScheme.onSurface,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
+                ),
               ),
               const SizedBox(height: 4),
               if (kDebugMode)
@@ -2909,9 +2909,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   ),
                 ),
               Text(
-                _pendingMailTo != null
-                    ? '※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください'
-                    : '※まず「メーラーを起動」ボタンでメーラーを開いてください',
+                _pendingMailTo != null 
+                  ? '※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください'
+                  : '※まず「メーラーを起動」ボタンでメーラーを開いてください',
                 style: TextStyle(
                   fontSize: 11,
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),

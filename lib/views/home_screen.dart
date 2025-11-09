@@ -26,6 +26,7 @@ import '../widgets/app_button_styles.dart';
 import 'group_card.dart';
 import '../widgets/unified_dialog.dart';
 import '../widgets/window_control_buttons.dart';
+import '../widgets/shortcut_help_dialog.dart';
 import 'help_center_screen.dart';
 import 'settings_screen.dart';
 import 'task_screen.dart';
@@ -489,40 +490,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ショートカットヘルプダイアログ
   void _showShortcutHelp(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => UnifiedDialog(
-        title: 'キーボードショートカット',
-        icon: Icons.keyboard,
-        iconColor: Colors.blue,
-        width: 400,
-        height: 400,
-        content: SizedBox(
-          width: 400,
-          height: 300,
-          child: ListView(
-            children: const [
-              _ShortcutItem('Ctrl+N', 'グループを追加'),
-              _ShortcutItem('Ctrl+F', '検索バーを開く'),
-              _ShortcutItem('Ctrl+T', 'タスク管理'),
-              _ShortcutItem('Ctrl+E', 'メモ一括編集'),
-              _ShortcutItem('→', '3点ドットメニュー'),
-              _ShortcutItem('F1', 'ショートカットキー'),
-              _ShortcutItem('Ctrl+Shift+S', '設定画面'),
-              _ShortcutItem('Escape', '検索バーを閉じる'),
-              _ShortcutItem('Tab', 'タグ選択を切り替え'),
-              Divider(),
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: AppButtonStyles.primary(context),
-            child: const Text('閉じる'),
-          ),
-        ],
-      ),
+    showShortcutHelpDialog(
+      context,
+      title: 'リンク管理ショートカット',
+      entries: const [
+        ShortcutHelpEntry('Ctrl + N', 'グループを追加'),
+        ShortcutHelpEntry('Ctrl + F', '検索バーを開く'),
+        ShortcutHelpEntry('Ctrl + T', 'タスク管理画面を開く'),
+        ShortcutHelpEntry('Ctrl + E', 'メモ一括編集を開く'),
+        ShortcutHelpEntry('Ctrl + Shift + S', '設定を開く'),
+        ShortcutHelpEntry('→', '3点メニューを表示'),
+        ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
+        ShortcutHelpEntry('Esc', '検索バーを閉じる'),
+        ShortcutHelpEntry('Tab', 'リンクタイプフィルターを切り替え'),
+        ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
+      ],
     );
   }
 
@@ -646,6 +628,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
                 elevation: 2,
                 actions: [
+                  Tooltip(
+                    message: 'ショートカットキー (F1)',
+                    child: IconButton(
+                      icon: Icon(Icons.help_outline, size: iconSize),
+                      color: Theme.of(context).colorScheme.primary,
+                      onPressed: () => _showShortcutHelp(context),
+                    ),
+                  ),
                   // 3点ドットメニュー（全ての機能を統合）
                   PopupMenuButton<String>(
                     icon: Icon(Icons.more_vert, size: iconSize),
@@ -1960,6 +1950,20 @@ class FilePreviewWidget extends StatefulWidget {
   State<FilePreviewWidget> createState() => _FilePreviewWidgetState();
 }
 class _FilePreviewWidgetState extends State<FilePreviewWidget> {
+  static const Set<String> _textExtensions = {
+    '.txt',
+    '.md',
+    '.csv',
+    '.tsv',
+    '.json',
+    '.yaml',
+    '.yml',
+    '.log',
+    '.ini',
+    '.cfg',
+    '.xml',
+  };
+
   String? _textPreview;
   bool _isImage = false;
   bool _isPdf = false;
@@ -1991,6 +1995,18 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
       if (mounted) {
         setState(() {
           _isPdf = true;
+          _loading = false;
+        });
+      }
+      return;
+    }
+
+    // バイナリ形式（Officeファイル等）はプレビューを作成しない
+    final dotIndex = ext.lastIndexOf('.');
+    final lowerExt = dotIndex >= 0 ? ext.substring(dotIndex) : null;
+    if (lowerExt == null || !_textExtensions.contains(lowerExt)) {
+      if (mounted) {
+        setState(() {
           _loading = false;
         });
       }
@@ -3765,32 +3781,4 @@ class _IconSelectorState extends State<IconSelector> {
   ];
 } 
 
-// ショートカット項目ウィジェット
-class _ShortcutItem extends StatelessWidget {
-  final String shortcut;
-  final String description;
-
-  const _ShortcutItem(this.shortcut, this.description);
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(description),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.grey.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          shortcut,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-}
+// ショートカット項目ウィジェット（Legacy）

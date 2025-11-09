@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:chewie/chewie.dart';
+import 'package:video_player/video_player.dart';
+import '../services/snackbar_service.dart';
 
 class HelpCenterScreen extends StatefulWidget {
   const HelpCenterScreen({super.key});
@@ -30,6 +34,19 @@ class _ManualSection {
 }
 
 class _HelpCenterScreenState extends State<HelpCenterScreen> {
+  static const Map<String, String> _screenshotMap = {
+    'link-menu': 'assets/help/link_menu.png',
+    'task-menu': 'assets/help/task_menu.png',
+    'task-grid': 'assets/help/task_grid.png',
+    'schedule-list': 'assets/help/schedule_list.png',
+  };
+
+  static const Map<String, String> _videoMap = {
+    'demo-link': 'assets/help/videos/demo_link.mp4',
+    'demo-task': 'assets/help/videos/demo_task.mp4',
+    'demo-schedule': 'assets/help/videos/demo_schedule.mp4',
+  };
+
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   List<_ManualSection> _sections = [];
@@ -155,6 +172,195 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             .toList();
       }
     });
+  }
+
+  Future<void> _showScreenshot(String screenshotId) async {
+    final assetPath = _screenshotMap[screenshotId];
+    if (assetPath == null) {
+      if (mounted) {
+        SnackBarService.showWarning(
+          context,
+          'スクリーンショット「$screenshotId」は登録されていません。',
+        );
+      }
+      return;
+    }
+
+    try {
+      final data = await rootBundle.load(assetPath);
+      if (!mounted) return;
+      final bytes = data.buffer.asUint8List();
+      await showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          insetPadding: const EdgeInsets.all(24),
+          backgroundColor: Colors.black.withOpacity(0.85),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.7,
+                width: MediaQuery.of(context).size.width * 0.8,
+                child: InteractiveViewer(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      bytes,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                assetPath.split('/').last,
+                style: const TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      SnackBarService.showWarning(
+        context,
+        'スクリーンショットを読み込めませんでした。\nassets/help フォルダに画像を配置してください。\n($assetPath)',
+      );
+    }
+  }
+
+  Future<void> _showVideo(String videoId) async {
+    final source = _videoMap[videoId];
+    if (source == null) {
+      if (mounted) {
+        SnackBarService.showWarning(
+          context,
+          '動画「$videoId」は登録されていません。assets/help/videos フォルダを確認してください。',
+        );
+      }
+      return;
+    }
+
+    VideoPlayerController? videoController;
+    ChewieController? chewieController;
+    try {
+      if (source.startsWith('http')) {
+        videoController = VideoPlayerController.networkUrl(Uri.parse(source));
+      } else {
+        videoController = VideoPlayerController.asset(source);
+      }
+      await videoController.initialize();
+      chewieController = ChewieController(
+        videoPlayerController: videoController,
+        autoPlay: true,
+        looping: false,
+        allowMuting: true,
+        materialProgressColors: ChewieProgressColors(
+          playedColor: Theme.of(context).colorScheme.primary,
+          handleColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: Colors.white24,
+          bufferedColor: Colors.white38,
+        ),
+      );
+
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          final aspectRatio =
+              videoController!.value.aspectRatio > 0 ? videoController.value.aspectRatio : 16 / 9;
+          return Dialog(
+            insetPadding: const EdgeInsets.all(24),
+            backgroundColor: Colors.black.withOpacity(0.85),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  child: AspectRatio(
+                    aspectRatio: aspectRatio,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Chewie(controller: chewieController!),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  source.startsWith('http') ? source : source.split('/').last,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showWarning(
+          context,
+          '動画を再生できませんでした。ファイルの配置と形式を確認してください。\n($source)',
+        );
+      }
+    } finally {
+      chewieController?.dispose();
+      videoController?.dispose();
+    }
+  }
+
+  Future<void> _handleLinkTap(String text, String? href, String? title) async {
+    if (href == null) {
+      return;
+    }
+
+    if (href.startsWith('screenshot:')) {
+      final screenshotId = href.substring('screenshot:'.length);
+      await _showScreenshot(screenshotId);
+      return;
+    }
+
+    if (href.startsWith('video:')) {
+      final videoId = href.substring('video:'.length);
+      await _showVideo(videoId);
+      return;
+    }
+
+    final uri = Uri.tryParse(href);
+    if (uri == null) {
+      if (mounted) {
+        SnackBarService.showWarning(context, 'リンクを開けませんでした: $href');
+      }
+      return;
+    }
+
+    try {
+      final launched = await launchUrl(uri);
+      if (!launched && mounted) {
+        SnackBarService.showWarning(context, 'リンクを開けませんでした: $href');
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showWarning(context, 'リンクを開けませんでした: $href');
+      }
+    }
   }
 
   Future<void> _exportManualAsHtml() async {
@@ -535,6 +741,8 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                           ),
                           child: MarkdownBody(
                             data: section.markdown,
+                            onTapLink: (text, href, title) =>
+                                _handleLinkTap(text, href, title),
                             styleSheet: MarkdownStyleSheet.fromTheme(theme)
                                 .copyWith(
                                   h1: textTheme.headlineSmall?.copyWith(
