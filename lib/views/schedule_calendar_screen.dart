@@ -135,8 +135,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             final queryLower = _searchQuery.toLowerCase();
             return schedule.title.toLowerCase().contains(queryLower) ||
                 task.title.toLowerCase().contains(queryLower) ||
-                (schedule.location != null && schedule.location!.toLowerCase().contains(queryLower)) ||
-                (schedule.notes != null && schedule.notes!.toLowerCase().contains(queryLower));
+                (schedule.location != null && schedule.location!.toLowerCase().contains(queryLower));
           }).toList();
     
     // 日付ごとにグループ化
@@ -354,7 +353,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     decoration: InputDecoration(
-                      hintText: '予定タイトル、タスク名、場所、メモで検索',
+                      hintText: '予定タイトル、タスク名、場所で検索',
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
@@ -530,13 +529,31 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         date.month == DateTime.now().month &&
         date.day == DateTime.now().day;
     final isPast = DateTime(date.year, date.month, date.day).isBefore(DateTime(now.year, now.month, now.day));
-    final headerBaseColor = isToday
-        ? colorScheme.primary
-        : isPast
-            ? colorScheme.error
-            : colorScheme.secondary;
-    final headerColor =
-        Color.alphaBlend(headerBaseColor.withOpacity(0.12), colorScheme.surface);
+    final Color headerBaseColor;
+    final Color headerColor;
+    final Color dateTextColor;
+    final Color countBackgroundColor;
+    final Color countTextColor;
+
+    if (isToday) {
+      headerBaseColor = colorScheme.primary;
+      headerColor = colorScheme.primary.withOpacity(0.18);
+      dateTextColor = colorScheme.primary;
+      countBackgroundColor = colorScheme.primary.withOpacity(0.24);
+      countTextColor = colorScheme.primary;
+    } else if (isPast) {
+      headerBaseColor = colorScheme.error;
+      headerColor = Color.alphaBlend(headerBaseColor.withOpacity(0.12), colorScheme.surface);
+      dateTextColor = colorScheme.onErrorContainer.withOpacity(0.9);
+      countBackgroundColor = headerBaseColor.withOpacity(0.45);
+      countTextColor = colorScheme.onPrimary;
+    } else {
+      headerBaseColor = colorScheme.secondary;
+      headerColor = Color.alphaBlend(headerBaseColor.withOpacity(0.12), colorScheme.surface);
+      dateTextColor = colorScheme.onSecondaryContainer;
+      countBackgroundColor = headerBaseColor.withOpacity(0.45);
+      countTextColor = colorScheme.onPrimary;
+    }
     
     // 日付のみ（時刻を0に）で比較
     final dateOnly = DateTime(date.year, date.month, date.day);
@@ -555,7 +572,9 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             color: headerColor,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: headerBaseColor.withOpacity(0.4),
+              color: isToday
+                  ? headerBaseColor.withOpacity(0.55)
+                  : headerBaseColor.withOpacity(0.4),
               width: isToday ? 2 : 1.2,
             ),
             boxShadow: [
@@ -590,18 +609,14 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: isToday
-                      ? colorScheme.onPrimary
-                      : isPast
-                          ? colorScheme.onErrorContainer.withOpacity(0.9)
-                          : colorScheme.onSecondaryContainer,
+                  color: dateTextColor,
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: headerBaseColor.withOpacity(0.65),
+                  color: countBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -609,7 +624,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.onPrimary,
+                    color: countTextColor,
                   ),
                 ),
               ),
@@ -667,6 +682,8 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     }
     final gradientStart = Color.alphaBlend(baseColor.withOpacity(0.1), colorScheme.surface);
     final gradientEnd = Color.alphaBlend(baseColor.withOpacity(0.03), colorScheme.surface);
+    final timeTextColor = isToday ? colorScheme.primary : colorScheme.onSurface;
+    final timeIconColor = isToday ? colorScheme.primary : colorScheme.onSurfaceVariant;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
@@ -716,7 +733,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                     Icon(
                       Icons.access_time,
                       size: 18,
-                      color: colorScheme.onSurfaceVariant,
+                      color: timeIconColor,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -724,7 +741,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
+                        color: timeTextColor,
                       ),
                     ),
                     if (schedule.location != null && schedule.location!.isNotEmpty) ...[
@@ -732,7 +749,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                       Icon(
                         Icons.location_on,
                         size: 18,
-                        color: colorScheme.onSurfaceVariant,
+                        color: timeIconColor,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
@@ -801,13 +818,6 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                           ),
                         ),
                 ),
-                if (schedule.notes != null && schedule.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  _ScheduleNotesExpansionWidget(
-                    notes: schedule.notes!,
-                    searchQuery: _searchQuery,
-                  ),
-                ],
               ],
             ),
           ),
@@ -1249,8 +1259,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         final queryLower = _searchQuery.toLowerCase();
         return schedule.title.toLowerCase().contains(queryLower) ||
             task.title.toLowerCase().contains(queryLower) ||
-            (schedule.location != null && schedule.location!.toLowerCase().contains(queryLower)) ||
-            (schedule.notes != null && schedule.notes!.toLowerCase().contains(queryLower));
+            (schedule.location != null && schedule.location!.toLowerCase().contains(queryLower));
       }).toList();
     }
     
@@ -1282,6 +1291,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     
     final buffer = StringBuffer();
     final timeFormat = DateFormat('HH:mm');
+    final oneCellDateFormat = DateFormat('MM/dd');
     
     if (isOneCellForm) {
       // 1セル形式（列挙形式）
@@ -1294,21 +1304,36 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             createdAt: DateTime.now(),
           ),
         );
-        
+
+        final dateLabel = oneCellDateFormat.format(schedule.startDateTime);
         final startTime = timeFormat.format(schedule.startDateTime);
-        final location = schedule.location != null && schedule.location!.isNotEmpty
-            ? ' ${schedule.location}'
-            : '';
-        final taskTitle = task.title;
-        
-        buffer.writeln('・$startTime $taskTitle$location');
+        final endTime = schedule.endDateTime != null
+            ? timeFormat.format(schedule.endDateTime!)
+            : null;
+        final location = (schedule.location ?? '')
+            .replaceAll('\t', ' ')
+            .replaceAll('\n', ' ')
+            .trim();
+        final displayTitle = schedule.title.isNotEmpty
+            ? schedule.title
+            : task.title;
+
+        final bufferLine = StringBuffer('・$dateLabel $startTime');
+        if (endTime != null && endTime.isNotEmpty) {
+          bufferLine.write('~$endTime');
+        }
+        if (location.isNotEmpty) {
+          bufferLine.write(' $location');
+        }
+        bufferLine.write(' $displayTitle');
+        buffer.writeln(bufferLine.toString());
       }
     } else {
       // 表形式（タブ区切り、複数列）
       final dateFormat = DateFormat('yyyy/MM/dd');
       
       // ヘッダー
-      buffer.writeln('日付\t開始時刻\t終了時刻\tタイトル\t場所\tタスク名\tメモ');
+      buffer.writeln('日付\t開始時刻\t終了時刻\tタイトル\t場所\tタスク名');
       
       // データ行
       for (final schedule in filteredSchedules) {
@@ -1329,9 +1354,8 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         final title = schedule.title.replaceAll('\t', ' ').replaceAll('\n', ' ');
         final location = (schedule.location ?? '').replaceAll('\t', ' ').replaceAll('\n', ' ');
         final taskTitle = task.title.replaceAll('\t', ' ').replaceAll('\n', ' ');
-        final notes = (schedule.notes ?? '').replaceAll('\t', ' ').replaceAll('\n', ' ');
         
-        buffer.writeln('$date\t$startTime\t$endTime\t$title\t$location\t$taskTitle\t$notes');
+        buffer.writeln('$date\t$startTime\t$endTime\t$title\t$location\t$taskTitle');
       }
     }
     
@@ -1342,64 +1366,6 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       final formatText = isOneCellForm ? '1セル形式' : '表形式';
       SnackBarService.showSuccess(context, '${filteredSchedules.length}件の予定を$formatTextでクリップボードにコピーしました（エクセルに貼り付け可能）');
     }
-  }
-}
-
-/// メモ表示用のExpansionTile（デフォルトで開く）
-class _ScheduleNotesExpansionWidget extends StatefulWidget {
-  final String notes;
-  final String searchQuery;
-
-  const _ScheduleNotesExpansionWidget({
-    required this.notes,
-    required this.searchQuery,
-  });
-
-  @override
-  State<_ScheduleNotesExpansionWidget> createState() => _ScheduleNotesExpansionWidgetState();
-}
-
-class _ScheduleNotesExpansionWidgetState extends State<_ScheduleNotesExpansionWidget> {
-  bool _isExpanded = false; // デフォルトで閉じる
-
-  @override
-  Widget build(BuildContext context) {
-    return ExpansionTile(
-      initiallyExpanded: _isExpanded,
-      onExpansionChanged: (expanded) {
-        setState(() {
-          _isExpanded = expanded;
-        });
-      },
-      title: const Text(
-        'メモ',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: widget.searchQuery.isEmpty
-              ? Text(
-                  widget.notes,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                  ),
-                )
-              : HighlightedText(
-                  text: widget.notes,
-                  highlight: widget.searchQuery,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-        ),
-      ],
-    );
   }
 }
 

@@ -2030,7 +2030,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   onPressed: () async {
                     final result = await showDialog(
                       context: context,
-                      builder: (context) => const OutlookCalendarImportDialogV2(),
+                      builder: (context) => OutlookCalendarImportDialogV2(
+                        preselectedTaskId: widget.task?.id,
+                      ),
                     );
                     if (result == true) {
                       // 予定を取り込んだ場合は、データを再読み込み

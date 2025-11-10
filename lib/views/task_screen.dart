@@ -951,6 +951,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       _restoreFocusIfNeeded();
     });
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final titleScale = ref.watch(titleFontSizeProvider);
+    final appBarTitleFontSize = (screenWidth < 600 ? 16.0 : 22.0) * titleScale;
+
     return KeyboardShortcutWidget(
       child: Shortcuts(
         shortcuts: <LogicalKeySet, Intent>{
@@ -1157,7 +1161,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Text('タスク管理'),
+                    Text(
+                      'タスク管理',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: appBarTitleFontSize,
+                      ),
+                    ),
                   ],
                 ),
             leading: _isSelectionMode 
@@ -1359,7 +1369,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   children: [
                   Icon(Icons.calendar_month, color: Colors.orange, size: 20),
                   const SizedBox(width: 8),
-                  const Text('スケジュール一覧 (Ctrl+Shift+C)'),
+                const Text('スケジュール一覧 (Ctrl+S)'),
                 ],
               ),
             ),
@@ -3108,28 +3118,28 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         backgroundColor = Colors.green.shade50;
         textColor = Colors.green.shade800;
         borderColor = Colors.green.shade300;
-        text = '未着手';
+        text = '未';
         icon = Icons.schedule;
         break;
       case TaskStatus.inProgress:
         backgroundColor = Colors.blue.shade50;
         textColor = Colors.blue.shade800;
         borderColor = Colors.blue.shade300;
-        text = '進行中';
+        text = '中';
         icon = Icons.play_arrow;
         break;
       case TaskStatus.completed:
         backgroundColor = Colors.grey.shade50;
         textColor = Colors.grey.shade800;
         borderColor = Colors.grey.shade300;
-        text = '完了';
+        text = '完';
         icon = Icons.check;
         break;
       case TaskStatus.cancelled:
         backgroundColor = Colors.red.shade50;
         textColor = Colors.red.shade800;
         borderColor = Colors.red.shade300;
-        text = 'キャンセル';
+        text = '止';
         icon = Icons.cancel;
         break;
     }
@@ -4241,9 +4251,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       print('✅ Ctrl+Shift+T 検出: テンプレートから作成');
       _showTaskTemplate();
       return true;
-    } else if (event.logicalKey == LogicalKeyboardKey.keyC && isControlPressed && isShiftPressed) {
+    } else if (event.logicalKey == LogicalKeyboardKey.keyS && isControlPressed && !isShiftPressed) {
       if (isEditing) return false;
-      print('✅ Ctrl+Shift+C 検出: 予定表');
+      print('✅ Ctrl+S 検出: 予定表');
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -4382,7 +4392,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Icon(Icons.calendar_month, color: Colors.orange, size: 20),
               const SizedBox(width: 8),
-              const Text('スケジュール一覧 (Ctrl+Shift+C)'),
+                const Text('スケジュール一覧 (Ctrl+S)'),
             ],
           ),
         ),
@@ -8609,25 +8619,25 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
     if (totalCount == 0) {
       return {
         'icon': Icons.hourglass_empty,
-        'text': '未着手',
+        'text': '未',
         'color': Colors.green,
       };
     } else if (completedCount == totalCount) {
       return {
         'icon': Icons.check_circle,
-        'text': '完了',
+        'text': '完',
         'color': Colors.grey,
       };
     } else if (completedCount > 0) {
       return {
         'icon': Icons.play_circle,
-        'text': '進行中',
+        'text': '中',
         'color': Colors.blue,
       };
     } else {
       return {
         'icon': Icons.hourglass_empty,
-        'text': '未着手',
+        'text': '未',
         'color': Colors.green,
       };
     }
@@ -8639,25 +8649,25 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
       case TaskStatus.pending:
         return {
           'icon': Icons.schedule,
-          'text': '未着手',
+          'text': '未',
           'color': Colors.green.shade800,
         };
       case TaskStatus.inProgress:
         return {
           'icon': Icons.play_arrow,
-          'text': '進行中',
+          'text': '中',
           'color': Colors.blue.shade800,
         };
       case TaskStatus.completed:
         return {
           'icon': Icons.check,
-          'text': '完了',
+          'text': '完',
           'color': Colors.grey.shade800,
         };
       case TaskStatus.cancelled:
         return {
           'icon': Icons.cancel,
-          'text': 'キャンセル',
+          'text': '止',
           'color': Colors.red.shade800,
         };
     }

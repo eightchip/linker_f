@@ -45,85 +45,164 @@ class OutlookCalendarService {
       final start = startDate ?? DateTime.now();
       final end = endDate ?? DateTime.now().add(const Duration(days: 30));
 
-      // PowerShellスクリプトを実行（COMオブジェクトの適切な解放を追加）
       final script = '''
+function Sanitize([string]\$value) {
+    if ([string]::IsNullOrEmpty(\$value)) { return "" }
+    return (\$value -replace "[\\r\\n\\u0000]", " ").Trim()
+}
+
+\$startDate = [DateTime]::Parse("${start.toIso8601String()}")
+\$endDate = [DateTime]::Parse("${end.toIso8601String()}")
+
 try {
     \$outlook = New-Object -ComObject Outlook.Application
     \$namespace = \$outlook.GetNamespace("MAPI")
-    \$calendar = \$namespace.GetDefaultFolder(9)  # olFolderCalendar = 9
-
+    \$calendar = \$namespace.GetDefaultFolder(9)
     \$items = \$calendar.Items
-    \$items.Sort("[Start]", \$true)  # 開始日時で昇順ソート
+    \$items.IncludeRecurrences = \$true
+    \$items.Sort("[Start]")
 
     \$events = @()
-    \$startDate = [DateTime]::Parse("${start.toIso8601String()}")
-    \$endDate = [DateTime]::Parse("${end.toIso8601String()}")
 
     foreach (\$item in \$items) {
         try {
-            if (\$item.Start -ge \$startDate -and \$item.Start -le \$endDate) {
-                \$event = @{
-                    Subject = if (\$item.Subject) { \$item.Subject } else { "" }
-                    Start = \$item.Start.ToString("yyyy-MM-ddTHH:mm:ss")
-                    End = if (\$item.End) { \$item.End.ToString("yyyy-MM-ddTHH:mm:ss") } else { "" }
-                    Location = if (\$item.Location) { \$item.Location } else { "" }
-                    Body = if (\$item.Body) { \$item.Body } else { "" }
-                    EntryID = if (\$item.EntryID) { \$item.EntryID } else { "" }
-                    LastModificationTime = if (\$item.LastModificationTime) { \$item.LastModificationTime.ToString("yyyy-MM-ddTHH:mm:ss") } else { "" }
-                }
-                \$events += \$event
+            if (\$null -eq \$item) { continue }
+            if (\$item.Start -lt \$startDate -or \$item.Start -gt \$endDate) { continue }
+
+            \$event = @{
+                Subject = Sanitize(\$item.Subject)
+                Start = \$item.Start.ToString("o")
+                End = if (\$item.End) { \$item.End.ToString("o") } else { "" }
+                Location = Sanitize(\$item.Location)
+                Body = Sanitize(\$item.Body)
+                EntryID = if (\$item.EntryID) { \$item.EntryID } else { "" }
+                LastModificationTime = if (\$item.LastModificationTime) { \$item.LastModificationTime.ToString("o") } else { "" }
+                Organizer = Sanitize(\$item.Organizer)
+                IsMeeting = if (\$item.IsMeeting -ne \$null) { [bool]\$item.IsMeeting } else { \$false }
+                IsRecurring = if (\$item.IsRecurring -ne \$null) { [bool]\$item.IsRecurring } else { \$false }
+                IsOnlineMeeting = if (\$item.IsOnlineMeeting -ne \$null) { [bool]\$item.IsOnlineMeeting } else { \$false }
             }
+            \$events += \$event
         } catch {
-            # エラーが発生したアイテムはスキップ
             continue
         } finally {
-            # 各アイテムのCOMオブジェクトを解放
-            if (\$item) {
-                [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null
-            }
+            if (\$item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null }
         }
     }
 
-    # JSON形式で出力
-    \$events | ConvertTo-Json -Depth 10
-
-    # COMオブジェクトを適切に解放（順序重要）
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$items) | Out-Null
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$calendar) | Out-Null
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$namespace) | Out-Null
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null
-    
-    # ガベージコレクションを強制実行
+    \$json = \$events | ConvertTo-Json -Depth 10
+    Write-Output \$json
+} finally {
+    if (\$items) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$items) | Out-Null }
+    if (\$calendar) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$calendar) | Out-Null }
+    if (\$namespace) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$namespace) | Out-Null }
+    if (\$outlook) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null }
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
-} catch {
-    Write-Error \$_.Exception.Message
-    throw
+    [System.GC]::Collect()
 }
 ''';
 
-      final result = await Process.run('powershell.exe', [
-        '-NoProfile',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-Command',
-        script,
-      ]);
-
-      if (result.exitCode != 0) {
-        throw Exception('PowerShellスクリプト実行エラー: ${result.stderr}');
-      }
-
-      final output = result.stdout.toString().trim();
-      if (output.isEmpty) {
-        return [];
-      }
-
-      // JSONをパース
-      final jsonData = json.decode(output) as List;
-      return jsonData.map((e) => Map<String, dynamic>.from(e)).toList();
+      final output = await _runPowerShellScript(script);
+      return _parseJsonList(output);
     } catch (e) {
       ErrorHandler.logError('Outlook Calendar 予定取得', e);
+      rethrow;
+    }
+  }
+
+  /// 会議室カレンダーから予定を取得
+  Future<List<Map<String, dynamic>>> getRoomCalendarEvents({
+    required String roomAddress,
+    required DateTime startDate,
+    required DateTime endDate,
+    String? subjectFilter,
+  }) async {
+    try {
+      final escapedRoom = _escapeForPowerShell(roomAddress);
+      final filter = subjectFilter != null && subjectFilter.trim().isNotEmpty
+          ? _escapeForPowerShell(subjectFilter.trim())
+          : '';
+
+      final script = '''
+function Sanitize([string]\$value) {
+    if ([string]::IsNullOrEmpty(\$value)) { return "" }
+    return (\$value -replace "[\\r\\n\\u0000]", " ").Trim()
+}
+
+\$startDate = [DateTime]::Parse("${startDate.toIso8601String()}")
+\$endDate = [DateTime]::Parse("${endDate.toIso8601String()}")
+\$roomAddress = '${escapedRoom}'
+\$subjectPattern = '${filter}'
+
+try {
+    \$outlook = New-Object -ComObject Outlook.Application
+    \$namespace = \$outlook.GetNamespace("MAPI")
+    \$recipient = \$namespace.CreateRecipient(\$roomAddress)
+    \$recipient.Resolve() | Out-Null
+    if (-not \$recipient.Resolved) {
+        throw "会議室が見つかりません: \$roomAddress"
+    }
+
+    \$calendar = \$namespace.GetSharedDefaultFolder(\$recipient, 9)
+    \$items = \$calendar.Items
+    \$items.IncludeRecurrences = \$true
+    \$items.Sort("[Start]")
+
+    \$events = @()
+
+    foreach (\$item in \$items) {
+        try {
+            if (\$null -eq \$item) { continue }
+            if (\$item.Start -lt \$startDate -or \$item.Start -gt \$endDate) { continue }
+
+            \$subject = Sanitize(\$item.Subject)
+
+            if (-not [string]::IsNullOrEmpty(\$subjectPattern)) {
+                if (-not (\$subject -match \$subjectPattern)) { continue }
+            }
+
+            \$event = @{
+                Subject = \$subject
+                Start = \$item.Start.ToString("o")
+                End = if (\$item.End) { \$item.End.ToString("o") } else { "" }
+                Location = Sanitize(\$item.Location)
+                Body = Sanitize(\$item.Body)
+                EntryID = if (\$item.EntryID) { \$item.EntryID } else { "" }
+                LastModificationTime = if (\$item.LastModificationTime) { \$item.LastModificationTime.ToString("o") } else { "" }
+                Organizer = Sanitize(\$item.Organizer)
+                IsMeeting = if (\$item.IsMeeting -ne \$null) { [bool]\$item.IsMeeting } else { \$false }
+                IsRecurring = if (\$item.IsRecurring -ne \$null) { [bool]\$item.IsRecurring } else { \$false }
+                IsOnlineMeeting = if (\$item.IsOnlineMeeting -ne \$null) { [bool]\$item.IsOnlineMeeting } else { \$false }
+                CalendarOwner = \$roomAddress
+              }
+            \$events += \$event
+        } catch {
+            continue
+        } finally {
+            if (\$item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null }
+        }
+    }
+
+    \$json = \$events | ConvertTo-Json -Depth 10
+    Write-Output \$json
+} finally {
+    if (\$items) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$items) | Out-Null }
+    if (\$calendar) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$calendar) | Out-Null }
+    if (\$recipient) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$recipient) | Out-Null }
+    if (\$namespace) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$namespace) | Out-Null }
+    if (\$outlook) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null }
+    [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
+    [System.GC]::Collect()
+}
+''';
+
+      final output = await _runPowerShellScript(script);
+      final events = _parseJsonList(output);
+      return events;
+    } catch (e) {
+      ErrorHandler.logError('会議室カレンダー取得', e);
       rethrow;
     }
   }
@@ -141,8 +220,12 @@ try {
     final location = outlookEvent['Location'] as String? ?? '';
     final body = outlookEvent['Body'] as String? ?? '';
     final entryId = outlookEvent['EntryID'] as String? ?? '';
+    final organizer = outlookEvent['Organizer'] as String? ?? '';
+    final isMeeting = outlookEvent['IsMeeting'] as bool? ?? false;
+    final isRecurring = outlookEvent['IsRecurring'] as bool? ?? false;
+    final isOnlineMeeting = outlookEvent['IsOnlineMeeting'] as bool? ?? false;
+    final calendarOwner = outlookEvent['CalendarOwner'] as String? ?? '';
 
-    // 日時をパース
     DateTime startDateTime;
     try {
       startDateTime = DateTime.parse(startStr);
@@ -161,7 +244,30 @@ try {
       }
     }
 
-    // EntryIDをベースに一意のIDを生成（OutlookのEntryIDを保持）
+    final notesFragments = <String>[];
+    if (body.isNotEmpty) {
+      notesFragments.add(body);
+    }
+    final metadataParts = <String>[];
+    if (organizer.isNotEmpty) {
+      metadataParts.add('Organizer: $organizer');
+    }
+    if (calendarOwner.isNotEmpty) {
+      metadataParts.add('Calendar: $calendarOwner');
+    }
+    if (isMeeting) {
+      metadataParts.add('Meeting');
+    }
+    if (isRecurring) {
+      metadataParts.add('Recurring');
+    }
+    if (isOnlineMeeting) {
+      metadataParts.add('Online Meeting');
+    }
+    if (metadataParts.isNotEmpty) {
+      notesFragments.add(metadataParts.join(' / '));
+    }
+
     final id = entryId.isNotEmpty ? 'outlook_${entryId.hashCode}' : _uuid.v4();
 
     return ScheduleItem(
@@ -171,9 +277,9 @@ try {
       startDateTime: startDateTime,
       endDateTime: endDateTime,
       location: location.isNotEmpty ? location : null,
-      notes: body.isNotEmpty ? body : null,
+      notes: notesFragments.isNotEmpty ? notesFragments.join('\n\n') : null,
       createdAt: DateTime.now(),
-      outlookEntryId: entryId.isNotEmpty ? entryId : null, // EntryIDを保存
+      outlookEntryId: entryId.isNotEmpty ? entryId : null,
     );
   }
 
@@ -188,6 +294,51 @@ try {
               outlookEvent: event,
             ))
         .toList();
+  }
+
+  Future<String> _runPowerShellScript(String script) async {
+    final result = await Process.run('powershell.exe', [
+      '-NoProfile',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-Command',
+      script,
+    ]);
+
+    if (result.exitCode != 0) {
+      throw Exception('PowerShellスクリプト実行エラー: ${result.stderr}');
+    }
+
+    return result.stdout.toString();
+  }
+
+  List<Map<String, dynamic>> _parseJsonList(String rawOutput) {
+    final output = rawOutput.trim();
+    if (output.isEmpty) {
+      return [];
+    }
+
+    final sanitized = output
+        .replaceAll('\uFEFF', '')
+        .replaceAll(RegExp(r'[\x00-\x08\x0B-\x1F]'), ' ')
+        .trim();
+
+    if (sanitized.isEmpty) {
+      return [];
+    }
+
+    final decoded = json.decode(sanitized);
+    if (decoded is List) {
+      return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+    } else if (decoded is Map<String, dynamic>) {
+      return [Map<String, dynamic>.from(decoded)];
+    } else {
+      throw Exception('予期しないJSON形式です');
+    }
+  }
+
+  String _escapeForPowerShell(String value) {
+    return value.replaceAll("'", "''");
   }
 }
 

@@ -34,6 +34,7 @@ class GoogleCalendarService {
   static const String _calendarApiUrl = 'https://www.googleapis.com/calendar/v3';
   static const String _redirectUri = 'http://127.0.0.1:8080/callback';
   static const String _scope = 'https://www.googleapis.com/auth/calendar';
+  static const String _scheduleEventColorId = '5'; // Banana (yellow)
   
   String? _accessToken;
   String? _refreshToken;
@@ -1773,6 +1774,7 @@ class GoogleCalendarService {
       // イベントデータを構築
       final eventData = <String, dynamic>{
         'summary': schedule.title.trim(),
+        'colorId': _scheduleEventColorId,
       };
 
       // 日時を設定（終日イベントではなく、日時指定）
@@ -1886,6 +1888,7 @@ class GoogleCalendarService {
       // イベントデータを構築
       final eventData = <String, dynamic>{
         'summary': schedule.title.trim(),
+        'colorId': _scheduleEventColorId,
       };
 
       // 日時を設定

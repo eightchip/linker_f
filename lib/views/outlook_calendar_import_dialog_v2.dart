@@ -8,9 +8,14 @@ import '../services/outlook_calendar_service.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import '../viewmodels/task_viewmodel.dart';
 
+enum OutlookImportMode { personal, room }
+enum OutlookEventSource { personal, room }
+
 /// Outlook予定一括取り込みダイアログ（新バージョン）
 class OutlookCalendarImportDialogV2 extends ConsumerStatefulWidget {
-  const OutlookCalendarImportDialogV2({super.key});
+  final String? preselectedTaskId;
+
+  const OutlookCalendarImportDialogV2({super.key, this.preselectedTaskId});
 
   @override
   ConsumerState<OutlookCalendarImportDialogV2> createState() => _OutlookCalendarImportDialogV2State();
@@ -27,7 +32,13 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
   // フィルタリング後の予定リスト（変更あり/未取込のみ）
   List<_FilteredEvent> _filteredEvents = [];
   final Set<int> _selectedIndices = {};
-  
+
+  OutlookImportMode _mode = OutlookImportMode.personal;
+  final TextEditingController _roomAddressController = TextEditingController();
+  final TextEditingController _keywordController = TextEditingController();
+  final List<String> _savedRoomAddresses = [];
+  String? _preselectedTaskId;
+
   // 日付設定（デフォルト：明日から1か月間）
   DateTime? _startDate;
   DateTime? _endDate;
@@ -42,6 +53,51 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
     final now = DateTime.now();
     _startDate = DateTime(now.year, now.month, now.day + 1); // 明日
     _endDate = _startDate!.add(const Duration(days: 30)); // 1か月後
+    _preselectedTaskId = widget.preselectedTaskId;
+  }
+
+  List<_FilteredEvent> _mapRoomEvents(List<Map<String, dynamic>> events) {
+    final filtered = <_FilteredEvent>[];
+
+    for (final event in events) {
+      final entryId = event['EntryID'] as String? ?? '';
+      ScheduleItem? existingSchedule;
+      if (entryId.isNotEmpty) {
+        for (final schedule in _existingSchedules) {
+          if (schedule.outlookEntryId == entryId) {
+            existingSchedule = schedule;
+            break;
+          }
+        }
+      }
+
+      TaskItem? relatedTask;
+      if (existingSchedule != null) {
+        try {
+          relatedTask = _incompleteTasks.firstWhere((task) => task.id == existingSchedule!.taskId);
+        } catch (_) {
+          relatedTask = null;
+        }
+      }
+
+      filtered.add(_FilteredEvent(
+        event: event,
+        existingSchedule: existingSchedule,
+        relatedTask: relatedTask,
+        hasTimeChange: false,
+        hasLocationChange: false,
+        source: OutlookEventSource.room,
+      ));
+    }
+
+    return filtered;
+  }
+
+  @override
+  void dispose() {
+    _roomAddressController.dispose();
+    _keywordController.dispose();
+    super.dispose();
   }
 
   /// 予定を一括取得して照合
@@ -70,14 +126,11 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
         return;
       }
 
-      // 2. Outlook予定を取得
-      setState(() {
-        _loadingMessage = '予定を取得中...';
-      });
-      
+      final isRoomMode = _mode == OutlookImportMode.room;
+
       final startForFetch = _startDate != null
           ? DateTime(_startDate!.year, _startDate!.month, _startDate!.day)
-          : null;
+          : DateTime.now();
       final endForFetch = _endDate != null
           ? DateTime(
               _endDate!.year,
@@ -89,12 +142,47 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
               999,
               999,
             )
-          : null;
+          : DateTime.now().add(const Duration(days: 30));
 
-      final events = await _outlookService.getCalendarEvents(
-        startDate: startForFetch,
-        endDate: endForFetch,
-      );
+      if (isRoomMode && _roomAddressController.text.trim().isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('会議室のメールアドレスを入力してください。'),
+            ),
+          );
+        }
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      setState(() {
+        _loadingMessage = isRoomMode ? '会議室の予定を取得中...' : '予定を取得中...';
+      });
+
+      List<Map<String, dynamic>> events;
+      if (isRoomMode) {
+        final roomAddress = _roomAddressController.text.trim();
+        final keyword = _keywordController.text.trim();
+        events = await _outlookService.getRoomCalendarEvents(
+          roomAddress: roomAddress,
+          startDate: startForFetch,
+          endDate: endForFetch,
+          subjectFilter: keyword.isNotEmpty ? keyword : null,
+        );
+        if (roomAddress.isNotEmpty && !_savedRoomAddresses.contains(roomAddress)) {
+          setState(() {
+            _savedRoomAddresses.insert(0, roomAddress);
+          });
+        }
+      } else {
+        events = await _outlookService.getCalendarEvents(
+          startDate: startForFetch,
+          endDate: endForFetch,
+        );
+      }
 
       setState(() {
         _loadingMessage = '既存データと照合中...';
@@ -115,10 +203,14 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
 
       // 4. 照合処理
       setState(() {
-        _loadingMessage = '予定を照合中...';
+        _loadingMessage = isRoomMode ? '予定を整理中...' : '予定を照合中...';
       });
 
-      _filteredEvents = _matchAndFilterEvents(events);
+      if (isRoomMode) {
+        _filteredEvents = _mapRoomEvents(events);
+      } else {
+        _filteredEvents = _matchAndFilterEvents(events);
+      }
 
       // 5. ソート
       _sortFilteredEvents();
@@ -128,9 +220,12 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       });
 
       if (_filteredEvents.isEmpty && mounted) {
+        final message = isRoomMode
+            ? '条件に一致する会議室予定はありません。'
+            : '取り込む必要がある予定はありません。';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('取り込む必要がある予定はありません。'),
+          SnackBar(
+            content: Text(message),
           ),
         );
       }
@@ -156,7 +251,6 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       final entryId = event['EntryID'] as String? ?? '';
       if (entryId.isEmpty) continue;
 
-      // 既存予定を検索（EntryIDで）
       ScheduleItem? existingSchedule;
       for (final schedule in _existingSchedules) {
         if (schedule.outlookEntryId == entryId) {
@@ -165,7 +259,6 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
         }
       }
 
-      // 既存予定がある場合、時間・場所の変更をチェック
       if (existingSchedule != null) {
         final startStr = event['Start'] as String? ?? '';
         final endStr = event['End'] as String? ?? '';
@@ -180,16 +273,14 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
           if (endStr.isNotEmpty) {
             endDateTime = DateTime.parse(endStr);
           }
-        } catch (e) {
+        } catch (_) {
           continue;
         }
 
-        // 時間または場所が変更されているかチェック
         bool hasTimeChange = false;
         bool hasLocationChange = false;
 
         if (startDateTime != null) {
-          // 時間の比較（分単位で比較）
           if (existingSchedule.startDateTime.difference(startDateTime).inMinutes.abs() > 1) {
             hasTimeChange = true;
           }
@@ -201,45 +292,38 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
           }
         }
 
-        // 場所の比較
         final existingLocation = existingSchedule.location ?? '';
         if (existingLocation != location) {
           hasLocationChange = true;
         }
 
-        // 変更がある場合のみ追加
         if (hasTimeChange || hasLocationChange) {
-          // 関連タスクが完了済みでないかチェック
-          final relatedTask = _incompleteTasks.firstWhere(
-            (task) => task.id == existingSchedule!.taskId,
-            orElse: () => TaskItem(
-              id: '',
-              title: '',
-              priority: TaskPriority.medium,
-              status: TaskStatus.pending,
-              tags: [],
-              createdAt: DateTime.now(),
-            ),
-          );
+          TaskItem? relatedTask;
+          try {
+            relatedTask = _incompleteTasks.firstWhere((task) => task.id == existingSchedule!.taskId);
+          } catch (_) {
+            relatedTask = null;
+          }
 
-          if (relatedTask.id.isNotEmpty && relatedTask.status != TaskStatus.completed) {
+          if (relatedTask != null && relatedTask.status != TaskStatus.completed) {
             filtered.add(_FilteredEvent(
               event: event,
               existingSchedule: existingSchedule,
               relatedTask: relatedTask,
               hasTimeChange: hasTimeChange,
               hasLocationChange: hasLocationChange,
+              source: OutlookEventSource.personal,
             ));
           }
         }
       } else {
-        // 未取込の予定
         filtered.add(_FilteredEvent(
           event: event,
           existingSchedule: null,
           relatedTask: null,
           hasTimeChange: false,
           hasLocationChange: false,
+          source: OutlookEventSource.personal,
         ));
       }
     }
@@ -323,6 +407,108 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
     }
   }
 
+  Widget _buildModeSelector() {
+    final isPersonal = _mode == OutlookImportMode.personal;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Text(
+          '対象: ',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(width: 12),
+        Wrap(
+          spacing: 12,
+          children: [
+            ChoiceChip(
+              label: const Text('個人予定'),
+              selected: isPersonal,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    _mode = OutlookImportMode.personal;
+                    _filteredEvents = [];
+                    _selectedIndices.clear();
+                  });
+                }
+              },
+            ),
+            ChoiceChip(
+              label: const Text('会議室予定'),
+              selected: !isPersonal,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    _mode = OutlookImportMode.room;
+                    _filteredEvents = [];
+                    _selectedIndices.clear();
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoomControls() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _roomAddressController,
+          decoration: InputDecoration(
+            labelText: '会議室メールアドレス',
+            hintText: '例: meetingroom@example.com',
+            suffixIcon: _roomAddressController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      setState(() {
+                        _roomAddressController.clear();
+                      });
+                    },
+                  )
+                : null,
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        if (_savedRoomAddresses.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _savedRoomAddresses.map((room) {
+              return InputChip(
+                label: Text(room),
+                onPressed: () {
+                  setState(() {
+                    _roomAddressController.text = room;
+                  });
+                },
+                onDeleted: () {
+                  setState(() {
+                    _savedRoomAddresses.remove(room);
+                  });
+                },
+              );
+            }).toList(),
+          ),
+        ],
+        const SizedBox(height: 12),
+        TextField(
+          controller: _keywordController,
+          decoration: const InputDecoration(
+            labelText: '件名フィルタ（正規表現対応）',
+            hintText: '例: 監査|来客',
+            helperText: '指定したキーワードを含む予定のみ取得します（未入力で全件取得）',
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('yyyy/MM/dd');
@@ -357,6 +543,12 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
               ],
             ),
             const Divider(height: 32),
+            _buildModeSelector(),
+            if (_mode == OutlookImportMode.room) ...[
+              const SizedBox(height: 12),
+              _buildRoomControls(),
+            ],
+            const SizedBox(height: 16),
             
             // 期間選択と取得ボタン
             Row(
@@ -541,19 +733,34 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       final query = _searchQuery.toLowerCase();
       final subject = (item.event['Subject'] as String? ?? '').toLowerCase();
       final location = (item.event['Location'] as String? ?? '').toLowerCase();
-      return subject.contains(query) || location.contains(query);
+      final organizer = (item.event['Organizer'] as String? ?? '').toLowerCase();
+      return subject.contains(query) || location.contains(query) || organizer.contains(query);
     }).toList();
 
     // 選択された予定を取得
     final selectedEvents = _selectedIndices.map((index) => filtered[index]).toList();
 
-    // タスク選択ダイアログを表示
-    final selectedTask = await showDialog<TaskItem>(
+    TaskItem? selectedTask;
+
+    if (_preselectedTaskId != null) {
+      try {
+        selectedTask = _incompleteTasks.firstWhere((task) => task.id == _preselectedTaskId);
+      } catch (_) {
+        selectedTask = null;
+      }
+    }
+
+    selectedTask ??= await showDialog<TaskItem>(
       context: context,
-      builder: (context) => _TaskSelectionDialog(tasks: _incompleteTasks),
+      builder: (context) => _TaskSelectionDialog(
+        tasks: _incompleteTasks,
+        preselectedTaskId: _preselectedTaskId,
+      ),
     );
 
     if (selectedTask == null) return;
+
+    _preselectedTaskId = null;
 
     // 予定をタスクに割り当て
     try {
@@ -617,7 +824,8 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       final query = _searchQuery.toLowerCase();
       final subject = (item.event['Subject'] as String? ?? '').toLowerCase();
       final location = (item.event['Location'] as String? ?? '').toLowerCase();
-      return subject.contains(query) || location.contains(query);
+      final organizer = (item.event['Organizer'] as String? ?? '').toLowerCase();
+      return subject.contains(query) || location.contains(query) || organizer.contains(query);
     }).toList();
 
     // 選択された予定を取得
@@ -696,7 +904,8 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       final query = _searchQuery.toLowerCase();
       final subject = (item.event['Subject'] as String? ?? '').toLowerCase();
       final location = (item.event['Location'] as String? ?? '').toLowerCase();
-      return subject.contains(query) || location.contains(query);
+      final organizer = (item.event['Organizer'] as String? ?? '').toLowerCase();
+      return subject.contains(query) || location.contains(query) || organizer.contains(query);
     }).toList();
 
     return ListView.builder(
@@ -709,6 +918,48 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
         final startStr = event['Start'] as String? ?? '';
         final endStr = event['End'] as String? ?? '';
         final location = event['Location'] as String? ?? '';
+        final organizer = event['Organizer'] as String? ?? '';
+        final isMeeting = event['IsMeeting'] as bool? ?? false;
+        final isRecurring = event['IsRecurring'] as bool? ?? false;
+        final isOnlineMeeting = event['IsOnlineMeeting'] as bool? ?? false;
+        final calendarOwner = event['CalendarOwner'] as String? ?? '';
+        final metadataChips = <Widget>[];
+        if (item.source == OutlookEventSource.room) {
+          metadataChips.add(
+            Chip(
+              label: const Text('会議室', style: TextStyle(fontSize: 12)),
+              backgroundColor: Colors.blue.shade50,
+              labelStyle: const TextStyle(color: Colors.blue),
+            ),
+          );
+        }
+        if (isMeeting) {
+          metadataChips.add(
+            Chip(
+              label: const Text('会議', style: TextStyle(fontSize: 12)),
+              backgroundColor: Colors.indigo.shade50,
+              labelStyle: const TextStyle(color: Colors.indigo),
+            ),
+          );
+        }
+        if (isRecurring) {
+          metadataChips.add(
+            Chip(
+              label: const Text('定期', style: TextStyle(fontSize: 12)),
+              backgroundColor: Colors.purple.shade50,
+              labelStyle: const TextStyle(color: Colors.purple),
+            ),
+          );
+        }
+        if (isOnlineMeeting) {
+          metadataChips.add(
+            Chip(
+              label: const Text('オンライン', style: TextStyle(fontSize: 12)),
+              backgroundColor: Colors.teal.shade50,
+              labelStyle: const TextStyle(color: Colors.teal),
+            ),
+          );
+        }
 
         DateTime? startDateTime;
         DateTime? endDateTime;
@@ -767,6 +1018,14 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        if (metadataChips.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: metadataChips,
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         
                         // 日時（大きく表示）
@@ -797,6 +1056,40 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                           const SizedBox(height: 8),
                         ],
                         
+                        if (organizer.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(Icons.person_outline, size: 20, color: Colors.deepPurple),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '主催: $organizer',
+                                  style: const TextStyle(fontSize: 16),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
+                        if (calendarOwner.isNotEmpty && item.source == OutlookEventSource.room) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.meeting_room_outlined, size: 20, color: Colors.blueGrey),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '会議室: $calendarOwner',
+                                  style: const TextStyle(fontSize: 15),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+
                         // 場所（大きく表示）
                         if (location.isNotEmpty) ...[
                           Row(
@@ -872,6 +1165,7 @@ class _FilteredEvent {
   final TaskItem? relatedTask;
   final bool hasTimeChange;
   final bool hasLocationChange;
+  final OutlookEventSource source;
 
   _FilteredEvent({
     required this.event,
@@ -879,51 +1173,190 @@ class _FilteredEvent {
     this.relatedTask,
     required this.hasTimeChange,
     required this.hasLocationChange,
+    required this.source,
   });
 }
 
-/// タスク選択ダイアログ
-class _TaskSelectionDialog extends StatelessWidget {
+class _TaskSelectionDialog extends StatefulWidget {
   final List<TaskItem> tasks;
+  final String? preselectedTaskId;
 
-  const _TaskSelectionDialog({required this.tasks});
+  const _TaskSelectionDialog({required this.tasks, this.preselectedTaskId});
+
+  @override
+  State<_TaskSelectionDialog> createState() => _TaskSelectionDialogState();
+}
+
+class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
+  final TextEditingController _searchController = TextEditingController();
+  TaskStatus? _selectedStatus;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<TaskItem> get _filteredTasks {
+    final query = _searchController.text.trim().toLowerCase();
+    return widget.tasks.where((task) {
+      final matchesStatus = _selectedStatus == null || task.status == _selectedStatus;
+      if (!matchesStatus) return false;
+
+      if (query.isEmpty) return true;
+
+      final titleMatch = task.title.toLowerCase().contains(query);
+      final descriptionMatch = task.description != null && task.description!.toLowerCase().contains(query);
+      final tagMatch = task.tags.any((tag) => tag.toLowerCase().contains(query));
+      return titleMatch || descriptionMatch || tagMatch;
+    }).toList();
+  }
+
+  String _statusLabel(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return '未着手';
+      case TaskStatus.inProgress:
+        return '進行中';
+      case TaskStatus.completed:
+        return '完了';
+      case TaskStatus.cancelled:
+        return '停止';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final filteredTasks = _filteredTasks;
+
     return Dialog(
       child: Container(
-        width: 500,
-        height: 600,
-        padding: const EdgeInsets.all(16),
+        width: 520,
+        height: 640,
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'タスクを選択',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                const Icon(Icons.task_alt, size: 22),
+                const SizedBox(width: 8),
+                const Text(
+                  'タスクを選択',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                labelText: 'キーワードで絞り込み',
+                hintText: 'タイトル・説明・タグで検索',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
               ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Text(
+                  'ステータス:',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(width: 12),
+                DropdownButton<TaskStatus?>(
+                  value: _selectedStatus,
+                  items: [
+                    const DropdownMenuItem<TaskStatus?>(
+                      value: null,
+                      child: Text('すべて'),
+                    ),
+                    ...TaskStatus.values.map(
+                      (status) => DropdownMenuItem<TaskStatus?>(
+                        value: status,
+                        child: Text(_statusLabel(status)),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedStatus = value;
+                    });
+                  },
+                ),
+                const Spacer(),
+                Text(
+                  '${filteredTasks.length}件表示',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
             ),
             const Divider(),
             Expanded(
-              child: tasks.isEmpty
+              child: filteredTasks.isEmpty
                   ? const Center(
-                      child: Text('利用可能なタスクがありません'),
+                      child: Text('条件に合致するタスクがありません'),
                     )
-                  : ListView.builder(
-                      itemCount: tasks.length,
+                  : ListView.separated(
+                      itemCount: filteredTasks.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
                       itemBuilder: (context, index) {
-                        final task = tasks[index];
+                        final task = filteredTasks[index];
+                        final isPreselected = widget.preselectedTaskId == task.id;
                         return ListTile(
+                          leading: isPreselected ? const Icon(Icons.check_circle, color: Colors.blue) : null,
                           title: Text(task.title),
-                          subtitle: task.description != null && task.description!.isNotEmpty
-                              ? Text(
-                                  task.description!,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : null,
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _statusLabel(task.status),
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                              if (task.description != null && task.description!.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    task.description!,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              if (task.tags.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Wrap(
+                                    spacing: 6,
+                                    runSpacing: -8,
+                                    children: task.tags
+                                        .map((tag) => Chip(
+                                              label: Text(tag),
+                                              labelStyle: const TextStyle(fontSize: 11),
+                                              padding: EdgeInsets.zero,
+                                            ))
+                                        .toList(),
+                                  ),
+                                ),
+                            ],
+                          ),
                           onTap: () => Navigator.pop(context, task),
                         );
                       },

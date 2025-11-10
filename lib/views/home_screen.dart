@@ -510,8 +510,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = MediaQuery.of(context).size.width < 600 ? 18.0 : 24.0;
-    final titleFontSize = MediaQuery.of(context).size.width < 600 ? 16.0 : 22.0;
+    final width = MediaQuery.of(context).size.width;
+    final iconSize = width < 600 ? 18.0 : 24.0;
+    final titleScale = ref.watch(titleFontSizeProvider);
+    final titleFontSize = (width < 600 ? 16.0 : 22.0) * titleScale;
     
     // 状態を一度だけ取得してローカル変数にキャッシュ
     final linkState = ref.watch(linkViewModelProvider);
@@ -619,7 +621,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Link Navigator',
+                      'リンク管理',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
                     ),
                   ],
