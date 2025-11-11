@@ -680,8 +680,15 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     } else {
       baseColor = colorScheme.tertiary;
     }
-    final gradientStart = Color.alphaBlend(baseColor.withOpacity(0.1), colorScheme.surface);
-    final gradientEnd = Color.alphaBlend(baseColor.withOpacity(0.03), colorScheme.surface);
+    final Color gradientStart;
+    final Color gradientEnd;
+    if (isToday) {
+      gradientStart = colorScheme.primary.withOpacity(0.24);
+      gradientEnd = colorScheme.primary.withOpacity(0.08);
+    } else {
+      gradientStart = Color.alphaBlend(baseColor.withOpacity(0.1), colorScheme.surface);
+      gradientEnd = Color.alphaBlend(baseColor.withOpacity(0.03), colorScheme.surface);
+    }
     final timeTextColor = isToday ? colorScheme.primary : colorScheme.onSurface;
     final timeIconColor = isToday ? colorScheme.primary : colorScheme.onSurfaceVariant;
 

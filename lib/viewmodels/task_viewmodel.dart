@@ -31,6 +31,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
 
   static const String _boxName = 'tasks';
   Box<TaskItem>? _taskBox;
+  Box<dynamic>? _taskDatesBox;
   final _uuid = const Uuid();
 
   // tasksプロパティを追加
@@ -119,6 +120,47 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       print('エラーの詳細: ${e.toString()}');
       print('スタックトレース: ${StackTrace.current}');
       state = [];
+    }
+  }
+
+  Future<void> _updateTaskDates(
+    String taskId, {
+    DateTime? startedAt,
+    DateTime? completedAt,
+    bool clearStarted = false,
+    bool clearCompleted = false,
+    bool overwriteStarted = true,
+    bool overwriteCompleted = true,
+  }) async {
+    try {
+      _taskDatesBox ??= await Hive.openBox('taskDates');
+      final existingRaw = _taskDatesBox!.get(taskId);
+      final existing = existingRaw is Map ? Map<String, dynamic>.from(existingRaw) : <String, dynamic>{};
+
+      if (clearStarted) {
+        existing.remove('startedAt');
+      } else if (startedAt != null && (overwriteStarted || !existing.containsKey('startedAt'))) {
+        final normalized = DateTime(startedAt.year, startedAt.month, startedAt.day);
+        existing['startedAt'] = normalized.toIso8601String();
+      }
+
+      if (clearCompleted) {
+        existing.remove('completedAt');
+      } else if (completedAt != null && (overwriteCompleted || !existing.containsKey('completedAt'))) {
+        final normalized = DateTime(completedAt.year, completedAt.month, completedAt.day);
+        existing['completedAt'] = normalized.toIso8601String();
+      }
+
+      if (existing.isEmpty) {
+        await _taskDatesBox!.delete(taskId);
+      } else {
+        await _taskDatesBox!.put(taskId, existing);
+      }
+      await _taskDatesBox!.flush();
+    } catch (e) {
+      if (kDebugMode) {
+        print('タスク日付更新エラー: $e');
+      }
     }
   }
 
@@ -487,14 +529,22 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   Future<void> startTask(String taskId) async {
     try {
       final task = state.firstWhere((t) => t.id == taskId);
+      final startTime = DateTime.now();
       
       final updatedTask = task.copyWith(
         status: TaskStatus.inProgress,
+        completedAt: null,
         dueDate: task.dueDate, // 期限日を保持
         reminderTime: task.reminderTime, // リマインダー時間を保持
       );
       
       await updateTask(updatedTask);
+      await _updateTaskDates(
+        taskId,
+        startedAt: startTime,
+        overwriteStarted: false,
+        clearCompleted: true,
+      );
       
       // リンクのタスク状態を更新
       await _updateLinkTaskStatus();
@@ -533,6 +583,11 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
           );
 
           await updateTask(updatedTask);
+          await _updateTaskDates(
+            taskId,
+            clearStarted: true,
+            clearCompleted: true,
+          );
         } catch (e) {
           if (kDebugMode) {
             print('タスクステータス更新エラー: $e');
@@ -561,11 +616,12 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
   Future<void> completeTask(String taskId) async {
     try {
       final task = state.firstWhere((t) => t.id == taskId);
+      final completionTime = DateTime.now();
       
       // リマインダーをクリア
       final updatedTask = task.copyWith(
         status: TaskStatus.completed,
-        completedAt: DateTime.now(),
+        completedAt: completionTime,
         reminderTime: null, // リマインダーをクリア
         isRecurringReminder: false, // 繰り返しリマインダーもクリア
         recurringReminderPattern: '', // 繰り返しパターンもクリア
@@ -574,6 +630,11 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       );
       
       await updateTask(updatedTask);
+      await _updateTaskDates(
+        taskId,
+        completedAt: completionTime,
+        overwriteCompleted: true,
+      );
       
       // 通知をキャンセル
       try {

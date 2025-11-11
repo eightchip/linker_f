@@ -60,16 +60,16 @@ try {
     \$calendar = \$namespace.GetDefaultFolder(9)
     \$items = \$calendar.Items
     \$items.IncludeRecurrences = \$true
-    \$items.Sort("[Start]")
 
-    \$events = @()
+    \$rawEvents = @()
 
     foreach (\$item in \$items) {
         try {
             if (\$null -eq \$item) { continue }
+            if (-not (\$item -is [Microsoft.Office.Interop.Outlook.AppointmentItem])) { continue }
             if (\$item.Start -lt \$startDate -or \$item.Start -gt \$endDate) { continue }
 
-            \$event = @{
+            \$rawEvents += @{
                 Subject = Sanitize(\$item.Subject)
                 Start = \$item.Start.ToString("o")
                 End = if (\$item.End) { \$item.End.ToString("o") } else { "" }
@@ -89,6 +89,8 @@ try {
             if (\$item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null }
         }
     }
+
+    \$events = \$rawEvents | Sort-Object { if ([string]::IsNullOrEmpty(\$_.Start)) { [DateTime]::MinValue } else { [DateTime]::Parse(\$_.Start) } }
 
     \$json = \$events | ConvertTo-Json -Depth 10
     Write-Output \$json
@@ -147,13 +149,13 @@ try {
     \$calendar = \$namespace.GetSharedDefaultFolder(\$recipient, 9)
     \$items = \$calendar.Items
     \$items.IncludeRecurrences = \$true
-    \$items.Sort("[Start]")
 
-    \$events = @()
+    \$rawEvents = @()
 
     foreach (\$item in \$items) {
         try {
             if (\$null -eq \$item) { continue }
+            if (-not (\$item -is [Microsoft.Office.Interop.Outlook.AppointmentItem])) { continue }
             if (\$item.Start -lt \$startDate -or \$item.Start -gt \$endDate) { continue }
 
             \$subject = Sanitize(\$item.Subject)
@@ -162,7 +164,7 @@ try {
                 if (-not (\$subject -match \$subjectPattern)) { continue }
             }
 
-            \$event = @{
+            \$rawEvents += @{
                 Subject = \$subject
                 Start = \$item.Start.ToString("o")
                 End = if (\$item.End) { \$item.End.ToString("o") } else { "" }
@@ -184,6 +186,8 @@ try {
         }
     }
 
+    \$events = \$rawEvents | Sort-Object { if ([string]::IsNullOrEmpty(\$_.Start)) { [DateTime]::MinValue } else { [DateTime]::Parse(\$_.Start) } }
+
     \$json = \$events | ConvertTo-Json -Depth 10
     Write-Output \$json
 } finally {
@@ -203,6 +207,112 @@ try {
       return events;
     } catch (e) {
       ErrorHandler.logError('会議室カレンダー取得', e);
+      rethrow;
+    }
+  }
+
+  /// 会議室候補を検索
+  Future<List<Map<String, String>>> searchMeetingRooms({
+    String keyword = '',
+    int maxResults = 50,
+  }) async {
+    try {
+      final escapedKeyword = _escapeForPowerShell(keyword);
+      final script = '''
+function Sanitize([string]\$value) {
+    if ([string]::IsNullOrEmpty(\$value)) { return "" }
+    return (\$value -replace "[\\r\\n\\u0000]", " ").Trim()
+}
+
+\$keyword = '${escapedKeyword}'
+\$maxResults = ${maxResults}
+
+try {
+    \$outlook = New-Object -ComObject Outlook.Application
+    \$namespace = \$outlook.GetNamespace("MAPI")
+    \$results = @()
+
+    \$addressLists = \$namespace.AddressLists
+    foreach (\$addressList in \$addressLists) {
+        try {
+            if (\$null -eq \$addressList) { continue }
+            if (\$addressList.AddressEntries -eq \$null) { continue }
+            if (-not (\$addressList.Name -match "Room" -or \$addressList.AddressListType -eq 5)) { continue }
+
+            \$entries = \$addressList.AddressEntries
+            for (\$i = 1; \$i -le \$entries.Count; \$i++) {
+                if (\$results.Count -ge \$maxResults) { break }
+                \$entry = \$entries.Item(\$i)
+                if (\$null -eq \$entry) { continue }
+
+                \$displayName = Sanitize(\$entry.Name)
+                \$address = ""
+
+                try {
+                    \$exchangeUser = \$entry.GetExchangeUser()
+                    if (\$exchangeUser -ne \$null) {
+                        \$address = Sanitize(\$exchangeUser.PrimarySmtpAddress)
+                    }
+                } catch {
+                    if (\$entry.Address -ne \$null) {
+                        \$address = Sanitize((\$entry.Address -replace "SMTP:", "" -replace "smtp:", ""))
+                    }
+                }
+
+                if ([string]::IsNullOrEmpty(\$address)) { continue }
+
+                if (-not [string]::IsNullOrEmpty(\$keyword)) {
+                    if ((\$displayName -notmatch [Regex]::Escape(\$keyword)) -and (\$address -notmatch [Regex]::Escape(\$keyword))) {
+                        continue
+                    }
+                }
+
+                \$results += @{
+                    Name = \$displayName
+                    Address = \$address
+                }
+            }
+        } catch {
+            continue
+        }
+
+        if (\$results.Count -ge \$maxResults) { break }
+    }
+
+    \$json = \$results | Sort-Object Name | ConvertTo-Json -Depth 5
+    Write-Output \$json
+} finally {
+    if (\$addressLists) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$addressLists) | Out-Null }
+    if (\$namespace) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$namespace) | Out-Null }
+    if (\$outlook) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null }
+    [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
+    [System.GC]::Collect()
+}
+''';
+
+      final output = await _runPowerShellScript(script);
+      final decoded = json.decode(output.trim().isEmpty ? '[]' : output);
+      if (decoded is List) {
+        return decoded
+            .map((e) => {
+                  'name': (e['Name'] ?? '').toString(),
+                  'address': (e['Address'] ?? '').toString(),
+                })
+            .where((e) => e['address']!.isNotEmpty)
+            .toList();
+      } else if (decoded is Map<String, dynamic>) {
+        final name = decoded['Name']?.toString() ?? '';
+        final address = decoded['Address']?.toString() ?? '';
+        if (address.isNotEmpty) {
+          return [
+            {'name': name, 'address': address},
+          ];
+        }
+      }
+      return [];
+    } catch (e) {
+      ErrorHandler.logError('会議室候補検索', e);
       rethrow;
     }
   }
