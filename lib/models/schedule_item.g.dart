@@ -28,13 +28,14 @@ class ScheduleItemAdapter extends TypeAdapter<ScheduleItem> {
       updatedAt: fields[8] as DateTime?,
       googleCalendarEventId: fields[9] as String?,
       outlookEntryId: fields[10] as String?,
+      calendarOwner: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ScheduleItem obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +57,9 @@ class ScheduleItemAdapter extends TypeAdapter<ScheduleItem> {
       ..writeByte(9)
       ..write(obj.googleCalendarEventId)
       ..writeByte(10)
-      ..write(obj.outlookEntryId);
+      ..write(obj.outlookEntryId)
+      ..writeByte(11)
+      ..write(obj.calendarOwner);
   }
 
   @override

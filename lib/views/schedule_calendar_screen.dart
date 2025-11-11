@@ -651,6 +651,22 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     );
   }
 
+  String? _extractMetadataValue(String? notes, String key) {
+    if (notes == null || notes.isEmpty) {
+      return null;
+    }
+    final segments = notes
+        .split(RegExp(r'[\n/]+'))
+        .map((segment) => segment.trim())
+        .where((segment) => segment.isNotEmpty);
+    for (final segment in segments) {
+      if (segment.startsWith(key)) {
+        return segment.substring(key.length).trim();
+      }
+    }
+    return null;
+  }
+
   Widget _buildScheduleCard(
     ScheduleItem schedule,
     TaskItem task,
@@ -691,6 +707,10 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     }
     final timeTextColor = isToday ? colorScheme.primary : colorScheme.onSurface;
     final timeIconColor = isToday ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final calendarOwnerText = (schedule.calendarOwner?.trim().isNotEmpty ?? false)
+        ? schedule.calendarOwner!
+        : (_extractMetadataValue(schedule.notes, 'Calendar:') ?? '');
+    final isMeetingRoomSchedule = calendarOwnerText.isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
@@ -751,6 +771,31 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                         color: timeTextColor,
                       ),
                     ),
+                    if (isMeetingRoomSchedule) ...[
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.meeting_room, size: 14, color: colorScheme.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              '会議室',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (schedule.location != null && schedule.location!.isNotEmpty) ...[
                       const SizedBox(width: 14),
                       Icon(
@@ -773,6 +818,26 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                     ],
                   ],
                 ),
+                if (isMeetingRoomSchedule && calendarOwnerText.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.meeting_room_outlined, size: 14, color: colorScheme.primary),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          calendarOwnerText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.primary.withOpacity(0.85),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
                 _searchQuery.isEmpty
                     ? Text(
@@ -948,8 +1013,22 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                                   ? schedule.title
                                   : task?.title ?? '';
                               final time = timeFormat.format(schedule.startDateTime);
-                              return Text('$time  $title',
-                                  style: const TextStyle(height: 1.3));
+                              final isMeetingRoom =
+                                  (schedule.calendarOwner?.trim().isNotEmpty ?? false);
+                              final displayTitle =
+                                  isMeetingRoom ? '🏢 $title' : title;
+                              return Text(
+                                '$time  $displayTitle',
+                                style: TextStyle(
+                                  height: 1.3,
+                                  color: isMeetingRoom
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.9)
+                                      : null,
+                                ),
+                              );
                             }).toList(),
                           ),
                         ),
@@ -1036,9 +1115,21 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                                   ? schedule.title
                                   : task?.title ?? '';
                               final time = timeFormat.format(schedule.startDateTime);
+                              final isMeetingRoom =
+                                  (schedule.calendarOwner?.trim().isNotEmpty ?? false);
+                              final displayTitle =
+                                  isMeetingRoom ? '🏢 $title' : title;
                               return Text(
-                                '$time  $title',
-                                style: const TextStyle(height: 1.3),
+                                '$time  $displayTitle',
+                                style: TextStyle(
+                                  height: 1.3,
+                                  color: isMeetingRoom
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.9)
+                                      : null,
+                                ),
                               );
                             }).toList(),
                           ),

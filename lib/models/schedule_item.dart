@@ -37,6 +37,9 @@ class ScheduleItem extends HiveObject {
   @HiveField(10)
   String? outlookEntryId; // Outlook EntryID（重複チェック・更新用）
 
+  @HiveField(11)
+  String? calendarOwner; // 会議室などのカレンダー所有者
+
   ScheduleItem({
     required this.id,
     required this.taskId,
@@ -49,6 +52,7 @@ class ScheduleItem extends HiveObject {
     this.updatedAt,
     this.googleCalendarEventId,
     this.outlookEntryId,
+    this.calendarOwner,
   });
 
   ScheduleItem copyWith({
@@ -63,6 +67,7 @@ class ScheduleItem extends HiveObject {
     DateTime? updatedAt,
     String? googleCalendarEventId,
     String? outlookEntryId,
+    String? calendarOwner,
   }) {
     return ScheduleItem(
       id: id ?? this.id,
@@ -76,6 +81,7 @@ class ScheduleItem extends HiveObject {
       updatedAt: updatedAt ?? this.updatedAt,
       googleCalendarEventId: googleCalendarEventId ?? this.googleCalendarEventId,
       outlookEntryId: outlookEntryId ?? this.outlookEntryId,
+      calendarOwner: calendarOwner ?? this.calendarOwner,
     );
   }
 
@@ -92,6 +98,7 @@ class ScheduleItem extends HiveObject {
       'updatedAt': updatedAt?.toIso8601String(),
       'googleCalendarEventId': googleCalendarEventId,
       'outlookEntryId': outlookEntryId,
+      'calendarOwner': calendarOwner,
     };
   }
 
@@ -108,6 +115,7 @@ class ScheduleItem extends HiveObject {
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
       googleCalendarEventId: json['googleCalendarEventId'],
       outlookEntryId: json['outlookEntryId'],
+      calendarOwner: json['calendarOwner'],
     );
   }
 }

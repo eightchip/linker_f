@@ -390,6 +390,7 @@ try {
       notes: notesFragments.isNotEmpty ? notesFragments.join('\n\n') : null,
       createdAt: DateTime.now(),
       outlookEntryId: entryId.isNotEmpty ? entryId : null,
+      calendarOwner: calendarOwner.isNotEmpty ? calendarOwner : null,
     );
   }
 
