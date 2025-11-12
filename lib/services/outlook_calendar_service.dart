@@ -146,43 +146,171 @@ try {
         throw "会議室が見つかりません: \$roomAddress"
     }
 
-    \$calendar = \$namespace.GetSharedDefaultFolder(\$recipient, 9)
+    # 権限チェック：会議室カレンダーへのアクセス権を確認
+    try {
+        \$calendar = \$namespace.GetSharedDefaultFolder(\$recipient, 9)
+        if (\$null -eq \$calendar) {
+            throw "会議室カレンダーへのアクセス権がありません: \$roomAddress"
+        }
+    } catch {
+        throw "会議室カレンダーへのアクセス権がありません: \$roomAddress (エラー: \$_)"
+    }
+
     \$items = \$calendar.Items
+    if (\$null -eq \$items) {
+        throw "会議室カレンダーのアイテムを取得できません: \$roomAddress"
+    }
     \$items.IncludeRecurrences = \$true
 
     \$rawEvents = @()
+    \$itemCount = 0
+    \$errorCount = 0
 
     foreach (\$item in \$items) {
+        \$itemCount++
+        \$itemObject = \$null
         try {
+            # Nullチェック
             if (\$null -eq \$item) { continue }
-            if (-not (\$item -is [Microsoft.Office.Interop.Outlook.AppointmentItem])) { continue }
-            if (\$item.Start -lt \$startDate -or \$item.Start -gt \$endDate) { continue }
-
-            \$subject = Sanitize(\$item.Subject)
-
-            if (-not [string]::IsNullOrEmpty(\$subjectPattern)) {
-                if (-not (\$subject -match \$subjectPattern)) { continue }
+            
+            # 型チェック：AppointmentItemかどうかを確認
+            try {
+                \$itemType = \$item.GetType()
+                if (\$itemType -eq \$null) { continue }
+            } catch {
+                continue
             }
+            
+            # AppointmentItem型チェック
+            if (-not (\$item -is [Microsoft.Office.Interop.Outlook.AppointmentItem])) { continue }
+            
+            \$itemObject = \$item
+            
+            # StartプロパティのNullチェック
+            if (\$null -eq \$itemObject.Start) { continue }
+            
+            # 日付範囲チェック
+            try {
+                \$itemStart = \$itemObject.Start
+                if (\$itemStart -lt \$startDate -or \$itemStart -gt \$endDate) { continue }
+            } catch {
+                continue
+            }
+
+            # Subjectの取得とNullチェック
+            \$subject = ""
+            try {
+                if (\$null -ne \$itemObject.Subject) {
+                    \$subject = Sanitize(\$itemObject.Subject)
+                }
+            } catch {
+                \$subject = ""
+            }
+
+            # 件名フィルタチェック
+            if (-not [string]::IsNullOrEmpty(\$subjectPattern)) {
+                if ([string]::IsNullOrEmpty(\$subject) -or -not (\$subject -match \$subjectPattern)) {
+                    continue
+                }
+            }
+
+            # 各プロパティを安全に取得
+            \$startStr = ""
+            \$endStr = ""
+            \$location = ""
+            \$body = ""
+            \$entryId = ""
+            \$lastModTime = ""
+            \$organizer = ""
+            \$isMeeting = \$false
+            \$isRecurring = \$false
+            \$isOnlineMeeting = \$false
+
+            try {
+                if (\$null -ne \$itemObject.Start) {
+                    \$startStr = \$itemObject.Start.ToString("o")
+                }
+            } catch { }
+
+            try {
+                if (\$null -ne \$itemObject.End) {
+                    \$endStr = \$itemObject.End.ToString("o")
+                }
+            } catch { }
+
+            try {
+                if (\$null -ne \$itemObject.Location) {
+                    \$location = Sanitize(\$itemObject.Location)
+                }
+            } catch { }
+
+            try {
+                if (\$null -ne \$itemObject.Body) {
+                    \$body = Sanitize(\$itemObject.Body)
+                }
+            } catch { }
+
+            try {
+                if (\$null -ne \$itemObject.EntryID) {
+                    \$entryId = \$itemObject.EntryID
+                }
+            } catch { }
+
+            try {
+                if (\$null -ne \$itemObject.LastModificationTime) {
+                    \$lastModTime = \$itemObject.LastModificationTime.ToString("o")
+                }
+            } catch { }
+
+            try {
+                if (\$null -ne \$itemObject.Organizer) {
+                    \$organizer = Sanitize(\$itemObject.Organizer)
+                }
+            } catch { }
+
+            try {
+                if (\$null -ne \$itemObject.IsMeeting) {
+                    \$isMeeting = [bool]\$itemObject.IsMeeting
+                }
+            } catch { }
+
+            try {
+                if (\$null -ne \$itemObject.IsRecurring) {
+                    \$isRecurring = [bool]\$itemObject.IsRecurring
+                }
+            } catch { }
+
+            try {
+                if (\$null -ne \$itemObject.IsOnlineMeeting) {
+                    \$isOnlineMeeting = [bool]\$itemObject.IsOnlineMeeting
+                }
+            } catch { }
 
             \$rawEvents += @{
                 Subject = \$subject
-                Start = \$item.Start.ToString("o")
-                End = if (\$item.End) { \$item.End.ToString("o") } else { "" }
-                Location = Sanitize(\$item.Location)
-                Body = Sanitize(\$item.Body)
-                EntryID = if (\$item.EntryID) { \$item.EntryID } else { "" }
-                LastModificationTime = if (\$item.LastModificationTime) { \$item.LastModificationTime.ToString("o") } else { "" }
-                Organizer = Sanitize(\$item.Organizer)
-                IsMeeting = if (\$item.IsMeeting -ne \$null) { [bool]\$item.IsMeeting } else { \$false }
-                IsRecurring = if (\$item.IsRecurring -ne \$null) { [bool]\$item.IsRecurring } else { \$false }
-                IsOnlineMeeting = if (\$item.IsOnlineMeeting -ne \$null) { [bool]\$item.IsOnlineMeeting } else { \$false }
+                Start = \$startStr
+                End = \$endStr
+                Location = \$location
+                Body = \$body
+                EntryID = \$entryId
+                LastModificationTime = \$lastModTime
+                Organizer = \$organizer
+                IsMeeting = \$isMeeting
+                IsRecurring = \$isRecurring
+                IsOnlineMeeting = \$isOnlineMeeting
                 CalendarOwner = \$roomAddress
-              }
-            \$events += \$event
+            }
         } catch {
+            \$errorCount++
+            # エラーをスキップして続行
             continue
         } finally {
-            if (\$item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null }
+            # COMオブジェクトの解放
+            if (\$null -ne \$itemObject) {
+                try {
+                    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$itemObject) | Out-Null
+                } catch { }
+            }
         }
     }
 
@@ -233,6 +361,7 @@ try {
     \$results = @()
 
     \$addressLists = \$namespace.AddressLists
+    \$seenAddresses = @{}
     foreach (\$addressList in \$addressLists) {
         try {
             if (\$null -eq \$addressList) { continue }
@@ -260,6 +389,11 @@ try {
                 }
 
                 if ([string]::IsNullOrEmpty(\$address)) { continue }
+                
+                # メールアドレスで重複チェック（大文字小文字を区別しない）
+                \$addressLower = \$address.ToLower()
+                if (\$seenAddresses.ContainsKey(\$addressLower)) { continue }
+                \$seenAddresses[\$addressLower] = \$true
 
                 if (-not [string]::IsNullOrEmpty(\$keyword)) {
                     if ((\$displayName -notmatch [Regex]::Escape(\$keyword)) -and (\$address -notmatch [Regex]::Escape(\$keyword))) {

@@ -678,7 +678,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
           ),
           const SizedBox(height: 6),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 240),
+            constraints: const BoxConstraints(maxHeight: 400),
             child: ListView.builder(
               shrinkWrap: true,
               physics: const ClampingScrollPhysics(),
