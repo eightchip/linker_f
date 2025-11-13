@@ -2451,6 +2451,13 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 },
               ),
               IconButton(
+                icon: const Icon(Icons.swap_horiz, color: Colors.green, size: 18),
+                tooltip: '割当タスクを変更',
+                onPressed: () async {
+                  await _changeScheduleTask(schedule);
+                },
+              ),
+              IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red, size: 18),
                 tooltip: '削除',
                 onPressed: () async {
@@ -3860,6 +3867,91 @@ ${linksInfo.isNotEmpty ? '──────────────────
         SnackBarService.showSuccess(context, '完了報告を送信しました');
       } catch (e) {
         SnackBarService.showError(context, '完了報告送信エラー: $e');
+      }
+    }
+  }
+
+  /// 予定のタスク割り当てを変更
+  Future<void> _changeScheduleTask(ScheduleItem schedule) async {
+    try {
+      final tasks = ref.read(taskViewModelProvider);
+      final incompleteTasks = tasks.where((t) => t.status != TaskStatus.completed).toList();
+      
+      if (incompleteTasks.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('割り当て可能なタスクがありません')),
+          );
+        }
+        return;
+      }
+
+      // 現在のタスクを除外
+      final availableTasks = incompleteTasks.where((t) => t.id != schedule.taskId).toList();
+
+      if (availableTasks.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('他のタスクがありません')),
+          );
+        }
+        return;
+      }
+
+      // タスク選択ダイアログを表示
+      final selectedTask = await showDialog<TaskItem>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('割当タスクを変更'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: availableTasks.length,
+              itemBuilder: (context, index) {
+                final task = availableTasks[index];
+                return ListTile(
+                  title: Text(task.title),
+                  subtitle: task.description != null && task.description!.isNotEmpty
+                      ? Text(
+                          task.description!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : null,
+                  onTap: () => Navigator.pop(context, task),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+          ],
+        ),
+      );
+
+      if (selectedTask != null && mounted) {
+        final scheduleViewModel = ref.read(scheduleViewModelProvider.notifier);
+        await scheduleViewModel.changeScheduleTaskId(schedule.id, selectedTask.id);
+        
+        // データを再読み込みしてUIを更新
+        await scheduleViewModel.loadSchedules();
+        setState(() {});
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('「${schedule.title}」を「${selectedTask.title}」に割り当てました')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('タスク割り当て変更エラー: $e')),
+        );
       }
     }
   }

@@ -120,13 +120,61 @@ class BackupService {
     final linkData = _linkRepository.exportData();
     final settingsData = _settingsService.exportSettings();
     
-    return {
+    final backupData = {
       'version': '1.0',
       'createdAt': DateTime.now().toIso8601String(),
       'linkData': linkData,
       'settingsData': settingsData,
       'backupType': 'auto',
     };
+    
+    // タスクデータも含める（TaskViewModelが利用可能な場合、またはHiveから直接読み込む）
+    try {
+      List<TaskItem> tasks = [];
+      
+      if (_taskViewModel != null) {
+        // TaskViewModelから取得（推奨）
+        tasks = _taskViewModel.tasks;
+      } else {
+        // TaskViewModelが利用できない場合はHiveから直接読み込む
+        try {
+          final taskBox = await Hive.openBox<TaskItem>('tasks');
+          tasks = taskBox.values.toList();
+          if (kDebugMode) {
+            print('Hiveからタスクデータを読み込みました: ${tasks.length}件');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Hiveからのタスクデータ読み込みエラー（無視）: $e');
+          }
+        }
+      }
+      
+      if (tasks.isNotEmpty) {
+        backupData['tasks'] = tasks.map((task) => task.toJson()).toList();
+        
+        // サブタスクデータも含める
+        try {
+          final subTaskBox = await Hive.openBox<SubTask>('sub_tasks');
+          final allSubTasks = subTaskBox.values.toList();
+          backupData['subTasks'] = allSubTasks.map((subtask) => subtask.toJson()).toList();
+          
+          if (kDebugMode) {
+            print('バックアップにタスクデータを含めました: ${tasks.length}件のタスク、${allSubTasks.length}件のサブタスク');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('サブタスクデータの取得エラー（無視）: $e');
+          }
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('タスクデータの取得エラー（無視）: $e');
+      }
+    }
+    
+    return backupData;
   }
 
   /// バックアップファイルを保存
@@ -636,26 +684,56 @@ class IntegratedBackupService {
       } else {
         // v1 → v2 変換
         try {
-          final data = jsonData['data'] ?? {};
+          // バックアップファイル形式（linkDataキー）と旧形式（dataキー）の両方に対応
+          Map<String, dynamic> data = {};
+          
+          if (jsonData.containsKey('linkData')) {
+            // 新しいバックアップ形式（linkDataキー）
+            data = jsonData['linkData'] as Map<String, dynamic>? ?? {};
+            if (kDebugMode) {
+              print('バックアップ形式（linkData）を検出');
+            }
+          } else if (jsonData.containsKey('data')) {
+            // 旧形式（dataキー）
+            data = jsonData['data'] as Map<String, dynamic>? ?? {};
+            if (kDebugMode) {
+              print('旧形式（data）を検出');
+            }
+          } else {
+            // 直接links/tasks/groupsがルートにある場合
+            data = jsonData;
+            if (kDebugMode) {
+              print('ルートレベル形式を検出');
+            }
+          }
+          
           v2Data = {
             'version': '2.0',
-            'exportedAt': DateTime.now().toUtc().toIso8601String(),
+            'exportedAt': jsonData['createdAt'] ?? DateTime.now().toUtc().toIso8601String(),
             'links': data['links'] ?? [],
-            'tasks': data['tasks'] ?? [],
-            'groups': data['groups'] ?? [], // グループ情報を追加
-            'groupsOrder': data['groupsOrder'] ?? [], // グループ順序も追加
-            'settings': jsonData['prefs'] ?? {},
+            'tasks': jsonData['tasks'] ?? data['tasks'] ?? [], // タスクはルートレベルまたはlinkData内にある可能性
+            'subTasks': jsonData['subTasks'] ?? [], // サブタスクも含める
+            'groups': data['groups'] ?? [],
+            'groupsOrder': data['groupsOrder'] ?? [],
+            'settings': jsonData['prefs'] ?? jsonData['settingsData'] ?? {},
           };
           
           if (kDebugMode) {
             print('v1→v2変換: groups=${v2Data['groups']?.length ?? 0}件, groupsOrder=${v2Data['groupsOrder']?.length ?? 0}件');
+            print('links: ${(v2Data['links'] as List?)?.length ?? 0}件');
+            print('tasks: ${(v2Data['tasks'] as List?)?.length ?? 0}件');
           }
           
-          if (data['links'] == null) {
-            warnings.add('v1: links が見つかりません。空で取り込みました。');
+          // 警告は、データが存在しない場合のみ表示（空のリストは正常）
+          if (!jsonData.containsKey('linkData') && !jsonData.containsKey('data') && !jsonData.containsKey('links')) {
+            if ((v2Data['links'] as List?)?.isEmpty ?? true) {
+              warnings.add('v1: links が見つかりません。空で取り込みました。');
+            }
           }
-          if (data['tasks'] == null) {
-            warnings.add('v1: tasks が見つかりません。空で取り込みました。');
+          if (!jsonData.containsKey('tasks') && !data.containsKey('tasks')) {
+            if ((v2Data['tasks'] as List?)?.isEmpty ?? true) {
+              warnings.add('v1: tasks が見つかりません。空で取り込みました。');
+            }
           }
         } catch (e) {
           warnings.add('v1→v2 変換で例外: $e');
@@ -663,6 +741,8 @@ class IntegratedBackupService {
             'version': '2.0',
             'links': [],
             'tasks': [],
+            'groups': [],
+            'groupsOrder': [],
             'settings': {},
           };
         }

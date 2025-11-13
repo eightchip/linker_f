@@ -428,6 +428,125 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     }
   }
 
+  /// 選択されたタスクを結合
+  Future<void> _mergeSelectedTasks(BuildContext context) async {
+    if (_selectedTaskIds.length < 2) {
+      SnackBarService.showWarning(context, '2つ以上のタスクを選択してください');
+      return;
+    }
+
+    try {
+      final tasks = ref.read(taskViewModelProvider);
+      final selectedTasks = _selectedTaskIds
+          .map((id) => tasks.firstWhere((t) => t.id == id))
+          .toList();
+
+      // 結合先タスクを選択するダイアログを表示
+      final targetTask = await showDialog<TaskItem>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('タスクを結合'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '結合先のタスクを選択してください：',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: selectedTasks.length,
+                    itemBuilder: (context, index) {
+                      final task = selectedTasks[index];
+                      return ListTile(
+                        title: Text(task.title),
+                        subtitle: task.description != null && task.description!.isNotEmpty
+                            ? Text(
+                                task.description!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : null,
+                        leading: Radio<TaskItem>(
+                          value: task,
+                          groupValue: null,
+                          onChanged: (value) => Navigator.pop(context, task),
+                        ),
+                        onTap: () => Navigator.pop(context, task),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+          ],
+        ),
+      );
+
+      if (targetTask == null) return;
+
+      // 結合元タスクIDを取得（結合先を除く）
+      final sourceTaskIds = selectedTasks
+          .where((t) => t.id != targetTask.id)
+          .map((t) => t.id)
+          .toList();
+
+      if (sourceTaskIds.isEmpty) {
+        SnackBarService.showWarning(context, '結合元のタスクがありません');
+        return;
+      }
+
+      // 確認ダイアログ
+      final confirmed = await UnifiedDialogHelper.showDeleteConfirmDialog(
+        context,
+        title: 'タスクを結合',
+        message: '「${targetTask.title}」に${sourceTaskIds.length}件のタスクを結合しますか？\n\n'
+            '結合元タスクの予定、サブタスク、メモ、リンク、タグが統合されます。\n'
+            '結合元タスクは完了状態になります。',
+        confirmText: '結合',
+        cancelText: 'キャンセル',
+      );
+
+      if (confirmed != true) return;
+
+      // マージを実行
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      await taskViewModel.mergeTasks(
+        targetTaskId: targetTask.id,
+        sourceTaskIds: sourceTaskIds,
+        deleteSourceTasks: false, // 完了状態にする
+      );
+
+      // 選択モードを解除
+      setState(() {
+        _selectedTaskIds.clear();
+        _isSelectionMode = false;
+      });
+
+      if (mounted) {
+        SnackBarService.showSuccess(
+          context,
+          '${sourceTaskIds.length + 1}件のタスクを結合しました',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, 'タスク結合に失敗しました: $e');
+      }
+    }
+  }
+
   /// 一括ステータス変更メニューを表示
   void _showBulkStatusMenu(BuildContext context) {
     showModalBottomSheet(
@@ -1218,6 +1337,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 case 'tags':
                   _showBulkTagsDialog(context);
                   break;
+                case 'merge':
+                  await _mergeSelectedTasks(context);
+                  break;
                 case 'delete':
                   await _deleteSelectedTasks();
                   break;
@@ -1261,6 +1383,26 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     Icon(Icons.label, size: 20),
                     SizedBox(width: 8),
                     Text('タグ変更'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'merge',
+                enabled: _selectedTaskIds.length >= 2,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.merge_type,
+                      size: 20,
+                      color: _selectedTaskIds.length >= 2 ? null : Colors.grey,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'タスクを結合',
+                      style: TextStyle(
+                        color: _selectedTaskIds.length >= 2 ? null : Colors.grey,
+                      ),
+                    ),
                   ],
                 ),
               ),

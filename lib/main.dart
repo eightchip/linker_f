@@ -23,6 +23,7 @@ import 'services/migration_service.dart';
 import 'services/settings_service.dart';
 import 'services/backup_service.dart';
 import 'services/google_calendar_service.dart';
+import 'services/outlook_auto_sync_service.dart';
 import 'repositories/link_repository.dart';
 import 'viewmodels/font_size_provider.dart';
 import 'viewmodels/ui_customization_provider.dart';
@@ -453,6 +454,9 @@ Future<void> _initializeProviders(WidgetRef ref) async {
     // UI設定Providerの初期化
     final uiNotifier = ref.read(uiCustomizationProvider.notifier);
     uiNotifier.refreshSettings();
+    
+    // Outlook自動取込の初期化
+    await _initializeOutlookAutoSync(ref);
   } catch (e) {
     // エラーが発生してもアプリケーションは継続
   }
@@ -627,6 +631,109 @@ void _startGoogleCalendarAutoSync(GoogleCalendarService googleCalendarService) {
     } catch (e) {
       print('Google Calendar自動同期エラー: $e');
     }
+  });
+}
+
+/// Outlook自動取込の初期化
+Future<void> _initializeOutlookAutoSync(WidgetRef ref) async {
+  try {
+    final settingsService = SettingsService.instance;
+    
+    // Outlook自動取込が有効でない場合はスキップ
+    if (!settingsService.outlookAutoSyncEnabled) {
+      print('Outlook自動取込が無効のため、初期化をスキップします');
+      return;
+    }
+    
+    print('Outlook自動取込を開始します');
+    
+    // 初回同期を実行（アプリ起動時）
+    final autoSyncService = OutlookAutoSyncService();
+    await autoSyncService.syncOutlookCalendar(ref);
+    
+    // 自動取込頻度に応じて定期実行を開始
+    final frequency = settingsService.outlookAutoSyncFrequency;
+    _startOutlookAutoSync(ref, frequency);
+    
+  } catch (e) {
+    print('Outlook自動取込初期化エラー: $e');
+  }
+}
+
+/// Outlook自動取込の定期実行を開始
+void _startOutlookAutoSync(WidgetRef ref, String frequency) {
+  final autoSyncService = OutlookAutoSyncService();
+  
+  switch (frequency) {
+    case 'on_startup':
+      // アプリ起動時のみ（既に実行済み）
+      print('Outlook自動取込: アプリ起動時のみ');
+      break;
+      
+    case '30min':
+      print('Outlook自動取込: 30分ごとに実行');
+      Timer.periodic(const Duration(minutes: 30), (timer) async {
+        try {
+          await autoSyncService.syncOutlookCalendar(ref);
+        } catch (e) {
+          print('Outlook自動取込エラー: $e');
+        }
+      });
+      break;
+      
+    case '1hour':
+      print('Outlook自動取込: 1時間ごとに実行');
+      Timer.periodic(const Duration(hours: 1), (timer) async {
+        try {
+          await autoSyncService.syncOutlookCalendar(ref);
+        } catch (e) {
+          print('Outlook自動取込エラー: $e');
+        }
+      });
+      break;
+      
+    case 'daily_9am':
+      print('Outlook自動取込: 毎朝9:00に実行');
+      _scheduleDailySync(ref, 9, 0);
+      break;
+      
+    default:
+      print('Outlook自動取込: 不明な頻度設定 ($frequency)');
+  }
+}
+
+/// 毎日の指定時刻に実行するスケジューラー
+void _scheduleDailySync(WidgetRef ref, int hour, int minute) {
+  final autoSyncService = OutlookAutoSyncService();
+  
+  // 次の実行時刻を計算
+  final now = DateTime.now();
+  var nextRun = DateTime(now.year, now.month, now.day, hour, minute);
+  
+  // 今日の指定時刻が過ぎている場合は明日に設定
+  if (nextRun.isBefore(now)) {
+    nextRun = nextRun.add(const Duration(days: 1));
+  }
+  
+  final delay = nextRun.difference(now);
+  
+  print('Outlook自動取込: 次回実行時刻: $nextRun (${delay.inHours}時間${delay.inMinutes % 60}分後)');
+  
+  // 初回実行をスケジュール
+  Timer(delay, () {
+    // 実行
+    autoSyncService.syncOutlookCalendar(ref).catchError((e) {
+      print('Outlook自動取込エラー: $e');
+    });
+    
+    // 以降は24時間ごとに実行
+    Timer.periodic(const Duration(days: 1), (timer) async {
+      try {
+        await autoSyncService.syncOutlookCalendar(ref);
+      } catch (e) {
+        print('Outlook自動取込エラー: $e');
+      }
+    });
   });
 }
 

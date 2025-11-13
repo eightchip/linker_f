@@ -154,6 +154,9 @@ class SettingsState {
   final bool googleCalendarShowCompletedTasks;
   final bool gmailApiEnabled;
   final bool startWithTaskScreen;
+  final bool outlookAutoSyncEnabled;
+  final int outlookAutoSyncPeriodDays;
+  final String outlookAutoSyncFrequency;
 
   SettingsState({
     this.autoBackup = true,
@@ -169,6 +172,9 @@ class SettingsState {
     this.googleCalendarShowCompletedTasks = true,
     this.gmailApiEnabled = false,
     this.startWithTaskScreen = false,
+    this.outlookAutoSyncEnabled = false,
+    this.outlookAutoSyncPeriodDays = 30,
+    this.outlookAutoSyncFrequency = 'on_startup',
   });
 
   SettingsState copyWith({
@@ -185,6 +191,9 @@ class SettingsState {
     bool? googleCalendarShowCompletedTasks,
     bool? gmailApiEnabled,
     bool? startWithTaskScreen,
+    bool? outlookAutoSyncEnabled,
+    int? outlookAutoSyncPeriodDays,
+    String? outlookAutoSyncFrequency,
   }) {
     return SettingsState(
       autoBackup: autoBackup ?? this.autoBackup,
@@ -200,6 +209,9 @@ class SettingsState {
       googleCalendarShowCompletedTasks: googleCalendarShowCompletedTasks ?? this.googleCalendarShowCompletedTasks,
       gmailApiEnabled: gmailApiEnabled ?? this.gmailApiEnabled,
       startWithTaskScreen: startWithTaskScreen ?? this.startWithTaskScreen,
+      outlookAutoSyncEnabled: outlookAutoSyncEnabled ?? this.outlookAutoSyncEnabled,
+      outlookAutoSyncPeriodDays: outlookAutoSyncPeriodDays ?? this.outlookAutoSyncPeriodDays,
+      outlookAutoSyncFrequency: outlookAutoSyncFrequency ?? this.outlookAutoSyncFrequency,
     );
   }
 }
@@ -228,6 +240,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         googleCalendarShowCompletedTasks: _service.googleCalendarShowCompletedTasks,
         gmailApiEnabled: _service.gmailApiEnabled,
         startWithTaskScreen: _service.startWithTaskScreen,
+        outlookAutoSyncEnabled: _service.outlookAutoSyncEnabled,
+        outlookAutoSyncPeriodDays: _service.outlookAutoSyncPeriodDays,
+        outlookAutoSyncFrequency: _service.outlookAutoSyncFrequency,
         isLoading: false,
       );
     } catch (e) {
@@ -293,6 +308,21 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setStartWithTaskScreen(bool value) async {
     await _service.setStartWithTaskScreen(value);
     state = state.copyWith(startWithTaskScreen: value);
+  }
+
+  Future<void> setOutlookAutoSyncEnabled(bool value) async {
+    await _service.setOutlookAutoSyncEnabled(value);
+    state = state.copyWith(outlookAutoSyncEnabled: value);
+  }
+
+  Future<void> setOutlookAutoSyncPeriodDays(int value) async {
+    await _service.setOutlookAutoSyncPeriodDays(value);
+    state = state.copyWith(outlookAutoSyncPeriodDays: value);
+  }
+
+  Future<void> setOutlookAutoSyncFrequency(String value) async {
+    await _service.setOutlookAutoSyncFrequency(value);
+    state = state.copyWith(outlookAutoSyncFrequency: value);
   }
 
   Future<void> resetToDefaults() async {
@@ -782,7 +812,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         case 'gmail_api':
           return _buildGmailApiSection(settingsState, settingsNotifier);
         case 'outlook':
-          return _buildOutlookSection();
+          return _buildOutlookSection(ref);
       case 'reset':
         return _buildResetSection(context, settingsNotifier, ref);
       default:
@@ -5154,7 +5184,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   /// Outlook連携セクション
-  Widget _buildOutlookSection() {
+  Widget _buildOutlookSection(WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -5317,6 +5347,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 24),
+                
+                // Outlook自動取込設定
+                _buildSectionHeader('Outlook個人予定の自動取込', Icons.sync),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSwitchWithDescription(
+                          title: '自動取込を有効にする',
+                          description: 'Outlookの個人カレンダーから予定を自動的に取り込みます。取り込んだ予定は「Outlook連携（自動取込）」タスクに紐づけられます。',
+                          value: ref.watch(settingsProvider).outlookAutoSyncEnabled,
+                          onChanged: (value) {
+                            ref.read(settingsProvider.notifier).setOutlookAutoSyncEnabled(value);
+                          },
+                        ),
+                        if (ref.watch(settingsProvider).outlookAutoSyncEnabled) ...[
+                          const SizedBox(height: 24),
+                          _buildSectionSubHeader('取込期間'),
+                          const SizedBox(height: 8),
+                          Text(
+                            '明日を起点に、どこまで未来の予定を取り込むか設定します。',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildPeriodSelector(ref),
+                          const SizedBox(height: 24),
+                          _buildSectionSubHeader('自動取込の頻度'),
+                          const SizedBox(height: 8),
+                          _buildFrequencySelector(ref),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 
                 // Outlook設定情報
@@ -5341,7 +5412,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '• 必要な権限: Outlook送信\n• 対応機能: メール送信\n• 使用方法: タスク管理からOutlookでメールを送信',
+                        '• 必要な権限: Outlook送信\n• 対応機能: メール送信、予定自動取込\n• 使用方法: タスク管理からOutlookでメールを送信、または自動取込設定を有効化',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         ),
@@ -5562,9 +5633,85 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       SnackBarService.showError(context, 'Outlook接続テストエラー: $e');
     }
   }
-  
-  
 
+  /// セクションサブヘッダー
+  Widget _buildSectionSubHeader(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
+    );
+  }
+
+  /// 取込期間セレクター
+  Widget _buildPeriodSelector(WidgetRef ref) {
+    final periodOptions = [
+      {'label': '1週間', 'days': 7},
+      {'label': '2週間', 'days': 14},
+      {'label': '1ヶ月', 'days': 30},
+      {'label': '3ヶ月', 'days': 90},
+      {'label': '半年', 'days': 180},
+      {'label': '1年', 'days': 365},
+    ];
+
+    final currentDays = ref.watch(settingsProvider).outlookAutoSyncPeriodDays;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: periodOptions.map((option) {
+        final days = option['days'] as int;
+        final label = option['label'] as String;
+        final isSelected = currentDays == days;
+
+        return ChoiceChip(
+          label: Text(label),
+          selected: isSelected,
+          onSelected: (selected) {
+            if (selected) {
+              ref.read(settingsProvider.notifier).setOutlookAutoSyncPeriodDays(days);
+            }
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  /// 自動取込頻度セレクター
+  Widget _buildFrequencySelector(WidgetRef ref) {
+    final frequencyOptions = [
+      {'value': 'on_startup', 'label': 'アプリ起動時のみ'},
+      {'value': '30min', 'label': '30分ごと'},
+      {'value': '1hour', 'label': '1時間ごと'},
+      {'value': 'daily_9am', 'label': '毎朝9:00'},
+    ];
+
+    final currentFrequency = ref.watch(settingsProvider).outlookAutoSyncFrequency;
+
+    return Column(
+      children: frequencyOptions.map((option) {
+        final value = option['value'] as String;
+        final label = option['label'] as String;
+
+        return RadioListTile<String>(
+          title: Text(label),
+          value: value,
+          groupValue: currentFrequency,
+          onChanged: (selectedValue) {
+            if (selectedValue != null) {
+              ref.read(settingsProvider.notifier).setOutlookAutoSyncFrequency(selectedValue);
+            }
+          },
+        );
+      }).toList(),
+    );
+  }
+  
+  
+  
 
 }
 

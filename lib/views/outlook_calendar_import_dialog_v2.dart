@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,8 +9,7 @@ import '../services/snackbar_service.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import '../viewmodels/task_viewmodel.dart';
 
-enum OutlookImportMode { personal, room }
-enum OutlookEventSource { personal, room }
+enum OutlookEventSource { personal }
 
 /// Outlook予定一括取り込みダイアログ（新バージョン）
 class OutlookCalendarImportDialogV2 extends ConsumerStatefulWidget {
@@ -35,15 +33,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
   List<_FilteredEvent> _filteredEvents = [];
   final Set<int> _selectedIndices = {};
 
-  OutlookImportMode _mode = OutlookImportMode.personal;
-  final TextEditingController _roomAddressController = TextEditingController();
-  final TextEditingController _roomSearchController = TextEditingController();
   final TextEditingController _keywordController = TextEditingController();
-  final List<String> _savedRoomAddresses = [];
-  final Set<String> _selectedRoomAddresses = {};
-  List<Map<String, String>> _roomCandidates = [];
-  bool _isFetchingRoomCandidates = false;
-  String? _roomSearchError;
   String? _preselectedTaskId;
 
   // 日付設定（デフォルト：明日から1か月間）
@@ -63,118 +53,8 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
     _preselectedTaskId = widget.preselectedTaskId;
   }
 
-  List<_FilteredEvent> _mapRoomEvents(List<Map<String, dynamic>> events) {
-    final filtered = <_FilteredEvent>[];
-
-    for (final event in events) {
-      final entryId = event['EntryID'] as String? ?? '';
-      ScheduleItem? existingSchedule;
-      if (entryId.isNotEmpty) {
-        for (final schedule in _existingSchedules) {
-          if (schedule.outlookEntryId == entryId) {
-            existingSchedule = schedule;
-            break;
-          }
-        }
-      }
-
-      TaskItem? relatedTask;
-      if (existingSchedule != null) {
-        try {
-          relatedTask = _incompleteTasks.firstWhere((task) => task.id == existingSchedule!.taskId);
-        } catch (_) {
-          relatedTask = null;
-        }
-      }
-
-      filtered.add(_FilteredEvent(
-        event: event,
-        existingSchedule: existingSchedule,
-        relatedTask: relatedTask,
-        hasTimeChange: false,
-        hasLocationChange: false,
-        source: OutlookEventSource.room,
-      ));
-    }
-
-    return filtered;
-  }
-
-  Future<void> _fetchRoomCandidates() async {
-    if (_isFetchingRoomCandidates) {
-      return;
-    }
-    setState(() {
-      _isFetchingRoomCandidates = true;
-      _roomSearchError = null;
-    });
-
-    try {
-      final isAvailable = await _outlookService.isOutlookAvailable();
-      if (!isAvailable) {
-        if (mounted) {
-          SnackBarService.showWarning(
-            context,
-            'Outlookが利用できないため、会議室一覧を取得できません。',
-          );
-        }
-        setState(() {
-          _roomCandidates = [];
-          _roomSearchError = 'Outlookが利用できる環境で再度お試しください。';
-        });
-        return;
-      }
-
-      final keyword = _roomSearchController.text.trim();
-      final results = await _outlookService.searchMeetingRooms(keyword: keyword);
-      setState(() {
-        _roomCandidates = results;
-      });
-      if (results.isNotEmpty && _selectedRoomAddresses.isEmpty && _roomAddressController.text.trim().isEmpty) {
-        _updateSelectionForAddress(results.first['address'] ?? '', true);
-      }
-    } catch (e) {
-      setState(() {
-        final message = e.toString();
-        _roomSearchError = message.split('\n').first;
-        _roomCandidates = [];
-      });
-      if (mounted) {
-        SnackBarService.showError(context, '会議室の検索に失敗しました: ${_roomSearchError!}');
-      }
-    } finally {
-      setState(() {
-        _isFetchingRoomCandidates = false;
-      });
-    }
-  }
-
-  void _updateSelectionForAddress(String address, bool selected) {
-    if (address.isEmpty) {
-      return;
-    }
-    setState(() {
-      if (selected) {
-        _selectedRoomAddresses.add(address);
-        if (!_savedRoomAddresses.contains(address)) {
-          _savedRoomAddresses.insert(0, address);
-        }
-        _roomAddressController.text = address;
-      } else {
-        _selectedRoomAddresses.remove(address);
-        if (_selectedRoomAddresses.isEmpty) {
-          _roomAddressController.clear();
-        } else {
-          _roomAddressController.text = _selectedRoomAddresses.first;
-        }
-      }
-    });
-  }
-
   @override
   void dispose() {
-    _roomAddressController.dispose();
-    _roomSearchController.dispose();
     _keywordController.dispose();
     super.dispose();
   }
@@ -204,8 +84,6 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
         return;
       }
 
-      final isRoomMode = _mode == OutlookImportMode.room;
-
       final startForFetch = _startDate != null
           ? DateTime(_startDate!.year, _startDate!.month, _startDate!.day)
           : DateTime.now();
@@ -222,92 +100,14 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
             )
           : DateTime.now().add(const Duration(days: 30));
 
-      final roomAddresses = <String>{};
-      if (_selectedRoomAddresses.isNotEmpty) {
-        roomAddresses.addAll(_selectedRoomAddresses);
-      }
-      final manualAddress = _roomAddressController.text.trim();
-      if (manualAddress.isNotEmpty) {
-        roomAddresses.add(manualAddress);
-      }
-      if (isRoomMode && roomAddresses.isEmpty && _roomCandidates.isNotEmpty) {
-        final firstCandidate = _roomCandidates.first['address'] ?? '';
-        if (firstCandidate.isNotEmpty) {
-          roomAddresses.add(firstCandidate);
-          _updateSelectionForAddress(firstCandidate, true);
-        }
-      }
-
-      if (isRoomMode && roomAddresses.isEmpty) {
-        if (mounted) {
-          SnackBarService.showWarning(
-            context,
-            '会議室を選択するか、メールアドレスを入力してください。',
-          );
-        }
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
       setState(() {
-        _loadingMessage = isRoomMode ? '会議室の予定を取得中...' : '予定を取得中...';
+        _loadingMessage = '予定を取得中...';
       });
 
-      List<Map<String, dynamic>> events;
-      if (isRoomMode) {
-        final keyword = _keywordController.text.trim();
-        final aggregated = <Map<String, dynamic>>[];
-        for (final address in roomAddresses) {
-          try {
-            final fetched = await _outlookService.getRoomCalendarEvents(
-              roomAddress: address,
-              startDate: startForFetch,
-              endDate: endForFetch,
-              subjectFilter: keyword.isNotEmpty ? keyword : null,
-            );
-            aggregated.addAll(fetched);
-            if (!_savedRoomAddresses.contains(address)) {
-              setState(() {
-                _savedRoomAddresses.insert(0, address);
-              });
-            }
-          } catch (e) {
-            if (kDebugMode) {
-              print('会議室予定取得エラー ($address): $e');
-            }
-            if (mounted) {
-              SnackBarService.showWarning(
-                context,
-                '会議室「$address」の予定取得に失敗しました: $e',
-              );
-            }
-          }
-        }
-        aggregated.sort((a, b) {
-          final startA = DateTime.tryParse(a['Start'] as String? ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
-          final startB = DateTime.tryParse(b['Start'] as String? ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
-          return startA.compareTo(startB);
-        });
-        final seen = <String>{};
-        final deduped = <Map<String, dynamic>>[];
-        for (final event in aggregated) {
-          final entryId = (event['EntryID'] ?? '') as String? ?? '';
-          final key = entryId.isNotEmpty
-              ? entryId
-              : '${event['Subject'] ?? ''}|${event['Start'] ?? ''}|${event['Location'] ?? ''}';
-          if (seen.add(key)) {
-            deduped.add(event);
-          }
-        }
-        events = deduped;
-      } else {
-        events = await _outlookService.getCalendarEvents(
-          startDate: startForFetch,
-          endDate: endForFetch,
-        );
-      }
+      final events = await _outlookService.getCalendarEvents(
+        startDate: startForFetch,
+        endDate: endForFetch,
+      );
 
       setState(() {
         _loadingMessage = '既存データと照合中...';
@@ -328,14 +128,10 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
 
       // 4. 照合処理
       setState(() {
-        _loadingMessage = isRoomMode ? '予定を整理中...' : '予定を照合中...';
+        _loadingMessage = '予定を照合中...';
       });
 
-      if (isRoomMode) {
-        _filteredEvents = _mapRoomEvents(events);
-      } else {
-        _filteredEvents = _matchAndFilterEvents(events);
-      }
+      _filteredEvents = _matchAndFilterEvents(events);
 
       // 5. ソート
       _sortFilteredEvents();
@@ -345,10 +141,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       });
 
       if (_filteredEvents.isEmpty && mounted) {
-        final message = isRoomMode
-            ? '条件に一致する会議室予定はありません。'
-            : '取り込む必要がある予定はありません。';
-        SnackBarService.showInfo(context, message);
+        SnackBarService.showInfo(context, '取り込む必要がある予定はありません。');
       }
     } catch (e) {
       if (mounted) {
@@ -524,204 +317,6 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
     }
   }
 
-  Widget _buildModeSelector() {
-    final isPersonal = _mode == OutlookImportMode.personal;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Text(
-          '対象: ',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(width: 12),
-        Wrap(
-          spacing: 12,
-          children: [
-            ChoiceChip(
-              label: const Text('個人予定'),
-              selected: isPersonal,
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() {
-                    _mode = OutlookImportMode.personal;
-                    _filteredEvents = [];
-                    _selectedIndices.clear();
-                    _selectedRoomAddresses.clear();
-                    _roomCandidates = [];
-                    _roomSearchError = null;
-                  });
-                }
-              },
-            ),
-            ChoiceChip(
-              label: const Text('会議室予定'),
-              selected: !isPersonal,
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() {
-                    _mode = OutlookImportMode.room;
-                    _filteredEvents = [];
-                    _selectedIndices.clear();
-                  });
-                }
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoomControls() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: _roomAddressController,
-          decoration: InputDecoration(
-            labelText: '会議室メールアドレス',
-            hintText: '例: meetingroom@example.com',
-            suffixIcon: _roomAddressController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      setState(() {
-                        _roomAddressController.clear();
-                        _selectedRoomAddresses.clear();
-                      });
-                    },
-                  )
-                : null,
-          ),
-          onChanged: (_) => setState(() {}),
-        ),
-        if (_savedRoomAddresses.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _savedRoomAddresses.map((room) {
-              return InputChip(
-                label: Text(room),
-                selected: _selectedRoomAddresses.contains(room),
-                onPressed: () {
-                  final currentlySelected = _selectedRoomAddresses.contains(room);
-                  _updateSelectionForAddress(room, !currentlySelected);
-                },
-                onDeleted: () {
-                  setState(() {
-                    _savedRoomAddresses.remove(room);
-                    _selectedRoomAddresses.remove(room);
-                    if (_selectedRoomAddresses.isEmpty) {
-                      _roomAddressController.clear();
-                    } else {
-                      _roomAddressController.text = _selectedRoomAddresses.first;
-                    }
-                  });
-                },
-              );
-            }).toList(),
-          ),
-        ],
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _roomSearchController,
-                decoration: const InputDecoration(
-                  labelText: '会議室検索キーワード',
-                  hintText: '例: 第1会議室 / 3F / ProjectA',
-                  prefixIcon: Icon(Icons.search),
-                ),
-                onSubmitted: (_) {
-                  if (!_isFetchingRoomCandidates) {
-                    _fetchRoomCandidates();
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            ElevatedButton.icon(
-              onPressed: _isFetchingRoomCandidates ? null : _fetchRoomCandidates,
-              icon: _isFetchingRoomCandidates
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.cloud_download_outlined),
-              label: const Text('会議室を検索'),
-            ),
-          ],
-        ),
-        if (_roomSearchError != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            _roomSearchError!,
-            style: const TextStyle(color: Colors.redAccent, fontSize: 12),
-          ),
-        ] else if (!_isFetchingRoomCandidates &&
-            _roomSearchController.text.trim().isNotEmpty &&
-            _roomCandidates.isEmpty) ...[
-          const SizedBox(height: 8),
-          const Text(
-            '該当する会議室が見つかりませんでした。',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-        ],
-        if (_roomCandidates.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          const Text(
-            '検索結果',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 400),
-            child: ListView.builder(
-              shrinkWrap: true,
-              physics: const ClampingScrollPhysics(),
-              itemCount: _roomCandidates.length,
-              itemBuilder: (context, index) {
-                final candidate = _roomCandidates[index];
-                final name = candidate['name'] ?? '';
-                final address = candidate['address'] ?? '';
-                final isSelected = _selectedRoomAddresses.contains(address);
-                return CheckboxListTile(
-                  value: isSelected,
-                  onChanged: (value) => _updateSelectionForAddress(address, value ?? false),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  secondary: const Icon(Icons.meeting_room_outlined),
-                  title: Text(
-                    name.isNotEmpty ? name : address,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: name.isNotEmpty
-                      ? Text(
-                          address,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : null,
-                );
-              },
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        TextField(
-          controller: _keywordController,
-          decoration: const InputDecoration(
-            labelText: '件名フィルタ（正規表現対応）',
-            hintText: '例: 監査|来客',
-            helperText: '指定したキーワードを含む予定のみ取得します（未入力で全件取得）',
-          ),
-        ),
-      ],
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -757,11 +352,6 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
               ],
             ),
             const Divider(height: 32),
-            _buildModeSelector(),
-            if (_mode == OutlookImportMode.room) ...[
-              const SizedBox(height: 12),
-              _buildRoomControls(),
-            ],
             const SizedBox(height: 16),
             
             // 期間選択と取得ボタン
@@ -1125,15 +715,6 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
         final isOnlineMeeting = event['IsOnlineMeeting'] as bool? ?? false;
         final calendarOwner = event['CalendarOwner'] as String? ?? '';
         final metadataChips = <Widget>[];
-        if (item.source == OutlookEventSource.room) {
-          metadataChips.add(
-            Chip(
-              label: const Text('会議室', style: TextStyle(fontSize: 12)),
-              backgroundColor: Colors.blue.shade50,
-              labelStyle: const TextStyle(color: Colors.blue),
-            ),
-          );
-        }
         if (isMeeting) {
           metadataChips.add(
             Chip(
@@ -1274,22 +855,6 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                           ),
                         ],
 
-                        if (calendarOwner.isNotEmpty && item.source == OutlookEventSource.room) ...[
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(Icons.meeting_room_outlined, size: 20, color: Colors.blueGrey),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '会議室: $calendarOwner',
-                                  style: const TextStyle(fontSize: 15),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
 
                         // 場所（大きく表示）
                         if (location.isNotEmpty) ...[

@@ -47,6 +47,9 @@ class SettingsService {
   static const String _googleCalendarBidirectionalSyncKey = 'googleCalendarBidirectionalSync';
   static const String _googleCalendarShowCompletedTasksKey = 'googleCalendarShowCompletedTasks';
   static const String _gmailApiEnabledKey = 'gmailApiEnabled';
+  static const String _outlookAutoSyncEnabledKey = 'outlookAutoSyncEnabled';
+  static const String _outlookAutoSyncPeriodDaysKey = 'outlookAutoSyncPeriodDays';
+  static const String _outlookAutoSyncFrequencyKey = 'outlookAutoSyncFrequency';
   static const String _textColorKey = 'textColor';
   static const String _colorIntensityKey = 'colorIntensity';
   static const String _colorContrastKey = 'colorContrast';
@@ -133,6 +136,9 @@ class SettingsService {
   static const bool _defaultGoogleCalendarBidirectionalSync = false;
   static const bool _defaultGoogleCalendarShowCompletedTasks = true;
   static const bool _defaultGmailApiEnabled = false;
+  static const bool _defaultOutlookAutoSyncEnabled = false;
+  static const int _defaultOutlookAutoSyncPeriodDays = 30; // 1ヶ月
+  static const String _defaultOutlookAutoSyncFrequency = 'on_startup'; // 'on_startup', '30min', '1hour', 'daily_9am'
 
   /// 初期化（リトライ機能付き）
   Future<void> initialize() async {
@@ -696,6 +702,42 @@ class SettingsService {
   /// Gmail連携の有効/無効を設定
   Future<void> setGmailApiEnabled(bool value) async {
     await _settingsBox.put(_gmailApiEnabledKey, value);
+  }
+
+  // ==================== Outlook自動取込設定 ====================
+  
+  /// Outlook自動取込が有効かどうか
+  bool get outlookAutoSyncEnabled {
+    return _settingsBox.get(_outlookAutoSyncEnabledKey, defaultValue: _defaultOutlookAutoSyncEnabled);
+  }
+  
+  /// Outlook自動取込の有効/無効を設定
+  Future<void> setOutlookAutoSyncEnabled(bool value) async {
+    await _settingsBox.put(_outlookAutoSyncEnabledKey, value);
+  }
+  
+  /// Outlook自動取込期間（日数）
+  int get outlookAutoSyncPeriodDays {
+    return _settingsBox.get(_outlookAutoSyncPeriodDaysKey, defaultValue: _defaultOutlookAutoSyncPeriodDays);
+  }
+  
+  /// Outlook自動取込期間を設定
+  Future<void> setOutlookAutoSyncPeriodDays(int value) async {
+    await _settingsBox.put(_outlookAutoSyncPeriodDaysKey, value);
+  }
+  
+  /// Outlook自動取込頻度
+  /// 'on_startup': アプリ起動時のみ
+  /// '30min': 30分ごと
+  /// '1hour': 1時間ごと
+  /// 'daily_9am': 毎朝9:00
+  String get outlookAutoSyncFrequency {
+    return _settingsBox.get(_outlookAutoSyncFrequencyKey, defaultValue: _defaultOutlookAutoSyncFrequency);
+  }
+  
+  /// Outlook自動取込頻度を設定
+  Future<void> setOutlookAutoSyncFrequency(String value) async {
+    await _settingsBox.put(_outlookAutoSyncFrequencyKey, value);
   }
 
   // UIカスタマイズ設定のgetterとsetter

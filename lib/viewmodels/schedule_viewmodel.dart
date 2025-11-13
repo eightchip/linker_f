@@ -317,5 +317,59 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       createdAt: DateTime.now(),
     );
   }
+
+  /// 予定のタスクIDを変更
+  Future<void> changeScheduleTaskId(String scheduleId, String newTaskId) async {
+    try {
+      if (_scheduleBox == null || !_scheduleBox!.isOpen) {
+        await _loadSchedules();
+      }
+
+      final schedule = state.firstWhere((s) => s.id == scheduleId);
+      final updatedSchedule = schedule.copyWith(
+        taskId: newTaskId,
+        updatedAt: DateTime.now(),
+      );
+
+      await _scheduleBox!.put(updatedSchedule.id, updatedSchedule);
+      await _scheduleBox!.flush();
+      await _loadSchedules();
+
+      if (kDebugMode) {
+        print('予定のタスクIDを変更: ${schedule.title} -> $newTaskId');
+      }
+    } catch (e) {
+      print('予定のタスクID変更エラー: $e');
+      SnackBarService.showGlobalError('予定のタスク割り当て変更に失敗しました。');
+    }
+  }
+
+  /// 複数の予定のタスクIDを一括変更
+  Future<void> changeSchedulesTaskId(List<String> scheduleIds, String newTaskId) async {
+    try {
+      if (_scheduleBox == null || !_scheduleBox!.isOpen) {
+        await _loadSchedules();
+      }
+
+      for (final scheduleId in scheduleIds) {
+        final schedule = state.firstWhere((s) => s.id == scheduleId);
+        final updatedSchedule = schedule.copyWith(
+          taskId: newTaskId,
+          updatedAt: DateTime.now(),
+        );
+        await _scheduleBox!.put(updatedSchedule.id, updatedSchedule);
+      }
+
+      await _scheduleBox!.flush();
+      await _loadSchedules();
+
+      if (kDebugMode) {
+        print('予定のタスクIDを一括変更: ${scheduleIds.length}件 -> $newTaskId');
+      }
+    } catch (e) {
+      print('予定のタスクID一括変更エラー: $e');
+      SnackBarService.showGlobalError('予定のタスク割り当て変更に失敗しました。');
+    }
+  }
 }
 

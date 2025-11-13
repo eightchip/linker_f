@@ -12,6 +12,7 @@ import '../services/google_calendar_service.dart';
 import '../services/settings_service.dart';
 import 'link_viewmodel.dart';
 import 'sub_task_viewmodel.dart';
+import 'schedule_viewmodel.dart';
 
 final taskViewModelProvider = StateNotifierProvider<TaskViewModel, List<TaskItem>>((ref) {
   return TaskViewModel(ref);
@@ -2723,5 +2724,272 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
+  /// Outlook自動取込専用タスクを取得または作成
+  /// 存在しない場合は自動作成し、存在する場合はそのまま返す
+  Future<TaskItem> getOrCreateAutoOutlookSyncTask() async {
+    const taskId = 'auto_outlook_sync';
+    const taskTitle = 'Outlook連携（自動取込）';
+    
+    try {
+      if (_taskBox == null || !_taskBox!.isOpen) {
+        await _loadTasks();
+      }
+      
+      // 既存タスクを検索
+      final existingTask = state.firstWhere(
+        (task) => task.id == taskId,
+        orElse: () => throw StateError('Task not found'),
+      );
+      
+      if (kDebugMode) {
+        print('Outlook自動取込専用タスクが見つかりました: ${existingTask.title}');
+      }
+      
+      return existingTask;
+    } catch (e) {
+      // タスクが存在しない場合は作成
+      if (kDebugMode) {
+        print('Outlook自動取込専用タスクが存在しないため、新規作成します');
+      }
+      
+      final newTask = TaskItem(
+        id: taskId,
+        title: taskTitle,
+        description: 'Outlook個人予定の自動取込で使用される専用タスクです。',
+        status: TaskStatus.pending,
+        priority: TaskPriority.low,
+        createdAt: DateTime.now(),
+        tags: ['outlook', 'auto-sync'],
+      );
+      
+      await addTask(newTask);
+      
+      if (kDebugMode) {
+        print('Outlook自動取込専用タスクを作成しました: ${newTask.id}');
+      }
+      
+      return newTask;
+    }
+  }
+
+  /// 複数のタスクを1つのタスクに結合（マージ）
+  /// [targetTaskId] 結合先のタスクID
+  /// [sourceTaskIds] 結合元のタスクIDリスト
+  /// [deleteSourceTasks] 結合後に結合元タスクを削除するか（デフォルト: false）
+  Future<void> mergeTasks({
+    required String targetTaskId,
+    required List<String> sourceTaskIds,
+    bool deleteSourceTasks = false,
+  }) async {
+    try {
+      if (_taskBox == null || !_taskBox!.isOpen) {
+        await _loadTasks();
+      }
+
+      // 結合先タスクを取得
+      final targetTask = state.firstWhere((t) => t.id == targetTaskId);
+
+      // 結合元タスクを取得
+      final sourceTasks = sourceTaskIds
+          .map((id) => state.firstWhere((t) => t.id == id))
+          .toList();
+
+      if (kDebugMode) {
+        print('=== タスク結合開始 ===');
+        print('結合先: ${targetTask.title} (ID: $targetTaskId)');
+        print('結合元: ${sourceTasks.map((t) => t.title).join(', ')}');
+      }
+
+      // ScheduleViewModelを取得して予定を移動
+      final scheduleViewModel = _ref.read(scheduleViewModelProvider.notifier);
+      await scheduleViewModel.waitForInitialization();
+      await scheduleViewModel.loadSchedules();
+
+      // SubTaskViewModelを取得
+      final subTaskViewModel = _ref.read(subTaskViewModelProvider.notifier);
+      await subTaskViewModel.waitForInitialization();
+      await subTaskViewModel.refreshSubTasks();
+
+      // 結合先タスクの現在のデータを取得
+      final currentTargetTask = state.firstWhere((t) => t.id == targetTaskId);
+      final mergedRelatedLinkIds = Set<String>.from(currentTargetTask.relatedLinkIds);
+      final mergedTags = Set<String>.from(currentTargetTask.tags);
+      final mergedDescriptions = <String>[]; // 依頼先への説明
+      final mergedNotes = <String>[]; // 追加メモ
+      final mergedAssignedTos = <String>[]; // 本文（依頼先やメモ）
+      
+      if (currentTargetTask.description != null && currentTargetTask.description!.isNotEmpty) {
+        mergedDescriptions.add(currentTargetTask.description!);
+      }
+      if (currentTargetTask.notes != null && currentTargetTask.notes!.isNotEmpty) {
+        mergedNotes.add(currentTargetTask.notes!);
+      }
+      if (currentTargetTask.assignedTo != null && currentTargetTask.assignedTo!.isNotEmpty) {
+        mergedAssignedTos.add(currentTargetTask.assignedTo!);
+      }
+
+      // 各結合元タスクのデータを統合
+      for (final sourceTask in sourceTasks) {
+        // 予定を移動
+        final schedules = scheduleViewModel.getSchedulesByTaskId(sourceTask.id);
+        if (schedules.isNotEmpty) {
+          final scheduleIds = schedules.map((s) => s.id).toList();
+          await scheduleViewModel.changeSchedulesTaskId(scheduleIds, targetTaskId);
+          
+          if (kDebugMode) {
+            print('予定を移動: ${schedules.length}件 (${sourceTask.title} -> ${targetTask.title})');
+          }
+        }
+
+        // サブタスクを移動
+        final subTasks = subTaskViewModel.getSubTasksByParentId(sourceTask.id);
+        if (subTasks.isNotEmpty) {
+          // 結合先タスクの既存サブタスク数を取得して、順序を調整
+          final existingSubTasks = subTaskViewModel.getSubTasksByParentId(targetTaskId);
+          int nextOrder = 0;
+          if (existingSubTasks.isNotEmpty) {
+            final maxOrder = existingSubTasks.map((s) => s.order).reduce((a, b) => a > b ? a : b);
+            nextOrder = maxOrder + 1;
+          }
+          
+          for (final subTask in subTasks) {
+            final updatedSubTask = subTask.copyWith(
+              parentTaskId: targetTaskId,
+              order: nextOrder++,
+            );
+            await subTaskViewModel.updateSubTask(updatedSubTask);
+          }
+          
+          if (kDebugMode) {
+            print('サブタスクを移動: ${subTasks.length}件 (${sourceTask.title} -> ${targetTask.title})');
+          }
+        }
+
+        // 関連リンクを統合（重複を除く）
+        for (final linkId in sourceTask.relatedLinkIds) {
+          mergedRelatedLinkIds.add(linkId);
+        }
+
+        // タグを統合（重複を除く）
+        for (final tag in sourceTask.tags) {
+          mergedTags.add(tag);
+        }
+
+        // メモ/説明を統合
+        if (sourceTask.description != null && sourceTask.description!.isNotEmpty) {
+          mergedDescriptions.add('【${sourceTask.title}】\n${sourceTask.description}');
+        }
+        if (sourceTask.notes != null && sourceTask.notes!.isNotEmpty) {
+          mergedNotes.add('【${sourceTask.title}】\n${sourceTask.notes}');
+        }
+        if (sourceTask.assignedTo != null && sourceTask.assignedTo!.isNotEmpty) {
+          mergedAssignedTos.add('【${sourceTask.title}】\n${sourceTask.assignedTo}');
+        }
+      }
+
+      // 結合先タスクを更新（統合されたデータを反映）
+      final mergedDescription = mergedDescriptions.isEmpty 
+          ? currentTargetTask.description
+          : mergedDescriptions.join('\n\n---\n\n');
+      final mergedNote = mergedNotes.isEmpty
+          ? currentTargetTask.notes
+          : mergedNotes.join('\n\n---\n\n');
+      final mergedAssignedTo = mergedAssignedTos.isEmpty
+          ? currentTargetTask.assignedTo
+          : mergedAssignedTos.join('\n\n---\n\n');
+
+      // 優先度、期限日、リマインダーはより重要な値を優先
+      TaskPriority? mergedPriority = currentTargetTask.priority;
+      DateTime? mergedDueDate = currentTargetTask.dueDate;
+      DateTime? mergedReminderTime = currentTargetTask.reminderTime;
+
+      for (final sourceTask in sourceTasks) {
+        // 優先度：より高い優先度を優先
+        if (_comparePriority(sourceTask.priority, mergedPriority) > 0) {
+          mergedPriority = sourceTask.priority;
+        }
+        // 期限日：より早い期限日を優先（nullでない場合）
+        if (sourceTask.dueDate != null) {
+          if (mergedDueDate == null || sourceTask.dueDate!.isBefore(mergedDueDate)) {
+            mergedDueDate = sourceTask.dueDate;
+          }
+        }
+        // リマインダー：より早いリマインダーを優先（nullでない場合）
+        if (sourceTask.reminderTime != null) {
+          if (mergedReminderTime == null || sourceTask.reminderTime!.isBefore(mergedReminderTime)) {
+            mergedReminderTime = sourceTask.reminderTime;
+          }
+        }
+      }
+
+      final updatedTargetTask = currentTargetTask.copyWith(
+        description: mergedDescription,
+        notes: mergedNote,
+        assignedTo: mergedAssignedTo,
+        relatedLinkIds: mergedRelatedLinkIds.toList(),
+        tags: mergedTags.toList(),
+        priority: mergedPriority ?? TaskPriority.medium,
+        dueDate: mergedDueDate,
+        reminderTime: mergedReminderTime,
+      );
+
+      await updateTask(updatedTargetTask);
+
+      // サブタスク統計を更新
+      await updateSubTaskStatistics(targetTaskId);
+
+      if (kDebugMode) {
+        print('タスクデータを統合: リンク${mergedRelatedLinkIds.length}件、タグ${mergedTags.length}件');
+      }
+
+      // 結合元タスクを削除（オプション）
+      if (deleteSourceTasks) {
+        for (final sourceTaskId in sourceTaskIds) {
+          await _deleteTaskDirectly(sourceTaskId);
+        }
+        
+        if (kDebugMode) {
+          print('結合元タスクを削除: ${sourceTaskIds.length}件');
+        }
+      } else {
+        // 削除しない場合は、結合元タスクをアーカイブ（完了）状態にする
+        for (final sourceTask in sourceTasks) {
+          final archivedTask = sourceTask.copyWith(
+            status: TaskStatus.completed,
+            completedAt: DateTime.now(),
+          );
+          await updateTask(archivedTask);
+        }
+        
+        if (kDebugMode) {
+          print('結合元タスクをアーカイブ: ${sourceTaskIds.length}件');
+        }
+      }
+
+      if (kDebugMode) {
+        print('=== タスク結合完了 ===');
+      }
+    } catch (e) {
+      print('タスク結合エラー: $e');
+      rethrow;
+    }
+  }
+
+  /// 優先度を比較（高い方が正の値）
+  int _comparePriority(TaskPriority a, TaskPriority? b) {
+    if (b == null) return 1;
+    
+    final priorityOrder = {
+      TaskPriority.low: 1,
+      TaskPriority.medium: 2,
+      TaskPriority.high: 3,
+      TaskPriority.urgent: 4,
+    };
+    
+    final aValue = priorityOrder[a] ?? 1;
+    final bValue = priorityOrder[b] ?? 1;
+    
+    return aValue.compareTo(bValue);
+  }
 
 }
