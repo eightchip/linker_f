@@ -2841,7 +2841,7 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
           }
         }
 
-        // サブタスクを移動
+        // サブタスクをコピー（移動元にも残す）
         final subTasks = subTaskViewModel.getSubTasksByParentId(sourceTask.id);
         if (subTasks.isNotEmpty) {
           // 結合先タスクの既存サブタスク数を取得して、順序を調整
@@ -2852,16 +2852,21 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
             nextOrder = maxOrder + 1;
           }
           
+          // サブタスクをコピーして結合先に追加（移動元には残す）
           for (final subTask in subTasks) {
-            final updatedSubTask = subTask.copyWith(
+            final copiedSubTask = SubTask(
+              id: _uuid.v4(), // 新しいIDを生成
               parentTaskId: targetTaskId,
+              title: subTask.title,
               order: nextOrder++,
+              isCompleted: subTask.isCompleted,
+              createdAt: subTask.createdAt,
             );
-            await subTaskViewModel.updateSubTask(updatedSubTask);
+            await subTaskViewModel.addSubTask(copiedSubTask);
           }
           
           if (kDebugMode) {
-            print('サブタスクを移動: ${subTasks.length}件 (${sourceTask.title} -> ${targetTask.title})');
+            print('サブタスクをコピー: ${subTasks.length}件 (${sourceTask.title} -> ${targetTask.title})');
           }
         }
 
@@ -2952,17 +2957,16 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
           print('結合元タスクを削除: ${sourceTaskIds.length}件');
         }
       } else {
-        // 削除しない場合は、結合元タスクをアーカイブ（完了）状態にする
+        // 削除しない場合は、結合元タスクをキャンセル状態にする
         for (final sourceTask in sourceTasks) {
-          final archivedTask = sourceTask.copyWith(
-            status: TaskStatus.completed,
-            completedAt: DateTime.now(),
+          final cancelledTask = sourceTask.copyWith(
+            status: TaskStatus.cancelled,
           );
-          await updateTask(archivedTask);
+          await updateTask(cancelledTask);
         }
         
         if (kDebugMode) {
-          print('結合元タスクをアーカイブ: ${sourceTaskIds.length}件');
+          print('結合元タスクをキャンセル: ${sourceTaskIds.length}件');
         }
       }
 

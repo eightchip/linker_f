@@ -54,51 +54,175 @@ function Sanitize([string]\$value) {
 \$startDate = [DateTime]::Parse("${start.toIso8601String()}")
 \$endDate = [DateTime]::Parse("${end.toIso8601String()}")
 
+\$outlook = \$null
+\$namespace = \$null
+\$calendar = \$null
+\$items = \$null
+\$rawEvents = @()
+
 try {
+    # Outlook COMオブジェクトの作成
     \$outlook = New-Object -ComObject Outlook.Application
+    if (\$null -eq \$outlook) {
+        Write-Error "Outlook COMオブジェクトの作成に失敗しました"
+        @() | ConvertTo-Json
+        exit 0
+    }
+    
     \$namespace = \$outlook.GetNamespace("MAPI")
+    if (\$null -eq \$namespace) {
+        Write-Error "MAPI名前空間の取得に失敗しました"
+        @() | ConvertTo-Json
+        exit 0
+    }
+    
     \$calendar = \$namespace.GetDefaultFolder(9)
+    if (\$null -eq \$calendar) {
+        Write-Error "カレンダーフォルダの取得に失敗しました"
+        @() | ConvertTo-Json
+        exit 0
+    }
+    
     \$items = \$calendar.Items
+    if (\$null -eq \$items) {
+        Write-Error "カレンダーアイテムの取得に失敗しました"
+        @() | ConvertTo-Json
+        exit 0
+    }
+    
     \$items.IncludeRecurrences = \$true
-
-    \$rawEvents = @()
-
-    foreach (\$item in \$items) {
+    
+    # アイテムを安全に列挙
+    \$itemCount = \$items.Count
+    for (\$i = 1; \$i -le \$itemCount; \$i++) {
+        \$item = \$null
         try {
+            \$item = \$items.Item(\$i)
             if (\$null -eq \$item) { continue }
-            if (-not (\$item -is [Microsoft.Office.Interop.Outlook.AppointmentItem])) { continue }
-            if (\$item.Start -lt \$startDate -or \$item.Start -gt \$endDate) { continue }
-
-            \$rawEvents += @{
-                Subject = Sanitize(\$item.Subject)
-                Start = \$item.Start.ToString("o")
-                End = if (\$item.End) { \$item.End.ToString("o") } else { "" }
-                Location = Sanitize(\$item.Location)
-                Body = Sanitize(\$item.Body)
-                EntryID = if (\$item.EntryID) { \$item.EntryID } else { "" }
-                LastModificationTime = if (\$item.LastModificationTime) { \$item.LastModificationTime.ToString("o") } else { "" }
-                Organizer = Sanitize(\$item.Organizer)
-                IsMeeting = if (\$item.IsMeeting -ne \$null) { [bool]\$item.IsMeeting } else { \$false }
-                IsRecurring = if (\$item.IsRecurring -ne \$null) { [bool]\$item.IsRecurring } else { \$false }
-                IsOnlineMeeting = if (\$item.IsOnlineMeeting -ne \$null) { [bool]\$item.IsOnlineMeeting } else { \$false }
+            
+            # 型チェック
+            if (-not (\$item -is [Microsoft.Office.Interop.Outlook.AppointmentItem])) { 
+                if (\$item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null }
+                continue 
             }
-            \$events += \$event
+            
+            # 日付範囲チェック
+            if (\$null -eq \$item.Start) { 
+                if (\$item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null }
+                continue 
+            }
+            
+            try {
+                \$itemStart = [DateTime]\$item.Start
+                if (\$itemStart -lt \$startDate -or \$itemStart -gt \$endDate) { 
+                    if (\$item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null }
+                    continue 
+                }
+            } catch {
+                if (\$item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null }
+                continue
+            }
+            
+            # イベントデータを安全に取得
+            \$event = @{
+                Subject = ""
+                Start = ""
+                End = ""
+                Location = ""
+                Body = ""
+                EntryID = ""
+                LastModificationTime = ""
+                Organizer = ""
+                IsMeeting = \$false
+                IsRecurring = \$false
+                IsOnlineMeeting = \$false
+            }
+            
+            try {
+                if (\$null -ne \$item.Subject) { \$event.Subject = Sanitize(\$item.Subject) }
+                if (\$null -ne \$item.Start) { \$event.Start = \$item.Start.ToString("o") }
+                if (\$null -ne \$item.End) { \$event.End = \$item.End.ToString("o") }
+                if (\$null -ne \$item.Location) { \$event.Location = Sanitize(\$item.Location) }
+                if (\$null -ne \$item.Body) { \$event.Body = Sanitize(\$item.Body) }
+                if (\$null -ne \$item.EntryID) { \$event.EntryID = \$item.EntryID }
+                if (\$null -ne \$item.LastModificationTime) { \$event.LastModificationTime = \$item.LastModificationTime.ToString("o") }
+                if (\$null -ne \$item.Organizer) { \$event.Organizer = Sanitize(\$item.Organizer) }
+                if (\$null -ne \$item.IsMeeting) { \$event.IsMeeting = [bool]\$item.IsMeeting }
+                if (\$null -ne \$item.IsRecurring) { \$event.IsRecurring = [bool]\$item.IsRecurring }
+                if (\$null -ne \$item.IsOnlineMeeting) { \$event.IsOnlineMeeting = [bool]\$item.IsOnlineMeeting }
+                
+                \$rawEvents += \$event
+            } catch {
+                # 個別アイテムの処理エラーは無視して続行
+            } finally {
+                if (\$item) { 
+                    try {
+                        [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null
+                    } catch {
+                        # 解放エラーは無視
+                    }
+                    \$item = \$null
+                }
+            }
         } catch {
-            continue
-        } finally {
-            if (\$item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null }
+            # アイテム取得エラーは無視して続行
+            if (\$item) { 
+                try {
+                    [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$item) | Out-Null
+                } catch {
+                    # 解放エラーは無視
+                }
+                \$item = \$null
+            }
         }
     }
 
-    \$events = \$rawEvents | Sort-Object { if ([string]::IsNullOrEmpty(\$_.Start)) { [DateTime]::MinValue } else { [DateTime]::Parse(\$_.Start) } }
+    # ソートとJSON変換
+    \$events = \$rawEvents | Sort-Object { 
+        if ([string]::IsNullOrEmpty(\$_.Start)) { 
+            [DateTime]::MinValue 
+        } else { 
+            try {
+                [DateTime]::Parse(\$_.Start) 
+            } catch {
+                [DateTime]::MinValue
+            }
+        } 
+    }
 
-    \$json = \$events | ConvertTo-Json -Depth 10
+    \$json = \$events | ConvertTo-Json -Depth 10 -Compress
     Write-Output \$json
+} catch {
+    Write-Error "予定取得エラー: \$(\$_.Exception.Message)"
+    @() | ConvertTo-Json
 } finally {
-    if (\$items) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$items) | Out-Null }
-    if (\$calendar) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$calendar) | Out-Null }
-    if (\$namespace) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$namespace) | Out-Null }
-    if (\$outlook) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null }
+    # COMオブジェクトの安全な解放
+    if (\$items) { 
+        try {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$items) | Out-Null
+        } catch { }
+        \$items = \$null
+    }
+    if (\$calendar) { 
+        try {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$calendar) | Out-Null
+        } catch { }
+        \$calendar = \$null
+    }
+    if (\$namespace) { 
+        try {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$namespace) | Out-Null
+        } catch { }
+        \$namespace = \$null
+    }
+    if (\$outlook) { 
+        try {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null
+        } catch { }
+        \$outlook = \$null
+    }
+    
+    # ガベージコレクション
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
     [System.GC]::Collect()
@@ -204,19 +328,36 @@ try {
   }
 
   Future<String> _runPowerShellScript(String script) async {
-    final result = await Process.run('powershell.exe', [
-      '-NoProfile',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-Command',
-      script,
-    ]);
+    try {
+      final result = await Process.run('powershell.exe', [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        script,
+      ], runInShell: false);
 
-    if (result.exitCode != 0) {
-      throw Exception('PowerShellスクリプト実行エラー: ${result.stderr}');
+      // エラー出力を確認
+      final stderr = result.stderr.toString().trim();
+      if (stderr.isNotEmpty && !stderr.contains('ConvertTo-Json')) {
+        if (kDebugMode) {
+          print('PowerShell警告: $stderr');
+        }
+      }
+
+      // 標準出力を確認
+      final stdout = result.stdout.toString().trim();
+      if (stdout.isEmpty && result.exitCode != 0) {
+        throw Exception('PowerShellスクリプト実行エラー: $stderr');
+      }
+
+      return stdout;
+    } catch (e) {
+      if (kDebugMode) {
+        print('PowerShell実行エラー: $e');
+      }
+      rethrow;
     }
-
-    return result.stdout.toString();
   }
 
   List<Map<String, dynamic>> _parseJsonList(String rawOutput) {

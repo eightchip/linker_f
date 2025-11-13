@@ -10,6 +10,7 @@ import '../models/link_item.dart';
 import '../models/task_item.dart';
 import '../models/group.dart';
 import '../models/sub_task.dart';
+import '../models/export_config.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -540,6 +541,250 @@ class IntegratedBackupService {
        _taskViewModel = taskViewModel,
        _ref = ref;
 
+  /// 選択式エクスポート（v2形式）
+  Future<String> exportDataWithConfig(ExportConfig config) async {
+    try {
+      final backupDir = await getBackupDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final templateSuffix = config.templateName != null ? '_${config.templateName}' : '';
+      final fileName = 'linker_export${templateSuffix}_$timestamp.json';
+      final filePath = '${backupDir.path}/$fileName';
+      
+      final exportData = <String, dynamic>{
+        'version': '2.0',
+        'exportedAt': DateTime.now().toUtc().toIso8601String(),
+        'exportType': 'selective',
+        'exportConfig': config.toJson(),
+        'description': '選択式エクスポート',
+      };
+      
+      // リンクデータ（選択されたグループとリンクのみ）
+      final allLinks = _linkRepository.getAllLinks();
+      final allGroups = _linkRepository.getAllGroups();
+      
+      // 選択されたグループをフィルター
+      List<Group> selectedGroups = [];
+      if (config.selectedGroupIds.isEmpty) {
+        // 全グループを選択
+        selectedGroups = allGroups;
+      } else {
+        selectedGroups = allGroups
+            .where((group) => config.selectedGroupIds.contains(group.id))
+            .toList();
+      }
+      
+      // グループ内のリンクIDを収集
+      final groupLinkIds = <String>{};
+      for (final group in selectedGroups) {
+        for (final item in group.items) {
+          groupLinkIds.add(item.id);
+        }
+      }
+      
+      // 選択されたリンクをフィルター
+      List<LinkItem> selectedLinks = [];
+      if (config.selectedLinkIds.isEmpty) {
+        // 全リンクを選択（グループ外のリンク）
+        selectedLinks = allLinks
+            .where((link) => !groupLinkIds.contains(link.id))
+            .toList();
+      } else {
+        // 指定されたリンクのみ
+        selectedLinks = allLinks
+            .where((link) => config.selectedLinkIds.contains(link.id))
+            .toList();
+      }
+      
+      // メモを含める/含めないの処理
+      if (!config.includeMemos) {
+        selectedLinks = selectedLinks.map((link) {
+          return LinkItem(
+            id: link.id,
+            label: link.label,
+            path: link.path,
+            type: link.type,
+            createdAt: link.createdAt,
+            lastUsed: link.lastUsed,
+            isFavorite: link.isFavorite,
+            memo: null,
+            iconData: link.iconData,
+            iconColor: link.iconColor,
+            tags: link.tags,
+            hasActiveTasks: link.hasActiveTasks,
+            faviconFallbackDomain: link.faviconFallbackDomain,
+          );
+        }).toList();
+        
+        selectedGroups = selectedGroups.map((group) {
+          final itemsWithoutMemos = group.items.map((item) {
+            return LinkItem(
+              id: item.id,
+              label: item.label,
+              path: item.path,
+              type: item.type,
+              createdAt: item.createdAt,
+              lastUsed: item.lastUsed,
+              isFavorite: item.isFavorite,
+              memo: null,
+              iconData: item.iconData,
+              iconColor: item.iconColor,
+              tags: item.tags,
+              hasActiveTasks: item.hasActiveTasks,
+              faviconFallbackDomain: item.faviconFallbackDomain,
+            );
+          }).toList();
+          return group.copyWith(items: itemsWithoutMemos);
+        }).toList();
+      }
+      
+      exportData['links'] = selectedLinks.map((link) => link.toJson()).toList();
+      exportData['groups'] = selectedGroups.map((group) => group.toJson()).toList();
+      
+      // グループ順序（選択されたグループのみ）
+      final allGroupsOrder = _linkRepository.getGroupsOrder();
+      final selectedGroupsOrder = allGroupsOrder
+          .where((id) => config.selectedGroupIds.isEmpty || config.selectedGroupIds.contains(id))
+          .toList();
+      exportData['groupsOrder'] = selectedGroupsOrder;
+      
+      // タスクデータ（フィルター適用）
+      if (_taskViewModel != null) {
+        List<TaskItem> filteredTasks = _taskViewModel.tasks;
+        
+        // タスクIDでフィルター
+        if (config.selectedTaskIds.isNotEmpty) {
+          filteredTasks = filteredTasks
+              .where((task) => config.selectedTaskIds.contains(task.id))
+              .toList();
+        }
+        
+        // タスクフィルターを適用
+        if (config.taskFilter != null) {
+          filteredTasks = _applyTaskFilter(filteredTasks, config.taskFilter!);
+        }
+        
+        exportData['tasks'] = filteredTasks.map((task) => task.toJson()).toList();
+        
+        // サブタスクデータ（選択されたタスクのもののみ）
+        final subTaskBox = Hive.box<SubTask>('sub_tasks');
+        final selectedTaskIds = filteredTasks.map((t) => t.id).toSet();
+        final selectedSubTasks = subTaskBox.values
+            .where((subtask) => selectedTaskIds.contains(subtask.parentTaskId))
+            .toList();
+        exportData['subTasks'] = selectedSubTasks.map((subtask) => subtask.toJson()).toList();
+      }
+      
+      // 設定データ（選択された項目のみ）
+      if (config.settingsConfig != null) {
+        final settingsData = <String, dynamic>{};
+        final allSettings = _settingsService.exportSettings();
+        
+        if (config.settingsConfig!.includeUISettings) {
+          settingsData['darkMode'] = allSettings['darkMode'];
+          settingsData['accentColor'] = allSettings['accentColor'];
+          settingsData['fontSize'] = allSettings['fontSize'];
+          settingsData['textColor'] = allSettings['textColor'];
+          settingsData['colorIntensity'] = allSettings['colorIntensity'];
+          settingsData['colorContrast'] = allSettings['colorContrast'];
+          settingsData['uiSettings'] = allSettings['uiSettings'];
+        }
+        
+        if (config.settingsConfig!.includeFeatureSettings) {
+          settingsData['autoBackup'] = allSettings['autoBackup'];
+          settingsData['backupInterval'] = allSettings['backupInterval'];
+          settingsData['showNotifications'] = allSettings['showNotifications'];
+          settingsData['notificationSound'] = allSettings['notificationSound'];
+        }
+        
+        if (config.settingsConfig!.includeIntegrationSettings) {
+          settingsData['googleCalendarEnabled'] = allSettings['googleCalendarEnabled'];
+          settingsData['googleCalendarSyncInterval'] = allSettings['googleCalendarSyncInterval'];
+          settingsData['googleCalendarAutoSync'] = allSettings['googleCalendarAutoSync'];
+          settingsData['gmailApiEnabled'] = allSettings['gmailApiEnabled'];
+          settingsData['outlookAutoSyncEnabled'] = allSettings['outlookAutoSyncEnabled'];
+          settingsData['outlookAutoSyncPeriodDays'] = allSettings['outlookAutoSyncPeriodDays'];
+          settingsData['outlookAutoSyncFrequency'] = allSettings['outlookAutoSyncFrequency'];
+        }
+        
+        if (settingsData.isNotEmpty) {
+          exportData['settings'] = settingsData;
+        }
+      }
+      
+      final file = File(filePath);
+      await file.writeAsString(json.encode(exportData));
+      
+      if (kDebugMode) {
+        print('選択式エクスポート完了: $filePath');
+        print('グループ: ${selectedGroups.length}件');
+        print('リンク: ${selectedLinks.length}件');
+        print('タスク: ${exportData['tasks']?.length ?? 0}件');
+      }
+      
+      return filePath;
+    } catch (e) {
+      ErrorHandler.logError('選択式エクスポート', e);
+      rethrow;
+    }
+  }
+
+  /// タスクフィルターを適用
+  List<TaskItem> _applyTaskFilter(List<TaskItem> tasks, TaskFilterConfig filter) {
+    return tasks.where((task) {
+      // タグフィルター
+      if (filter.tags.isNotEmpty) {
+        final taskTags = task.tags.toSet();
+        if (!filter.tags.any((tag) => taskTags.contains(tag))) {
+          return false;
+        }
+      }
+      
+      // ステータスフィルター
+      if (filter.statuses.isNotEmpty) {
+        final statusStr = task.status.toString().split('.').last;
+        if (!filter.statuses.contains(statusStr)) {
+          return false;
+        }
+      }
+      
+      // 作成日フィルター
+      if (filter.createdAtStart != null) {
+        if (task.createdAt.isBefore(filter.createdAtStart!)) {
+          return false;
+        }
+      }
+      if (filter.createdAtEnd != null) {
+        if (task.createdAt.isAfter(filter.createdAtEnd!)) {
+          return false;
+        }
+      }
+      
+      // 期限日フィルター
+      if (task.dueDate != null) {
+        if (filter.dueDateStart != null && task.dueDate!.isBefore(filter.dueDateStart!)) {
+          return false;
+        }
+        if (filter.dueDateEnd != null && task.dueDate!.isAfter(filter.dueDateEnd!)) {
+          return false;
+        }
+      } else {
+        // 期限日が設定されていないタスクを除外する場合
+        if (filter.dueDateStart != null || filter.dueDateEnd != null) {
+          return false;
+        }
+      }
+      
+      // 関連リンクIDフィルター
+      if (filter.relatedLinkIds.isNotEmpty) {
+        if (!task.relatedLinkIds.any((linkId) => filter.relatedLinkIds.contains(linkId))) {
+          return false;
+        }
+      }
+      
+      return true;
+    }).toList();
+  }
+
   /// 統合エクスポート（v2形式）
   Future<String> exportData({
     bool onlyLinks = false,
@@ -651,6 +896,326 @@ class IntegratedBackupService {
   }
 
   /// 統合インポート（自動変換対応）
+  /// 部分インポート（設定付き）
+  Future<ImportResult> importDataWithConfig(
+    File file,
+    ImportConfig config,
+  ) async {
+    try {
+      final content = await file.readAsString();
+      final jsonData = json.decode(content);
+      
+      final version = (jsonData['version'] ?? '1.0').toString();
+      final warnings = <String>[];
+      
+      Map<String, dynamic> v2Data = {};
+      
+      // バージョン判定
+      if (version.startsWith('2.') || jsonData.containsKey('groups')) {
+        v2Data = Map<String, dynamic>.from(jsonData);
+      } else {
+        // v1 → v2 変換
+        Map<String, dynamic> data = {};
+        if (jsonData.containsKey('linkData')) {
+          data = jsonData['linkData'] as Map<String, dynamic>? ?? {};
+        } else if (jsonData.containsKey('data')) {
+          data = jsonData['data'] as Map<String, dynamic>? ?? {};
+        } else {
+          data = jsonData;
+        }
+        
+        v2Data = {
+          'version': '2.0',
+          'exportedAt': jsonData['createdAt'] ?? DateTime.now().toUtc().toIso8601String(),
+          'links': data['links'] ?? [],
+          'tasks': jsonData['tasks'] ?? data['tasks'] ?? [],
+          'subTasks': jsonData['subTasks'] ?? [],
+          'groups': data['groups'] ?? [],
+          'groupsOrder': data['groupsOrder'] ?? [],
+          'settings': jsonData['prefs'] ?? jsonData['settingsData'] ?? {},
+        };
+      }
+      
+      // バリデーションとモデル化
+      List<LinkItem> links = [];
+      List<Group> groups = [];
+      List<TaskItem> tasks = [];
+      
+      if (config.importLinks && !config.importTasks) {
+        for (final linkJson in (v2Data['links'] as List? ?? [])) {
+          try {
+            links.add(LinkItem.fromJson(linkJson));
+          } catch (e) {
+            warnings.add('link 変換失敗: $e');
+          }
+        }
+        
+        if (config.importGroups) {
+          for (final groupJson in (v2Data['groups'] as List? ?? [])) {
+            try {
+              groups.add(Group.fromJson(groupJson));
+            } catch (e) {
+              warnings.add('group 変換失敗: $e');
+            }
+          }
+        }
+      }
+      
+      if (config.importTasks && !config.importLinks) {
+        for (final taskJson in (v2Data['tasks'] as List? ?? [])) {
+          try {
+            tasks.add(TaskItem.fromJson(taskJson));
+          } catch (e) {
+            warnings.add('task 変換失敗: $e');
+          }
+        }
+      }
+      
+      if (config.importLinks && config.importTasks) {
+        for (final linkJson in (v2Data['links'] as List? ?? [])) {
+          try {
+            links.add(LinkItem.fromJson(linkJson));
+          } catch (e) {
+            warnings.add('link 変換失敗: $e');
+          }
+        }
+        
+        if (config.importGroups) {
+          for (final groupJson in (v2Data['groups'] as List? ?? [])) {
+            try {
+              groups.add(Group.fromJson(groupJson));
+            } catch (e) {
+              warnings.add('group 変換失敗: $e');
+            }
+          }
+        }
+        
+        for (final taskJson in (v2Data['tasks'] as List? ?? [])) {
+          try {
+            tasks.add(TaskItem.fromJson(taskJson));
+          } catch (e) {
+            warnings.add('task 変換失敗: $e');
+          }
+        }
+      }
+      
+      // インポート処理
+      if (config.importMode == ImportMode.overwrite) {
+        // 上書きモード：既存データを削除してからインポート
+        if (config.importLinks) {
+          final allLinks = _linkRepository.getAllLinks();
+          for (final link in allLinks) {
+            _linkRepository.deleteLink(link.id);
+          }
+        }
+        if (config.importTasks && _taskViewModel != null) {
+          final allTasks = _taskViewModel.tasks;
+          for (final task in allTasks) {
+            _taskViewModel.deleteTask(task.id);
+          }
+        }
+      }
+      
+      // リンクのインポート
+      if (config.importLinks && links.isNotEmpty) {
+        await _importLinksWithConfig(links, config, warnings);
+      }
+      
+      // グループのインポート
+      if (config.importGroups && groups.isNotEmpty) {
+        await _importGroupsWithConfig(groups, config, warnings);
+      }
+      
+      // タスクのインポート
+      if (config.importTasks && tasks.isNotEmpty) {
+        await _importTasksWithConfig(tasks, v2Data['subTasks'], config, warnings);
+      }
+      
+      // 設定のインポート
+      if (config.importSettings && v2Data['settings'] != null) {
+        await _importSettings(v2Data['settings'], warnings);
+      }
+      
+      return ImportResult(
+        links: links,
+        tasks: tasks,
+        groups: groups,
+        warnings: warnings,
+      );
+    } catch (e) {
+      ErrorHandler.logError('部分インポート', e);
+      rethrow;
+    }
+  }
+
+  /// リンクをインポート（設定付き）
+  Future<void> _importLinksWithConfig(
+    List<LinkItem> links,
+    ImportConfig config,
+    List<String> warnings,
+  ) async {
+    final existingLinkIds = _linkRepository.getAllLinks().map((link) => link.id).toSet();
+    
+    for (final link in links) {
+      if (existingLinkIds.contains(link.id)) {
+        // 重複処理
+        switch (config.duplicateHandling) {
+          case DuplicateHandling.skip:
+            warnings.add('リンク「${link.label}」は既に存在するためスキップしました');
+            continue;
+          case DuplicateHandling.overwrite:
+            _linkRepository.deleteLink(link.id);
+            await _linkRepository.saveLink(link);
+            break;
+          case DuplicateHandling.rename:
+            int counter = 1;
+            String newLabel = '${link.label}_${counter}';
+            while (existingLinkIds.contains(link.id) || 
+                   _linkRepository.getAllLinks().any((l) => l.label == newLabel)) {
+              counter++;
+              newLabel = '${link.label}_$counter';
+            }
+            final renamedLink = LinkItem(
+              id: link.id,
+              label: newLabel,
+              path: link.path,
+              type: link.type,
+              createdAt: link.createdAt,
+              lastUsed: link.lastUsed,
+              isFavorite: link.isFavorite,
+              memo: link.memo,
+              iconData: link.iconData,
+              iconColor: link.iconColor,
+              tags: link.tags,
+              hasActiveTasks: link.hasActiveTasks,
+              faviconFallbackDomain: link.faviconFallbackDomain,
+            );
+            await _linkRepository.saveLink(renamedLink);
+            break;
+        }
+      } else {
+        await _linkRepository.saveLink(link);
+      }
+    }
+  }
+
+  /// グループをインポート（設定付き）
+  Future<void> _importGroupsWithConfig(
+    List<Group> groups,
+    ImportConfig config,
+    List<String> warnings,
+  ) async {
+    final existingGroupIds = _linkRepository.getAllGroups().map((g) => g.id).toSet();
+    
+    for (final group in groups) {
+      if (existingGroupIds.contains(group.id)) {
+        switch (config.duplicateHandling) {
+          case DuplicateHandling.skip:
+            warnings.add('グループ「${group.title}」は既に存在するためスキップしました');
+            continue;
+          case DuplicateHandling.overwrite:
+            _linkRepository.deleteGroup(group.id);
+            await _linkRepository.saveGroup(group);
+            break;
+          case DuplicateHandling.rename:
+            int counter = 1;
+            String newTitle = '${group.title}_$counter';
+            while (existingGroupIds.contains(group.id) ||
+                   _linkRepository.getAllGroups().any((g) => g.title == newTitle)) {
+              counter++;
+              newTitle = '${group.title}_$counter';
+            }
+            final renamedGroup = group.copyWith(title: newTitle);
+            await _linkRepository.saveGroup(renamedGroup);
+            break;
+        }
+      } else {
+        await _linkRepository.saveGroup(group);
+      }
+    }
+  }
+
+  /// タスクをインポート（設定付き）
+  Future<void> _importTasksWithConfig(
+    List<TaskItem> tasks,
+    dynamic subTasksData,
+    ImportConfig config,
+    List<String> warnings,
+  ) async {
+    if (_taskViewModel == null) return;
+    
+    final existingTaskIds = _taskViewModel.tasks.map((t) => t.id).toSet();
+    
+    for (final task in tasks) {
+      if (existingTaskIds.contains(task.id)) {
+        switch (config.duplicateHandling) {
+          case DuplicateHandling.skip:
+            warnings.add('タスク「${task.title}」は既に存在するためスキップしました');
+            continue;
+          case DuplicateHandling.overwrite:
+            _taskViewModel.deleteTask(task.id);
+            _taskViewModel.addTask(task);
+            break;
+          case DuplicateHandling.rename:
+            int counter = 1;
+            String newTitle = '${task.title}_$counter';
+            while (existingTaskIds.contains(task.id) ||
+                   _taskViewModel.tasks.any((t) => t.title == newTitle)) {
+              counter++;
+              newTitle = '${task.title}_$counter';
+            }
+            final renamedTask = TaskItem(
+              id: task.id,
+              title: newTitle,
+              description: task.description,
+              status: task.status,
+              priority: task.priority,
+              createdAt: task.createdAt,
+              dueDate: task.dueDate,
+              reminderTime: task.reminderTime,
+              relatedLinkIds: task.relatedLinkIds,
+              tags: task.tags,
+              notes: task.notes,
+              assignedTo: task.assignedTo,
+            );
+            _taskViewModel.addTask(renamedTask);
+            break;
+        }
+      } else {
+        _taskViewModel.addTask(task);
+      }
+    }
+    
+    // サブタスクのインポート
+    if (subTasksData != null && subTasksData is List) {
+      final subTaskBox = await Hive.openBox<SubTask>('sub_tasks');
+      final importedTaskIds = tasks.map((t) => t.id).toSet();
+      
+      for (final subtaskJson in subTasksData) {
+        try {
+          final subtask = SubTask.fromJson(subtaskJson);
+          if (importedTaskIds.contains(subtask.parentTaskId)) {
+            await subTaskBox.put(subtask.id, subtask);
+          }
+        } catch (e) {
+          warnings.add('サブタスク変換失敗: $e');
+        }
+      }
+    }
+  }
+
+  /// 設定をインポート
+  Future<void> _importSettings(
+    Map<String, dynamic> settings,
+    List<String> warnings,
+  ) async {
+    try {
+      await _settingsService.importSettings(settings);
+    } catch (e) {
+      warnings.add('設定インポートエラー: $e');
+    }
+  }
+
   Future<ImportResult> importData(
     File file, {
     bool onlyLinks = false,

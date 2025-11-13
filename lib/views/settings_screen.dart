@@ -22,6 +22,9 @@ import '../widgets/app_button_styles.dart';
 import '../services/snackbar_service.dart';
 import '../viewmodels/sync_status_provider.dart';
 import '../viewmodels/ui_customization_provider.dart';
+import '../views/selective_export_dialog.dart';
+import '../views/selective_import_dialog.dart';
+import '../models/export_config.dart';
 
 class _ColorPreset {
   const _ColorPreset({
@@ -2940,6 +2943,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     
                     const SizedBox(height: 16),
                     
+                    // 選択式エクスポート/インポート
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '選択式エクスポート / インポート',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // 選択式エクスポートボタン
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showSelectiveExportDialog(context, ref),
+                        icon: const Icon(Icons.tune),
+                        label: const Text('選択式エクスポート'),
+                        style: AppButtonStyles.primary(context),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // 選択式インポートボタン
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showSelectiveImportDialog(context, ref),
+                        icon: const Icon(Icons.tune),
+                        label: const Text('選択式インポート'),
+                        style: AppButtonStyles.outlined(context),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
                     // 自動バックアップ設定
                     SwitchListTile(
                       title: const Text('自動バックアップ'),
@@ -3202,6 +3240,207 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       );
+    }
+  }
+
+  /// 選択式エクスポートダイアログを表示
+  void _showSelectiveExportDialog(BuildContext context, WidgetRef ref) async {
+    final linkRepository = ref.read(linkRepositoryProvider);
+    final taskViewModel = ref.read(taskViewModelProvider.notifier);
+    
+    final config = await showDialog<ExportConfig>(
+      context: context,
+      builder: (context) => SelectiveExportDialog(
+        linkRepository: linkRepository,
+        taskViewModel: taskViewModel,
+      ),
+    );
+    
+    if (config != null) {
+      await _performSelectiveExport(context, ref, config);
+    }
+  }
+
+  /// 選択式エクスポートを実行
+  Future<void> _performSelectiveExport(
+    BuildContext context,
+    WidgetRef ref,
+    ExportConfig config,
+  ) async {
+    final keyboardNavigatorKey = KeyboardShortcutService.getNavigatorKey();
+    final globalContext = keyboardNavigatorKey?.currentContext;
+    
+    if (globalContext == null) return;
+    
+    // ローディング表示
+    showDialog(
+      context: globalContext,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+    
+    try {
+      final backupService = IntegratedBackupService(
+        linkRepository: ref.read(linkRepositoryProvider),
+        settingsService: ref.read(settingsServiceProvider),
+        taskViewModel: ref.read(taskViewModelProvider.notifier),
+        ref: ref,
+      );
+      
+      final filePath = await backupService.exportDataWithConfig(config);
+      
+      Navigator.of(globalContext).pop();
+      
+      showDialog(
+        context: globalContext,
+        builder: (context) => UnifiedDialog(
+          title: 'エクスポート完了',
+          icon: Icons.check_circle,
+          iconColor: Colors.green,
+          content: Text('エクスポートが完了しました\n保存先: $filePath'),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: AppButtonStyles.primary(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      Navigator.of(globalContext).pop();
+      
+      showDialog(
+        context: globalContext,
+        builder: (context) => UnifiedDialog(
+          title: 'エクスポートエラー',
+          icon: Icons.error,
+          iconColor: Colors.red,
+          content: Text('エクスポートエラー: $e'),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: AppButtonStyles.primary(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  /// 選択式インポートダイアログを表示
+  void _showSelectiveImportDialog(BuildContext context, WidgetRef ref) async {
+    final config = await showDialog<ImportConfig>(
+      context: context,
+      builder: (context) => const SelectiveImportDialog(),
+    );
+    
+    if (config != null) {
+      await _performSelectiveImport(context, ref, config);
+    }
+  }
+
+  /// 選択式インポートを実行
+  Future<void> _performSelectiveImport(
+    BuildContext context,
+    WidgetRef ref,
+    ImportConfig config,
+  ) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        dialogTitle: 'インポートするファイルを選択',
+      );
+      
+      if (result == null || result.files.single.path == null) {
+        return;
+      }
+      
+      final file = File(result.files.single.path!);
+      
+      final keyboardNavigatorKey = KeyboardShortcutService.getNavigatorKey();
+      final globalContext = keyboardNavigatorKey?.currentContext;
+      
+      if (globalContext == null) return;
+      
+      // ローディング表示
+      showDialog(
+        context: globalContext,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      try {
+        final backupService = IntegratedBackupService(
+          linkRepository: ref.read(linkRepositoryProvider),
+          settingsService: ref.read(settingsServiceProvider),
+          taskViewModel: ref.read(taskViewModelProvider.notifier),
+          ref: ref,
+        );
+        
+        final importResult = await backupService.importDataWithConfig(file, config);
+        
+        Navigator.of(globalContext).pop();
+        
+        String message = 'インポートが完了しました\n';
+        message += 'リンク: ${importResult.links.length}件\n';
+        message += 'タスク: ${importResult.tasks.length}件\n';
+        message += 'グループ: ${importResult.groups.length}件';
+        
+        if (importResult.warnings.isNotEmpty) {
+          message += '\n\n警告:\n';
+          message += importResult.warnings.take(5).join('\n');
+          if (importResult.warnings.length > 5) {
+            message += '\n...他${importResult.warnings.length - 5}件';
+          }
+        }
+        
+        showDialog(
+          context: globalContext,
+          builder: (context) => UnifiedDialog(
+            title: 'インポート完了',
+            icon: Icons.check_circle,
+            iconColor: Colors.green,
+            content: SingleChildScrollView(
+              child: Text(message),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: AppButtonStyles.primary(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } catch (e) {
+        Navigator.of(globalContext).pop();
+        
+        showDialog(
+          context: globalContext,
+          builder: (context) => UnifiedDialog(
+            title: 'インポートエラー',
+            icon: Icons.error,
+            iconColor: Colors.red,
+            content: Text('インポートエラー: $e'),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: AppButtonStyles.primary(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      print('ファイル選択エラー: $e');
     }
   }
 
