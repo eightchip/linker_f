@@ -1086,7 +1086,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyS): const _ShowSettingsIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyG): const _ShowGroupMenuIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyT): const _ShowTaskTemplateIntent(),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyC): const _ShowScheduleIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS): const _ShowScheduleIntent(),
           LogicalKeySet(LogicalKeyboardKey.arrowLeft): const _NavigateHomeIntent(),
           LogicalKeySet(LogicalKeyboardKey.arrowRight): const _ShowPopupMenuIntent(),
           LogicalKeySet(LogicalKeyboardKey.arrowDown): const _FocusMenuIntent(),
@@ -3622,11 +3622,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     _saveFilterSettings();
     
     // スナックバーで通知
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('フィルターをリセットしました'),
-        duration: Duration(seconds: 2),
-      ),
+    SnackBarService.showSuccess(
+      context,
+      'フィルターをリセットしました',
     );
     
     print('🔄 フィルターリセット完了');
@@ -4147,12 +4145,19 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   }
 
   // 優先度の比較（緊急度高い順）
-  // CSV出力処理（フィルター適用済みタスクのみ出力）
+  // CSV出力処理（フィルター適用済みタスク+完了タスクも出力）
   void _exportTasksToCsv() async {
     try {
       final tasks = ref.read(taskViewModelProvider);
       // フィルター適用済みのタスクリストを取得
-      final filteredTasks = _sortTasks(_getFilteredTasks(tasks));
+      final filteredTasks = _getFilteredTasks(tasks);
+      // 完了タスクを追加（重複を避ける）
+      final completedTasks = tasks.where((task) => 
+        task.status == TaskStatus.completed && 
+        !filteredTasks.any((t) => t.id == task.id)
+      ).toList();
+      // フィルター済みタスクと完了タスクを結合してソート
+      final allTasksForExport = _sortTasks([...filteredTasks, ...completedTasks]);
       final subTasks = ref.read(subTaskViewModelProvider);
       
       // 列選択ダイアログを表示
@@ -4190,9 +4195,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       final tempFile = File('${tempDir.path}/temp_$defaultFileName');
       
       try {
-        // 一時ファイルにCSVを出力（フィルター適用済みタスクのみ、選択された列のみ）
+        // 一時ファイルにCSVを出力（フィルター適用済みタスク+完了タスク、選択された列のみ）
         await CsvExport.exportTasksToCsv(
-          filteredTasks,
+          allTasksForExport,
           subTasks,
           tempFile.path,
           selectedColumns: selectedColumns,
@@ -4207,12 +4212,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         
         // 成功メッセージを表示
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('CSV出力が完了しました: ${targetFile.path.split(Platform.pathSeparator).last}'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
-            ),
+          SnackBarService.showSuccess(
+            context,
+            'CSV出力が完了しました: ${targetFile.path.split(Platform.pathSeparator).last}',
           );
         }
       } catch (copyError) {
@@ -4225,12 +4227,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     } catch (e) {
       print('CSV出力エラーの詳細: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('CSV出力エラー: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
+        SnackBarService.showError(
+          context,
+          'CSV出力エラー: ${e.toString()}',
         );
       }
     }
@@ -4432,7 +4431,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         ShortcutHelpEntry('Ctrl + Shift + E', 'CSVにエクスポート'),
         ShortcutHelpEntry('Ctrl + Shift + S', '設定画面を開く'),
         ShortcutHelpEntry('Ctrl + P', 'タスクグリッドビュー切り替え'),
-        ShortcutHelpEntry('Ctrl + Shift + C', '予定表を開く'),
+        ShortcutHelpEntry('Ctrl + S', '予定表を開く'),
         ShortcutHelpEntry('Ctrl + G', 'グループ化メニュー'),
         ShortcutHelpEntry('Ctrl + Shift + T', 'テンプレートから作成'),
         ShortcutHelpEntry('Ctrl + H', '統計・検索バー表示/非表示'),
@@ -5270,11 +5269,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 icon: const Icon(Icons.copy, size: 16),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: example['pattern']!));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('「${example['pattern']}」をコピーしました'),
-                      duration: const Duration(seconds: 2),
-                    ),
+                  SnackBarService.showSuccess(
+                    context,
+                    '「${example['pattern']}」をコピーしました',
                   );
                 },
                 tooltip: 'パターンをコピー',

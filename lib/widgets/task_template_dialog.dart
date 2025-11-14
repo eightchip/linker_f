@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
+import '../services/snackbar_service.dart';
 
 /// タスクテンプレートダイアログ
 class TaskTemplateDialog extends ConsumerStatefulWidget {
@@ -554,15 +555,17 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
   /// テンプレートを保存
   void _saveTemplate() {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('テンプレート名を入力してください')),
+      SnackBarService.showWarning(
+        context,
+        'テンプレート名を入力してください',
       );
       return;
     }
     
     if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('タイトルを入力してください')),
+      SnackBarService.showWarning(
+        context,
+        'タイトルを入力してください',
       );
       return;
     }
@@ -594,8 +597,9 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
     // 再度setStateでUIを更新
     setState(() {});
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('テンプレートを保存しました')),
+    SnackBarService.showSuccess(
+      context,
+      'テンプレートを保存しました',
     );
   }
 
@@ -641,8 +645,9 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
 
   void _createTask() {
     if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('タイトルを入力してください')),
+      SnackBarService.showWarning(
+        context,
+        'タイトルを入力してください',
       );
       return;
     }
@@ -669,8 +674,9 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
     
     Navigator.of(context).pop();
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('タスクを作成しました')),
+    SnackBarService.showSuccess(
+      context,
+      'タスクを作成しました',
     );
   }
 

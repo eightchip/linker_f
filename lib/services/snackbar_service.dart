@@ -149,4 +149,22 @@ class SnackBarService {
       debugPrint('Global warning notification (context unavailable): $message');
     }
   }
+
+  static void showGlobalInfo(String message) {
+    final context = _globalContext();
+    if (context != null) {
+      showInfo(context, message);
+    } else {
+      debugPrint('Global info notification (context unavailable): $message');
+    }
+  }
+
+  static void showGlobalSuccess(String message) {
+    final context = _globalContext();
+    if (context != null) {
+      showSuccess(context, message);
+    } else {
+      debugPrint('Global success notification (context unavailable): $message');
+    }
+  }
 }

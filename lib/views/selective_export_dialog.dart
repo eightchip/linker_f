@@ -5,6 +5,7 @@ import '../models/export_template.dart';
 import '../repositories/link_repository.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../services/export_template_service.dart';
+import '../services/snackbar_service.dart';
 import '../widgets/app_button_styles.dart';
 
 /// 選択式エクスポートダイアログ
@@ -313,8 +314,9 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
       await _loadTemplates();
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('テンプレートを保存しました')),
+        SnackBarService.showSuccess(
+          context,
+          'テンプレートを保存しました',
         );
       }
     }

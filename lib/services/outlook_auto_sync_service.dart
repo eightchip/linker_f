@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/outlook_calendar_service.dart';
 import '../services/settings_service.dart';
+import '../services/snackbar_service.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import '../utils/error_handler.dart';
@@ -116,6 +117,19 @@ class OutlookAutoSyncService {
         print('=== Outlook自動取込完了 ===');
         print('追加: $addedCount件');
         print('スキップ: $skippedCount件');
+      }
+
+      // メッセージを表示（追加があった場合のみ）
+      if (addedCount > 0 || skippedCount > 0) {
+        if (addedCount > 0) {
+          SnackBarService.showGlobalSuccess(
+            'Outlook自動取り込み完了: ${addedCount}件の予定を追加しました',
+          );
+        } else if (skippedCount > 0) {
+          SnackBarService.showGlobalInfo(
+            'Outlook自動取り込み完了: ${skippedCount}件の予定は既に取り込まれています',
+          );
+        }
       }
     } catch (e) {
       ErrorHandler.logError('Outlook自動取込', e);

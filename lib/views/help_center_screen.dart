@@ -602,15 +602,17 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       final uri = Uri.file(file.path);
       final launched = await launchUrl(uri);
       if (!launched && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('HTMLファイルを開けませんでした。ファイルを直接参照してください。')),
+        SnackBarService.showError(
+          context,
+          'HTMLファイルを開けませんでした。ファイルを直接参照してください。',
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      SnackBarService.showError(
         context,
-      ).showSnackBar(SnackBar(content: Text('HTML出力に失敗しました: $e')));
+        'HTML出力に失敗しました: $e',
+      );
     }
   }
 

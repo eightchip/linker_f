@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/task_item.dart';
 import '../services/outlook_calendar_service.dart';
+import '../services/snackbar_service.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 
 /// Outlook予定取り込みダイアログ
@@ -45,10 +46,9 @@ class _OutlookCalendarImportDialogState extends ConsumerState<OutlookCalendarImp
       final isAvailable = await _outlookService.isOutlookAvailable();
       if (!isAvailable) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Outlookが起動していないか、利用できません。Outlookを起動してから再度お試しください。'),
-            ),
+          SnackBarService.showError(
+            context,
+            'Outlookが起動していないか、利用できません。Outlookを起動してから再度お試しください。',
           );
         }
         setState(() {
@@ -69,18 +69,16 @@ class _OutlookCalendarImportDialogState extends ConsumerState<OutlookCalendarImp
       });
 
       if (events.isEmpty && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('指定期間内に予定が見つかりませんでした。'),
-          ),
+        SnackBarService.showInfo(
+          context,
+          '指定期間内に予定が見つかりませんでした。',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('予定の取得に失敗しました: $e'),
-          ),
+        SnackBarService.showError(
+          context,
+          '予定の取得に失敗しました: $e',
         );
       }
       setState(() {
@@ -91,8 +89,9 @@ class _OutlookCalendarImportDialogState extends ConsumerState<OutlookCalendarImp
 
   Future<void> _importSelectedEvents() async {
     if (_selectedIndices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('取り込む予定を選択してください')),
+      SnackBarService.showWarning(
+        context,
+        '取り込む予定を選択してください',
       );
       return;
     }
@@ -111,18 +110,16 @@ class _OutlookCalendarImportDialogState extends ConsumerState<OutlookCalendarImp
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${_selectedIndices.length}件の予定を取り込みました'),
-          ),
+        SnackBarService.showSuccess(
+          context,
+          '${_selectedIndices.length}件の予定を取り込みました',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('予定の取り込みに失敗しました: $e'),
-          ),
+        SnackBarService.showError(
+          context,
+          '予定の取り込みに失敗しました: $e',
         );
       }
     }

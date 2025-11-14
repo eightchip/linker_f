@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 import '../services/voice_control_service.dart';
+import '../services/snackbar_service.dart';
 
 /// 音声コントロールウィジェット
 class VoiceControlWidget extends StatefulWidget {
@@ -156,11 +157,9 @@ class _VoiceControlWidgetState extends State<VoiceControlWidget>
   }
 
   void _showInitializationError() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('音声認識の初期化に失敗しました。マイク権限を確認してください。'),
-        backgroundColor: Colors.red,
-      ),
+    SnackBarService.showError(
+      context,
+      '音声認識の初期化に失敗しました。マイク権限を確認してください。',
     );
   }
 
@@ -335,11 +334,9 @@ class _VoiceControlMiniWidgetState extends State<VoiceControlMiniWidget> {
 
   Future<void> _toggleListening() async {
     if (!_isInitialized) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('音声認識の初期化に失敗しました'),
-          backgroundColor: Colors.red,
-        ),
+      SnackBarService.showError(
+        context,
+        '音声認識の初期化に失敗しました',
       );
       return;
     }

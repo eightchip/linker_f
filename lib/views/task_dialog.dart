@@ -1536,8 +1536,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                               linkViewModel.launchLink(link);
                             } catch (e) {
                               if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('リンクを開けませんでした: ${link.label}')),
+                                SnackBarService.showError(
+                                  context,
+                                  'リンクを開けませんでした: ${link.label}',
                                 );
                               }
                             }
@@ -2424,8 +2425,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   
                   // スナックバーで通知
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('予定をコピーして追加しました')),
+                    SnackBarService.showSuccess(
+                      context,
+                      '予定をコピーして追加しました',
                     );
                   }
                 },
@@ -3879,8 +3881,9 @@ ${linksInfo.isNotEmpty ? '──────────────────
       
       if (incompleteTasks.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('割り当て可能なタスクがありません')),
+          SnackBarService.showWarning(
+            context,
+            '割り当て可能なタスクがありません',
           );
         }
         return;
@@ -3891,8 +3894,9 @@ ${linksInfo.isNotEmpty ? '──────────────────
 
       if (availableTasks.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('他のタスクがありません')),
+          SnackBarService.showWarning(
+            context,
+            '他のタスクがありません',
           );
         }
         return;
@@ -3942,15 +3946,17 @@ ${linksInfo.isNotEmpty ? '──────────────────
         setState(() {});
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('「${schedule.title}」を「${selectedTask.title}」に割り当てました')),
+          SnackBarService.showSuccess(
+            context,
+            '「${schedule.title}」を「${selectedTask.title}」に割り当てました',
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('タスク割り当て変更エラー: $e')),
+        SnackBarService.showError(
+          context,
+          'タスク割り当て変更エラー: $e',
         );
       }
     }

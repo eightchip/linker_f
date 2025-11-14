@@ -991,6 +991,32 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
     }
   }
 
+  Color _statusColor(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return Colors.grey.shade600;
+      case TaskStatus.inProgress:
+        return Colors.blue.shade600;
+      case TaskStatus.completed:
+        return Colors.green.shade600;
+      case TaskStatus.cancelled:
+        return Colors.red.shade600;
+    }
+  }
+
+  Color _statusBackgroundColor(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return Colors.grey.shade100;
+      case TaskStatus.inProgress:
+        return Colors.blue.shade50;
+      case TaskStatus.completed:
+        return Colors.green.shade50;
+      case TaskStatus.cancelled:
+        return Colors.red.shade50;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredTasks = _filteredTasks;
@@ -1022,22 +1048,32 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
               ],
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _searchController,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                labelText: 'キーワードで絞り込み',
-                hintText: 'タイトル・説明・タグで検索',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {});
-                        },
-                      )
-                    : null,
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200, width: 1.5),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: 'キーワードで絞り込み',
+                  labelStyle: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.w600),
+                  hintText: 'タイトル・説明・タグで検索',
+                  prefixIcon: Icon(Icons.search, color: Colors.blue.shade700),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear, color: Colors.blue.shade700),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -1087,43 +1123,76 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
                       itemBuilder: (context, index) {
                         final task = filteredTasks[index];
                         final isPreselected = widget.preselectedTaskId == task.id;
-                        return ListTile(
-                          leading: isPreselected ? const Icon(Icons.check_circle, color: Colors.blue) : null,
-                          title: Text(task.title),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _statusLabel(task.status),
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
-                              if (task.description != null && task.description!.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    task.description!,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              if (task.tags.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Wrap(
-                                    spacing: 6,
-                                    runSpacing: -8,
-                                    children: task.tags
-                                        .map((tag) => Chip(
-                                              label: Text(tag),
-                                              labelStyle: const TextStyle(fontSize: 11),
-                                              padding: EdgeInsets.zero,
-                                            ))
-                                        .toList(),
-                                  ),
-                                ),
-                            ],
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: isPreselected ? Colors.blue.shade50 : null,
+                            borderRadius: BorderRadius.circular(8),
+                            border: isPreselected ? Border.all(color: Colors.blue.shade300, width: 2) : null,
                           ),
-                          onTap: () => Navigator.pop(context, task),
+                          margin: const EdgeInsets.symmetric(vertical: 2),
+                          child: ListTile(
+                            leading: isPreselected 
+                                ? Icon(Icons.check_circle, color: Colors.blue.shade700, size: 28)
+                                : Icon(Icons.radio_button_unchecked, color: Colors.grey.shade400, size: 28),
+                            title: Text(
+                              task.title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: isPreselected ? Colors.blue.shade900 : null,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: _statusBackgroundColor(task.status),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    _statusLabel(task.status),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: _statusColor(task.status),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                if (task.description != null && task.description!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      task.description!,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(color: Colors.grey.shade700),
+                                    ),
+                                  ),
+                                if (task.tags.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Wrap(
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      children: task.tags
+                                          .map((tag) => Chip(
+                                                label: Text(
+                                                  tag,
+                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                                                ),
+                                                backgroundColor: Colors.orange.shade100,
+                                                labelStyle: TextStyle(color: Colors.orange.shade900),
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              ))
+                                          .toList(),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            onTap: () => Navigator.pop(context, task),
+                          ),
                         );
                       },
                     ),

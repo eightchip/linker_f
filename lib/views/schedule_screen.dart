@@ -6,6 +6,7 @@ import 'package:hive/hive.dart';
 import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
+import '../services/snackbar_service.dart';
 import 'task_dialog.dart';
 
 enum ScheduleLayout { detailed, compact }
@@ -1214,21 +1215,17 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       await taskViewModel.deleteTask(task.id);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('「${task.title}」を削除しました'),
-            duration: const Duration(seconds: 2),
-          ),
+        SnackBarService.showSuccess(
+          context,
+          '「${task.title}」を削除しました',
         );
       }
     } catch (e) {
       print('タスク削除エラー: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('削除エラー: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+        SnackBarService.showError(
+          context,
+          '削除エラー: ${e.toString()}',
         );
       }
     }

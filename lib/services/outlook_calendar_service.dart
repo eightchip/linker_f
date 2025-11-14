@@ -248,7 +248,8 @@ try {
     final startStr = outlookEvent['Start'] as String? ?? '';
     final endStr = outlookEvent['End'] as String? ?? '';
     final location = outlookEvent['Location'] as String? ?? '';
-    final body = outlookEvent['Body'] as String? ?? '';
+    // 本文（body）は不要なので取得しない
+    // final body = outlookEvent['Body'] as String? ?? '';
     final entryId = outlookEvent['EntryID'] as String? ?? '';
     final organizer = outlookEvent['Organizer'] as String? ?? '';
     final isMeeting = outlookEvent['IsMeeting'] as bool? ?? false;
@@ -275,9 +276,10 @@ try {
     }
 
     final notesFragments = <String>[];
-    if (body.isNotEmpty) {
-      notesFragments.add(body);
-    }
+    // 本文（body）は不要なので追加しない
+    // if (body.isNotEmpty) {
+    //   notesFragments.add(body);
+    // }
     final metadataParts = <String>[];
     if (organizer.isNotEmpty) {
       metadataParts.add('Organizer: $organizer');

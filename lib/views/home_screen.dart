@@ -2178,8 +2178,9 @@ class _FilePreviewWidgetState extends State<FilePreviewWidget> {
             } catch (e) {
               print('PDF外部起動エラー: $e');
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('外部アプリで開けませんでした')),
+                SnackBarService.showError(
+                  context,
+                  '外部アプリで開けませんでした',
                 );
               }
             }

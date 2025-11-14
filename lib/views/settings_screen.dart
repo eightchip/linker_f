@@ -1944,11 +1944,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   if (confirmed == true) {
                     await uiNotifier.resetAllSettings();
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('UI設定をリセットしました'),
-                          backgroundColor: Colors.green,
-                        ),
+                      SnackBarService.showSuccess(
+                        context,
+                        'UI設定をリセットしました',
                       );
                     }
                   }
@@ -2816,11 +2814,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             if (confirmed == true) {
               notifier.resetToDefaults();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('プロジェクト一覧設定をリセットしました'),
-                    backgroundColor: Colors.green,
-                  ),
+                SnackBarService.showSuccess(
+                  context,
+                  'プロジェクト一覧設定をリセットしました',
                 );
               }
             }
@@ -4020,11 +4016,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         onPressed: () {
                           ref.read(layoutSettingsProvider.notifier).resetToDefaults();
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('レイアウト設定をリセットしました'),
-                                backgroundColor: Colors.green,
-                              ),
+                            SnackBarService.showSuccess(
+                              context,
+                              'レイアウト設定をリセットしました',
                             );
                           }
                         },
@@ -4079,12 +4073,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           if (confirmed == true) {
                             await uiNotifier.resetAllSettings();
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('UI設定をリセットしました'),
-                                  backgroundColor: Colors.green,
-                                  duration: Duration(seconds: 3),
-                                ),
+                              SnackBarService.showSuccess(
+                                context,
+                                'UI設定をリセットしました',
                               );
                             }
                           }

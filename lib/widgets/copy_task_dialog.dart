@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
+import '../services/snackbar_service.dart';
 import '../widgets/app_spacing.dart';
 import '../widgets/app_button_styles.dart';
 
@@ -465,34 +466,26 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
       
       // 結果メッセージを表示
       if (successCount == totalCount) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('タスクを${successCount}個コピーしました'),
-            backgroundColor: Colors.green,
-          ),
+        SnackBarService.showSuccess(
+          context,
+          'タスクを${successCount}個コピーしました',
         );
       } else if (successCount > 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('タスクを${successCount}個コピーしました（${totalCount - successCount}個失敗）'),
-            backgroundColor: Colors.orange,
-          ),
+        SnackBarService.showWarning(
+          context,
+          'タスクを${successCount}個コピーしました（${totalCount - successCount}個失敗）',
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('タスクのコピーに失敗しました'),
-            backgroundColor: Colors.red,
-          ),
+        SnackBarService.showError(
+          context,
+          'タスクのコピーに失敗しました',
         );
       }
     } catch (e) {
       print('タスクコピーエラー: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('タスクのコピーに失敗しました: $e'),
-          backgroundColor: Colors.red,
-        ),
+      SnackBarService.showError(
+        context,
+        'タスクのコピーに失敗しました: $e',
       );
     } finally {
       setState(() {
