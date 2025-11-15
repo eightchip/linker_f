@@ -80,7 +80,7 @@ class BackupService {
         if (kDebugMode) {
           print('自動バックアップを実行します（前回から$daysSinceLastBackup日経過）');
         }
-        await performBackup();
+        await performBackup(backupType: 'auto');
       } else {
         if (kDebugMode) {
           print('自動バックアップの時期ではありません（前回から$daysSinceLastBackup日経過、間隔: $backupInterval日）');
@@ -92,17 +92,30 @@ class BackupService {
   }
 
   /// バックアップを実行
-  Future<void> performBackup() async {
+  /// [backupType] バックアップの種類（'auto', 'manual', 'pre-operation'など）
+  Future<File> performBackup({String backupType = 'auto'}) async {
     try {
       if (kDebugMode) {
-        print('バックアップを開始します');
+        print('バックアップを開始します（種類: $backupType）');
       }
 
       final backupData = await _createBackupData();
+      backupData['backupType'] = backupType;
+      
       final backupFile = await _saveBackupFile(backupData);
       
+      // バックアップファイルの検証
+      final isValid = await validateBackupFile(backupFile);
+      if (!isValid) {
+        throw Exception('バックアップファイルの検証に失敗しました');
+      }
+      
       await _cleanupOldBackups();
-      await _settingsService.setLastBackup(DateTime.now());
+      
+      if (backupType != 'pre-operation') {
+        // 自動バックアップの場合は最終バックアップ日時を更新
+        await _settingsService.setLastBackup(DateTime.now());
+      }
       
       if (kDebugMode) {
         print('バックアップが完了しました: ${backupFile.path}');
@@ -110,9 +123,68 @@ class BackupService {
       
       // バックアップ完了コールバックを呼び出し
       _onBackupCompleted?.call(backupFile.path);
+      
+      return backupFile;
     } catch (e) {
       ErrorHandler.logError('バックアップ実行', e);
       rethrow;
+    }
+  }
+  
+  /// 操作前の自動バックアップ（重要な操作の前に実行）
+  /// [operationName] 操作名（例: 'bulk_delete', 'data_import', 'task_merge'）
+  /// [itemCount] 操作対象のアイテム数（大量操作の判定に使用）
+  /// [abortOnFailure] バックアップ失敗時に操作を中断するか（デフォルト: false）
+  Future<bool> performPreOperationBackup({
+    required String operationName,
+    int itemCount = 0,
+    bool abortOnFailure = false,
+  }) async {
+    try {
+      // 大量操作の場合は必ずバックアップ（10件以上）
+      final isBulkOperation = itemCount >= 10;
+      
+      if (!isBulkOperation && !abortOnFailure) {
+        // 少量の操作でバックアップが必須でない場合はスキップ
+        if (kDebugMode) {
+          print('操作前バックアップをスキップします（操作: $operationName, 件数: $itemCount）');
+        }
+        return true;
+      }
+      
+      if (kDebugMode) {
+        print('操作前バックアップを開始します（操作: $operationName, 件数: $itemCount）');
+      }
+      
+      try {
+        await performBackup(backupType: 'pre-operation');
+        if (kDebugMode) {
+          print('操作前バックアップが完了しました');
+        }
+        return true;
+      } catch (e) {
+        ErrorHandler.logError('操作前バックアップ', e);
+        
+        if (abortOnFailure || isBulkOperation) {
+          // バックアップ失敗時は警告を発行
+          if (kDebugMode) {
+            print('操作前バックアップが失敗しました。操作を中断するか確認が必要です。');
+          }
+          throw Exception('操作前のバックアップに失敗しました: $e');
+        }
+        
+        // バックアップ失敗でも続行（警告のみ）
+        if (kDebugMode) {
+          print('操作前バックアップが失敗しましたが、操作を続行します');
+        }
+        return false;
+      }
+    } catch (e) {
+      ErrorHandler.logError('操作前バックアップ処理', e);
+      if (abortOnFailure) {
+        rethrow;
+      }
+      return false;
     }
   }
 
@@ -178,7 +250,7 @@ class BackupService {
     return backupData;
   }
 
-  /// バックアップファイルを保存
+  /// バックアップファイルを保存（複数場所に対応）
   Future<File> _saveBackupFile(Map<String, dynamic> backupData) async {
     final backupDir = await getBackupDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -187,6 +259,29 @@ class BackupService {
     
     final jsonString = jsonEncode(backupData);
     await backupFile.writeAsString(jsonString);
+    
+    // 追加のバックアップ保存先にコピー（設定されている場合）
+    final additionalBackupPath = _settingsService.additionalBackupPath;
+    if (additionalBackupPath != null && additionalBackupPath.isNotEmpty) {
+      try {
+        final additionalDir = Directory(additionalBackupPath);
+        if (!await additionalDir.exists()) {
+          await additionalDir.create(recursive: true);
+        }
+        
+        final additionalBackupFile = File('${additionalDir.path}/$fileName');
+        await additionalBackupFile.writeAsString(jsonString);
+        
+        if (kDebugMode) {
+          print('追加のバックアップ保存先にもコピーしました: ${additionalBackupFile.path}');
+        }
+      } catch (e) {
+        // 追加保存先へのコピーエラーは警告のみ（メインのバックアップは成功している）
+        if (kDebugMode) {
+          print('追加のバックアップ保存先へのコピーエラー（無視）: $e');
+        }
+      }
+    }
     
     return backupFile;
   }
@@ -286,6 +381,62 @@ class BackupService {
     } catch (e) {
       ErrorHandler.logError('バックアップ復元', e);
       rethrow;
+    }
+  }
+
+  /// バックアップファイルの整合性を検証
+  Future<bool> validateBackupFile(File backupFile) async {
+    try {
+      if (!await backupFile.exists()) {
+        if (kDebugMode) {
+          print('バックアップファイルが存在しません: ${backupFile.path}');
+        }
+        return false;
+      }
+      
+      // ファイルサイズチェック（空ファイルでないか）
+      final fileSize = await backupFile.length();
+      if (fileSize == 0) {
+        if (kDebugMode) {
+          print('バックアップファイルが空です: ${backupFile.path}');
+        }
+        return false;
+      }
+      
+      // JSON形式の検証
+      final jsonString = await backupFile.readAsString();
+      try {
+        final backupDataRaw = jsonDecode(jsonString);
+        if (backupDataRaw is! Map) {
+          if (kDebugMode) {
+            print('バックアップファイルの形式が不正です: ${backupFile.path}');
+          }
+          return false;
+        }
+        
+        final backupData = Map<String, dynamic>.from(backupDataRaw);
+        
+        // 基本的な検証
+        if (!_validateBackupData(backupData)) {
+          if (kDebugMode) {
+            print('バックアップデータの検証に失敗しました: ${backupFile.path}');
+          }
+          return false;
+        }
+        
+        if (kDebugMode) {
+          print('バックアップファイルの検証に成功しました: ${backupFile.path}');
+        }
+        return true;
+      } catch (e) {
+        if (kDebugMode) {
+          print('バックアップファイルのJSON解析エラー: $e');
+        }
+        return false;
+      }
+    } catch (e) {
+      ErrorHandler.logError('バックアップファイル検証', e);
+      return false;
     }
   }
 

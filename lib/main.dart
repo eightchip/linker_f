@@ -82,8 +82,8 @@ Future<void> _initializeApp() async {
   // 段階1: Hive初期化
   await _initializeHive();
   
-  // 段階2: データマイグレーション（無効化）
-  // await _initializeDataMigration();
+  // 段階2: データマイグレーション・整合性チェック（有効化）
+  await _initializeDataMigration();
   
   // 段階3: 基本サービスの初期化
   await _initializeBasicServices();
@@ -180,22 +180,53 @@ Future<void> _initializeHive() async {
 }
 
 // データマイグレーション初期化
-// ignore: unused_element
 Future<void> _initializeDataMigration() async {
   try {
     print('データマイグレーション開始');
     
     await MigrationService.migrateData();
     
-    final isDataValid = await MigrationService.validateDataIntegrity();
+    // 整合性チェック（詳細な結果を取得）
+    final integrityResult = await MigrationService.validateDataIntegrity();
+    final isDataValid = integrityResult['valid'] as bool;
+    final issues = integrityResult['issues'] as List<String>;
+    
     if (!isDataValid) {
-      print('データ整合性エラーを検出しました。修復を開始します...');
-      await MigrationService.repairCorruptedData();
+      print('データ整合性エラーを検出しました: ${issues.length}件の問題');
+      for (final issue in issues) {
+        print('  - $issue');
+      }
+      
+      // 修復前にバックアップを実行（可能な場合）
+      try {
+        print('修復前にバックアップを実行します...');
+        final settingsService = SettingsService.instance;
+        final linkRepository = LinkRepository.instance;
+        final backupService = BackupService(
+          linkRepository: linkRepository,
+          settingsService: settingsService,
+        );
+        await backupService.performBackup();
+        print('バックアップ完了');
+      } catch (e) {
+        print('バックアップエラー（修復を続行します）: $e');
+      }
+      
+      print('データ修復を開始します...');
+      final repairCounts = await MigrationService.repairCorruptedData();
+      print('データ修復完了:');
+      print('  - グループ: ${repairCounts['groups']}件');
+      print('  - タスク: ${repairCounts['tasks']}件');
+      print('  - サブタスク: ${repairCounts['subTasks']}件');
+      print('  - 予定: ${repairCounts['schedules']}件');
+    } else {
+      print('データ整合性チェック: 正常');
     }
     
     print('データマイグレーション完了');
   } catch (e) {
     print('データマイグレーションエラー: $e');
+    print('スタックトレース: ${StackTrace.current}');
     // データマイグレーションエラーは致命的でないため、継続
   }
 }

@@ -19,6 +19,8 @@ import '../services/notification_service.dart';
 import '../services/windows_notification_service.dart';
 import '../services/settings_service.dart';
 import '../services/snackbar_service.dart';
+import '../services/backup_service.dart';
+import '../repositories/link_repository.dart';
 import '../viewmodels/sync_status_provider.dart';
 import 'settings_screen.dart';
 import '../utils/csv_export.dart';
@@ -389,23 +391,57 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   Future<void> _deleteSelectedTasks() async {
     if (_selectedTaskIds.isEmpty) return;
 
+    final deletedCount = _selectedTaskIds.length;
+
+    // 大量削除の場合は操作前バックアップを実行（10件以上）
+    if (deletedCount >= 10) {
+      try {
+        final settingsService = SettingsService.instance;
+        final linkRepository = LinkRepository.instance;
+        final backupService = BackupService(
+          linkRepository: linkRepository,
+          settingsService: settingsService,
+        );
+        
+        await backupService.performPreOperationBackup(
+          operationName: 'bulk_delete',
+          itemCount: deletedCount,
+          abortOnFailure: false, // バックアップ失敗でも続行
+        );
+        
+        if (mounted) {
+          SnackBarService.showInfo(
+            context,
+            'バックアップを実行しました。${deletedCount}件のタスクを削除します...',
+          );
+        }
+      } catch (e) {
+        // バックアップエラーは警告のみ表示して続行
+        if (mounted) {
+          SnackBarService.showWarning(
+            context,
+            'バックアップに失敗しましたが、削除を続行します: $e',
+          );
+        }
+      }
+    }
+
     final confirmed = await UnifiedDialogHelper.showDeleteConfirmDialog(
       context,
       title: '確認',
-      message: '選択した${_selectedTaskIds.length}件のタスクを削除しますか？',
+      message: '選択した${deletedCount}件のタスクを削除しますか？',
       confirmText: '削除',
       cancelText: 'キャンセル',
     );
 
     if (confirmed == true) {
       try {
-      final taskViewModel = ref.read(taskViewModelProvider.notifier);
-        final deletedCount = _selectedTaskIds.length;
+        final taskViewModel = ref.read(taskViewModelProvider.notifier);
       
-      // 選択されたタスクを削除
-      for (final taskId in _selectedTaskIds) {
+        // 選択されたタスクを削除
+        for (final taskId in _selectedTaskIds) {
           await taskViewModel.deleteTask(taskId);
-      }
+        }
 
       // 選択モードを解除
       setState(() {
@@ -505,6 +541,36 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       if (sourceTaskIds.isEmpty) {
         SnackBarService.showWarning(context, '結合元のタスクがありません');
         return;
+      }
+
+      // 操作前バックアップを実行（タスク結合は重要な操作）
+      try {
+        final settingsService = SettingsService.instance;
+        final linkRepository = LinkRepository.instance;
+        final backupService = BackupService(
+          linkRepository: linkRepository,
+          settingsService: settingsService,
+        );
+        
+        await backupService.performPreOperationBackup(
+          operationName: 'task_merge',
+          itemCount: sourceTaskIds.length + 1,
+          abortOnFailure: false, // バックアップ失敗でも続行
+        );
+        
+        if (mounted) {
+          SnackBarService.showInfo(
+            context,
+            'バックアップを実行しました。タスク結合を実行します...',
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          SnackBarService.showWarning(
+            context,
+            'バックアップに失敗しましたが、結合を続行します: $e',
+          );
+        }
       }
 
       // 確認ダイアログ
@@ -9218,10 +9284,44 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
   Future<void> _deleteSelectedTasksForGrid(BuildContext context) async {
     if (_selectedTaskIds.isEmpty) return;
 
+    final deletedCount = _selectedTaskIds.length;
+
+    // 大量削除の場合は操作前バックアップを実行（10件以上）
+    if (deletedCount >= 10) {
+      try {
+        final settingsService = SettingsService.instance;
+        final linkRepository = LinkRepository.instance;
+        final backupService = BackupService(
+          linkRepository: linkRepository,
+          settingsService: settingsService,
+        );
+        
+        await backupService.performPreOperationBackup(
+          operationName: 'bulk_delete_grid',
+          itemCount: deletedCount,
+          abortOnFailure: false,
+        );
+        
+        if (mounted) {
+          SnackBarService.showInfo(
+            context,
+            'バックアップを実行しました。${deletedCount}件のタスクを削除します...',
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          SnackBarService.showWarning(
+            context,
+            'バックアップに失敗しましたが、削除を続行します: $e',
+          );
+        }
+      }
+    }
+
     final confirmed = await UnifiedDialogHelper.showDeleteConfirmDialog(
       context,
       title: '確認',
-      message: '選択した${_selectedTaskIds.length}件のタスクを削除しますか？',
+      message: '選択した${deletedCount}件のタスクを削除しますか？',
       confirmText: '削除',
       cancelText: 'キャンセル',
     );

@@ -30,13 +30,22 @@ class OutlookAutoSyncService {
         return;
       }
 
-      // Outlookが利用可能かチェック
+      // Outlookが利用可能かチェック（プロセス監視付き）
+      if (kDebugMode) {
+        print('Outlook可用性チェック開始...');
+      }
       final isAvailable = await _outlookService.isOutlookAvailable();
       if (!isAvailable) {
         if (kDebugMode) {
           print('Outlookが利用できないため、自動取込をスキップします');
         }
+        SnackBarService.showGlobalInfo(
+          'Outlookが利用できないため、自動取り込みをスキップしました',
+        );
         return;
+      }
+      if (kDebugMode) {
+        print('Outlook可用性確認完了');
       }
 
       // 専用タスクを取得または作成
@@ -56,11 +65,23 @@ class OutlookAutoSyncService {
         print('期間: $periodDays日');
       }
 
-      // Outlookから予定を取得
-      final events = await _outlookService.getCalendarEvents(
-        startDate: tomorrow,
-        endDate: endDate,
-      );
+      // Outlookから予定を取得（タイムアウト・再試行付き）
+      List<Map<String, dynamic>> events = [];
+      try {
+        events = await _outlookService.getCalendarEvents(
+          startDate: tomorrow,
+          endDate: endDate,
+        );
+      } catch (e) {
+        ErrorHandler.logError('Outlook自動取込: 予定取得', e);
+        if (kDebugMode) {
+          print('予定取得エラー: $e');
+        }
+        SnackBarService.showGlobalInfo(
+          'Outlookから予定を取得できませんでした。後でもう一度お試しください。',
+        );
+        rethrow;
+      }
 
       if (kDebugMode) {
         print('取得した予定数: ${events.length}件');

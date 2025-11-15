@@ -14,21 +14,54 @@ class OutlookCalendarService {
 
   final _uuid = const Uuid();
 
-  /// Outlookが利用可能かチェック
+  /// Outlookが利用可能かチェック（プロセス監視付き）
   Future<bool> isOutlookAvailable() async {
     try {
-      final result = await Process.run('powershell.exe', [
+      // Outlookプロセスが存在するかチェック
+      final processCheck = await Process.run('powershell.exe', [
         '-NoProfile',
         '-ExecutionPolicy',
         'Bypass',
         '-Command',
-        r'try { $ol = New-Object -ComObject Outlook.Application; $ol.Quit(); Write-Output "true" } catch { Write-Output "false" }',
+        r'$processes = Get-Process -Name "OUTLOOK" -ErrorAction SilentlyContinue; if ($processes) { Write-Output "running" } else { Write-Output "not_running" }',
       ]);
+      
+      final isRunning = processCheck.stdout.toString().trim() == 'running';
+      if (kDebugMode) {
+        print('Outlookプロセス状態: ${isRunning ? "実行中" : "停止中"}');
+      }
+      
+      // COMオブジェクトの作成テスト
+      final result = await Process.run(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-Command',
+          r'try { $ol = New-Object -ComObject Outlook.Application; if ($null -eq $ol) { Write-Output "false" } else { $ol.Quit(); [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ol) | Out-Null; [System.GC]::Collect(); Write-Output "true" } } catch { Write-Output "false" }',
+        ],
+        runInShell: false,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          if (kDebugMode) {
+            print('Outlook可用性チェック: タイムアウト');
+          }
+          return ProcessResult(0, 1, 'timeout', '');
+        },
+      );
 
-      return result.stdout.toString().trim() == 'true';
+      final isAvailable = result.stdout.toString().trim() == 'true';
+      if (kDebugMode) {
+        print('Outlook COMオブジェクト可用性: ${isAvailable ? "利用可能" : "利用不可"}');
+      }
+      
+      return isAvailable;
     } catch (e) {
       if (kDebugMode) {
         print('Outlook可用性チェックエラー: $e');
+        print('スタックトレース: ${StackTrace.current}');
       }
       return false;
     }
@@ -217,22 +250,41 @@ try {
     }
     if (\$outlook) { 
         try {
+            # Outlookを明示的に終了
+            try {
+                \$outlook.Quit()
+            } catch {
+                # Quit()が失敗しても続行
+            }
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null
         } catch { }
         \$outlook = \$null
     }
     
-    # ガベージコレクション
+    # ガベージコレクション（複数回実行して確実に解放）
+    [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
     [System.GC]::Collect()
 }
 ''';
 
-      final output = await _runPowerShellScript(script);
+      // タイムアウトと再試行を設定（大量の予定がある場合に備えて60秒）
+      final output = await _runPowerShellScript(
+        script,
+        maxRetries: 3,
+        timeoutSeconds: 60,
+      );
       return _parseJsonList(output);
-    } catch (e) {
-      ErrorHandler.logError('Outlook Calendar 予定取得', e);
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('=== Outlook Calendar 予定取得エラー ===');
+        print('エラー: $e');
+        print('スタックトレース: $stackTrace');
+        print('=====================================');
+      }
+      ErrorHandler.logError('Outlook Calendar 予定取得', e, stackTrace);
       rethrow;
     }
   }
@@ -329,37 +381,120 @@ try {
         .toList();
   }
 
-  Future<String> _runPowerShellScript(String script) async {
-    try {
-      final result = await Process.run('powershell.exe', [
-        '-NoProfile',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-Command',
-        script,
-      ], runInShell: false);
-
-      // エラー出力を確認
-      final stderr = result.stderr.toString().trim();
-      if (stderr.isNotEmpty && !stderr.contains('ConvertTo-Json')) {
+  /// PowerShellスクリプトを実行（タイムアウト・再試行付き）
+  /// [script] 実行するPowerShellスクリプト
+  /// [maxRetries] 最大再試行回数（デフォルト3回）
+  /// [timeoutSeconds] タイムアウト秒数（デフォルト30秒）
+  Future<String> _runPowerShellScript(
+    String script, {
+    int maxRetries = 3,
+    int timeoutSeconds = 30,
+  }) async {
+    int attempt = 0;
+    Exception? lastException;
+    
+    while (attempt < maxRetries) {
+      attempt++;
+      
+      try {
         if (kDebugMode) {
-          print('PowerShell警告: $stderr');
+          print('PowerShell実行試行 $attempt/$maxRetries (タイムアウト: ${timeoutSeconds}秒)');
         }
-      }
+        
+        final result = await Process.run(
+          'powershell.exe',
+          [
+            '-NoProfile',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-Command',
+            script,
+          ],
+          runInShell: false,
+        ).timeout(
+          Duration(seconds: timeoutSeconds),
+          onTimeout: () {
+            if (kDebugMode) {
+              print('PowerShell実行タイムアウト (試行 $attempt/$maxRetries)');
+            }
+            return ProcessResult(0, 1, 'timeout', 'PowerShell実行がタイムアウトしました（${timeoutSeconds}秒）');
+          },
+        );
 
-      // 標準出力を確認
-      final stdout = result.stdout.toString().trim();
-      if (stdout.isEmpty && result.exitCode != 0) {
-        throw Exception('PowerShellスクリプト実行エラー: $stderr');
-      }
+        // エラー出力を確認
+        final stderr = result.stderr.toString().trim();
+        if (stderr.isNotEmpty && !stderr.contains('ConvertTo-Json')) {
+          if (kDebugMode) {
+            print('PowerShell警告 (試行 $attempt): $stderr');
+          }
+        }
 
-      return stdout;
-    } catch (e) {
-      if (kDebugMode) {
-        print('PowerShell実行エラー: $e');
+        // 標準出力を確認
+        final stdout = result.stdout.toString().trim();
+        
+        // タイムアウトエラーの場合
+        if (stdout.contains('timeout') || result.exitCode == 1 && stderr.contains('タイムアウト')) {
+          lastException = Exception('PowerShell実行タイムアウト: $stderr');
+          if (attempt < maxRetries) {
+            // 指数バックオフで待機（1秒、2秒、4秒...）
+            final waitSeconds = 1 << (attempt - 1);
+            if (kDebugMode) {
+              print('再試行前に${waitSeconds}秒待機します...');
+            }
+            await Future.delayed(Duration(seconds: waitSeconds));
+            continue;
+          }
+          throw lastException;
+        }
+        
+        if (stdout.isEmpty && result.exitCode != 0) {
+          lastException = Exception('PowerShellスクリプト実行エラー: $stderr');
+          if (attempt < maxRetries) {
+            final waitSeconds = 1 << (attempt - 1);
+            if (kDebugMode) {
+              print('再試行前に${waitSeconds}秒待機します...');
+            }
+            await Future.delayed(Duration(seconds: waitSeconds));
+            continue;
+          }
+          throw lastException;
+        }
+
+        if (kDebugMode) {
+          print('PowerShell実行成功 (試行 $attempt)');
+        }
+        
+        return stdout;
+      } catch (e) {
+        lastException = e is Exception ? e : Exception(e.toString());
+        
+        if (kDebugMode) {
+          print('PowerShell実行エラー (試行 $attempt/$maxRetries): $e');
+          print('スタックトレース: ${StackTrace.current}');
+        }
+        
+        // タイムアウトや特定のエラーの場合は再試行
+        if (attempt < maxRetries && (e.toString().contains('timeout') || 
+                                     e.toString().contains('タイムアウト') ||
+                                     e.toString().contains('COM'))) {
+          final waitSeconds = 1 << (attempt - 1);
+          if (kDebugMode) {
+            print('再試行前に${waitSeconds}秒待機します...');
+          }
+          await Future.delayed(Duration(seconds: waitSeconds));
+          continue;
+        }
+        
+        // 最終試行または再試行できないエラーの場合
+        if (kDebugMode) {
+          print('PowerShell実行失敗: 全試行を完了しました');
+        }
+        rethrow;
       }
-      rethrow;
     }
+    
+    // すべての再試行が失敗した場合
+    throw lastException ?? Exception('PowerShell実行が失敗しました（全${maxRetries}回の試行）');
   }
 
   List<Map<String, dynamic>> _parseJsonList(String rawOutput) {

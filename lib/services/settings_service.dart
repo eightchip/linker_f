@@ -31,6 +31,7 @@ class SettingsService {
   static const String _windowYKey = 'windowY';
   static const String _autoBackupKey = 'autoBackup';
   static const String _backupIntervalKey = 'backupInterval';
+  static const String _additionalBackupPathKey = 'additionalBackupPath';
   static const String _showNotificationsKey = 'showNotifications';
   static const String _notificationSoundKey = 'notificationSound';
   static const String _searchHistoryKey = 'searchHistory';
@@ -458,6 +459,19 @@ class SettingsService {
   }
   Future<void> setLastBackup(DateTime value) async {
     await _settingsBox.put(_lastBackupKey, value.millisecondsSinceEpoch);
+  }
+
+  /// 追加のバックアップ保存先パス（複数場所への保存用）
+  String? get additionalBackupPath {
+    final path = _settingsBox.get(_additionalBackupPathKey);
+    return path != null ? path as String : null;
+  }
+  Future<void> setAdditionalBackupPath(String? value) async {
+    if (value == null || value.isEmpty) {
+      await _settingsBox.delete(_additionalBackupPathKey);
+    } else {
+      await _settingsBox.put(_additionalBackupPathKey, value);
+    }
   }
 
   // ==================== 通知設定 ====================

@@ -1,8 +1,10 @@
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../models/link_item.dart';
 import '../models/group.dart';
 import '../models/task_item.dart';
 import '../models/sub_task.dart';
+import '../models/schedule_item.dart';
 
 class MigrationService {
   static const String _migrationVersionKey = 'migration_version';
@@ -91,20 +93,32 @@ class MigrationService {
     }
   }
 
-  /// データの整合性チェック
-  static Future<bool> validateDataIntegrity() async {
+  /// データの整合性チェック（予定の整合性チェックを含む）
+  static Future<Map<String, dynamic>> validateDataIntegrity() async {
+    final issues = <String>[];
+    
     try {
       final groupsBox = await Hive.openBox<Group>('groups');
       final linksBox = await Hive.openBox<LinkItem>('links');
       final tasksBox = await Hive.openBox<TaskItem>('tasks');
       final subTasksBox = await Hive.openBox<SubTask>('sub_tasks');
+      Box<ScheduleItem>? schedulesBox;
+      try {
+        schedulesBox = await Hive.openBox<ScheduleItem>('taskSchedules');
+      } catch (e) {
+        schedulesBox = null;
+        print('予定ボックスのオープンエラー（チェック時、スキップ）: $e');
+      }
+      
+      final taskIds = tasksBox.values.map((t) => t.id).toSet();
       
       // グループ内のリンクIDが個別リンクボックスに存在するかチェック
       for (final group in groupsBox.values) {
         for (final item in group.items) {
           if (!linksBox.containsKey(item.id)) {
-            print('整合性エラー: グループ "${group.title}" のリンク "${item.label}" が個別リンクボックスに存在しません');
-            return false;
+            final issue = 'グループ "${group.title}" のリンク "${item.label}" が個別リンクボックスに存在しません';
+            print('整合性エラー: $issue');
+            issues.add(issue);
           }
         }
       }
@@ -112,29 +126,63 @@ class MigrationService {
       // タスクの関連リンクIDが存在するかチェック
       for (final task in tasksBox.values) {
         if (task.relatedLinkId != null && !linksBox.containsKey(task.relatedLinkId)) {
-          print('整合性エラー: タスク "${task.title}" の関連リンクID "${task.relatedLinkId}" が存在しません');
-          return false;
+          final issue = 'タスク "${task.title}" の関連リンクID "${task.relatedLinkId}" が存在しません';
+          print('整合性エラー: $issue');
+          issues.add(issue);
+        }
+        
+        // タスクのrelatedLinkIdsをチェック
+        for (final linkId in task.relatedLinkIds) {
+          if (!linksBox.containsKey(linkId)) {
+            final issue = 'タスク "${task.title}" の関連リンクID "$linkId" が存在しません';
+            print('整合性エラー: $issue');
+            issues.add(issue);
+          }
         }
       }
       
       // サブタスクの親タスクIDが存在するかチェック
       for (final subTask in subTasksBox.values) {
-        if (subTask.parentTaskId != null && !tasksBox.containsKey(subTask.parentTaskId)) {
-          print('整合性エラー: サブタスク "${subTask.title}" の親タスクID "${subTask.parentTaskId}" が存在しません');
-          return false;
+        if (subTask.parentTaskId != null && !taskIds.contains(subTask.parentTaskId)) {
+          final issue = 'サブタスク "${subTask.title}" の親タスクID "${subTask.parentTaskId}" が存在しません';
+          print('整合性エラー: $issue');
+          issues.add(issue);
         }
       }
       
-      print('データ整合性チェック完了: 正常');
-      return true;
+      // 予定のタスクIDが存在するかチェック
+      if (schedulesBox != null) {
+        for (final schedule in schedulesBox.values) {
+          if (!taskIds.contains(schedule.taskId)) {
+            final issue = '予定 "${schedule.title}" のタスクID "${schedule.taskId}" が存在しません';
+            print('整合性エラー: $issue');
+            issues.add(issue);
+          }
+        }
+      }
+      
+      if (issues.isEmpty) {
+        print('データ整合性チェック完了: 正常');
+        return {'valid': true, 'issues': []};
+      } else {
+        print('データ整合性チェック完了: ${issues.length}件の問題を検出');
+        return {'valid': false, 'issues': issues};
+      }
     } catch (e) {
       print('データ整合性チェックエラー: $e');
-      return false;
+      return {'valid': false, 'issues': ['整合性チェック実行エラー: $e']};
     }
   }
 
-  /// 破損データの修復
-  static Future<void> repairCorruptedData() async {
+  /// 破損データの修復（予定の修復を含む）
+  static Future<Map<String, int>> repairCorruptedData() async {
+    final repairCounts = <String, int>{
+      'groups': 0,
+      'tasks': 0,
+      'subTasks': 0,
+      'schedules': 0,
+    };
+    
     try {
       print('破損データ修復開始');
       
@@ -142,36 +190,103 @@ class MigrationService {
       final linksBox = await Hive.openBox<LinkItem>('links');
       final tasksBox = await Hive.openBox<TaskItem>('tasks');
       final subTasksBox = await Hive.openBox<SubTask>('sub_tasks');
+      final schedulesBox = await Hive.openBox<ScheduleItem>('taskSchedules').catchError((e) => null);
+      
+      final taskIds = tasksBox.values.map((t) => t.id).toSet();
+      final linkIds = linksBox.values.map((l) => l.id).toSet();
       
       // 存在しないリンクをグループから削除
       for (final group in groupsBox.values) {
-        final validItems = group.items.where((item) => linksBox.containsKey(item.id)).toList();
+        final validItems = group.items.where((item) => linkIds.contains(item.id)).toList();
         if (validItems.length != group.items.length) {
           final updatedGroup = group.copyWith(items: validItems);
           await groupsBox.put(group.id, updatedGroup);
           print('グループ "${group.title}" から無効なリンクを削除しました');
+          repairCounts['groups'] = repairCounts['groups']! + 1;
         }
       }
       
       // 存在しないリンクを参照するタスクの関連リンクIDをクリア
       for (final task in tasksBox.values) {
-        if (task.relatedLinkId != null && !linksBox.containsKey(task.relatedLinkId)) {
-          final updatedTask = task.copyWith(relatedLinkId: null);
-          await tasksBox.put(task.id, updatedTask);
-          print('タスク "${task.title}" の無効な関連リンクIDをクリアしました');
+        bool updated = false;
+        TaskItem? updatedTask = task;
+        
+        // relatedLinkIdをクリア
+        if (task.relatedLinkId != null && !linkIds.contains(task.relatedLinkId)) {
+          updatedTask = task.copyWith(relatedLinkId: null);
+          updated = true;
+        }
+        
+        // relatedLinkIdsから無効なリンクIDを削除
+        final validLinkIds = task.relatedLinkIds.where((id) => linkIds.contains(id)).toList();
+        if (validLinkIds.length != task.relatedLinkIds.length) {
+          updatedTask = updatedTask.copyWith(relatedLinkIds: validLinkIds);
+          updated = true;
+        }
+        
+        if (updated) {
+          await tasksBox.put(updatedTask.id, updatedTask);
+          print('タスク "${updatedTask.title}" の無効な関連リンクIDをクリアしました');
+          repairCounts['tasks'] = repairCounts['tasks']! + 1;
         }
       }
       
       // 存在しないタスクを参照するサブタスクの親タスクIDをクリア
       for (final subTask in subTasksBox.values) {
-        if (subTask.parentTaskId != null && !tasksBox.containsKey(subTask.parentTaskId)) {
+        if (subTask.parentTaskId != null && !taskIds.contains(subTask.parentTaskId)) {
           final updatedSubTask = subTask.copyWith(parentTaskId: null);
           await subTasksBox.put(subTask.id, updatedSubTask);
           print('サブタスク "${subTask.title}" の無効な親タスクIDをクリアしました');
+          repairCounts['subTasks'] = repairCounts['subTasks']! + 1;
         }
       }
       
-      print('破損データ修復完了');
+      // 孤立した予定の修復（存在しないタスクIDに紐づく予定）
+      if (schedulesBox != null) {
+        TaskItem? orphanTask;
+        
+        for (final schedule in schedulesBox.values) {
+          if (!taskIds.contains(schedule.taskId)) {
+            // 孤立予定タスクを作成または取得
+            if (orphanTask == null) {
+              final orphanTasks = tasksBox.values.where((t) => 
+                t.title == '孤立予定' || t.title.contains('孤立した予定')
+              ).toList();
+              
+              if (orphanTasks.isNotEmpty) {
+                orphanTask = orphanTasks.first;
+              } else {
+                // 孤立予定タスクを作成
+                final uuid = Uuid();
+                orphanTask = TaskItem(
+                  id: uuid.v4(),
+                  title: '孤立予定',
+                  description: '存在しないタスクに紐づいていた予定をまとめるためのタスクです。',
+                  priority: TaskPriority.low,
+                  status: TaskStatus.inProgress,
+                  createdAt: DateTime.now(),
+                  tags: ['システム生成', '孤立予定'],
+                );
+                await tasksBox.put(orphanTask.id, orphanTask);
+                taskIds.add(orphanTask.id);
+                print('孤立予定タスクを作成しました: ${orphanTask.id}');
+              }
+            }
+            
+            // 予定のタスクIDを更新
+            final updatedSchedule = schedule.copyWith(
+              taskId: orphanTask.id,
+              updatedAt: DateTime.now(),
+            );
+            await schedulesBox.put(schedule.id, updatedSchedule);
+            print('予定 "${schedule.title}" を孤立予定タスクに移動しました');
+            repairCounts['schedules'] = repairCounts['schedules']! + 1;
+          }
+        }
+      }
+      
+      print('破損データ修復完了: ${repairCounts.values.reduce((a, b) => a + b)}件修復');
+      return repairCounts;
     } catch (e) {
       print('破損データ修復エラー: $e');
       rethrow;

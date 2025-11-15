@@ -26,6 +26,11 @@ import '../models/schedule_item.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import 'outlook_calendar_import_dialog_v2.dart';
 
+// Ctrl+Enterで保存するためのIntent
+class _SaveTaskIntent extends Intent {
+  const _SaveTaskIntent();
+}
+
 class TaskDialog extends ConsumerStatefulWidget {
   final TaskItem? task; // nullの場合は新規作成
   final String? relatedLinkId;
@@ -550,9 +555,25 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false, // 戻る操作を無効化
-      child: KeyboardListener(
+    // Ctrl+Enterで保存するショートカット
+    return Shortcuts(
+      shortcuts: {
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.enter): _SaveTaskIntent(),
+      },
+      child: Actions(
+        actions: {
+          _SaveTaskIntent: CallbackAction<_SaveTaskIntent>(
+            onInvoke: (_) {
+              _saveTask();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: PopScope(
+            canPop: false, // 戻る操作を無効化
+            child: KeyboardListener(
         focusNode: FocusNode(),
         autofocus: true,
         onKeyEvent: (KeyEvent event) {
@@ -705,7 +726,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       ),
     ),
    ),
-   );
+   ),
+      ),
+    ),
+  );
   }
 
   void _loadPinnedState() {
@@ -928,6 +952,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           maxLines: isWide ? 8 : 4,
           minLines: isWide ? 8 : 4,
           enableInteractiveSelection: true,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
           style: TextStyle(
             color: Color(ref.watch(descriptionTextColorProvider)),
             fontSize: 16 * ref.watch(descriptionFontSizeProvider),
