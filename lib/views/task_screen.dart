@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:hive/hive.dart';
 import 'dart:io';
+import 'dart:convert';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
 import '../views/home_screen.dart'; // HighlightedText用
@@ -46,6 +47,27 @@ import '../widgets/link_association_dialog.dart';
 import '../widgets/window_control_buttons.dart';
 import '../widgets/shortcut_help_dialog.dart';
 import 'help_center_screen.dart';
+
+// 検索候補の種類
+enum _SuggestionType {
+  history,
+  title,
+  tag,
+  description,
+}
+
+// 検索候補データクラス
+class _SearchSuggestion {
+  final String text;
+  final _SuggestionType type;
+  final String? subtitle;
+
+  _SearchSuggestion({
+    required this.text,
+    required this.type,
+    this.subtitle,
+  });
+}
 
 // ショートカットキー用のIntentクラス
 class _ToggleHeaderIntent extends Intent {
@@ -180,7 +202,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   bool _searchInTags = true;
   bool _searchInRequester = true;
   List<String> _searchHistory = [];
-  List<String> _searchSuggestions = [];
+  List<_SearchSuggestion> _searchSuggestions = [];
   bool _showSearchSuggestions = false;
   bool _showSearchOptions = false;
   
@@ -613,6 +635,194 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     }
   }
 
+  /// 一括リンク割り当てダイアログを表示
+  void _showBulkLinkDialog(BuildContext context) {
+    String? selectedLinkId;
+    String operationMode = 'add'; // 'add', 'remove', 'replace'
+    
+    // 利用可能なリンクを取得
+    final linkViewModel = ref.read(linkViewModelProvider);
+    final allLinks = <LinkItem>[];
+    for (final group in linkViewModel.groups) {
+      allLinks.addAll(group.items);
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('リンクを一括割り当て'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 操作モード選択
+                RadioListTile<String>(
+                  title: const Text('追加'),
+                  subtitle: const Text('既存のリンクに追加します'),
+                  value: 'add',
+                  groupValue: operationMode,
+                  onChanged: (value) {
+                    setDialogState(() {
+                      operationMode = value!;
+                    });
+                  },
+                ),
+                RadioListTile<String>(
+                  title: const Text('削除'),
+                  subtitle: const Text('指定したリンクを削除します'),
+                  value: 'remove',
+                  groupValue: operationMode,
+                  onChanged: (value) {
+                    setDialogState(() {
+                      operationMode = value!;
+                    });
+                  },
+                ),
+                RadioListTile<String>(
+                  title: const Text('置換'),
+                  subtitle: const Text('既存のリンクを全て置き換えます'),
+                  value: 'replace',
+                  groupValue: operationMode,
+                  onChanged: (value) {
+                    setDialogState(() {
+                      operationMode = value!;
+                    });
+                  },
+                ),
+                const Divider(),
+                // リンク選択
+                if (allLinks.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('利用可能なリンクがありません'),
+                  )
+                else
+                  SizedBox(
+                    height: 200,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: allLinks.length,
+                      itemBuilder: (context, index) {
+                        final link = allLinks[index];
+                        return RadioListTile<String>(
+                          title: Text(link.label),
+                          subtitle: Text(
+                            link.path,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          value: link.id,
+                          groupValue: selectedLinkId,
+                          onChanged: (value) {
+                            setDialogState(() {
+                              selectedLinkId = value;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: selectedLinkId != null
+                  ? () async {
+                      Navigator.of(context).pop();
+                      await _bulkChangeLink(selectedLinkId!, operation: operationMode);
+                    }
+                  : null,
+              child: const Text('適用'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 選択されたタスクのリンクを一括変更
+  Future<void> _bulkChangeLink(String linkId, {String operation = 'add'}) async {
+    if (_selectedTaskIds.isEmpty) return;
+
+    try {
+      final taskViewModel = ref.read(taskViewModelProvider.notifier);
+      final tasks = ref.read(taskViewModelProvider);
+      final selectedTasks = tasks.where((t) => _selectedTaskIds.contains(t.id)).toList();
+      final updatedCount = selectedTasks.length;
+
+      for (final task in selectedTasks) {
+        List<String> updatedLinkIds;
+        final currentLinkIds = task.relatedLinkIds.isNotEmpty
+            ? List<String>.from(task.relatedLinkIds)
+            : (task.relatedLinkId != null && task.relatedLinkId!.isNotEmpty
+                ? [task.relatedLinkId!]
+                : []);
+        
+        switch (operation) {
+          case 'add':
+            // 追加：既存のリンクに追加
+            if (!currentLinkIds.contains(linkId)) {
+              updatedLinkIds = <String>[...currentLinkIds, linkId];
+            } else {
+              updatedLinkIds = List<String>.from(currentLinkIds);
+            }
+            break;
+          case 'remove':
+            // 削除：指定したリンクを削除
+            updatedLinkIds = List<String>.from(currentLinkIds.where((id) => id != linkId));
+            break;
+          case 'replace':
+            // 置換：既存のリンクを全て置き換え
+            updatedLinkIds = [linkId];
+            break;
+          default:
+            updatedLinkIds = List<String>.from(currentLinkIds);
+        }
+        
+        final updatedTask = task.copyWith(
+          relatedLinkIds: updatedLinkIds,
+          relatedLinkId: updatedLinkIds.isNotEmpty ? updatedLinkIds[0] : null,
+        );
+        await taskViewModel.updateTask(updatedTask);
+      }
+
+      // 選択をクリア
+      setState(() {
+        _selectedTaskIds.clear();
+      });
+
+      if (mounted) {
+        String message;
+        switch (operation) {
+          case 'add':
+            message = '$updatedCount件のタスクにリンクを追加しました';
+            break;
+          case 'remove':
+            message = '$updatedCount件のタスクからリンクを削除しました';
+            break;
+          case 'replace':
+            message = '$updatedCount件のタスクのリンクを置き換えました';
+            break;
+          default:
+            message = '$updatedCount件のタスクのリンクを変更しました';
+        }
+        SnackBarService.showSuccess(context, message);
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, 'リンク割り当てに失敗しました: $e');
+      }
+    }
+  }
+
   /// 一括ステータス変更メニューを表示
   void _showBulkStatusMenu(BuildContext context) {
     showModalBottomSheet(
@@ -916,53 +1126,87 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     }
   }
-  /// 一括タグ変更ダイアログを表示
+  /// 一括タグ変更ダイアログを表示（拡張版）
   void _showBulkTagsDialog(BuildContext context) {
     final tagController = TextEditingController();
+    String operationMode = 'add'; // 'add', 'remove', 'replace'
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('タグを一括変更'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: tagController,
-              decoration: const InputDecoration(
-                labelText: 'タグ（カンマ区切り）',
-                hintText: '例: 緊急,重要,プロジェクトA',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('タグを一括操作'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 操作モード選択
+              RadioListTile<String>(
+                title: const Text('追加'),
+                subtitle: const Text('既存のタグに追加します'),
+                value: 'add',
+                groupValue: operationMode,
+                onChanged: (value) {
+                  setDialogState(() {
+                    operationMode = value!;
+                  });
+                },
               ),
+              RadioListTile<String>(
+                title: const Text('削除'),
+                subtitle: const Text('指定したタグを削除します'),
+                value: 'remove',
+                groupValue: operationMode,
+                onChanged: (value) {
+                  setDialogState(() {
+                    operationMode = value!;
+                  });
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('置換'),
+                subtitle: const Text('既存のタグを全て置き換えます'),
+                value: 'replace',
+                groupValue: operationMode,
+                onChanged: (value) {
+                  setDialogState(() {
+                    operationMode = value!;
+                  });
+                },
+              ),
+              const Divider(),
+              TextField(
+                controller: tagController,
+                decoration: const InputDecoration(
+                  labelText: 'タグ（カンマ区切り）',
+                  hintText: '例: 緊急,重要,プロジェクトA',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('キャンセル'),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              '既存のタグに追加されます',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+            TextButton(
+              onPressed: () async {
+                final tags = tagController.text
+                    .split(',')
+                    .map((t) => t.trim())
+                    .where((t) => t.isNotEmpty)
+                    .toList();
+                Navigator.of(context).pop();
+                await _bulkChangeTags(tags, operation: operationMode);
+              },
+              child: const Text('適用'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final tags = tagController.text
-                  .split(',')
-                  .map((t) => t.trim())
-                  .where((t) => t.isNotEmpty)
-                  .toList();
-              Navigator.of(context).pop();
-              await _bulkChangeTags(tags);
-            },
-            child: const Text('適用'),
-          ),
-        ],
       ),
     );
   }
-  /// 選択されたタスクのタグを一括変更
-  Future<void> _bulkChangeTags(List<String> tags) async {
+  /// 選択されたタスクのタグを一括変更（拡張版）
+  Future<void> _bulkChangeTags(List<String> tags, {String operation = 'add'}) async {
     if (_selectedTaskIds.isEmpty) return;
 
     try {
@@ -972,8 +1216,26 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       final updatedCount = selectedTasks.length;
 
       for (final task in selectedTasks) {
+        List<String> updatedTags;
         final currentTags = task.tags ?? [];
-        final updatedTags = [...currentTags, ...tags].toSet().toList();
+        
+        switch (operation) {
+          case 'add':
+            // 追加：既存のタグに追加
+            updatedTags = [...currentTags, ...tags].toSet().toList();
+            break;
+          case 'remove':
+            // 削除：指定したタグを削除
+            updatedTags = currentTags.where((tag) => !tags.contains(tag)).toList();
+            break;
+          case 'replace':
+            // 置換：既存のタグを全て置き換え
+            updatedTags = tags;
+            break;
+          default:
+            updatedTags = currentTags;
+        }
+        
         final updatedTask = task.copyWith(tags: updatedTags);
         await taskViewModel.updateTask(updatedTask);
       }
@@ -984,10 +1246,21 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       });
 
       if (mounted) {
-        SnackBarService.showSuccess(
-          context,
-          '$updatedCount件のタスクにタグを追加しました',
-        );
+        String message;
+        switch (operation) {
+          case 'add':
+            message = '$updatedCount件のタスクにタグを追加しました';
+            break;
+          case 'remove':
+            message = '$updatedCount件のタスクからタグを削除しました';
+            break;
+          case 'replace':
+            message = '$updatedCount件のタスクのタグを置き換えました';
+            break;
+          default:
+            message = '$updatedCount件のタスクのタグを変更しました';
+        }
+        SnackBarService.showSuccess(context, message);
       }
     } catch (e) {
       if (mounted) {
@@ -1403,6 +1676,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 case 'tags':
                   _showBulkTagsDialog(context);
                   break;
+                case 'link':
+                  _showBulkLinkDialog(context);
+                  break;
                 case 'merge':
                   await _mergeSelectedTasks(context);
                   break;
@@ -1448,7 +1724,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   children: [
                     Icon(Icons.label, size: 20),
                     SizedBox(width: 8),
-                    Text('タグ変更'),
+                    Text('タグを操作'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'link',
+                child: Row(
+                  children: [
+                    Icon(Icons.link, size: 20),
+                    SizedBox(width: 8),
+                    Text('リンクを割り当て'),
                   ],
                 ),
               ),
@@ -1932,10 +2218,25 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   icon: const Icon(Icons.bookmark, size: AppIconSizes.medium),
                   tooltip: 'フィルターの保存・読み込み',
                   onSelected: (value) {
-                    if (value == 'save') {
-                      _showSaveFilterDialog();
-                    } else if (value == 'load') {
-                      _showLoadFilterDialog();
+                    switch (value) {
+                      case 'save':
+                        _showSaveFilterDialog();
+                        break;
+                      case 'load':
+                        _showLoadFilterDialog();
+                        break;
+                      case 'quick_urgent':
+                        _applyQuickFilter('urgent');
+                        break;
+                      case 'quick_today':
+                        _applyQuickFilter('today');
+                        break;
+                      case 'quick_pending':
+                        _applyQuickFilter('pending');
+                        break;
+                      case 'quick_in_progress':
+                        _applyQuickFilter('in_progress');
+                        break;
                     }
                   },
                   itemBuilder: (context) => [
@@ -1955,7 +2256,48 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                         children: [
                           Icon(Icons.folder_open, size: 20),
                           SizedBox(width: 8),
-                          Text('保存したフィルターを読み込み'),
+                          Text('フィルター管理'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'quick_urgent',
+                      child: Row(
+                        children: [
+                          Icon(Icons.priority_high, size: 20, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('緊急タスク'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'quick_today',
+                      child: Row(
+                        children: [
+                          Icon(Icons.today, size: 20, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('今日のタスク'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'quick_pending',
+                      child: Row(
+                        children: [
+                          Icon(Icons.pending, size: 20, color: Colors.orange),
+                          SizedBox(width: 8),
+                          Text('未着手タスク'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'quick_in_progress',
+                      child: Row(
+                        children: [
+                          Icon(Icons.play_arrow, size: 20, color: Colors.green),
+                          SizedBox(width: 8),
+                          Text('進行中タスク'),
                         ],
                       ),
                     ),
@@ -2741,6 +3083,19 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // ドラッグハンドル（並び替え可能な場合のみ表示）
+              if (reorderIndex != null && (_sortOrders.isEmpty || _sortOrders[0]['field'] == 'custom'))
+                ReorderableDragStartListener(
+                  index: reorderIndex!,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.drag_handle,
+                      size: 20,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ),
               // ピン留めトグル（期限日バッジの近くに配置）
               IconButton(
                 icon: Icon(
@@ -3023,7 +3378,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                 decoration: BoxDecoration(
                                   color: task.completedSubTasksCount == task.totalSubTasksCount 
                                     ? Colors.green.shade600 
-                                    : Colors.blue.shade600,
+                                    : Colors.red.shade600,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: Colors.white,
@@ -3033,7 +3388,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                     BoxShadow(
                                       color: (task.completedSubTasksCount == task.totalSubTasksCount 
                                         ? Colors.green.shade600 
-                                        : Colors.blue.shade600).withValues(alpha: 0.4),
+                                        : Colors.red.shade600).withValues(alpha: 0.4),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -4821,7 +5176,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     _saveSearchHistory();
   }
 
-  /// 検索候補を更新
+  /// 検索候補を更新（タグ・説明文からの候補も含む）
   void _updateSearchSuggestions(String query) {
     if (query.trim().isEmpty) {
       _searchSuggestions = [];
@@ -4829,29 +5184,79 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     }
     
     final queryLower = query.toLowerCase();
-    final suggestions = <String>[];
+    final suggestions = <_SearchSuggestion>[];
+    final addedTexts = <String>{}; // 重複チェック用
     
     // 検索履歴から候補を取得
     for (final history in _searchHistory) {
-      if (history.toLowerCase().contains(queryLower) && !suggestions.contains(history)) {
-        suggestions.add(history);
+      if (history.toLowerCase().contains(queryLower) && !addedTexts.contains(history)) {
+        suggestions.add(_SearchSuggestion(
+          text: history,
+          type: _SuggestionType.history,
+        ));
+        addedTexts.add(history);
       }
     }
     
     // タスクタイトルから候補を取得
     final tasks = ref.read(taskViewModelProvider);
     for (final task in tasks) {
-      if (task.title.toLowerCase().contains(queryLower) && !suggestions.contains(task.title)) {
-        suggestions.add(task.title);
+      // タイトル
+      if (task.title.toLowerCase().contains(queryLower) && !addedTexts.contains(task.title)) {
+        suggestions.add(_SearchSuggestion(
+          text: task.title,
+          type: _SuggestionType.title,
+        ));
+        addedTexts.add(task.title);
+      }
+      
+      // タグから候補を取得
+      for (final tag in task.tags) {
+        if (tag.toLowerCase().contains(queryLower) && !addedTexts.contains(tag)) {
+          suggestions.add(_SearchSuggestion(
+            text: tag,
+            type: _SuggestionType.tag,
+            subtitle: 'タグ: ${task.title}',
+          ));
+          addedTexts.add(tag);
+        }
+      }
+      
+      // 説明文から候補を取得（短いサマリー）
+      if (task.description != null && task.description!.isNotEmpty) {
+        final descLower = task.description!.toLowerCase();
+        if (descLower.contains(queryLower)) {
+          // マッチした部分の前後を含む短いテキストを抽出（最大50文字）
+          final matchIndex = descLower.indexOf(queryLower);
+          final start = (matchIndex - 20).clamp(0, descLower.length);
+          final end = (matchIndex + queryLower.length + 30).clamp(0, task.description!.length);
+          var summary = task.description!.substring(start, end);
+          if (start > 0) summary = '...$summary';
+          if (end < task.description!.length) summary = '$summary...';
+          
+          final suggestionText = summary.trim();
+          if (!addedTexts.contains(suggestionText)) {
+            suggestions.add(_SearchSuggestion(
+              text: suggestionText,
+              type: _SuggestionType.description,
+              subtitle: '説明: ${task.title}',
+            ));
+            addedTexts.add(suggestionText);
+          }
+        }
       }
     }
     
-    // 最大5件まで
-    _searchSuggestions = suggestions.take(5).toList();
+    // 最大10件まで（種類の多様性を考慮）
+    _searchSuggestions = suggestions.take(10).toList();
   }
 
-  /// 検索候補リストを構築
+  /// 検索候補リストを構築（ハイライト表示対応）
   Widget _buildSearchSuggestions() {
+    if (_searchSuggestions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -4869,11 +5274,33 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: _searchSuggestions.map((suggestion) {
+          IconData icon;
+          Color iconColor;
+          
+          switch (suggestion.type) {
+            case _SuggestionType.history:
+              icon = Icons.history;
+              iconColor = Colors.grey;
+              break;
+            case _SuggestionType.title:
+              icon = Icons.title;
+              iconColor = Theme.of(context).primaryColor;
+              break;
+            case _SuggestionType.tag:
+              icon = Icons.label;
+              iconColor = Colors.orange.shade700;
+              break;
+            case _SuggestionType.description:
+              icon = Icons.description;
+              iconColor = Colors.blue.shade700;
+              break;
+          }
+          
           return InkWell(
             onTap: () {
               setState(() {
-                _searchController.text = suggestion;
-                _searchQuery = suggestion;
+                _searchController.text = suggestion.text;
+                _searchQuery = suggestion.text;
                 _userTypedSearch = true;
                 _showSearchSuggestions = false;
               });
@@ -4882,13 +5309,36 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.history, size: 16, color: Colors.grey),
-                  const SizedBox(width: 8),
+                  Icon(icon, size: 18, color: iconColor),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      suggestion,
-                      style: const TextStyle(fontSize: 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        HighlightedText(
+                          text: suggestion.text,
+                          highlight: _searchQuery,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (suggestion.subtitle != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            suggestion.subtitle!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
@@ -4966,66 +5416,104 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     );
   }
 
-  /// フィルター読み込みダイアログを表示
+  /// フィルター読み込みダイアログを表示（エクスポート/インポート機能付き）
   void _showLoadFilterDialog() {
-    if (_savedFilterPresets.isEmpty) {
-      SnackBarService.showInfo(context, '保存されたフィルターがありません');
-      return;
-    }
-    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('フィルターを読み込み'),
+        title: const Text('フィルター管理'),
         content: SizedBox(
           width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _savedFilterPresets.length,
-            itemBuilder: (context, index) {
-              final presetName = _savedFilterPresets.keys.elementAt(index);
-              final preset = _savedFilterPresets[presetName]!;
-              return ListTile(
-                title: Text(presetName),
-                subtitle: Text(
-                  'ステータス: ${preset['statuses']?.length ?? 0}件, '
-                  '優先度: ${preset['priority'] ?? 'すべて'}, '
-                  '検索: ${preset['searchQuery']?.toString().isEmpty ?? true ? 'なし' : 'あり'}'
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.delete, size: 20),
-                      onPressed: () {
-                        _savedFilterPresets.remove(presetName);
-                        _saveFilterPresets();
-                        Navigator.of(context).pop();
-                        _showLoadFilterDialog();
-                      },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // エクスポート/インポートボタン
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      await _exportFilterPresets();
+                    },
+                    icon: const Icon(Icons.upload, size: 18),
+                    label: const Text('エクスポート'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.check, size: 20),
-                      onPressed: () {
-                        setState(() {
-                          final statusList = (preset['statuses'] as List?);
-                          _filterStatuses = statusList != null 
-                              ? statusList.map((e) => e.toString()).toSet() 
-                              : {'all'};
-                          _filterPriority = preset['priority']?.toString() ?? 'all';
-                          _sortOrders = (preset['sortOrders'] as List?)?.map((e) => Map<String, String>.from(e)).toList() ?? [{'field': 'dueDate', 'order': 'asc'}];
-                          _searchQuery = preset['searchQuery']?.toString() ?? '';
-                          _searchController.text = _searchQuery;
-                        });
-                        _saveFilterSettings();
-                        Navigator.of(context).pop();
-                        SnackBarService.showSuccess(context, 'フィルター「$presetName」を読み込みました');
-                      },
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      await _importFilterPresets();
+                    },
+                    icon: const Icon(Icons.download, size: 18),
+                    label: const Text('インポート'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              // 保存されたフィルター一覧
+              if (_savedFilterPresets.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('保存されたフィルターがありません'),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _savedFilterPresets.length,
+                    itemBuilder: (context, index) {
+                      final presetName = _savedFilterPresets.keys.elementAt(index);
+                      final preset = _savedFilterPresets[presetName]!;
+                      return ListTile(
+                        title: Text(presetName),
+                        subtitle: Text(
+                          'ステータス: ${preset['statuses']?.length ?? 0}件, '
+                          '優先度: ${preset['priority'] ?? 'すべて'}, '
+                          '検索: ${preset['searchQuery']?.toString().isEmpty ?? true ? 'なし' : 'あり'}'
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.delete, size: 20),
+                              onPressed: () {
+                                _savedFilterPresets.remove(presetName);
+                                _saveFilterPresets();
+                                Navigator.of(context).pop();
+                                _showLoadFilterDialog();
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.check, size: 20),
+                              onPressed: () {
+                                setState(() {
+                                  final statusList = (preset['statuses'] as List?);
+                                  _filterStatuses = statusList != null 
+                                      ? statusList.map((e) => e.toString()).toSet() 
+                                      : {'all'};
+                                  _filterPriority = preset['priority']?.toString() ?? 'all';
+                                  _sortOrders = (preset['sortOrders'] as List?)?.map((e) => Map<String, String>.from(e)).toList() ?? [{'field': 'dueDate', 'order': 'asc'}];
+                                  _searchQuery = preset['searchQuery']?.toString() ?? '';
+                                  _searchController.text = _searchQuery;
+                                });
+                                _saveFilterSettings();
+                                Navigator.of(context).pop();
+                                SnackBarService.showSuccess(context, 'フィルター「$presetName」を読み込みました');
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              );
-            },
+            ],
           ),
         ),
         actions: [
@@ -5036,6 +5524,130 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         ],
       ),
     );
+  }
+
+  /// フィルタープリセットをエクスポート
+  Future<void> _exportFilterPresets() async {
+    try {
+      final exportData = {
+        'version': '1.0',
+        'exportedAt': DateTime.now().toIso8601String(),
+        'presets': _savedFilterPresets,
+      };
+      
+      final jsonString = jsonEncode(exportData);
+      
+      // ファイル保存ダイアログを表示
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'フィルタープリセットをエクスポート',
+        fileName: 'task_filter_presets_${DateTime.now().millisecondsSinceEpoch}.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      
+      if (result != null) {
+        final file = File(result);
+        await file.writeAsString(jsonString);
+        
+        if (mounted) {
+          SnackBarService.showSuccess(context, 'フィルタープリセットをエクスポートしました');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, 'エクスポートに失敗しました: $e');
+      }
+    }
+  }
+
+  /// フィルタープリセットをインポート
+  Future<void> _importFilterPresets() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        dialogTitle: 'フィルタープリセットをインポート',
+      );
+      
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final jsonString = await file.readAsString();
+        final importData = jsonDecode(jsonString) as Map<String, dynamic>;
+        
+        if (importData['presets'] != null) {
+          final importedPresets = Map<String, Map<String, dynamic>>.from(
+            (importData['presets'] as Map).map((key, value) => 
+              MapEntry(key.toString(), Map<String, dynamic>.from(value))
+            )
+          );
+          
+          // 既存のプリセットとマージ（同名の場合は上書き）
+          _savedFilterPresets.addAll(importedPresets);
+          _saveFilterPresets();
+          _loadSavedFilterPresets();
+          
+          if (mounted) {
+            SnackBarService.showSuccess(
+              context, 
+              '${importedPresets.length}件のフィルタープリセットをインポートしました'
+            );
+          }
+        } else {
+          if (mounted) {
+            SnackBarService.showError(context, '無効なファイル形式です');
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarService.showError(context, 'インポートに失敗しました: $e');
+      }
+    }
+  }
+
+  /// クイックフィルターを適用
+  void _applyQuickFilter(String filterType) {
+    setState(() {
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final todayEnd = todayStart.add(const Duration(days: 1));
+      
+      switch (filterType) {
+        case 'urgent':
+          // 緊急タスク: 優先度が高または緊急、かつ未完了
+          _filterStatuses = {'pending', 'in_progress'};
+          _filterPriority = 'high';
+          _searchQuery = '';
+          _searchController.text = '';
+          break;
+        case 'today':
+          // 今日のタスク: 期限日が今日、かつ未完了
+          _filterStatuses = {'pending', 'in_progress'};
+          _filterPriority = 'all';
+          _searchQuery = '';
+          _searchController.text = '';
+          // 期限日フィルターは別途実装が必要（現在の実装では期限日フィルターがないため、検索で代替）
+          break;
+        case 'pending':
+          // 未着手タスク
+          _filterStatuses = {'pending'};
+          _filterPriority = 'all';
+          _searchQuery = '';
+          _searchController.text = '';
+          break;
+        case 'in_progress':
+          // 進行中タスク
+          _filterStatuses = {'in_progress'};
+          _filterPriority = 'all';
+          _searchQuery = '';
+          _searchController.text = '';
+          break;
+      }
+      
+      _saveFilterSettings();
+    });
+    
+    SnackBarService.showInfo(context, 'クイックフィルターを適用しました');
   }
 
   /// 強化された検索クエリマッチング
@@ -8897,12 +9509,20 @@ class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> 
         padding: const EdgeInsets.all(8),
         child: Row(
           children: [
-            Icon(Icons.list, size: 10 * fontSize, color: Colors.blue),
+            Icon(
+              Icons.list, 
+              size: 10 * fontSize, 
+              color: task.completedSubTasksCount == task.totalSubTasksCount 
+                ? Colors.green 
+                : Colors.red,
+            ),
             SizedBox(width: 2 * fontSize),
             Text(
               '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
               style: TextStyle(
-                color: Colors.blue,
+                color: task.completedSubTasksCount == task.totalSubTasksCount 
+                  ? Colors.green 
+                  : Colors.red,
                 fontSize: 10 * fontSize,
                 fontWeight: FontWeight.bold,
               ),

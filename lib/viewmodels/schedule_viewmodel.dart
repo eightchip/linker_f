@@ -71,6 +71,28 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
   }
 
   /// 予定を追加（重複チェック付き）
+  /// 予定の重複をチェックし、重複する予定のリストを返す
+  List<ScheduleItem> checkScheduleOverlap(ScheduleItem schedule) {
+    final overlappingSchedules = <ScheduleItem>[];
+    
+    for (final existingSchedule in state) {
+      // 自分自身はスキップ
+      if (existingSchedule.id == schedule.id) continue;
+      
+      final scheduleStart = schedule.startDateTime;
+      final scheduleEnd = schedule.endDateTime ?? scheduleStart.add(const Duration(hours: 1));
+      final existingStart = existingSchedule.startDateTime;
+      final existingEnd = existingSchedule.endDateTime ?? existingStart.add(const Duration(hours: 1));
+      
+      // 時間が重複しているかチェック
+      if (scheduleStart.isBefore(existingEnd) && scheduleEnd.isAfter(existingStart)) {
+        overlappingSchedules.add(existingSchedule);
+      }
+    }
+    
+    return overlappingSchedules;
+  }
+
   Future<void> addSchedule(ScheduleItem schedule) async {
     try {
       if (_scheduleBox == null || !_scheduleBox!.isOpen) {

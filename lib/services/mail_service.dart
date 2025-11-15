@@ -93,7 +93,8 @@ class MailService {
         $linksHtml
         
         <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef; font-size: 12px; color: #6c757d;">
-          <div style="display: inline-block; background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">Link Navigator</div>
+          <div style="display: inline-block; background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">
+          </div>
           <div>送信ID: $token</div>
         </div>
         

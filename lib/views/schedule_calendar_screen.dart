@@ -1264,6 +1264,100 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       notes: schedule.notes,
     );
     
+    // 重複チェック
+    final overlappingSchedules = vm.checkScheduleOverlap(newSchedule);
+    if (overlappingSchedules.isNotEmpty && mounted) {
+      final timeFormat = DateFormat('MM/dd HH:mm');
+      final shouldContinue = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange.shade700),
+              const SizedBox(width: 8),
+              const Text('予定の重複'),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '以下の予定と時間が重複しています：',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade900,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: overlappingSchedules.length,
+                    itemBuilder: (context, index) {
+                      final overlapping = overlappingSchedules[index];
+                      final hasEnd = overlapping.endDateTime != null;
+                      final timeText = hasEnd
+                          ? '${timeFormat.format(overlapping.startDateTime)} - ${timeFormat.format(overlapping.endDateTime!)}'
+                          : timeFormat.format(overlapping.startDateTime);
+                      
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        color: Colors.orange.shade50,
+                        child: ListTile(
+                          title: Text(
+                            overlapping.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('時間: $timeText'),
+                              if (overlapping.location != null && overlapping.location!.isNotEmpty)
+                                Text('場所: ${overlapping.location}'),
+                            ],
+                          ),
+                          leading: Icon(Icons.event, color: Colors.orange.shade700),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'それでも予定を追加しますか？',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade700,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('追加する'),
+            ),
+          ],
+        ),
+      );
+      
+      if (shouldContinue != true) {
+        return; // キャンセルされた場合は追加しない
+      }
+    }
+    
     await vm.addSchedule(newSchedule);
     
     if (mounted) {
