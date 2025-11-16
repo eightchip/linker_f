@@ -3416,7 +3416,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     );
   }
 
-  /// コンパクトモード用のステータスバッジ
+  /// コンパクトモード用のステータスバッジ（クリック可能）
   Widget _buildCompactStatusBadge(TaskItem task) {
     Map<String, dynamic> statusBadge;
     switch (task.status) {
@@ -3449,55 +3449,94 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         };
         break;
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: statusBadge['color'] as Color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(statusBadge['icon'] as IconData, size: 12, color: Colors.white),
-          const SizedBox(width: 2),
-          Text(
-            statusBadge['text'] as String,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+    return PopupMenuButton<TaskStatus>(
+      tooltip: 'ステータスを変更',
+      initialValue: task.status,
+      padding: EdgeInsets.zero,
+      offset: const Offset(0, 8),
+      onSelected: (status) {
+        ref.read(taskViewModelProvider.notifier).setTaskStatus(task.id, status);
+      },
+      itemBuilder: (context) {
+        return TaskStatus.values.map((status) {
+          final info = _getStatusMenuInfo(status);
+          final isSelected = status == task.status;
+          return PopupMenuItem<TaskStatus>(
+            value: status,
+            child: Row(
+              children: [
+                Icon(
+                  info['icon'] as IconData,
+                  color: info['color'] as Color,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    info['text'] as String,
+                    style: TextStyle(
+                      color: Colors.grey.shade900,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 18,
+                  ),
+              ],
             ),
-          ),
-        ],
+          );
+        }).toList();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: statusBadge['color'] as Color,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(statusBadge['icon'] as IconData, size: 12, color: Colors.white),
+            const SizedBox(width: 2),
+            Text(
+              statusBadge['text'] as String,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// コンパクトモード用の優先度インジケーター（アイコンのみ）
+  /// コンパクトモード用の優先度インジケーター（漢字一文字）
   Widget _buildCompactPriorityIndicator(TaskItem task) {
-    IconData icon;
-    Color color;
-    
-    switch (task.priority) {
-      case TaskPriority.low:
-        icon = Icons.arrow_downward;
-        color = Colors.green;
-        break;
-      case TaskPriority.medium:
-        icon = Icons.remove;
-        color = Colors.grey;
-        break;
-      case TaskPriority.high:
-        icon = Icons.arrow_upward;
-        color = Colors.orange;
-        break;
-      case TaskPriority.urgent:
-        icon = Icons.priority_high;
-        color = Colors.red;
-        break;
-    }
-    
-    return Icon(icon, size: 16, color: color);
+    final priorityInfo = _getPriorityInfoForList(task.priority);
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: priorityInfo['color'] as Color,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          priorityInfo['text'] as String,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 
   /// コンパクトモード用のツールチップコンテンツ（ホバー時に詳細情報を表示）
@@ -3537,31 +3576,37 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           spacing: 6,
           runSpacing: 4,
           children: visibleLinks.map((link) {
-            return InkWell(
-              onTap: () => _openRelatedLink(link),
-              borderRadius: BorderRadius.circular(4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: _buildFaviconOrIcon(link, Theme.of(context)),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    link.label,
-                    style: TextStyle(
-                      color: Colors.blue[800],
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.blue[800],
+            return Tooltip(
+              message: link.memo != null && link.memo!.isNotEmpty 
+                  ? link.memo! 
+                  : 'メモはリンク管理画面から追加可能',
+              waitDuration: const Duration(milliseconds: 500),
+              child: InkWell(
+                onTap: () => _openRelatedLink(link),
+                borderRadius: BorderRadius.circular(4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: _buildFaviconOrIcon(link, Theme.of(context)),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Text(
+                      link.label,
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Colors.blue[800],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -7417,60 +7462,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     }
     
-    // ステータスバッジ情報（ナイトモード対応）
-    Map<String, dynamic> statusBadge;
-    switch (task.status) {
-      case TaskStatus.pending:
-        statusBadge = {
-          'icon': Icons.schedule, 
-          'text': '未', 
-          'color': isDarkMode ? Colors.green.shade400 : Colors.green.shade800
-        };
-        break;
-      case TaskStatus.inProgress:
-        statusBadge = {
-          'icon': Icons.play_arrow, 
-          'text': '中', 
-          'color': isDarkMode ? Colors.blue.shade400 : Colors.blue.shade800
-        };
-        break;
-      case TaskStatus.completed:
-        statusBadge = {
-          'icon': Icons.check, 
-          'text': '完', 
-          'color': isDarkMode ? Colors.grey.shade400 : Colors.grey.shade800
-        };
-        break;
-      case TaskStatus.cancelled:
-        statusBadge = {
-          'icon': Icons.cancel, 
-          'text': '止', 
-          'color': isDarkMode ? Colors.red.shade400 : Colors.red.shade800
-        };
-        break;
-    }
-    
-    // 優先度アイコン（ナイトモード対応）
-    IconData priorityIcon;
-    Color priorityColor;
-    switch (task.priority) {
-      case TaskPriority.low:
-        priorityIcon = Icons.arrow_downward;
-        priorityColor = isDarkMode ? Colors.green.shade400 : Colors.green;
-        break;
-      case TaskPriority.medium:
-        priorityIcon = Icons.remove;
-        priorityColor = isDarkMode ? Colors.grey.shade400 : Colors.grey;
-        break;
-      case TaskPriority.high:
-        priorityIcon = Icons.arrow_upward;
-        priorityColor = isDarkMode ? Colors.orange.shade400 : Colors.orange;
-        break;
-      case TaskPriority.urgent:
-        priorityIcon = Icons.priority_high;
-        priorityColor = isDarkMode ? Colors.red.shade400 : Colors.red;
-        break;
-    }
     
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -7669,32 +7660,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       if (task.reminderTime != null)
                         Icon(Icons.notifications_active, size: 12, color: Colors.orange),
                       if (task.reminderTime != null) const SizedBox(width: 4),
-                      // ステータスバッジ
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: statusBadge['color'] as Color,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(statusBadge['icon'] as IconData, size: 10, color: Colors.white),
-                            const SizedBox(width: 2),
-                            Text(
-                              statusBadge['text'] as String,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // ステータスバッジ（クリック可能）
+                      _buildCompactStatusBadge(task),
                       const SizedBox(width: 6),
-                      // 優先度アイコン
-                      Icon(priorityIcon, size: 12, color: priorityColor),
+                      // 優先度インジケーター（漢字一文字）
+                      _buildCompactPriorityIndicator(task),
                       const Spacer(),
                       // チームタスクアイコン
                       if (task.isTeamTask)
