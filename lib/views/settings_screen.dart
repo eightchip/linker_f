@@ -609,7 +609,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildMenuItem(context, ref, 'グリッド設定', Icons.grid_view, 'grid', 'リンク画面'),
           _buildMenuItem(context, ref, 'カード設定', Icons.view_agenda, 'card', 'リンク・タスク画面'),
           _buildMenuItem(context, ref, 'アイテム設定', Icons.link, 'item', 'リンク画面'),
-          _buildMenuItem(context, ref, 'タスクグリッドビュー設定', Icons.view_module, 'task_project', 'タスク一覧'),
+          _buildMenuItem(context, ref, 'コンパクトビュー設定', Icons.view_module, 'task_project', 'タスク一覧'),
         ]),
         _buildMenuSection('データ', [
           _buildMenuItem(context, ref, 'バックアップ', Icons.backup, 'backup'),
@@ -2574,7 +2574,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('タスクグリッドビュー設定', Icons.view_module),
+        _buildSectionHeader('コンパクトビュー設定', Icons.view_module),
         const SizedBox(height: 16),
         
         // グリッド設定
@@ -2790,10 +2790,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => UnifiedDialog(
-                title: 'タスクグリッドビュー設定をリセット',
+                title: 'コンパクトビュー設定をリセット',
                 icon: Icons.restore,
                 iconColor: Colors.orange,
-                content: const Text('タスクグリッドビューの設定を初期値にリセットしますか？\nこの操作は取り消せません。'),
+                content: const Text('コンパクトビューの設定を初期値にリセットしますか？\nこの操作は取り消せません。'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),

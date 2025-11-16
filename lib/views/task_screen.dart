@@ -74,10 +74,6 @@ class _ToggleHeaderIntent extends Intent {
   const _ToggleHeaderIntent();
 }
 
-class _ShowProjectOverviewIntent extends Intent {
-  const _ShowProjectOverviewIntent();
-}
-
 class _ShowTaskDialogIntent extends Intent {
   const _ShowTaskDialogIntent();
 }
@@ -120,6 +116,10 @@ class _FocusMenuIntent extends Intent {
 
 class _ShowShortcutHelpIntent extends Intent {
   const _ShowShortcutHelpIntent();
+}
+
+class _ToggleDetailIntent extends Intent {
+  const _ToggleDetailIntent();
 }
 
 class _ToggleListViewModeIntent extends Intent {
@@ -1432,7 +1432,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         shortcuts: <LogicalKeySet, Intent>{
           // ショートカットキーを定義（フォーカスに依存しない）
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyH): const _ToggleHeaderIntent(),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyP): const _ShowProjectOverviewIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN): const _ShowTaskDialogIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB): const _ToggleSelectionModeIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyE): const _ExportCsvIntent(),
@@ -1444,7 +1443,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           LogicalKeySet(LogicalKeyboardKey.arrowRight): const _ShowPopupMenuIntent(),
           LogicalKeySet(LogicalKeyboardKey.arrowDown): const _FocusMenuIntent(),
           LogicalKeySet(LogicalKeyboardKey.f1): const _ShowShortcutHelpIntent(),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ): const _ToggleListViewModeIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ): const _ToggleDetailIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyX): const _ToggleListViewModeIntent(),
         },
         child: Actions(
           actions: <Type, Action<Intent>>{
@@ -1453,13 +1453,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 setState(() {
                   _showHeaderSection = !_showHeaderSection;
                 });
-                _restoreFocusIfNeeded();
-                return null;
-              },
-            ),
-            _ShowProjectOverviewIntent: CallbackAction<_ShowProjectOverviewIntent>(
-              onInvoke: (_) {
-                _showProjectOverview();
                 _restoreFocusIfNeeded();
                 return null;
               },
@@ -1565,16 +1558,38 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 return null;
               },
             ),
+            _ToggleDetailIntent: CallbackAction<_ToggleDetailIntent>(
+              onInvoke: (_) {
+                // Ctrl+Z: 詳細トグル（すべて詳細表示/非表示）
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  setState(() {
+                    if (_expandedTaskIds.isEmpty) {
+                      // すべて詳細表示
+                      final tasks = ref.read(taskViewModelProvider);
+                      _expandedTaskIds = tasks.map((task) => task.id).toSet();
+                    } else {
+                      // すべて詳細非表示
+                      _expandedTaskIds.clear();
+                    }
+                  });
+                }
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
             _ToggleListViewModeIntent: CallbackAction<_ToggleListViewModeIntent>(
               onInvoke: (_) {
-                // Ctrl+Z: コンパクト⇔標準の切り替え
-                // TextField編集中でも動作させる（通常のundo操作と競合する可能性があるが、アプリ側で優先処理）
-                setState(() {
-                  _listViewMode = _listViewMode == ListViewMode.compact 
-                      ? ListViewMode.standard 
-                      : ListViewMode.compact;
-                  _saveListViewMode();
-                });
+                // Ctrl+X: コンパクト⇔標準の切り替え
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  setState(() {
+                    _listViewMode = _listViewMode == ListViewMode.compact 
+                        ? ListViewMode.standard 
+                        : ListViewMode.compact;
+                    _saveListViewMode();
+                  });
+                }
                 _restoreFocusIfNeeded();
                 return null;
               },
@@ -1874,17 +1889,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 ),
               ),
               const PopupMenuDivider(),
-            // タスクグリッドビュー
-              PopupMenuItem(
-                value: 'project_overview',
-                child: Row(
-                  children: [
-                    Icon(Icons.calendar_view_month, color: Colors.blue, size: 20),
-                    SizedBox(width: 8),
-                  Text('タスクグリッドビュー (Ctrl+P)'),
-                  ],
-                ),
-              ),
             // スケジュール一覧
               PopupMenuItem(
               value: 'schedule',
@@ -1993,7 +1997,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     final completed = statistics['completed'] ?? 0;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(8),
@@ -2001,49 +2005,41 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       ),
       child: Row(
         children: [
-          // 左半分: 統計情報（コンパクト）
+          // 左半分: 統計情報（コンパクト・狭く）
           Expanded(
-            flex: 2,
+            flex: 1,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: _buildStatItem('総タスク', total, Icons.list),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _buildStatItem('総', total, Icons.list),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _buildStatItem(
+                    '未',
+                    pending,
+                    Icons.radio_button_unchecked,
+                    Colors.grey,
                   ),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: _buildStatItem(
-                      '未着手',
-                      pending,
-                      Icons.radio_button_unchecked,
-                      Colors.grey,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _buildStatItem(
+                    '進',
+                    inProgress,
+                    Icons.pending,
+                    Colors.blue,
                   ),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: _buildStatItem(
-                      '進行中',
-                      inProgress,
-                      Icons.pending,
-                      Colors.blue,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: _buildStatItem(
-                      '完了',
-                      completed,
-                      Icons.check_circle,
-                      Colors.green,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _buildStatItem(
+                    '完',
+                    completed,
+                    Icons.check_circle,
+                    Colors.green,
                   ),
                 ),
               ],
@@ -2087,13 +2083,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           
           // 右半分: 検索とフィルター
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Row(
               children: [
                 const SizedBox(width: AppSpacing.lg),
-                // 強化された検索バー
+                // 強化された検索バー（幅を広く）
                 Expanded(
-                  flex: 2, // 検索バーを広く
+                  flex: 3, // 検索バーをより広く
                   child: Builder(
                     builder: (context) {
                       print('TextField構築時: _searchFocusNode.hasFocus=${_searchFocusNode.hasFocus}');
@@ -2440,28 +2436,36 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   }
 
   Widget _buildStatItem(String label, int count, IconData icon, [Color? color]) {
+    // ラベルを展開（「完」→「完了」など）
+    String fullLabel = label;
+    if (label == '総') fullLabel = '総タスク';
+    else if (label == '未') fullLabel = '未着手';
+    else if (label == '進') fullLabel = '進行中';
+    else if (label == '完') fullLabel = '完了';
+    
     return Tooltip(
-      message: count == 0 ? '$label: 0件' : '$label: $count件（タップで詳細表示）',
+      message: count == 0 ? '$fullLabel: 0件' : '$fullLabel: $count件（タップで詳細表示）',
       waitDuration: const Duration(milliseconds: 500),
       child: InkWell(
-        onTap: () => _showStatisticsDetail(label, count),
+        onTap: () => _showStatisticsDetail(fullLabel, count),
         borderRadius: BorderRadius.circular(8),
         child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-            Icon(icon, color: count == 0 ? Colors.grey : color, size: AppIconSizes.medium),
+            Icon(icon, color: count == 0 ? Colors.grey : color, size: 16), // アイコンサイズを小さく
         const SizedBox(height: 2),
         Text(
           count.toString(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: count == 0 ? Colors.grey : color,
             fontWeight: FontWeight.bold,
+            fontSize: 13, // フォントサイズを小さく
           ),
         ),
         Text(
           label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 10,
+                fontSize: 9, // フォントサイズを小さく
                 color: count == 0 ? Colors.grey : null,
               ),
         ),
@@ -3173,6 +3177,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   /// コンパクトモード用のタスクListTileを構築（一覧性重視）
   Widget _buildCompactTaskTile(TaskItem task, bool isSelected, {int? reorderIndex}) {
     final bool hasSubTaskBadge = task.hasSubTasks || task.totalSubTasksCount > 0;
+    final relatedLinks = _getRelatedLinks(task);
+    final hasValidLinks = _hasValidLinks(task);
+    final expandedLinksKey = 'compact_links_${task.id}';
+    final isLinksExpanded = _expandedTaskIds.contains(expandedLinksKey);
     
     // UIカスタマイズ設定を取得
     final uiState = ref.watch(uiCustomizationProvider);
@@ -3273,40 +3281,67 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           ],
         ],
       ),
-      subtitle: null, // コンパクトモードではサブタイトルは非表示
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // リンク表示（アコーディオン）
+          if (hasValidLinks && relatedLinks.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            _buildCompactLinksDisplay(task, relatedLinks, isLinksExpanded, expandedLinksKey),
+          ],
+        ],
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 予定バッジ（ツールチップ付き）
+          _buildScheduleBadgeCompact(task.id),
+          const SizedBox(width: 4),
           // リマインダーアイコン（小さめ）
           if (task.reminderTime != null)
             Icon(Icons.notifications_active, color: Colors.orange, size: 16),
-          const SizedBox(width: 4),
+          if (task.reminderTime != null) const SizedBox(width: 4),
           // ステータスバッジ（コンパクト版）
           _buildCompactStatusBadge(task),
           const SizedBox(width: 4),
           // 優先度インジケーター（小さめのアイコンのみ）
           _buildCompactPriorityIndicator(task),
           const SizedBox(width: 4),
-          // サブタスクバッジ（小さめ）
+          // サブタスクバッジ（小さめ・クリック可能）
           if (hasSubTaskBadge)
-            Tooltip(
-              message: _buildSubTaskTooltipContent(task),
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: task.completedSubTasksCount == task.totalSubTasksCount 
-                    ? Colors.green.shade600 
-                    : Colors.red.shade600,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
+            GestureDetector(
+              onTap: () {
+                // サブタスクダイアログを開く
+                showDialog(
+                  context: context,
+                  builder: (context) => SubTaskDialog(
+                    parentTaskId: task.id,
+                    parentTaskTitle: task.title,
+                  ),
+                ).then((_) {
+                  setState(() {});
+                });
+              },
+              child: Tooltip(
+                message: _buildSubTaskTooltipContent(task),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: task.completedSubTasksCount == task.totalSubTasksCount 
+                      ? Colors.green.shade600 
+                      : Colors.red.shade600,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -3489,6 +3524,124 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     }
     
     return buffer.toString();
+  }
+
+  /// コンパクトモード用のリンク表示（アコーディオン）
+  Widget _buildCompactLinksDisplay(TaskItem task, List<LinkItem> links, bool isExpanded, String expandedKey) {
+    const maxVisibleLinks = 3; // 最初に表示するリンク数
+    final visibleLinks = isExpanded ? links : links.take(maxVisibleLinks).toList();
+    final hasMoreLinks = links.length > maxVisibleLinks;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: visibleLinks.map((link) {
+            return InkWell(
+              onTap: () => _openRelatedLink(link),
+              borderRadius: BorderRadius.circular(4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: _buildFaviconOrIcon(link, Theme.of(context)),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    link.label,
+                    style: TextStyle(
+                      color: Colors.blue[800],
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.blue[800],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+        if (hasMoreLinks)
+          InkWell(
+            onTap: () {
+              setState(() {
+                if (isExpanded) {
+                  _expandedTaskIds.remove(expandedKey);
+                } else {
+                  _expandedTaskIds.add(expandedKey);
+                }
+              });
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 16,
+                  color: Colors.blue[700],
+                ),
+                Text(
+                  isExpanded 
+                    ? 'リンクを折りたたむ'
+                    : '他${links.length - maxVisibleLinks}個のリンクを表示',
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// コンパクトモード用の予定バッジ（ツールチップ付き）
+  Widget _buildScheduleBadgeCompact(String taskId) {
+    final schedules = ref.watch(scheduleViewModelProvider);
+    final taskSchedules = schedules.where((s) => s.taskId == taskId).toList();
+    
+    if (taskSchedules.isEmpty) {
+      return const SizedBox(width: 16);
+    }
+    
+    // 日時昇順でソート
+    taskSchedules.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    
+    // ツールチップコンテンツを生成
+    final tooltipContent = _buildScheduleTooltipContent(taskSchedules);
+    
+    return SizedBox(
+      width: 16,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.help,
+        child: Tooltip(
+          message: tooltipContent,
+          waitDuration: const Duration(milliseconds: 500),
+          preferBelow: false,
+          verticalOffset: 10,
+          textStyle: const TextStyle(fontSize: 12, color: Colors.white),
+          decoration: BoxDecoration(
+            color: Colors.grey[900]?.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            Icons.calendar_today,
+            size: 16,
+            color: Colors.orange.shade700,
+          ),
+        ),
+      ),
+    );
   }
 
   /// 標準モード用のタスクListTileを構築（現在の実装）
@@ -4425,9 +4578,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           ),
         );
         break;
-      case 'project_overview':
-        _showProjectOverview();
-        break;
       case 'schedule':
         Navigator.push(
           context,
@@ -5247,11 +5397,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         ),
       );
       return true;
-    } else if (event.logicalKey == LogicalKeyboardKey.keyP && isControlPressed && !isShiftPressed) {
-      if (isEditing) return false;
-      print('✅ Ctrl+P 検出: タスクグリッドビュー');
-      _showProjectOverview();
-      return true;
     } else if (event.logicalKey == LogicalKeyboardKey.keyT && isControlPressed && isShiftPressed) {
       if (isEditing) return false;
       print('✅ Ctrl+Shift+T 検出: テンプレートから作成');
@@ -5273,9 +5418,24 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       _showGroupMenu(context);
       return true;
     } else if (event.logicalKey == LogicalKeyboardKey.keyZ && isControlPressed && !isShiftPressed) {
-      // Ctrl+Z: コンパクト⇔標準の切り替え
-      // TextField編集中は無効化しない（通常のundo操作と競合する可能性があるが、アプリ側で処理）
-      print('✅ Ctrl+Z 検出: リストビュー表示モード切り替え');
+      // Ctrl+Z: 詳細トグル（すべて詳細表示/非表示）
+      if (isEditing) return false;
+      print('✅ Ctrl+Z 検出: 詳細表示/非表示切り替え');
+      setState(() {
+        if (_expandedTaskIds.isEmpty) {
+          // すべて詳細表示
+          final tasks = ref.read(taskViewModelProvider);
+          _expandedTaskIds = tasks.map((task) => task.id).toSet();
+        } else {
+          // すべて詳細非表示
+          _expandedTaskIds.clear();
+        }
+      });
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyX && isControlPressed && !isShiftPressed) {
+      // Ctrl+X: コンパクト⇔標準の切り替え
+      if (isEditing) return false;
+      print('✅ Ctrl+X 検出: コンパクト⇔標準表示切り替え');
       setState(() {
         _listViewMode = _listViewMode == ListViewMode.compact 
             ? ListViewMode.standard 
@@ -5306,12 +5466,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         ShortcutHelpEntry('Ctrl + B', '一括選択モードを切り替え'),
         ShortcutHelpEntry('Ctrl + Shift + E', 'CSVにエクスポート'),
         ShortcutHelpEntry('Ctrl + Shift + S', '設定画面を開く'),
-        ShortcutHelpEntry('Ctrl + P', 'タスクグリッドビュー切り替え'),
         ShortcutHelpEntry('Ctrl + S', '予定表を開く'),
         ShortcutHelpEntry('Ctrl + G', 'グループ化メニュー'),
         ShortcutHelpEntry('Ctrl + Shift + T', 'テンプレートから作成'),
         ShortcutHelpEntry('Ctrl + H', '統計・検索バー表示/非表示'),
-        ShortcutHelpEntry('Ctrl + Z', 'コンパクト⇔標準表示切り替え'),
+        ShortcutHelpEntry('Ctrl + Z', '詳細表示/非表示切り替え'),
+        ShortcutHelpEntry('Ctrl + X', 'コンパクト⇔標準表示切り替え'),
         ShortcutHelpEntry('← / →', 'ホームへ戻る / 3点メニューを開く'),
         ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
         ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
@@ -5392,17 +5552,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           ),
         ),
         const PopupMenuDivider(),
-        // タスクグリッドビュー
-        PopupMenuItem(
-          value: 'project_overview',
-          child: Row(
-            children: [
-              Icon(Icons.calendar_view_month, color: Colors.blue, size: 20),
-              SizedBox(width: 8),
-              Text('タスクグリッドビュー (Ctrl+P)'),
-            ],
-          ),
-        ),
         // スケジュール一覧
         PopupMenuItem(
           value: 'schedule',
@@ -5537,21 +5686,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       print('サブタスク取得エラー: $e');
       return [];
     }
-  }
-
-  /// タスクグリッドビューを表示
-  void _showProjectOverview() {
-    showDialog(
-      context: context,
-      builder: (context) => _ProjectOverviewDialog(
-        onPinChanged: () {
-          // ピン状態が変更されたら、親の状態も再読み込み
-          setState(() {
-            _loadPinnedTasks();
-          });
-        },
-      ),
-    );
   }
 
   /// タスクテンプレートダイアログを表示
@@ -7021,7 +7155,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   /// ピン留めタスク固定 + 通常タスクスクロール表示を構築
   Widget _buildPinnedAndScrollableTaskList(List<TaskItem> sortedTasks) {
-    // コンパクトモードの場合はグリッド表示
+    // コンパクトモードの場合はグリッド表示（カード型）
     if (_listViewMode == ListViewMode.compact) {
       return _buildCompactGridView(sortedTasks);
     }
@@ -7063,31 +7197,131 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     return _buildReorderableTaskList(unpinnedTasks);
   }
 
-  /// コンパクトモード用のグリッドビューを構築
+  /// コンパクトモード用のグリッドビューを構築（カード型）
   Widget _buildCompactGridView(List<TaskItem> tasks) {
-    final crossAxisCount = _compactGridColumns.clamp(2, 8);
-    final spacing = 8.0;
+    // レイアウト設定を取得
+    final layoutSettings = ref.watch(taskProjectLayoutSettingsProvider);
+    final fontSize = ref.watch(uiDensityProvider);
+    final titleFontSize = ref.watch(titleFontSizeProvider);
+    final titleFontFamily = ref.watch(titleFontFamilyProvider);
+    final memoFontSize = ref.watch(memoFontSizeProvider);
+    final memoFontFamily = ref.watch(memoFontFamilyProvider);
+    final descriptionFontSize = ref.watch(descriptionFontSizeProvider);
+    final descriptionFontFamily = ref.watch(descriptionFontFamilyProvider);
+    
+    // 列数を計算（自動調整または手動設定）
+    final crossAxisCount = layoutSettings.autoAdjustLayout
+        ? (MediaQuery.of(context).size.width > 1400 ? _compactGridColumns
+            : MediaQuery.of(context).size.width > 1100 ? _compactGridColumns
+            : MediaQuery.of(context).size.width > 700 ? (_compactGridColumns - 1).clamp(2, 4)
+            : 2)
+        : _compactGridColumns.clamp(2, 8);
+    
+    final spacing = layoutSettings.defaultGridSpacing;
+    final cardWidth = layoutSettings.cardWidth;
+    final cardHeight = layoutSettings.cardHeight;
+    
+    // 自動高さ調整が有効な場合はWrapレイアウトを使用
+    if (layoutSettings.autoAdjustCardHeight) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final availableWidth = constraints.maxWidth;
+          final padding = spacing * 0.75;
+          final effectiveWidth = availableWidth - (padding * 2);
+          final crossAxisSpacing = spacing;
+          final itemWidth = (effectiveWidth - (crossAxisCount - 1) * crossAxisSpacing) / crossAxisCount;
+          
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(padding),
+            child: Wrap(
+              spacing: crossAxisSpacing,
+              runSpacing: spacing,
+              alignment: WrapAlignment.start,
+              children: tasks.map((task) {
+                return SizedBox(
+                  width: itemWidth,
+                  child: _buildCompactTaskCard(
+                    task,
+                    isSelected: _selectedTaskIds.contains(task.id),
+                    cardWidth: itemWidth,
+                    minCardHeight: cardHeight,
+                    layoutSettings: layoutSettings,
+                    fontSize: fontSize,
+                    titleFontSize: titleFontSize,
+                    titleFontFamily: titleFontFamily,
+                    memoFontSize: memoFontSize,
+                    memoFontFamily: memoFontFamily,
+                    descriptionFontSize: descriptionFontSize,
+                    descriptionFontFamily: descriptionFontFamily,
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        },
+      );
+    }
+    
+    // 固定アスペクト比のグリッドビュー
+    final childAspectRatio = cardWidth / cardHeight;
     
     return GridView.builder(
-      padding: EdgeInsets.all(spacing),
+      padding: EdgeInsets.all(spacing * 0.75),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: 1.8, // 幅:高さ = 1.8:1 のカード
+        childAspectRatio: childAspectRatio,
         crossAxisSpacing: spacing,
         mainAxisSpacing: spacing,
       ),
       itemCount: tasks.length,
       itemBuilder: (context, index) {
         final task = tasks[index];
-        return _buildCompactTaskCard(task, isSelected: _selectedTaskIds.contains(task.id));
+        return _buildCompactTaskCard(
+          task,
+          isSelected: _selectedTaskIds.contains(task.id),
+          cardWidth: null,
+          minCardHeight: null,
+          layoutSettings: layoutSettings,
+          fontSize: fontSize,
+          titleFontSize: titleFontSize,
+          titleFontFamily: titleFontFamily,
+          memoFontSize: memoFontSize,
+          memoFontFamily: memoFontFamily,
+          descriptionFontSize: descriptionFontSize,
+          descriptionFontFamily: descriptionFontFamily,
+        );
       },
     );
   }
 
   /// コンパクトモード用のタスクカード（カード形式）
-  Widget _buildCompactTaskCard(TaskItem task, {required bool isSelected}) {
+  Widget _buildCompactTaskCard(
+    TaskItem task, {
+    required bool isSelected,
+    double? cardWidth,
+    double? minCardHeight,
+    required TaskProjectLayoutSettings layoutSettings,
+    required double fontSize,
+    required double titleFontSize,
+    required String titleFontFamily,
+    required double memoFontSize,
+    required String memoFontFamily,
+    required double descriptionFontSize,
+    required String descriptionFontFamily,
+  }) {
     final bool hasSubTaskBadge = task.hasSubTasks || task.totalSubTasksCount > 0;
     final isHovered = _hoveredTaskIds.contains(task.id);
+    final relatedLinks = _getRelatedLinks(task);
+    final hasValidLinks = _hasValidLinks(task);
+    final expandedLinksKey = 'compact_links_${task.id}';
+    final isLinksExpanded = _expandedTaskIds.contains(expandedLinksKey);
+    final isExpanded = _expandedTaskIds.contains(task.id);
+    
+    // 詳細があるかチェック
+    final bool hasDetails =
+        (task.description != null && task.description!.isNotEmpty) ||
+        (task.assignedTo != null && task.assignedTo!.isNotEmpty) ||
+        hasValidLinks;
     
     // 期限日に基づく背景色
     final now = DateTime.now();
@@ -7188,12 +7422,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               side: BorderSide(color: borderColor, width: 2),
             ),
             color: cardBg,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: minCardHeight ?? layoutSettings.cardHeight,
+                maxWidth: cardWidth ?? double.infinity,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   // ヘッダー: ピン留め + 期限日バッジ + チェックボックス
                   Row(
                     children: [
@@ -7214,42 +7453,121 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     ],
                   ),
                   const SizedBox(height: 6),
-                  // タイトル
-                  Expanded(
-                    child: Tooltip(
-                      message: _buildCompactTooltipContent(task),
-                      child: _searchQuery.isNotEmpty
-                          ? HighlightedText(
-                              text: task.title,
-                              highlight: _searchQuery,
-                              style: TextStyle(
-                                color: _getTaskTitleColor(),
-                                decoration: task.status == TaskStatus.completed 
-                                    ? TextDecoration.lineThrough 
-                                    : null,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                  // タイトル + 詳細トグル
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _searchQuery.isNotEmpty
+                            ? HighlightedText(
+                                text: task.title,
+                                highlight: _searchQuery,
+                                style: TextStyle(
+                                  color: _getTaskTitleColor(),
+                                  decoration: task.status == TaskStatus.completed 
+                                      ? TextDecoration.lineThrough 
+                                      : null,
+                                  fontSize: 13 * titleFontSize * layoutSettings.titleFontSize,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
+                                ),
+                              )
+                            : Text(
+                                task.title,
+                                style: TextStyle(
+                                  color: _getTaskTitleColor(),
+                                  decoration: task.status == TaskStatus.completed 
+                                      ? TextDecoration.lineThrough 
+                                      : null,
+                                  fontSize: 13 * titleFontSize * layoutSettings.titleFontSize,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
+                                ),
+                                maxLines: isExpanded ? null : 2,
+                                overflow: isExpanded ? null : TextOverflow.ellipsis,
                               ),
-                            )
-                          : Text(
-                              task.title,
-                              style: TextStyle(
-                                color: _getTaskTitleColor(),
-                                decoration: task.status == TaskStatus.completed 
-                                    ? TextDecoration.lineThrough 
-                                    : null,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                      ),
+                      // 詳細トグルボタン
+                      if (hasDetails)
+                        TextButton(
+                          onPressed: () => setState(() {
+                            if (isExpanded) {
+                              _expandedTaskIds.remove(task.id);
+                            } else {
+                              _expandedTaskIds.add(task.id);
+                            }
+                          }),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                            minimumSize: const Size(0, 0),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                size: 14,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                    ),
+                              Text(
+                                isExpanded ? '閉じる' : '詳細',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
+                  // 依頼先/メモ（1行表示または展開時は全表示）
+                  if (task.assignedTo != null && task.assignedTo!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '依頼先: ${task.assignedTo}',
+                      style: TextStyle(
+                        fontSize: 10 * memoFontSize * layoutSettings.memoFontSize,
+                        color: Colors.grey[700],
+                        fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
+                      ),
+                      maxLines: isExpanded ? null : 1,
+                      overflow: isExpanded ? null : TextOverflow.ellipsis,
+                    ),
+                  ],
+                  // 説明（1行表示または展開時は全表示）
+                  if (task.description != null && task.description!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      task.description!,
+                      style: TextStyle(
+                        fontSize: 10 * descriptionFontSize * layoutSettings.descriptionFontSize,
+                        color: Colors.grey[600],
+                        fontFamily: descriptionFontFamily.isEmpty ? null : descriptionFontFamily,
+                      ),
+                      maxLines: isExpanded ? null : 1,
+                      overflow: isExpanded ? null : TextOverflow.ellipsis,
+                    ),
+                  ],
+                  // リンク表示（展開時のみまたはアコーディオン）
+                  if (hasValidLinks && relatedLinks.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    _buildCompactLinksDisplay(task, relatedLinks, isLinksExpanded || isExpanded, expandedLinksKey),
+                  ],
                   const SizedBox(height: 6),
                   // フッター: ステータス + 優先度 + その他
                   Row(
                     children: [
+                      // 予定バッジ（ツールチップ付き）
+                      _buildScheduleBadgeCompact(task.id),
+                      const SizedBox(width: 4),
+                      // リマインダーアイコン
+                      if (task.reminderTime != null)
+                        Icon(Icons.notifications_active, size: 12, color: Colors.orange),
+                      if (task.reminderTime != null) const SizedBox(width: 4),
                       // ステータスバッジ
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -7277,34 +7595,44 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       // 優先度アイコン
                       Icon(priorityIcon, size: 12, color: priorityColor),
                       const Spacer(),
-                      // リマインダーアイコン
-                      if (task.reminderTime != null)
-                        Icon(Icons.notifications_active, size: 12, color: Colors.orange),
-                      if (task.reminderTime != null) const SizedBox(width: 4),
                       // チームタスクアイコン
                       if (task.isTeamTask)
                         Icon(Icons.group, size: 12, color: Colors.blue[700]),
                       if (task.isTeamTask) const SizedBox(width: 4),
-                      // サブタスクバッジ（ツールチップ付き）
+                      // サブタスクバッジ（クリック可能・ツールチップ付き）
                       if (hasSubTaskBadge)
-                        Tooltip(
-                          message: _buildSubTaskTooltipContent(task),
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: task.completedSubTasksCount == task.totalSubTasksCount 
-                                ? Colors.green.shade600 
-                                : Colors.red.shade600,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
+                        GestureDetector(
+                          onTap: () {
+                            // サブタスクダイアログを開く
+                            showDialog(
+                              context: context,
+                              builder: (context) => SubTaskDialog(
+                                parentTaskId: task.id,
+                                parentTaskTitle: task.title,
+                              ),
+                            ).then((_) {
+                              setState(() {});
+                            });
+                          },
+                          child: Tooltip(
+                            message: _buildSubTaskTooltipContent(task),
+                            child: Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: task.completedSubTasksCount == task.totalSubTasksCount 
+                                  ? Colors.green.shade600 
+                                  : Colors.red.shade600,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
@@ -7312,7 +7640,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                         ),
                     ],
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -8361,2467 +8690,4 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       ),
     );
   }
-}
-/// タスクグリッドビューダイアログ
-class _ProjectOverviewDialog extends ConsumerStatefulWidget {
-  final VoidCallback? onPinChanged; // ピン状態変更時のコールバック
-  
-  const _ProjectOverviewDialog({this.onPinChanged});
-  
-  @override
-  ConsumerState<_ProjectOverviewDialog> createState() => _ProjectOverviewDialogState();
-}
-class _ProjectOverviewDialogState extends ConsumerState<_ProjectOverviewDialog> {
-  Set<String> _filterDueDateColors = {}; // 期限日の色でフィルター（複数選択対応）
-  Set<TaskStatus> _filterStatuses = {TaskStatus.pending, TaskStatus.inProgress}; // ステータスフィルター（複数選択対応、デフォルト: 未着手と進行中）
-  TaskPriority? _filterPriority; // 優先度フィルター
-  late FocusNode _dialogFocusNode;
-  // 一括選択機能の状態変数
-  bool _isSelectionMode = false; // 選択モードのオン/オフ
-  Set<String> _selectedTaskIds = {}; // 選択されたタスクのIDセット
-  // ピン留めされたタスクID（タスク管理画面と同期）
-  Set<String> _pinnedTaskIds = <String>{};
-  // 検索機能
-  String _searchQuery = '';
-  late TextEditingController _searchController;
-  late FocusNode _searchFocusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _dialogFocusNode = FocusNode();
-    _searchController = TextEditingController();
-    _searchFocusNode = FocusNode();
-    _loadPinnedTasks();
-    
-    _searchController.addListener(() {
-      if (_searchController.text != _searchQuery) {
-        setState(() {
-          _searchQuery = _searchController.text;
-        });
-      }
-    });
-  }
-  
-  void _loadPinnedTasks() {
-    try {
-      final box = Hive.box('pinnedTasks');
-      final ids = box.get('ids', defaultValue: <String>[]) as List;
-      _pinnedTaskIds = ids.map((e) => e.toString()).toSet();
-    } catch (_) {}
-  }
-  
-  void _savePinnedTasks() {
-    try {
-      Hive.box('pinnedTasks').put('ids', _pinnedTaskIds.toList());
-    } catch (_) {}
-  }
-  
-  void _togglePinTask(String taskId) {
-    setState(() {
-      if (_pinnedTaskIds.contains(taskId)) {
-        _pinnedTaskIds.remove(taskId);
-      } else {
-        _pinnedTaskIds.add(taskId);
-      }
-      _savePinnedTasks();
-      widget.onPinChanged?.call();
-    });
-  }
-
-  @override
-  void dispose() {
-    _dialogFocusNode.dispose();
-    _searchController.dispose();
-    _searchFocusNode.dispose();
-    super.dispose();
-  }
-
-  /// タスクの関連リンクを取得
-  List<LinkItem> _getRelatedLinks(TaskItem task) {
-    final groups = ref.read(linkViewModelProvider);
-    final relatedLinks = <LinkItem>[];
-    
-    for (final linkId in task.relatedLinkIds) {
-      for (final group in groups.groups) {
-        for (final link in group.items) {
-          if (link.id == linkId) {
-            relatedLinks.add(link);
-            break;
-          }
-        }
-      }
-    }
-    
-    return relatedLinks;
-  }
-
-  /// タスクに有効なリンクがあるかチェック
-  bool _hasValidLinks(TaskItem task) {
-    for (final linkId in task.relatedLinkIds) {
-      final groups = ref.read(linkViewModelProvider);
-      for (final group in groups.groups) {
-        for (final link in group.items) {
-          if (link.id == linkId) {
-            return true;
-          }
-        }
-      }
-    }
-    if (task.relatedLinkId != null && task.relatedLinkId!.isNotEmpty) {
-      final groups = ref.read(linkViewModelProvider);
-      for (final group in groups.groups) {
-        for (final link in group.items) {
-          if (link.id == task.relatedLinkId) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
-
-  /// 関連リンクを開く
-  void _openRelatedLink(LinkItem link) {
-    try {
-      final linkViewModel = ref.read(linkViewModelProvider.notifier);
-      linkViewModel.launchLink(link);
-      
-      SnackBarService.showSuccess(
-        context,
-        'リンク「${link.label}」を開きました',
-      );
-    } catch (e) {
-      SnackBarService.showError(
-        context,
-        'リンクを開けませんでした: ${link.label}',
-      );
-    }
-  }
-
-  /// タスクグリッドビュー用の関連リンク表示を構築
-  Widget _buildRelatedLinksForGrid(TaskItem task, double fontSize, {String searchQuery = ''}) {
-    final relatedLinks = _getRelatedLinks(task);
-    if (relatedLinks.isEmpty) return const SizedBox.shrink();
-    
-    return Wrap(
-      spacing: 6 * fontSize,
-      runSpacing: 4 * fontSize,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: relatedLinks.map((link) {
-        return Tooltip(
-          message: link.memo != null && link.memo!.isNotEmpty 
-              ? link.memo! 
-              : 'メモはリンク管理画面から追加可能',
-          waitDuration: const Duration(milliseconds: 500),
-          child: GestureDetector(
-            onTap: () => _openRelatedLink(link),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Faviconまたはアイコンを表示
-                SizedBox(
-                  width: 14 * fontSize,
-                  height: 14 * fontSize,
-                  child: _buildFaviconOrIconForGrid(link, Theme.of(context), fontSize),
-                ),
-                SizedBox(width: 4 * fontSize),
-                Flexible(
-                  child: searchQuery.isNotEmpty
-                      ? HighlightedText(
-                          text: link.label,
-                          highlight: searchQuery,
-                          style: TextStyle(
-                            fontSize: 9 * fontSize,
-                            color: Colors.blue[800],
-                            decoration: TextDecoration.underline,
-                            decorationColor: Colors.blue[800],
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : Text(
-                          link.label,
-                          style: TextStyle(
-                            fontSize: 9 * fontSize,
-                            color: Colors.blue[800],
-                            decoration: TextDecoration.underline,
-                            decorationColor: Colors.blue[800],
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  /// Faviconまたはアイコンを構築（タスクグリッドビュー用）
-  Widget _buildFaviconOrIconForGrid(LinkItem link, ThemeData theme, double fontSize) {
-    if (link.type == LinkType.url) {
-      return UrlPreviewWidget(
-        url: link.path, 
-        isDark: theme.brightness == Brightness.dark,
-        fallbackDomain: link.faviconFallbackDomain,
-      );
-    } else if (link.type == LinkType.file) {
-      return FilePreviewWidget(
-        path: link.path,
-        isDark: theme.brightness == Brightness.dark,
-      );
-    } else {
-      // フォルダの場合
-      if (link.iconData != null) {
-        return Icon(
-          IconData(link.iconData!, fontFamily: 'MaterialIcons'),
-          color: link.iconColor != null ? Color(link.iconColor!) : Colors.orange,
-          size: 12 * fontSize,
-        );
-      } else {
-        return Icon(
-          Icons.folder,
-          color: Colors.orange,
-          size: 12 * fontSize,
-        );
-      }
-    }
-  }
-
-  /// フィルターダイアログを表示（タスクグリッドビュー用）
-  Future<void> _showFilterDialogForGrid(BuildContext context, DateTime now) async {
-    Set<String> selectedDueDateColors = Set<String>.from(_filterDueDateColors);
-    Set<TaskStatus> selectedStatuses = Set<TaskStatus>.from(_filterStatuses);
-    TaskPriority? selectedPriority = _filterPriority;
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('フィルター'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '期限日の色（複数選択可）',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildFilterChipForGrid<bool>(
-                      'すべて',
-                      true,
-                      selectedDueDateColors.isEmpty,
-                      (value) {
-                        setDialogState(() {
-                          selectedDueDateColors.clear();
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<String>(
-                      '期限切れ',
-                      'red',
-                      selectedDueDateColors.contains('red'),
-                      (value) {
-                        setDialogState(() {
-                          if (selectedDueDateColors.contains(value)) {
-                            selectedDueDateColors.remove(value);
-                          } else {
-                            selectedDueDateColors.add(value);
-                          }
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<String>(
-                      '今日が期限',
-                      'orange',
-                      selectedDueDateColors.contains('orange'),
-                      (value) {
-                        setDialogState(() {
-                          if (selectedDueDateColors.contains(value)) {
-                            selectedDueDateColors.remove(value);
-                          } else {
-                            selectedDueDateColors.add(value);
-                          }
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<String>(
-                      '3日以内',
-                      'amber',
-                      selectedDueDateColors.contains('amber'),
-                      (value) {
-                        setDialogState(() {
-                          if (selectedDueDateColors.contains(value)) {
-                            selectedDueDateColors.remove(value);
-                          } else {
-                            selectedDueDateColors.add(value);
-                          }
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<String>(
-                      '余裕あり',
-                      'blue',
-                      selectedDueDateColors.contains('blue'),
-                      (value) {
-                        setDialogState(() {
-                          if (selectedDueDateColors.contains(value)) {
-                            selectedDueDateColors.remove(value);
-                          } else {
-                            selectedDueDateColors.add(value);
-                          }
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<String>(
-                      '期限未設定',
-                      'green',
-                      selectedDueDateColors.contains('green'),
-                      (value) {
-                        setDialogState(() {
-                          if (selectedDueDateColors.contains(value)) {
-                            selectedDueDateColors.remove(value);
-                          } else {
-                            selectedDueDateColors.add(value);
-                          }
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'ステータス（複数選択可）',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildFilterChipForGrid<bool>(
-                      'すべて',
-                      true,
-                      selectedStatuses.isEmpty,
-                      (value) {
-                        setDialogState(() {
-                          selectedStatuses.clear();
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<TaskStatus>(
-                      '未着手',
-                      TaskStatus.pending,
-                      selectedStatuses.contains(TaskStatus.pending),
-                      (value) {
-                        setDialogState(() {
-                          if (selectedStatuses.contains(value)) {
-                            selectedStatuses.remove(value);
-                          } else {
-                            selectedStatuses.add(value);
-                          }
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<TaskStatus>(
-                      '進行中',
-                      TaskStatus.inProgress,
-                      selectedStatuses.contains(TaskStatus.inProgress),
-                      (value) {
-                        setDialogState(() {
-                          if (selectedStatuses.contains(value)) {
-                            selectedStatuses.remove(value);
-                          } else {
-                            selectedStatuses.add(value);
-                          }
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<TaskStatus>(
-                      '完了',
-                      TaskStatus.completed,
-                      selectedStatuses.contains(TaskStatus.completed),
-                      (value) {
-                        setDialogState(() {
-                          if (selectedStatuses.contains(value)) {
-                            selectedStatuses.remove(value);
-                          } else {
-                            selectedStatuses.add(value);
-                          }
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<TaskStatus>(
-                      '取消',
-                      TaskStatus.cancelled,
-                      selectedStatuses.contains(TaskStatus.cancelled),
-                      (value) {
-                        setDialogState(() {
-                          if (selectedStatuses.contains(value)) {
-                            selectedStatuses.remove(value);
-                          } else {
-                            selectedStatuses.add(value);
-                          }
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  '優先度',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildFilterChipForGrid<TaskPriority?>(
-                      'すべて',
-                      null,
-                      selectedPriority == null,
-                      (value) {
-                        setDialogState(() {
-                          selectedPriority = null;
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<TaskPriority>(
-                      '低',
-                      TaskPriority.low,
-                      selectedPriority == TaskPriority.low,
-                      (value) {
-                        setDialogState(() {
-                          selectedPriority = value;
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<TaskPriority>(
-                      '中',
-                      TaskPriority.medium,
-                      selectedPriority == TaskPriority.medium,
-                      (value) {
-                        setDialogState(() {
-                          selectedPriority = value;
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<TaskPriority>(
-                      '高',
-                      TaskPriority.high,
-                      selectedPriority == TaskPriority.high,
-                      (value) {
-                        setDialogState(() {
-                          selectedPriority = value;
-                        });
-                      },
-                    ),
-                    _buildFilterChipForGrid<TaskPriority>(
-                      '緊急',
-                      TaskPriority.urgent,
-                      selectedPriority == TaskPriority.urgent,
-                      (value) {
-                        setDialogState(() {
-                          selectedPriority = value;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _filterDueDateColors.clear();
-                  _filterStatuses.clear();
-                  _filterPriority = null;
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('リセット'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _filterDueDateColors = selectedDueDateColors;
-                  _filterStatuses = selectedStatuses;
-                  _filterPriority = selectedPriority;
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('適用'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterChipForGrid<T>(
-    String label,
-    T value,
-    bool isSelected,
-    ValueChanged<T> onSelected,
-  ) {
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (_) => onSelected(value),
-    );
-  }
-  @override
-  Widget build(BuildContext context) {
-    final WidgetRef ref = this.ref;
-    final tasks = ref.watch(taskViewModelProvider);
-    final now = DateTime.now();
-    
-    // フォント設定を取得（タスクグリッドビュー専用の設定）
-    final fontSize = ref.watch(fontSizeProvider);
-    final layoutSettings = ref.watch(taskProjectLayoutSettingsProvider);
-    // タスクグリッドビュー専用のフォントサイズ設定を使用
-    final titleFontSize = layoutSettings.titleFontSize;
-    final memoFontSize = layoutSettings.memoFontSize;
-    final descriptionFontSize = layoutSettings.descriptionFontSize;
-    // フォントファミリーは全画面共通の設定を使用
-    final titleFontFamily = ref.watch(titleFontFamilyProvider);
-    final memoFontFamily = ref.watch(memoFontFamilyProvider);
-    final descriptionFontFamily = ref.watch(descriptionFontFamilyProvider);
-    
-    // タスクをフィルタリング（複数フィルター適用）
-    print('🔍 タスクグリッドビュー フィルター状態: _filterDueDateColors=$_filterDueDateColors, _filterStatuses=$_filterStatuses, _filterPriority=$_filterPriority');
-    print('🔍 全タスク数: ${tasks.length}');
-    final filteredTasks = tasks.where((task) {
-      // 期限日の色分けフィルター（複数選択対応）
-      if (_filterDueDateColors.isNotEmpty) {
-        final taskDueDateColor = _getDueDateColorForFilter(task, now);
-        if (!_filterDueDateColors.contains(taskDueDateColor)) {
-        return false;
-      }
-      }
-      
-      // ステータスフィルター（複数選択対応）
-      if (_filterStatuses.isNotEmpty) {
-        if (!_filterStatuses.contains(task.status)) {
-          return false;
-        }
-      }
-      
-      // 優先度フィルター
-      if (_filterPriority != null) {
-        if (task.priority != _filterPriority) {
-          return false;
-        }
-      }
-      
-      // 検索フィルター
-      if (_searchQuery.isNotEmpty) {
-        final queryLower = _searchQuery.toLowerCase();
-        if (!task.title.toLowerCase().contains(queryLower) &&
-            (task.description == null || !task.description!.toLowerCase().contains(queryLower)) &&
-            (task.assignedTo == null || !task.assignedTo!.toLowerCase().contains(queryLower)) &&
-            (task.notes == null || !task.notes!.toLowerCase().contains(queryLower)) &&
-            !task.tags.any((tag) => tag.toLowerCase().contains(queryLower))) {
-          return false;
-        }
-      }
-      
-      return true;
-    }).toList();
-    print('🔍 フィルター後タスク数: ${filteredTasks.length}');
-    
-    // ピン留めタスクを先頭に、その後期限日順でソート（期限なしは最後）
-    final sortedTasks = filteredTasks..sort((a, b) {
-      // ピン留めの優先度を比較
-      final aIsPinned = _pinnedTaskIds.contains(a.id);
-      final bIsPinned = _pinnedTaskIds.contains(b.id);
-      if (aIsPinned && !bIsPinned) return -1;
-      if (!aIsPinned && bIsPinned) return 1;
-      
-      // 両方ピン留めまたは両方ピン留めでない場合、期限日でソート
-      if (a.dueDate == null && b.dueDate == null) return 0;
-      if (a.dueDate == null) return 1;
-      if (b.dueDate == null) return -1;
-      return a.dueDate!.compareTo(b.dueDate!);
-    });
-
-    // グリッド設定を計算
-    final crossAxisCount = layoutSettings.autoAdjustLayout
-        ? (MediaQuery.of(context).size.width > 1400 ? layoutSettings.defaultCrossAxisCount
-            : MediaQuery.of(context).size.width > 1100 ? layoutSettings.defaultCrossAxisCount
-            : MediaQuery.of(context).size.width > 700 ? (layoutSettings.defaultCrossAxisCount - 1).clamp(2, 4)
-            : 2)
-        : layoutSettings.defaultCrossAxisCount;
-    
-    // カードサイズからアスペクト比を計算
-    final cardWidth = layoutSettings.cardWidth;
-    final cardHeight = layoutSettings.cardHeight;
-    final childAspectRatio = cardWidth / cardHeight;
-
-    return PopScope(
-      canPop: true,
-      child: Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: FocusScope(
-          autofocus: false,
-          child: FocusScope(
-            autofocus: false,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.98,
-        height: MediaQuery.of(context).size.height * 0.95,
-        constraints: const BoxConstraints(
-          minWidth: 1000,
-          minHeight: 700,
-          maxWidth: 1600,
-          maxHeight: 1200,
-        ),
-        child: Column(
-          children: [
-            // ヘッダー
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // 選択モード時は選択数を表示
-                  if (_isSelectionMode)
-                    Text(
-                      '${_selectedTaskIds.length}件選択中',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  else
-                  Text(
-                    'タスク一覧',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                        fontSize: (Theme.of(context).textTheme.headlineSmall?.fontSize ?? 20) * fontSize,
-                        fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (_isSelectionMode) ...[
-                    // 選択モード時のアクション
-                    IconButton(
-                      icon: Icon(_selectedTaskIds.length == sortedTasks.length 
-                        ? Icons.deselect 
-                        : Icons.select_all),
-                      tooltip: _selectedTaskIds.length == sortedTasks.length 
-                        ? '全解除' 
-                        : '全選択',
-                      onPressed: () => _toggleSelectAllForGrid(sortedTasks),
-                    ),
-                    // 一括操作メニューボタン
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert),
-                      tooltip: '一括操作',
-                      enabled: !_selectedTaskIds.isEmpty,
-                      onSelected: (value) async {
-                        switch (value) {
-                          case 'status':
-                            _showBulkStatusMenuForGrid(context);
-                            break;
-                          case 'priority':
-                            _showBulkPriorityMenuForGrid(context);
-                            break;
-                          case 'delete':
-                            await _deleteSelectedTasksForGrid(context);
-                            break;
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'status',
-                          child: Row(
-                    children: [
-                              Icon(Icons.play_circle_outline, size: 20),
-                              SizedBox(width: 8),
-                              Text('ステータス変更'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'priority',
-                          child: Row(
-                            children: [
-                              Icon(Icons.flag, size: 20),
-                              SizedBox(width: 8),
-                              Text('優先度変更'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuDivider(),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete, size: 20, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('削除', style: TextStyle(color: Colors.red)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      tooltip: '選択モードを終了',
-                      onPressed: () {
-                        setState(() {
-                          _isSelectionMode = false;
-                          _selectedTaskIds.clear();
-                        });
-                      },
-                      ),
-                  ] else ...[
-                    // 通常モード時のアクション
-                    IconButton(
-                      icon: const Icon(Icons.check_box_outline_blank),
-                      tooltip: '一括選択モード',
-                      onPressed: () {
-                        setState(() {
-                          _isSelectionMode = true;
-                        });
-                      },
-                      ),
-                      const SizedBox(width: 8),
-                    // フィルターダイアログボタン
-                    IconButton(
-                      icon: Stack(
-                        children: [
-                          const Icon(Icons.filter_alt, size: 20),
-                          if (_filterDueDateColors.isNotEmpty || _filterStatuses.isNotEmpty || _filterPriority != null)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 6,
-                                  minHeight: 6,
-                                ),
-                              ),
-                            ),
-                    ],
-                  ),
-                      tooltip: 'フィルター',
-                      onPressed: () => _showFilterDialogForGrid(context, now),
-                    ),
-                  ],
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                    tooltip: '閉じる',
-                  ),
-                ],
-              ),
-            ),
-            // 検索バー（シンプルな実装）
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'タスクを検索（タイトル・説明・タグ・依頼先）...',
-                  hintStyle: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(context).hintColor,
-                  ),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {
-                              _searchQuery = '';
-                            });
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-              ),
-            ),
-            // タスク一覧
-            Expanded(
-              child: sortedTasks.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inbox,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'タスクがありません',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : layoutSettings.autoAdjustCardHeight
-                    ? _buildAutoHeightGrid(
-                        sortedTasks,
-                        crossAxisCount,
-                        cardWidth,
-                        cardHeight,
-                        layoutSettings.defaultGridSpacing,
-                        now,
-                        fontSize,
-                        titleFontSize,
-                        titleFontFamily,
-                        memoFontSize,
-                        memoFontFamily,
-                        descriptionFontSize,
-                        descriptionFontFamily,
-                  )
-                : GridView.builder(
-                        padding: EdgeInsets.all(layoutSettings.defaultGridSpacing * 0.75),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          childAspectRatio: childAspectRatio,
-                          crossAxisSpacing: layoutSettings.defaultGridSpacing,
-                          mainAxisSpacing: layoutSettings.defaultGridSpacing,
-                    ),
-                    itemCount: sortedTasks.length,
-                    itemBuilder: (context, index) {
-                      final task = sortedTasks[index];
-                      
-                      // カード背景色は期限日に基づいて色分け
-                      final Color cardBg = _getCardBackgroundColor(task, now);
-                      // ボーダー色も期限日に基づいて設定
-                      final Color borderColor = _getCardBorderColor(task, now);
-
-                      // ステータスバッジの色とテキスト
-                      final statusBadge = _getTaskStatusBadgeForGrid(task.status);
-
-                      return Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: borderColor, width: 1),
-                        ),
-                        color: cardBg,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(8),
-                          focusColor: Colors.transparent,
-                          canRequestFocus: false,
-                          onTap: () {
-                            if (_isSelectionMode) {
-                              // 選択モード時はタップで選択切り替え
-                              setState(() {
-                                if (_selectedTaskIds.contains(task.id)) {
-                                  _selectedTaskIds.remove(task.id);
-                                } else {
-                                  _selectedTaskIds.add(task.id);
-                                }
-                              });
-                            } else {
-                              // 通常モード時はタスクダイアログを開く
-                            showDialog(
-                              context: context,
-                              builder: (context) => TaskDialog(task: task),
-                              ).then((_) {
-                                // タスクダイアログを閉じた時にタスクグリッドビューに戻る
-                                // ダイアログが既に閉じられているため、何もしない
-                              });
-                            }
-                          },
-                          child: Padding(
-                            padding: EdgeInsets.all(8 * fontSize),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // タイトル
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // 選択モード時はチェックボックス、通常時はピン留めボタン
-                                    if (_isSelectionMode)
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 4, top: 2),
-                                        child: Checkbox(
-                                          value: _selectedTaskIds.contains(task.id),
-                                          onChanged: (_) {
-                                            setState(() {
-                                              if (_selectedTaskIds.contains(task.id)) {
-                                                _selectedTaskIds.remove(task.id);
-                                              } else {
-                                                _selectedTaskIds.add(task.id);
-                                              }
-                                            });
-                                          },
-                                          visualDensity: VisualDensity.compact,
-                                        ),
-                                      )
-                                    else
-                                      // ピン留めボタン
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 4, top: 2),
-                                        child: IconButton(
-                                          icon: Icon(
-                                            _pinnedTaskIds.contains(task.id)
-                                                ? Icons.push_pin
-                                                : Icons.push_pin_outlined,
-                                            size: 16 * fontSize,
-                                            color: _pinnedTaskIds.contains(task.id)
-                                                ? Theme.of(context).colorScheme.primary
-                                                : Colors.grey,
-                                          ),
-                                          tooltip: _pinnedTaskIds.contains(task.id) ? 'ピンを外す' : '上部にピン留め',
-                                          visualDensity: VisualDensity.compact,
-                                          padding: EdgeInsets.zero,
-                                          constraints: BoxConstraints(),
-                                          onPressed: () => _togglePinTask(task.id),
-                                        ),
-                                      ),
-                                    Expanded(
-                                      child: Text(
-                                        task.title,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14 * fontSize * titleFontSize,
-                                          fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
-                                          color: _getTextColorForCardBackground(cardBg),
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    // 優先度表示（色と文字1文字）
-                                    _buildPriorityIndicator(task.priority, fontSize),
-                                    const SizedBox(width: 4),
-                                    // 予定バッジ（カレンダーアイコン）
-                                    _buildScheduleBadgeForGrid(task.id, fontSize),
-                                    const SizedBox(width: 4),
-                                    // ステータスバッジ（タスク管理画面と統一）
-                                    Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 6 * fontSize, vertical: 2 * fontSize),
-                                      decoration: BoxDecoration(
-                                        color: _getStatusBadgeBackgroundColor(statusBadge['color'] as Color),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: _getStatusBadgeBorderColor(statusBadge['color'] as Color), width: 1.5),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            statusBadge['icon'] as IconData,
-                                            size: 10 * fontSize,
-                                            color: statusBadge['color'] as Color,
-                                          ),
-                                          SizedBox(width: 2 * fontSize),
-                                          Text(
-                                            statusBadge['text'] as String,
-                                            style: TextStyle(
-                                              color: statusBadge['color'] as Color,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 9 * fontSize,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                // 期限（視認性を最大限確保: 白色背景 + 濃い色のテキスト）
-                                if (task.dueDate != null) ...[
-                                  SizedBox(height: 4 * fontSize),
-                                  Builder(
-                                    builder: (context) {
-                                      // 期限日に応じた濃い色を決定（背景色に関係なく視認性を確保）
-                                      final Color badgeColor;
-                                      // 期限日の差を計算
-                                      final difference = task.dueDate!.difference(now).inDays;
-                                      if (difference < 0) {
-                                        badgeColor = Colors.red.shade700; // 期限切れ
-                                      } else if (difference == 0) {
-                                        badgeColor = Colors.orange.shade700; // 今日が期限
-                                      } else if (difference <= 3) {
-                                        badgeColor = Colors.amber.shade700; // 3日以内
-                                      } else {
-                                        badgeColor = Colors.blue.shade700; // それ以外
-                                      }
-                                      
-                                      return Container(
-                                        padding: EdgeInsets.symmetric(horizontal: 8 * fontSize, vertical: 5 * fontSize),
-                                    decoration: BoxDecoration(
-                                          color: Colors.white, // 常に白色背景で視認性を確保
-                                      borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(
-                                            color: badgeColor,
-                                            width: 2, // 太いボーダーで強調
-                                          ),
-                                          boxShadow: [
-                                            // 強い影でカード背景から視覚的に分離
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.2),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                            // 内側の影も追加して立体感を向上
-                                            BoxShadow(
-                                              color: badgeColor.withOpacity(0.1),
-                                              blurRadius: 2,
-                                              offset: const Offset(0, 0),
-                                            ),
-                                          ],
-                                    ),
-                                    child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.schedule,
-                                              size: 13 * fontSize,
-                                              color: badgeColor, // 濃い色で視認性を確保
-                                            ),
-                                            SizedBox(width: 4 * fontSize),
-                                            Text(
-                                              DateFormat('MM/dd').format(task.dueDate!),
-                                              style: TextStyle(
-                                                color: badgeColor, // 濃い色で視認性を確保
-                                                fontWeight: FontWeight.w800, // 太字
-                                                fontSize: 12 * fontSize,
-                                                // テキストシャドウは不要（白背景なので）
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ] else ...[
-                                  // 期限未設定の場合はタスクリストビューと同じスタイルのバッジを表示
-                                  SizedBox(height: 4 * fontSize),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 8 * fontSize, vertical: 6 * fontSize),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.shade50, // タスクリストビューと同じ背景色
-                                      borderRadius: BorderRadius.circular(12 * fontSize), // タスクリストビューと同じ角丸
-                                      border: Border.all(
-                                        color: Colors.green.shade300, // タスクリストビューと同じボーダー色
-                                        width: 2, // タスクリストビューと同じボーダー幅
-                                      ),
-                                        ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.schedule,
-                                          size: 13 * fontSize,
-                                          color: Colors.green.shade900, // タスクリストビューと同じテキスト色
-                                        ),
-                                        SizedBox(width: 4 * fontSize),
-                                        Text(
-                                          '未設定',
-                                          style: TextStyle(
-                                            color: Colors.green.shade900, // タスクリストビューと同じテキスト色
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 11 * fontSize,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                // メモまたは依頼先
-                                if (task.assignedTo != null && task.assignedTo!.isNotEmpty) ...[
-                                  SizedBox(height: 4 * fontSize),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.person, size: 10 * fontSize, color: Colors.grey[600]),
-                                      SizedBox(width: 2 * fontSize),
-                                        Expanded(
-                                          child: Text(
-                                          task.assignedTo!,
-                                            style: TextStyle(
-                                            color: Color(ref.watch(memoTextColorProvider)),
-                                            fontSize: 10 * fontSize * memoFontSize,
-                                            fontWeight: FontWeight.w600,
-                                            fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                  ),
-                                ] else if (task.notes != null && task.notes!.isNotEmpty) ...[
-                                  SizedBox(height: 4 * fontSize),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.note, size: 10 * fontSize, color: Colors.grey[600]),
-                                      SizedBox(width: 2 * fontSize),
-                                      Expanded(
-                                        child: Text(
-                                          task.notes!,
-                                          style: TextStyle(
-                                            color: Color(ref.watch(memoTextColorProvider)),
-                                            fontSize: 10 * fontSize * memoFontSize,
-                                            fontWeight: FontWeight.w600,
-                                            fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                                  ),
-                                ],
-                                // 本文（説明）
-                                if (task.description != null && task.description!.isNotEmpty) ...[
-                                  SizedBox(height: 4 * fontSize),
-                                  _buildDescriptionWithTooltipGrid(
-                                    task.description!,
-                                    fontSize,
-                                    descriptionFontSize,
-                                    descriptionFontFamily,
-                                    searchQuery: _searchQuery,
-                                  ),
-                                ],
-                                // サブタスク進捗
-                                if (task.hasSubTasks && task.totalSubTasksCount > 0) ...[
-                                  SizedBox(height: 4 * fontSize),
-                                  _buildSubTaskProgressWithTooltip(task, fontSize),
-                                ],
-                                // タグ
-                                if (task.tags.isNotEmpty) ...[
-                                  SizedBox(height: 4 * fontSize),
-                                  Wrap(
-                                    spacing: 2 * fontSize,
-                                    runSpacing: 2 * fontSize,
-                                    children: task.tags.take(2).map((tag) {
-                                      return Container(
-                                        padding: EdgeInsets.symmetric(horizontal: 4 * fontSize, vertical: 2 * fontSize),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[200],
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          tag,
-                                          style: TextStyle(
-                                            fontSize: 8 * fontSize,
-                                            color: Colors.grey[700],
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ],
-                                // 推定時間
-                                if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) ...[
-                                  SizedBox(height: 4 * fontSize),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.access_time, size: 10 * fontSize, color: Colors.grey[600]),
-                                      SizedBox(width: 2 * fontSize),
-                                      Text(
-                                        task.estimatedMinutes! >= 60
-                                            ? '${task.estimatedMinutes! ~/ 60}時間${task.estimatedMinutes! % 60 > 0 ? '${task.estimatedMinutes! % 60}分' : ''}'
-                                            : '${task.estimatedMinutes}分',
-                                        style: TextStyle(
-                                          fontSize: 9 * fontSize,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-            ),
-          ],
-            ),
-          ),
-        ),
-        ),
-      ),
-    );
-  }
-
-  /// 自動高さ調整対応のグリッドビューを構築
-  Widget _buildAutoHeightGrid(
-    List<TaskItem> tasks,
-    int crossAxisCount,
-    double cardWidth,
-    double minCardHeight,
-    double gridSpacing,
-    DateTime now,
-    double fontSize,
-    double titleFontSize,
-    String titleFontFamily,
-    double memoFontSize,
-    String memoFontFamily,
-    double descriptionFontSize,
-    String descriptionFontFamily,
-  ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 利用可能な幅を計算
-        final availableWidth = constraints.maxWidth;
-        final padding = gridSpacing * 0.75;
-        final effectiveWidth = availableWidth - (padding * 2);
-        final crossAxisSpacing = gridSpacing;
-        final itemWidth = (effectiveWidth - (crossAxisCount - 1) * crossAxisSpacing) / crossAxisCount;
-        
-        return SingleChildScrollView(
-          padding: EdgeInsets.all(padding),
-          child: Wrap(
-            spacing: crossAxisSpacing,
-            runSpacing: gridSpacing,
-            alignment: WrapAlignment.start,
-            children: tasks.map((task) {
-              return SizedBox(
-                width: itemWidth,
-                child: _buildAutoHeightCard(
-                  task,
-                  itemWidth,
-                  minCardHeight,
-                  now,
-                  fontSize,
-                  titleFontSize,
-                  titleFontFamily,
-                  memoFontSize,
-                  memoFontFamily,
-                  descriptionFontSize,
-                  descriptionFontFamily,
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
-  /// 自動高さ調整対応のカードを構築
-  Widget _buildAutoHeightCard(
-    TaskItem task,
-    double cardWidth,
-    double minCardHeight,
-    DateTime now,
-    double fontSize,
-    double titleFontSize,
-    String titleFontFamily,
-    double memoFontSize,
-    String memoFontFamily,
-    double descriptionFontSize,
-    String descriptionFontFamily,
-  ) {
-    // カードカラー（期限日に基づいた色分け）
-    final Color cardBg = _getCardBackgroundColor(task, now);
-    final Color borderColor = _getCardBorderColor(task, now);
-    final statusBadge = _getTaskStatusBadgeForGrid(task.status);
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: borderColor, width: 1),
-      ),
-      color: cardBg,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        focusColor: Colors.transparent,
-        canRequestFocus: false,
-        onTap: () {
-          if (_isSelectionMode) {
-            setState(() {
-              if (_selectedTaskIds.contains(task.id)) {
-                _selectedTaskIds.remove(task.id);
-              } else {
-                _selectedTaskIds.add(task.id);
-              }
-            });
-          } else {
-            showDialog(
-              context: context,
-              builder: (context) => TaskDialog(task: task),
-            );
-          }
-        },
-        child: Padding(
-          padding: EdgeInsets.all(8 * fontSize),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // タイトル
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_isSelectionMode)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4, top: 2),
-                      child: Checkbox(
-                        value: _selectedTaskIds.contains(task.id),
-                        onChanged: (_) {
-                          setState(() {
-                            if (_selectedTaskIds.contains(task.id)) {
-                              _selectedTaskIds.remove(task.id);
-                            } else {
-                              _selectedTaskIds.add(task.id);
-                            }
-                          });
-                        },
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    )
-                  else
-                    // ピン留めボタン
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4, top: 2),
-                      child: IconButton(
-                        icon: Icon(
-                          _pinnedTaskIds.contains(task.id)
-                              ? Icons.push_pin
-                              : Icons.push_pin_outlined,
-                          size: 16 * fontSize,
-                          color: _pinnedTaskIds.contains(task.id)
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey,
-                        ),
-                        tooltip: _pinnedTaskIds.contains(task.id) ? 'ピンを外す' : '上部にピン留め',
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints(),
-                        onPressed: () => _togglePinTask(task.id),
-                      ),
-                    ),
-                  Expanded(
-                    child: _searchQuery.isNotEmpty
-                        ? HighlightedText(
-                            text: task.title,
-                            highlight: _searchQuery,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14 * fontSize * titleFontSize,
-                              fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
-                              color: _getTextColorForCardBackground(cardBg),
-                            ),
-                            maxLines: null,
-                            overflow: TextOverflow.visible,
-                          )
-                        : Text(
-                            task.title,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14 * fontSize * titleFontSize,
-                              fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
-                              color: _getTextColorForCardBackground(cardBg),
-                            ),
-                            maxLines: null, // 自動高さ調整時は行数制限を緩和
-                            overflow: TextOverflow.visible,
-                          ),
-                  ),
-                  const SizedBox(width: 4),
-                  // 優先度表示（色と文字1文字）
-                  _buildPriorityIndicator(task.priority, fontSize),
-                  const SizedBox(width: 4),
-                  // 予定バッジ（カレンダーアイコン）
-                  _buildScheduleBadgeForGrid(task.id, fontSize),
-                  const SizedBox(width: 4),
-                  // ステータスバッジ（タスク管理画面と統一）
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6 * fontSize, vertical: 2 * fontSize),
-                    decoration: BoxDecoration(
-                      color: _getStatusBadgeBackgroundColor(statusBadge['color'] as Color),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _getStatusBadgeBorderColor(statusBadge['color'] as Color), width: 1.5),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          statusBadge['icon'] as IconData,
-                          size: 10 * fontSize,
-                          color: statusBadge['color'] as Color,
-                        ),
-                        SizedBox(width: 2 * fontSize),
-                        Text(
-                          statusBadge['text'] as String,
-                          style: TextStyle(
-                            color: statusBadge['color'] as Color,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 9 * fontSize,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              // 期限
-              if (task.dueDate != null) ...[
-                SizedBox(height: 4 * fontSize),
-                Builder(
-                  builder: (context) {
-                    final Color badgeColor;
-                    final difference = task.dueDate!.difference(now).inDays;
-                    if (difference < 0) {
-                      badgeColor = Colors.red.shade700;
-                    } else if (difference == 0) {
-                      badgeColor = Colors.orange.shade700;
-                    } else if (difference <= 3) {
-                      badgeColor = Colors.amber.shade700;
-                    } else {
-                      badgeColor = Colors.blue.shade700;
-                    }
-                    
-                    return Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8 * fontSize, vertical: 5 * fontSize),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: badgeColor, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                          BoxShadow(
-                            color: badgeColor.withOpacity(0.1),
-                            blurRadius: 2,
-                            offset: const Offset(0, 0),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.schedule, size: 13 * fontSize, color: badgeColor),
-                          SizedBox(width: 4 * fontSize),
-                          Text(
-                            DateFormat('MM/dd').format(task.dueDate!),
-                            style: TextStyle(
-                              color: badgeColor,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12 * fontSize,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ] else ...[
-                SizedBox(height: 4 * fontSize),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8 * fontSize, vertical: 6 * fontSize),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12 * fontSize),
-                    border: Border.all(color: Colors.green.shade300, width: 2),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.schedule, size: 13 * fontSize, color: Colors.green.shade900),
-                      SizedBox(width: 4 * fontSize),
-                      Text(
-                        '未設定',
-                        style: TextStyle(
-                          color: Colors.green.shade900,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11 * fontSize,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              // メモまたは依頼先
-              if (task.assignedTo != null && task.assignedTo!.isNotEmpty) ...[
-                SizedBox(height: 4 * fontSize),
-                Row(
-                  children: [
-                    Icon(Icons.person, size: 10 * fontSize, color: Colors.grey[600]),
-                    SizedBox(width: 2 * fontSize),
-                    Expanded(
-                      child: Text(
-                        task.assignedTo!,
-                        style: TextStyle(
-                          color: Color(ref.watch(memoTextColorProvider)),
-                          fontSize: 10 * fontSize * memoFontSize,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
-                        ),
-                        maxLines: null, // 自動高さ調整時は行数制限を緩和
-                        overflow: TextOverflow.visible,
-                      ),
-                    ),
-                  ],
-                ),
-              ] else if (task.notes != null && task.notes!.isNotEmpty) ...[
-                SizedBox(height: 4 * fontSize),
-                Row(
-                  children: [
-                    Icon(Icons.note, size: 10 * fontSize, color: Colors.grey[600]),
-                    SizedBox(width: 2 * fontSize),
-                    Expanded(
-                      child: Text(
-                        task.notes!,
-                        style: TextStyle(
-                          color: Color(ref.watch(memoTextColorProvider)),
-                          fontSize: 10 * fontSize * memoFontSize,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
-                        ),
-                        maxLines: null, // 自動高さ調整時は行数制限を緩和
-                        overflow: TextOverflow.visible,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              // 本文（説明）
-              if (task.description != null && task.description!.isNotEmpty) ...[
-                SizedBox(height: 4 * fontSize),
-                _buildDescriptionWithTooltipGrid(
-                  task.description!,
-                  fontSize,
-                  descriptionFontSize,
-                  descriptionFontFamily,
-                  searchQuery: _searchQuery,
-                ),
-              ],
-              // サブタスク進捗
-              if (task.hasSubTasks && task.totalSubTasksCount > 0) ...[
-                SizedBox(height: 4 * fontSize),
-                _buildSubTaskProgressWithTooltip(task, fontSize),
-              ],
-              // タグ
-              if (task.tags.isNotEmpty) ...[
-                SizedBox(height: 4 * fontSize),
-                Wrap(
-                  spacing: 2 * fontSize,
-                  runSpacing: 2 * fontSize,
-                  children: task.tags.map((tag) {
-                    return Container(
-                      padding: EdgeInsets.symmetric(horizontal: 4 * fontSize, vertical: 2 * fontSize),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        tag,
-                        style: TextStyle(
-                          fontSize: 8 * fontSize,
-                          color: Colors.grey[700],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-              // 関連リンク
-              if (_hasValidLinks(task)) ...[
-                SizedBox(height: 4 * fontSize),
-                _buildRelatedLinksForGrid(task, fontSize, searchQuery: _searchQuery),
-              ],
-              // 推定時間
-              if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) ...[
-                SizedBox(height: 4 * fontSize),
-                Row(
-                  children: [
-                    Icon(Icons.access_time, size: 10 * fontSize, color: Colors.grey[600]),
-                    SizedBox(width: 2 * fontSize),
-                    Text(
-                      task.estimatedMinutes! >= 60
-                          ? '${task.estimatedMinutes! ~/ 60}時間${task.estimatedMinutes! % 60 > 0 ? '${task.estimatedMinutes! % 60}分' : ''}'
-                          : '${task.estimatedMinutes}分',
-                      style: TextStyle(
-                        fontSize: 9 * fontSize,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _getProjectColor(int index) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
-      Colors.indigo,
-      Colors.pink,
-    ];
-    return colors[index % colors.length];
-  }
-
-  Color _getDueDateColor(DateTime dueDate, DateTime now) {
-    final difference = dueDate.difference(now).inDays;
-    if (difference < 0) {
-      return Colors.red; // 期限切れ
-    } else if (difference == 0) {
-      return Colors.orange; // 今日が期限
-    } else if (difference <= 3) {
-      return Colors.amber; // 3日以内
-    } else {
-      return Colors.grey; // それ以外
-    }
-  }
-
-  /// カードの背景色を期限日に基づいて取得
-  Color _getCardBackgroundColor(TaskItem task, DateTime now) {
-    if (task.dueDate == null) {
-      return Colors.green.shade50; // 期限未設定は緑
-    }
-    final difference = task.dueDate!.difference(now).inDays;
-    if (difference < 0) {
-      return Colors.red.shade50; // 期限切れ
-    } else if (difference == 0) {
-      return Colors.orange.shade50; // 今日が期限
-    } else if (difference <= 3) {
-      return Colors.amber.shade50; // 3日以内
-    } else {
-      return Colors.blue.shade50; // それ以外（青）
-    }
-  }
-
-  /// カードのボーダー色を期限日に基づいて取得
-  Color _getCardBorderColor(TaskItem task, DateTime now) {
-    if (task.dueDate == null) {
-      return Colors.green.shade300; // 期限未設定は緑
-    }
-    final difference = task.dueDate!.difference(now).inDays;
-    if (difference < 0) {
-      return Colors.red.shade300; // 期限切れ
-    } else if (difference == 0) {
-      return Colors.orange.shade300; // 今日が期限
-    } else if (difference <= 3) {
-      return Colors.amber.shade300; // 3日以内
-    } else {
-      return Colors.blue.shade300; // それ以外（青）
-    }
-  }
-
-  /// フィルター用の期限日色を取得
-  String? _getDueDateColorForFilter(TaskItem task, DateTime now) {
-    if (task.dueDate == null) {
-      return 'green'; // 期限未設定は緑
-    }
-    final difference = task.dueDate!.difference(now).inDays;
-    if (difference < 0) {
-      return 'red'; // 期限切れ
-    } else if (difference == 0) {
-      return 'orange'; // 今日が期限
-    } else if (difference <= 3) {
-      return 'amber'; // 3日以内
-    } else {
-      return 'blue'; // それ以外（青）
-    }
-  }
-
-  /// バッジ背景色に対してコントラストの高いテキスト色を取得
-  Color _getContrastTextColor(Color backgroundColor, Color borderColor) {
-    // バッジの背景色は薄い色なので、常に濃い色や白色を使用してコントラストを確保
-    // ボーダー色に基づいて適切なテキスト色を決定
-    if (borderColor.value == Colors.red.value) {
-      return Colors.red.shade900; // 濃い赤
-    } else if (borderColor.value == Colors.orange.value) {
-      return Colors.orange.shade900; // 濃いオレンジ
-    } else if (borderColor.value == Colors.amber.value) {
-      return Colors.amber.shade900; // 濃いアンバー
-    } else if (borderColor.value == Colors.green.value) {
-      return Colors.green.shade900; // 濃い緑
-    } else if (borderColor.value == Colors.blue.value) {
-      return Colors.blue.shade900; // 濃い青
-    } else if (borderColor.value == Colors.grey.value) {
-      return Colors.grey.shade900; // 濃いグレー
-    } else {
-      // その他の場合は黒を使用
-      return Colors.black87;
-    }
-  }
-
-  /// カード背景色に対して適切なコントラストのテキスト色を取得
-  Color _getTextColorForCardBackground(Color backgroundColor) {
-    // 背景色の明度を計算
-    final luminance = backgroundColor.computeLuminance();
-    
-    // ダークモードかどうかを確認
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
-    // 背景が薄い色（明度が高い）の場合、濃いテキストを使用
-    // 背景が濃い色（明度が低い）の場合、明るいテキストを使用
-    if (isDarkMode) {
-      // ダークモードの場合、背景が薄くても濃いテキストを使用
-      // ただし、背景が非常に薄い場合は少し濃めにする
-      if (luminance > 0.5) {
-        return Colors.black87; // 薄い背景に対して濃いテキスト
-      } else {
-        return Colors.white; // 濃い背景に対して白テキスト
-      }
-    } else {
-      // ライトモードの場合
-      if (luminance > 0.5) {
-        return Colors.black87; // 薄い背景に対して濃いテキスト
-      } else {
-        return Colors.white; // 濃い背景に対して白テキスト
-      }
-    }
-  }
-
-  /// ステータスバッジの背景色を取得（タスク管理画面と統一）
-  Color _getStatusBadgeBackgroundColor(Color textColor) {
-    // テキスト色に基づいて背景色を決定
-    if (textColor == Colors.green.shade800) {
-      return Colors.green.shade50;
-    } else if (textColor == Colors.blue.shade800) {
-      return Colors.blue.shade50;
-    } else if (textColor == Colors.grey.shade800) {
-      return Colors.grey.shade50;
-    } else if (textColor == Colors.red.shade800) {
-      return Colors.red.shade50;
-    }
-    return Colors.grey.shade50;
-  }
-
-  /// ステータスバッジのボーダー色を取得（タスク管理画面と統一）
-  Color _getStatusBadgeBorderColor(Color textColor) {
-    // テキスト色に基づいてボーダー色を決定
-    if (textColor == Colors.green.shade800) {
-      return Colors.green.shade300;
-    } else if (textColor == Colors.blue.shade800) {
-      return Colors.blue.shade300;
-    } else if (textColor == Colors.grey.shade800) {
-      return Colors.grey.shade300;
-    } else if (textColor == Colors.red.shade800) {
-      return Colors.red.shade300;
-    }
-    return Colors.grey.shade300;
-  }
-
-  /// ステータスバッジ情報を取得
-  Map<String, dynamic> _getStatusBadge(int completedCount, int totalCount) {
-    if (totalCount == 0) {
-      return {
-        'icon': Icons.hourglass_empty,
-        'text': '未',
-        'color': Colors.green,
-      };
-    } else if (completedCount == totalCount) {
-      return {
-        'icon': Icons.check_circle,
-        'text': '完',
-        'color': Colors.grey,
-      };
-    } else if (completedCount > 0) {
-      return {
-        'icon': Icons.play_circle,
-        'text': '中',
-        'color': Colors.blue,
-      };
-    } else {
-      return {
-        'icon': Icons.hourglass_empty,
-        'text': '未',
-        'color': Colors.green,
-      };
-    }
-  }
-
-  /// タスクのステータスバッジ情報を取得（グリッドビュー用）
-  Map<String, dynamic> _getTaskStatusBadgeForGrid(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.pending:
-        return {
-          'icon': Icons.schedule,
-          'text': '未',
-          'color': Colors.green.shade800,
-        };
-      case TaskStatus.inProgress:
-        return {
-          'icon': Icons.play_arrow,
-          'text': '中',
-          'color': Colors.blue.shade800,
-        };
-      case TaskStatus.completed:
-        return {
-          'icon': Icons.check,
-          'text': '完',
-          'color': Colors.grey.shade800,
-        };
-      case TaskStatus.cancelled:
-        return {
-          'icon': Icons.cancel,
-          'text': '止',
-          'color': Colors.red.shade800,
-        };
-    }
-  }
-
-  /// タスクグリッドビュー用のサブタスク進捗表示（ツールチップ付き）
-  Widget _buildSubTaskProgressWithTooltip(TaskItem task, double fontSize) {
-    final tooltipContent = _buildSubTaskTooltipContent(task);
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.help,
-      child: Tooltip(
-        message: tooltipContent,
-        waitDuration: const Duration(milliseconds: 500),
-        preferBelow: false,
-        verticalOffset: 10,
-        textStyle: const TextStyle(fontSize: 12, color: Colors.white),
-        decoration: BoxDecoration(
-          color: Colors.grey[900]?.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          children: [
-            Icon(
-              Icons.list, 
-              size: 10 * fontSize, 
-              color: task.completedSubTasksCount == task.totalSubTasksCount 
-                ? Colors.green 
-                : Colors.red,
-            ),
-            SizedBox(width: 2 * fontSize),
-            Text(
-              '${task.completedSubTasksCount}/${task.totalSubTasksCount}',
-              style: TextStyle(
-                color: task.completedSubTasksCount == task.totalSubTasksCount 
-                  ? Colors.green 
-                  : Colors.red,
-                fontSize: 10 * fontSize,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// タスクのサブタスクを取得
-  List<SubTask> _getSubTasksForTask(String taskId) {
-    try {
-      // SubTaskViewModelから取得
-      final subTaskViewModel = ref.read(subTaskViewModelProvider.notifier);
-      final subTasks = subTaskViewModel.getSubTasksByParentId(taskId);
-      
-      // 並び順でソート
-      subTasks.sort((a, b) => a.order.compareTo(b.order));
-      
-      return subTasks;
-    } catch (e) {
-      print('サブタスク取得エラー: $e');
-      return [];
-    }
-  }
-
-  /// サブタスクのツールチップコンテンツを構築
-  String _buildSubTaskTooltipContent(TaskItem task) {
-    if (!task.hasSubTasks && task.totalSubTasksCount == 0) {
-      return '';
-    }
-
-    // サブタスクの詳細を取得
-    final subTasks = _getSubTasksForTask(task.id);
-    if (subTasks.isEmpty) {
-      return 'サブタスク: ${task.totalSubTasksCount}個\n完了: ${task.completedSubTasksCount}個';
-    }
-
-    final buffer = StringBuffer();
-    buffer.writeln('サブタスク: ${task.totalSubTasksCount}個');
-    buffer.writeln('完了: ${task.completedSubTasksCount}個');
-    buffer.writeln('');
-    
-    // 最大20個まで表示
-    final displayCount = subTasks.length < 20 ? subTasks.length : 20;
-    for (int i = 0; i < displayCount; i++) {
-      final subTask = subTasks[i];
-      final status = subTask.isCompleted ? '✓' : '×';
-      final title = subTask.title.length > 30 
-        ? '${subTask.title.substring(0, 30)}...' 
-        : subTask.title;
-      buffer.writeln('$status $title');
-      
-      // 説明がある場合は表示
-      if (subTask.description != null && subTask.description!.isNotEmpty) {
-        final desc = subTask.description!.length > 40 
-          ? '  ${subTask.description!.substring(0, 40)}...' 
-          : '  ${subTask.description!}';
-        buffer.writeln(desc);
-      }
-    }
-    
-    if (subTasks.length > 20) {
-      buffer.writeln('... 他${subTasks.length - 20}個');
-    }
-    
-    return buffer.toString().trim();
-  }
-
-  /// 期限日表示テキストを取得
-  String _getDueDateDisplayText(List<TaskItem> projectTasks, DateTime nearestDueDate) {
-    if (projectTasks.length == 1) {
-      // 単一タスクの場合
-      return '期限: ${DateFormat('MM/dd').format(nearestDueDate)}';
-    } else {
-      // 複数タスクの場合（コピーしたタスクなど）
-      final dueDates = projectTasks
-          .map((t) => t.dueDate)
-          .where((d) => d != null)
-          .cast<DateTime>()
-          .toList();
-      
-      if (dueDates.length <= 1) {
-        return '期限: ${DateFormat('MM/dd').format(nearestDueDate)}';
-      } else {
-        // 最も近い期限日と最も遠い期限日を表示
-        dueDates.sort();
-        final earliest = dueDates.first;
-        final latest = dueDates.last;
-        
-        if (earliest == latest) {
-          return '期限: ${DateFormat('MM/dd').format(earliest)}';
-        } else {
-          return '期限: ${DateFormat('MM/dd').format(earliest)}-${DateFormat('MM/dd').format(latest)}';
-        }
-      }
-    }
-  }
-
-  /// グリッドビュー用の本文表示（ツールチップなし）
-  Widget _buildDescriptionWithTooltipGrid(String description, double fontSize, double descriptionFontSize, String descriptionFontFamily, {String searchQuery = ''}) {
-    // UI設定から色を取得
-    final descriptionColor = Color(ref.watch(descriptionTextColorProvider));
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        // タップで全文を表示するダイアログ（親のInkWellのonTapを呼ばない）
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('本文'),
-            content: SingleChildScrollView(
-              child: searchQuery.isNotEmpty
-                  ? HighlightedText(
-                      text: description,
-                      highlight: searchQuery,
-                    )
-                  : Text(description),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('閉じる'),
-              ),
-            ],
-          ),
-        );
-      },
-      child: MouseRegion(
-        cursor: SystemMouseCursors.text,
-        child: searchQuery.isNotEmpty
-            ? HighlightedText(
-                text: description,
-                highlight: searchQuery,
-                style: TextStyle(
-                  color: descriptionColor, // UI設定から取得
-                  fontSize: 10 * fontSize * descriptionFontSize,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: descriptionFontFamily.isEmpty ? null : descriptionFontFamily,
-                ),
-                maxLines: null,
-                overflow: TextOverflow.visible,
-              )
-            : Text(
-                description,
-                style: TextStyle(
-                  color: descriptionColor, // UI設定から取得
-                  fontSize: 10 * fontSize * descriptionFontSize,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: descriptionFontFamily.isEmpty ? null : descriptionFontFamily,
-                ),
-                maxLines: null,
-                overflow: TextOverflow.visible,
-              ),
-      ),
-    );
-  }
-
-  /// 全選択/全解除（タスクグリッドビュー）
-  void _toggleSelectAllForGrid(List<TaskItem> tasks) {
-    setState(() {
-      if (_selectedTaskIds.length == tasks.length) {
-        _selectedTaskIds.clear();
-      } else {
-        _selectedTaskIds = tasks.map((task) => task.id).toSet();
-      }
-    });
-  }
-  /// 一括ステータス変更メニューを表示（タスクグリッドビュー）
-  void _showBulkStatusMenuForGrid(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildBulkStatusMenuItemForGrid(
-              context,
-              TaskStatus.pending,
-              '未着手',
-              Colors.green,
-              Icons.pending,
-            ),
-            _buildBulkStatusMenuItemForGrid(
-              context,
-              TaskStatus.inProgress,
-              '進行中',
-              Colors.blue,
-              Icons.play_circle_outline,
-            ),
-            _buildBulkStatusMenuItemForGrid(
-              context,
-              TaskStatus.completed,
-              '完了',
-              Colors.grey,
-              Icons.check_circle,
-            ),
-            _buildBulkStatusMenuItemForGrid(
-              context,
-              TaskStatus.cancelled,
-              '取消',
-              Colors.red,
-              Icons.cancel,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 一括ステータスメニューアイテムを構築（タスクグリッドビュー）
-  Widget _buildBulkStatusMenuItemForGrid(
-    BuildContext context,
-    TaskStatus status,
-    String label,
-    Color color,
-    IconData icon,
-  ) {
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(label),
-      onTap: () async {
-        Navigator.pop(context);
-        await _bulkChangeStatusForGrid(status);
-      },
-    );
-  }
-
-  /// 一括優先度変更メニューを表示（タスクグリッドビュー）
-  void _showBulkPriorityMenuForGrid(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildBulkPriorityMenuItemForGrid(
-              context,
-              TaskPriority.low,
-              '低',
-              Colors.grey,
-            ),
-            _buildBulkPriorityMenuItemForGrid(
-              context,
-              TaskPriority.medium,
-              '中',
-              Colors.orange,
-            ),
-            _buildBulkPriorityMenuItemForGrid(
-              context,
-              TaskPriority.high,
-              '高',
-              Colors.red,
-            ),
-            _buildBulkPriorityMenuItemForGrid(
-              context,
-              TaskPriority.urgent,
-              '緊急',
-              Colors.deepPurple,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 一括優先度メニューアイテムを構築（タスクグリッドビュー）
-  Widget _buildBulkPriorityMenuItemForGrid(
-    BuildContext context,
-    TaskPriority priority,
-    String label,
-    Color color,
-  ) {
-    IconData icon;
-    switch (priority) {
-      case TaskPriority.low:
-        icon = Icons.arrow_downward;
-        break;
-      case TaskPriority.medium:
-        icon = Icons.remove;
-        break;
-      case TaskPriority.high:
-        icon = Icons.arrow_upward;
-        break;
-      case TaskPriority.urgent:
-        icon = Icons.priority_high;
-        break;
-    }
-
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(label),
-      onTap: () async {
-        Navigator.pop(context);
-        await _bulkChangePriorityForGrid(priority);
-      },
-    );
-  }
-
-  /// 選択されたタスクのステータスを一括変更（タスクグリッドビュー）
-  Future<void> _bulkChangeStatusForGrid(TaskStatus status) async {
-    if (_selectedTaskIds.isEmpty) return;
-
-    try {
-      final taskViewModel = ref.read(taskViewModelProvider.notifier);
-      final tasks = ref.read(taskViewModelProvider);
-      final selectedTasks = tasks.where((t) => _selectedTaskIds.contains(t.id)).toList();
-      final updatedCount = selectedTasks.length;
-
-      for (final task in selectedTasks) {
-        if (status == TaskStatus.completed) {
-          await taskViewModel.completeTask(task.id);
-        } else if (status == TaskStatus.inProgress && task.status == TaskStatus.pending) {
-          await taskViewModel.startTask(task.id);
-        } else {
-          final updatedTask = task.copyWith(
-            status: status,
-            completedAt: status == TaskStatus.completed ? DateTime.now() : null,
-          );
-          await taskViewModel.updateTask(updatedTask);
-        }
-      }
-
-      // 選択をクリア
-      setState(() {
-        _selectedTaskIds.clear();
-      });
-
-      if (mounted) {
-        SnackBarService.showSuccess(
-          context,
-          '$updatedCount件のタスクのステータスを変更しました',
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarService.showError(context, 'ステータス変更に失敗しました: $e');
-      }
-    }
-  }
-
-  /// 選択されたタスクの優先度を一括変更（タスクグリッドビュー）
-  Future<void> _bulkChangePriorityForGrid(TaskPriority priority) async {
-    if (_selectedTaskIds.isEmpty) return;
-
-    try {
-      final taskViewModel = ref.read(taskViewModelProvider.notifier);
-      final tasks = ref.read(taskViewModelProvider);
-      final selectedTasks = tasks.where((t) => _selectedTaskIds.contains(t.id)).toList();
-      final updatedCount = selectedTasks.length;
-
-      for (final task in selectedTasks) {
-        final updatedTask = task.copyWith(priority: priority);
-        await taskViewModel.updateTask(updatedTask);
-      }
-
-      // 選択をクリア
-      setState(() {
-        _selectedTaskIds.clear();
-      });
-
-      if (mounted) {
-        SnackBarService.showSuccess(
-          context,
-          '$updatedCount件のタスクの優先度を変更しました',
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarService.showError(context, '優先度変更に失敗しました: $e');
-      }
-    }
-  }
-
-  /// 選択されたタスクを一括削除（タスクグリッドビュー）
-  Future<void> _deleteSelectedTasksForGrid(BuildContext context) async {
-    if (_selectedTaskIds.isEmpty) return;
-
-    final deletedCount = _selectedTaskIds.length;
-
-    // 大量削除の場合は操作前バックアップを実行（10件以上）
-    if (deletedCount >= 10) {
-      try {
-        final settingsService = SettingsService.instance;
-        final linkRepository = LinkRepository.instance;
-        final backupService = BackupService(
-          linkRepository: linkRepository,
-          settingsService: settingsService,
-        );
-        
-        await backupService.performPreOperationBackup(
-          operationName: 'bulk_delete_grid',
-          itemCount: deletedCount,
-          abortOnFailure: false,
-        );
-        
-        if (mounted) {
-          SnackBarService.showInfo(
-            context,
-            'バックアップを実行しました。${deletedCount}件のタスクを削除します...',
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          SnackBarService.showWarning(
-            context,
-            'バックアップに失敗しましたが、削除を続行します: $e',
-          );
-        }
-      }
-    }
-
-    final confirmed = await UnifiedDialogHelper.showDeleteConfirmDialog(
-      context,
-      title: '確認',
-      message: '選択した${deletedCount}件のタスクを削除しますか？',
-      confirmText: '削除',
-      cancelText: 'キャンセル',
-    );
-
-    if (confirmed == true) {
-      try {
-        final taskViewModel = ref.read(taskViewModelProvider.notifier);
-        final deletedCount = _selectedTaskIds.length;
-      
-        // 選択されたタスクを削除
-        for (final taskId in _selectedTaskIds) {
-          await taskViewModel.deleteTask(taskId);
-        }
-
-        // 選択モードを解除
-        setState(() {
-          _selectedTaskIds.clear();
-          _isSelectionMode = false;
-        });
-
-        // 削除完了のメッセージを表示
-        if (mounted) {
-          SnackBarService.showSuccess(
-            context,
-            '$deletedCount件のタスクを削除しました',
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          SnackBarService.showError(context, '削除に失敗しました: $e');
-        }
-      }
-    }
-  }
-
-  /// 優先度表示（色と文字1文字）を構築
-  Widget _buildPriorityIndicator(TaskPriority priority, double fontSize) {
-    final priorityInfo = _getPriorityInfo(priority);
-    return Container(
-      width: 16 * fontSize,
-      height: 16 * fontSize,
-      decoration: BoxDecoration(
-        color: priorityInfo['color'] as Color,
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          priorityInfo['text'] as String,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 10 * fontSize,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 優先度情報を取得
-  Map<String, dynamic> _getPriorityInfo(TaskPriority priority) {
-    switch (priority) {
-      case TaskPriority.low:
-        return {'color': Colors.green, 'text': '低'};
-      case TaskPriority.medium:
-        return {'color': Colors.orange, 'text': '中'};
-      case TaskPriority.high:
-        return {'color': Colors.red, 'text': '高'};
-      case TaskPriority.urgent:
-        return {'color': Colors.purple, 'text': '緊'};
-    }
-  }
-
-  /// グリッドビュー用の予定バッジ（カレンダーアイコン、ホバーで予定リスト表示）
-  Widget _buildScheduleBadgeForGrid(String taskId, double fontSize) {
-    final schedules = ref.watch(scheduleViewModelProvider);
-    final taskSchedules = schedules.where((s) => s.taskId == taskId).toList();
-    
-    if (taskSchedules.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    // 日時昇順でソート
-    taskSchedules.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
-    
-    // ツールチップコンテンツを生成
-    final tooltipContent = _buildScheduleTooltipContent(taskSchedules);
-    
-    return MouseRegion(
-      cursor: SystemMouseCursors.help,
-      child: Tooltip(
-        message: tooltipContent,
-        waitDuration: const Duration(milliseconds: 500),
-        preferBelow: false,
-        verticalOffset: 10,
-        textStyle: const TextStyle(fontSize: 12, color: Colors.white),
-        decoration: BoxDecoration(
-          color: Colors.grey[900]?.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Icon(
-          Icons.calendar_today,
-          size: 16 * fontSize,
-          color: Colors.orange.shade700,
-        ),
-      ),
-    );
-  }
-
-  /// 予定ツールチップのコンテンツを生成
-  String _buildScheduleTooltipContent(List<ScheduleItem> schedules) {
-    final buffer = StringBuffer();
-    final dateFormat = DateFormat('MM/dd');
-    final timeFormat = DateFormat('HH:mm');
-    
-    for (final schedule in schedules) {
-      final date = dateFormat.format(schedule.startDateTime);
-      final time = timeFormat.format(schedule.startDateTime);
-      final endTime = schedule.endDateTime != null
-          ? ' - ${timeFormat.format(schedule.endDateTime!)}'
-          : '';
-      final location = schedule.location != null && schedule.location!.isNotEmpty
-          ? ' @ ${schedule.location}'
-          : '';
-      
-      buffer.writeln('$date $time$endTime$location');
-      buffer.writeln('  ${schedule.title}');
-      if (buffer.length > 0) {
-        buffer.writeln('');
-      }
-    }
-    
-    return buffer.toString().trim();
-  }
-
 }
