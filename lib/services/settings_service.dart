@@ -412,6 +412,7 @@ class SettingsService {
     await _settingsBox.put(_startWithTaskScreenKey, value);
   }
 
+
   // ==================== ウィンドウ設定 ====================
   
   /// ウィンドウ幅

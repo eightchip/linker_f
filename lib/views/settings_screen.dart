@@ -313,6 +313,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(startWithTaskScreen: value);
   }
 
+
   Future<void> setOutlookAutoSyncEnabled(bool value) async {
     await _service.setOutlookAutoSyncEnabled(value);
     state = state.copyWith(outlookAutoSyncEnabled: value);
@@ -848,6 +849,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ],
     );
   }
+
 
   Widget _buildThemeSection(BuildContext context, WidgetRef ref, bool currentDarkMode, int currentAccentColor) {
     return Column(

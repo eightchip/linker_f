@@ -231,13 +231,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   @override
   void initState() {
     super.initState();
-    print('=== TaskScreen initState 開始 ===');
     _settingsService = SettingsService.instance;
     _searchFocusNode = FocusNode();
     _searchController = TextEditingController();
 
     _searchQuery = '';
-    print('初期化時の_searchQuery: "$_searchQuery"');
     
     // 検索履歴を読み込み
     _loadSearchHistory();
@@ -276,7 +274,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     });
 
     // 検索クエリの同期はonChangedで処理
-    print('=== TaskScreen initState 終了 ===');
     
     // WidgetsBindingObserverを追加
     WidgetsBinding.instance.addObserver(this);
@@ -1379,15 +1376,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   @override
   Widget build(BuildContext context) {
-    print('🚨 TaskScreen build開始');
-    
     // TaskViewModelの作成を強制
     final taskViewModel = ref.read(taskViewModelProvider.notifier);
     final tasks = ref.watch(taskViewModelProvider);
     final statistics = taskViewModel.getTaskStatistics();
-    
-    // 重要な情報のみ出力
-    print('🚨 タスク数: ${tasks.length}');
     
     // アクセントカラーの調整色を取得
     final accentColor = ref.watch(accentColorProvider);
@@ -1405,17 +1397,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     Map<String, List<TaskItem>>? groupedTasks;
     if (_groupByOption != GroupByOption.none) {
       groupedTasks = _groupTasks(sortedTasks, _groupByOption);
-    }
-    
-    // 重要な情報のみ出力
-    if (tasks.isNotEmpty) {
-      print('🚨 フィルタリング後: ${filteredTasks.length}件表示');
-      print('🚨 並び替え後: ${sortedTasks.length}件表示');
-      if (groupedTasks != null) {
-        print('🚨 グループ化: ${groupedTasks.length}グループ');
-      }
-    } else {
-      print('🚨 タスクが存在しません！');
     }
 
     // 画面が表示されたときに確実にフォーカスを復元
@@ -2005,50 +1986,48 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       ),
       child: Row(
         children: [
-          // 左半分: 統計情報（コンパクト・狭く）
-          Expanded(
-            flex: 1,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _buildStatItem('総', total, Icons.list),
+          // 左側: 統計情報（コンパクト・狭く）
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _buildStatItem('総', total, Icons.list),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _buildStatItem(
+                  '未',
+                  pending,
+                  Icons.radio_button_unchecked,
+                  Colors.grey,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _buildStatItem(
-                    '未',
-                    pending,
-                    Icons.radio_button_unchecked,
-                    Colors.grey,
-                  ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _buildStatItem(
+                  '進',
+                  inProgress,
+                  Icons.pending,
+                  Colors.blue,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _buildStatItem(
-                    '進',
-                    inProgress,
-                    Icons.pending,
-                    Colors.blue,
-                  ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _buildStatItem(
+                  '完',
+                  completed,
+                  Icons.check_circle,
+                  Colors.green,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: _buildStatItem(
-                    '完',
-                    completed,
-                    Icons.check_circle,
-                    Colors.green,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
           
           // 一括詳細トグルボタン
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Tooltip(
               message: _expandedTaskIds.isEmpty ? 'すべて詳細表示' : 'すべて詳細非表示',
               child: IconButton(
@@ -2081,15 +2060,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             ),
           ),
           
-          // 右半分: 検索とフィルター
+          // 右側: 検索とフィルター（余白を削減）
           Expanded(
-            flex: 3,
             child: Row(
               children: [
-                const SizedBox(width: AppSpacing.lg),
+                const SizedBox(width: 8),
                 // 強化された検索バー（幅を広く）
                 Expanded(
-                  flex: 3, // 検索バーをより広く
                   child: Builder(
                     builder: (context) {
                       print('TextField構築時: _searchFocusNode.hasFocus=${_searchFocusNode.hasFocus}');
@@ -2356,7 +2333,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                         children: [
                           Icon(Icons.view_headline, size: 16),
                           SizedBox(width: 4),
-                          Text('コンパクト', style: TextStyle(fontSize: 12)),
+                          Text('コ', style: TextStyle(fontSize: 12)),
                         ],
                       ),
                     ),
@@ -2367,7 +2344,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                         children: [
                           Icon(Icons.view_list, size: 16),
                           SizedBox(width: 4),
-                          Text('標準', style: TextStyle(fontSize: 12)),
+                          Text('標', style: TextStyle(fontSize: 12)),
                         ],
                       ),
                     ),
@@ -2705,6 +2682,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   // ステータスフィルター（複数選択）
   Widget _buildStatusFilterChips() {
+    // フィルターが適用されているかチェック
+    final hasActiveFilters = !_filterStatuses.contains('all') || 
+                             _filterStatuses.length > 1 ||
+                             _filterPriority != 'all' ||
+                             _searchQuery.isNotEmpty;
+    
     return Row(
       children: [
         const Text('ステータス:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
@@ -2784,6 +2767,20 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             ],
           ),
         ),
+        // クリアボタン（フィルターが適用されている場合のみ表示）
+        if (hasActiveFilters) ...[
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: _resetFilters,
+            icon: const Icon(Icons.clear, size: 16),
+            label: const Text('クリア', style: TextStyle(fontSize: 11)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -5944,27 +5941,35 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   void _loadListViewMode() {
     try {
       final box = Hive.box('filterPresets');
-      final modeString = box.get('listViewMode', defaultValue: 'standard') as String;
+      final modeString = box.get('listViewMode') as String?;
       final columns = box.get('compactGridColumns', defaultValue: 4) as int;
-      setState(() {
-        _listViewMode = modeString == 'compact' ? ListViewMode.compact : ListViewMode.standard;
-        _compactGridColumns = columns;
-      });
+      
+      if (modeString != null) {
+        setState(() {
+          _listViewMode = modeString == 'compact' ? ListViewMode.compact : ListViewMode.standard;
+          _compactGridColumns = columns;
+        });
+      } else {
+        setState(() {
+          _compactGridColumns = columns;
+        });
+      }
     } catch (e) {
-      print('リストビュー表示モード読み込みエラー: $e');
       _listViewMode = ListViewMode.standard;
       _compactGridColumns = 4;
     }
   }
 
+
   /// リストビュー表示モードを保存
   void _saveListViewMode() {
     try {
       final box = Hive.box('filterPresets');
-      box.put('listViewMode', _listViewMode == ListViewMode.compact ? 'compact' : 'standard');
+      final modeString = _listViewMode == ListViewMode.compact ? 'compact' : 'standard';
+      box.put('listViewMode', modeString);
       box.put('compactGridColumns', _compactGridColumns);
     } catch (e) {
-      print('リストビュー表示モード保存エラー: $e');
+      // エラーは無視
     }
   }
 
@@ -7199,6 +7204,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   /// コンパクトモード用のグリッドビューを構築（カード型）
   Widget _buildCompactGridView(List<TaskItem> tasks) {
+    // ピン留めタスクと通常タスクを分離
+    final pinnedTasks = tasks.where((task) => _pinnedTaskIds.contains(task.id)).toList();
+    final unpinnedTasks = tasks.where((task) => !_pinnedTaskIds.contains(task.id)).toList();
+    
     // レイアウト設定を取得
     final layoutSettings = ref.watch(taskProjectLayoutSettingsProvider);
     final fontSize = ref.watch(uiDensityProvider);
@@ -7221,77 +7230,111 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     final cardWidth = layoutSettings.cardWidth;
     final cardHeight = layoutSettings.cardHeight;
     
-    // 自動高さ調整が有効な場合はWrapレイアウトを使用
-    if (layoutSettings.autoAdjustCardHeight) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final availableWidth = constraints.maxWidth;
-          final padding = spacing * 0.75;
-          final effectiveWidth = availableWidth - (padding * 2);
-          final crossAxisSpacing = spacing;
-          final itemWidth = (effectiveWidth - (crossAxisCount - 1) * crossAxisSpacing) / crossAxisCount;
-          
-          return SingleChildScrollView(
-            padding: EdgeInsets.all(padding),
-            child: Wrap(
-              spacing: crossAxisSpacing,
-              runSpacing: spacing,
-              alignment: WrapAlignment.start,
-              children: tasks.map((task) {
-                return SizedBox(
-                  width: itemWidth,
-                  child: _buildCompactTaskCard(
-                    task,
-                    isSelected: _selectedTaskIds.contains(task.id),
-                    cardWidth: itemWidth,
-                    minCardHeight: cardHeight,
-                    layoutSettings: layoutSettings,
-                    fontSize: fontSize,
-                    titleFontSize: titleFontSize,
-                    titleFontFamily: titleFontFamily,
-                    memoFontSize: memoFontSize,
-                    memoFontFamily: memoFontFamily,
-                    descriptionFontSize: descriptionFontSize,
-                    descriptionFontFamily: descriptionFontFamily,
-                  ),
-                );
-              }).toList(),
-            ),
+    // ピン留めタスクを上部に固定表示
+    Widget buildGridSection(List<TaskItem> taskList) {
+      if (taskList.isEmpty) return const SizedBox.shrink();
+      
+      if (layoutSettings.autoAdjustCardHeight) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final availableWidth = constraints.maxWidth;
+            final padding = spacing * 0.75;
+            final effectiveWidth = availableWidth - (padding * 2);
+            final crossAxisSpacing = spacing;
+            final itemWidth = (effectiveWidth - (crossAxisCount - 1) * crossAxisSpacing) / crossAxisCount;
+            
+            return Padding(
+              padding: EdgeInsets.all(padding),
+              child: Wrap(
+                spacing: crossAxisSpacing,
+                runSpacing: spacing,
+                alignment: WrapAlignment.start,
+                children: taskList.map((task) {
+                  return SizedBox(
+                    width: itemWidth,
+                    child: _buildCompactTaskCard(
+                      task,
+                      isSelected: _selectedTaskIds.contains(task.id),
+                      cardWidth: itemWidth,
+                      minCardHeight: cardHeight,
+                      layoutSettings: layoutSettings,
+                      fontSize: fontSize,
+                      titleFontSize: titleFontSize,
+                      titleFontFamily: titleFontFamily,
+                      memoFontSize: memoFontSize,
+                      memoFontFamily: memoFontFamily,
+                      descriptionFontSize: descriptionFontSize,
+                      descriptionFontFamily: descriptionFontFamily,
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        );
+      }
+      
+      // 固定アスペクト比のグリッドビュー
+      final childAspectRatio = cardWidth / cardHeight;
+      
+      return GridView.builder(
+        padding: EdgeInsets.all(spacing * 0.75),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: childAspectRatio,
+          crossAxisSpacing: spacing,
+          mainAxisSpacing: spacing,
+        ),
+        itemCount: taskList.length,
+        itemBuilder: (context, index) {
+          final task = taskList[index];
+          return _buildCompactTaskCard(
+            task,
+            isSelected: _selectedTaskIds.contains(task.id),
+            cardWidth: null,
+            minCardHeight: null,
+            layoutSettings: layoutSettings,
+            fontSize: fontSize,
+            titleFontSize: titleFontSize,
+            titleFontFamily: titleFontFamily,
+            memoFontSize: memoFontSize,
+            memoFontFamily: memoFontFamily,
+            descriptionFontSize: descriptionFontSize,
+            descriptionFontFamily: descriptionFontFamily,
           );
         },
       );
     }
     
-    // 固定アスペクト比のグリッドビュー
-    final childAspectRatio = cardWidth / cardHeight;
+    // ピン留めタスクがある場合は固定表示
+    if (pinnedTasks.isNotEmpty) {
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            // ピン留めタスク（固定表示）
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).dividerColor,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: buildGridSection(pinnedTasks),
+            ),
+            // 通常タスク（スクロール可能）
+            if (unpinnedTasks.isNotEmpty) buildGridSection(unpinnedTasks),
+          ],
+        ),
+      );
+    }
     
-    return GridView.builder(
-      padding: EdgeInsets.all(spacing * 0.75),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: childAspectRatio,
-        crossAxisSpacing: spacing,
-        mainAxisSpacing: spacing,
-      ),
-      itemCount: tasks.length,
-      itemBuilder: (context, index) {
-        final task = tasks[index];
-        return _buildCompactTaskCard(
-          task,
-          isSelected: _selectedTaskIds.contains(task.id),
-          cardWidth: null,
-          minCardHeight: null,
-          layoutSettings: layoutSettings,
-          fontSize: fontSize,
-          titleFontSize: titleFontSize,
-          titleFontFamily: titleFontFamily,
-          memoFontSize: memoFontSize,
-          memoFontFamily: memoFontFamily,
-          descriptionFontSize: descriptionFontSize,
-          descriptionFontFamily: descriptionFontFamily,
-        );
-      },
-    );
+    // ピン留めタスクがない場合は通常表示
+    return buildGridSection(unpinnedTasks);
   }
 
   /// コンパクトモード用のタスクカード（カード形式）
@@ -7323,67 +7366,109 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         (task.assignedTo != null && task.assignedTo!.isNotEmpty) ||
         hasValidLinks;
     
-    // 期限日に基づく背景色
+    // 期限日に基づく背景色（ナイトモード対応）
     final now = DateTime.now();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     Color cardBg;
     Color borderColor;
     
     if (task.dueDate == null) {
-      cardBg = Theme.of(context).colorScheme.surface;
-      borderColor = Colors.green.shade300;
+      cardBg = isDarkMode 
+          ? colorScheme.surfaceContainerHighest 
+          : colorScheme.surface;
+      borderColor = isDarkMode 
+          ? Colors.green.shade400 
+          : Colors.green.shade300;
     } else {
       final difference = task.dueDate!.difference(now).inDays;
       if (difference < 0) {
-        cardBg = Colors.red.shade50;
-        borderColor = Colors.red.shade300;
+        // 期限切れ
+        cardBg = isDarkMode 
+            ? Colors.red.shade900.withValues(alpha: 0.4)
+            : Colors.red.shade50;
+        borderColor = isDarkMode 
+            ? Colors.red.shade400 
+            : Colors.red.shade300;
       } else if (difference == 0) {
-        cardBg = Colors.orange.shade50;
-        borderColor = Colors.orange.shade300;
+        // 今日が期限
+        cardBg = isDarkMode 
+            ? Colors.orange.shade900.withValues(alpha: 0.4)
+            : Colors.orange.shade50;
+        borderColor = isDarkMode 
+            ? Colors.orange.shade400 
+            : Colors.orange.shade300;
       } else if (difference <= 3) {
-        cardBg = Colors.amber.shade50;
-        borderColor = Colors.amber.shade300;
+        // 3日以内
+        cardBg = isDarkMode 
+            ? Colors.amber.shade900.withValues(alpha: 0.4)
+            : Colors.amber.shade50;
+        borderColor = isDarkMode 
+            ? Colors.amber.shade400 
+            : Colors.amber.shade300;
       } else {
-        cardBg = Colors.blue.shade50;
-        borderColor = Colors.blue.shade300;
+        // それ以外
+        cardBg = isDarkMode 
+            ? colorScheme.surfaceContainerHighest 
+            : Colors.blue.shade50;
+        borderColor = isDarkMode 
+            ? Colors.blue.shade400 
+            : Colors.blue.shade300;
       }
     }
     
-    // ステータスバッジ情報
+    // ステータスバッジ情報（ナイトモード対応）
     Map<String, dynamic> statusBadge;
     switch (task.status) {
       case TaskStatus.pending:
-        statusBadge = {'icon': Icons.schedule, 'text': '未', 'color': Colors.green.shade800};
+        statusBadge = {
+          'icon': Icons.schedule, 
+          'text': '未', 
+          'color': isDarkMode ? Colors.green.shade400 : Colors.green.shade800
+        };
         break;
       case TaskStatus.inProgress:
-        statusBadge = {'icon': Icons.play_arrow, 'text': '中', 'color': Colors.blue.shade800};
+        statusBadge = {
+          'icon': Icons.play_arrow, 
+          'text': '中', 
+          'color': isDarkMode ? Colors.blue.shade400 : Colors.blue.shade800
+        };
         break;
       case TaskStatus.completed:
-        statusBadge = {'icon': Icons.check, 'text': '完', 'color': Colors.grey.shade800};
+        statusBadge = {
+          'icon': Icons.check, 
+          'text': '完', 
+          'color': isDarkMode ? Colors.grey.shade400 : Colors.grey.shade800
+        };
         break;
       case TaskStatus.cancelled:
-        statusBadge = {'icon': Icons.cancel, 'text': '止', 'color': Colors.red.shade800};
+        statusBadge = {
+          'icon': Icons.cancel, 
+          'text': '止', 
+          'color': isDarkMode ? Colors.red.shade400 : Colors.red.shade800
+        };
         break;
     }
     
-    // 優先度アイコン
+    // 優先度アイコン（ナイトモード対応）
     IconData priorityIcon;
     Color priorityColor;
     switch (task.priority) {
       case TaskPriority.low:
         priorityIcon = Icons.arrow_downward;
-        priorityColor = Colors.green;
+        priorityColor = isDarkMode ? Colors.green.shade400 : Colors.green;
         break;
       case TaskPriority.medium:
         priorityIcon = Icons.remove;
-        priorityColor = Colors.grey;
+        priorityColor = isDarkMode ? Colors.grey.shade400 : Colors.grey;
         break;
       case TaskPriority.high:
         priorityIcon = Icons.arrow_upward;
-        priorityColor = Colors.orange;
+        priorityColor = isDarkMode ? Colors.orange.shade400 : Colors.orange;
         break;
       case TaskPriority.urgent:
         priorityIcon = Icons.priority_high;
-        priorityColor = Colors.red;
+        priorityColor = isDarkMode ? Colors.red.shade400 : Colors.red;
         break;
     }
     
@@ -7433,13 +7518,29 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                  // ヘッダー: ピン留め + 期限日バッジ + チェックボックス
+                  // ヘッダー: ピン留めボタン + 期限日バッジ + チェックボックス
                   Row(
                     children: [
-                      // ピン留めアイコン
-                      if (_pinnedTaskIds.contains(task.id))
-                        Icon(Icons.push_pin, size: 14, color: Theme.of(context).colorScheme.primary),
-                      if (_pinnedTaskIds.contains(task.id)) const SizedBox(width: 4),
+                      // ピン留めボタン
+                      IconButton(
+                        icon: Icon(
+                          _pinnedTaskIds.contains(task.id)
+                              ? Icons.push_pin
+                              : Icons.push_pin_outlined,
+                          size: 14,
+                          color: _pinnedTaskIds.contains(task.id)
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey,
+                        ),
+                        tooltip: _pinnedTaskIds.contains(task.id) ? 'ピンを外す' : '上部にピン留め',
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                        onPressed: () {
+                          _togglePinTask(task.id);
+                          setState(() {});
+                        },
+                      ),
                       // 期限日バッジ（コンパクト）
                       _buildCompactDeadlineIndicator(task),
                       const Spacer(),
