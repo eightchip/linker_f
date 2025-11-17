@@ -982,7 +982,7 @@ class IntegratedBackupService {
         final standaloneLinks = links.where((link) => !groupLinkIds.contains(link.id)).toList();
         exportData['links'] = standaloneLinks.map((link) => link.toJson()).toList();
         
-        // グループデータも含める
+        // グループデータも含める（グループ内のリンクも含む）
         exportData['groups'] = groups.map((group) => group.toJson()).toList();
         
         // グループ順序も含める
@@ -992,9 +992,16 @@ class IntegratedBackupService {
         if (kDebugMode) {
           print('=== エクスポートデータ ===');
           print('全リンク数: ${links.length}');
+          print('グループ内リンク数: ${groupLinkIds.length}');
           print('グループ外リンク数: ${standaloneLinks.length}');
           print('グループ数: ${groups.length}');
           print('グループ順序: $groupsOrder');
+          if (standaloneLinks.isNotEmpty) {
+            print('🔗 エクスポートされるグループ外リンク:');
+            for (final link in standaloneLinks) {
+              print('  - リンクID: ${link.id}, ラベル: ${link.label}');
+            }
+          }
           print('====================');
         }
       }
@@ -1167,14 +1174,43 @@ class IntegratedBackupService {
         }
       }
       
-      // リンクのインポート
+      // リンクのインポート（グループ外のリンク）
       if (config.importLinks && links.isNotEmpty) {
+        if (kDebugMode) {
+          print('🔗 グループ外リンクのインポート開始: ${links.length}件');
+          for (final link in links) {
+            print('  - リンクID: ${link.id}, ラベル: ${link.label}');
+          }
+        }
         await _importLinksWithConfig(links, config, warnings);
+        if (kDebugMode) {
+          print('🔗 グループ外リンクのインポート完了');
+        }
+      } else if (links.isNotEmpty) {
+        if (kDebugMode) {
+          print('⚠️ 警告: グループ外リンクが${links.length}件ありますが、インポート設定で「リンク」が無効のためスキップされます');
+          for (final link in links) {
+            print('  - スキップされたリンクID: ${link.id}, ラベル: ${link.label}');
+          }
+        }
+        warnings.add('グループ外リンク${links.length}件がスキップされました（インポート設定で「リンク」が無効）');
       }
       
-      // グループのインポート
+      // グループのインポート（グループ内のリンクも含む）
       if (config.importGroups && groups.isNotEmpty) {
+        if (kDebugMode) {
+          print('📁 グループのインポート開始: ${groups.length}件');
+          int totalGroupLinks = 0;
+          for (final group in groups) {
+            print('  - グループ: ${group.title}, リンク数: ${group.items.length}');
+            totalGroupLinks += group.items.length;
+          }
+          print('📁 グループ内リンク合計: $totalGroupLinks件');
+        }
         await _importGroupsWithConfig(groups, config, warnings);
+        if (kDebugMode) {
+          print('📁 グループのインポート完了');
+        }
       }
       
       // タスクのインポート

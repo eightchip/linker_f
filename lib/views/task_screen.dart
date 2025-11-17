@@ -3564,6 +3564,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   /// コンパクトモード用のリンク表示（アコーディオン）
   Widget _buildCompactLinksDisplay(TaskItem task, List<LinkItem> links, bool isExpanded, String expandedKey) {
+    // リンクが空の場合は何も表示しない
+    if (links.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
     const maxVisibleLinks = 3; // 最初に表示するリンク数
     final visibleLinks = isExpanded ? links : links.take(maxVisibleLinks).toList();
     final hasMoreLinks = links.length > maxVisibleLinks;
@@ -3584,28 +3589,35 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               child: InkWell(
                 onTap: () => _openRelatedLink(link),
                 borderRadius: BorderRadius.circular(4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: _buildFaviconOrIcon(link, Theme.of(context)),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      link.label,
-                      style: TextStyle(
-                        color: Colors.blue[800],
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.underline,
-                        decorationColor: Colors.blue[800],
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 200, // 最大幅を制限（はみ出し防止）
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: _buildFaviconOrIcon(link, Theme.of(context)),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          link.label,
+                          style: TextStyle(
+                            color: Colors.blue[800],
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.blue[800],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -8342,21 +8354,44 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   /// タスクの関連リンクを取得
   List<LinkItem> _getRelatedLinks(TaskItem task) {
-    final groups = ref.read(linkViewModelProvider);
-    final relatedLinks = <LinkItem>[];
-    
-    for (final linkId in task.relatedLinkIds) {
-      for (final group in groups.groups) {
-        for (final link in group.items) {
-          if (link.id == linkId) {
-            relatedLinks.add(link);
-            break;
+    try {
+      final groups = ref.read(linkViewModelProvider);
+      final relatedLinks = <LinkItem>[];
+      
+      // デバッグログ（本番環境では削除可能）
+      if (task.relatedLinkIds.isNotEmpty) {
+        print('🔗 _getRelatedLinks: タスク「${task.title}」のリンクID数: ${task.relatedLinkIds.length}');
+        print('🔗 リンクID一覧: ${task.relatedLinkIds}');
+        print('🔗 利用可能なグループ数: ${groups.groups.length}');
+      }
+      
+      for (final linkId in task.relatedLinkIds) {
+        bool found = false;
+        for (final group in groups.groups) {
+          for (final link in group.items) {
+            if (link.id == linkId) {
+              relatedLinks.add(link);
+              found = true;
+              break;
+            }
           }
+          if (found) break;
+        }
+        if (!found) {
+          print('⚠️ リンクID「$linkId」が見つかりませんでした（タスク: ${task.title}）');
         }
       }
+      
+      if (task.relatedLinkIds.isNotEmpty && relatedLinks.isEmpty) {
+        print('⚠️ 警告: タスク「${task.title}」に${task.relatedLinkIds.length}個のリンクIDがありますが、実際のリンクが見つかりませんでした');
+      }
+      
+      return relatedLinks;
+    } catch (e, stackTrace) {
+      print('❌ _getRelatedLinks エラー: $e');
+      print('❌ スタックトレース: $stackTrace');
+      return [];
     }
-    
-    return relatedLinks;
   }
 
   /// 画像ファイルかどうかを判定

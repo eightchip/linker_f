@@ -23,6 +23,10 @@ class _OpenShortcutIntent extends Intent {
   const _OpenShortcutIntent();
 }
 
+class _CloseScreenIntent extends Intent {
+  const _CloseScreenIntent();
+}
+
 class ScheduleCalendarScreen extends ConsumerStatefulWidget {
   const ScheduleCalendarScreen({super.key});
 
@@ -159,6 +163,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       shortcuts: {
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyF): const _FocusSearchIntent(),
         LogicalKeySet(LogicalKeyboardKey.f1): const _OpenShortcutIntent(),
+        LogicalKeySet(LogicalKeyboardKey.escape): const _CloseScreenIntent(),
       },
       child: Actions(
         actions: {
@@ -174,9 +179,22 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
               return null;
             },
           ),
+          _CloseScreenIntent: CallbackAction<_CloseScreenIntent>(
+            onInvoke: (intent) {
+              Navigator.of(context).pop();
+              return null;
+            },
+          ),
         },
         child: Focus(
           autofocus: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+              Navigator.of(context).pop();
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
           child: Scaffold(
       appBar: AppBar(
         title: const Text('予定表'),
