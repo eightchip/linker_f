@@ -3219,19 +3219,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ドラッグハンドル（並び替え可能な場合のみ表示）
-              if (reorderIndex != null && (_sortOrders.isEmpty || _sortOrders[0]['field'] == 'custom'))
-                ReorderableDragStartListener(
-                  index: reorderIndex!,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    child: Icon(
-                      Icons.drag_handle,
-                      size: 16,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ),
               // ピン留めアイコン（小さめ）
               IconButton(
                 icon: Icon(
@@ -3802,19 +3789,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ドラッグハンドル（並び替え可能な場合のみ表示）
-              if (reorderIndex != null && (_sortOrders.isEmpty || _sortOrders[0]['field'] == 'custom'))
-                ReorderableDragStartListener(
-                  index: reorderIndex!,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.drag_handle,
-                      size: 20,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ),
               // ピン留めトグル（期限日バッジの近くに配置）
               IconButton(
                 icon: Icon(
