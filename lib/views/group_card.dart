@@ -914,7 +914,6 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
     final group = widget.group;
     final items = group.items;
     final scale = (MediaQuery.of(context).size.width / 1200.0).clamp(1.0, 1.15);
-    final canAddLink = items.length < 10;
     final isGroupFavorite = group.isFavorite;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
@@ -1019,24 +1018,22 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                         foregroundColor: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
-                    if (canAddLink) ...[
-                      SizedBox(width: 6 * scale), // さらに詰めて
-                      IconButton(
-                        icon: Icon(Icons.add, size: 20 * scale),
-                        onPressed: widget.onAddLink,
-                        tooltip: 'リンクを追加',
-                        iconSize: 22 * scale,
-                        padding: EdgeInsets.all(6 * scale), // さらに詰めて
-                        constraints: BoxConstraints(
-                          minWidth: 36 * scale,
-                          minHeight: 36 * scale,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: groupBorderColor.withValues(alpha: 0.1),
-                          foregroundColor: groupBorderColor,
-                        ),
+                    SizedBox(width: 6 * scale), // さらに詰めて
+                    IconButton(
+                      icon: Icon(Icons.add, size: 20 * scale),
+                      onPressed: widget.onAddLink,
+                      tooltip: 'リンクを追加',
+                      iconSize: 22 * scale,
+                      padding: EdgeInsets.all(6 * scale), // さらに詰めて
+                      constraints: BoxConstraints(
+                        minWidth: 36 * scale,
+                        minHeight: 36 * scale,
                       ),
-                    ],
+                      style: IconButton.styleFrom(
+                        backgroundColor: groupBorderColor.withValues(alpha: 0.1),
+                        foregroundColor: groupBorderColor,
+                      ),
+                    ),
                   ],
                 ),
               ],
