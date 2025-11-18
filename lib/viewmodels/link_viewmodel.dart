@@ -620,6 +620,22 @@ class LinkViewModel extends StateNotifier<LinkState> {
     await _loadGroups();
   }
 
+  Future<void> copyLinkToGroup({required LinkItem link, required String fromGroupId, required String toGroupId}) async {
+    if (fromGroupId == toGroupId) return;
+    final groups = state.groups;
+    final toIndex = groups.indexWhere((g) => g.id == toGroupId);
+    if (toIndex == -1) return;
+    final toGroup = groups[toIndex];
+    // リンクをコピー（新しいIDを生成）
+    final copiedLink = link.copyWith(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    );
+    final newToItems = [...toGroup.items, copiedLink];
+    final updatedToGroup = toGroup.copyWith(items: newToItems);
+    await _repository.saveGroup(updatedToGroup);
+    await _loadGroups();
+  }
+
   // Export/Import
   Map<String, dynamic> exportDataWithSettings(bool darkMode, double fontSize, int accentColor, {Map<String, dynamic>? customSettings, bool excludeMemos = false}) {
     final settings = {

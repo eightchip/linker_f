@@ -907,7 +907,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           textAlignVertical: TextAlignVertical.top,
           enableInteractiveSelection: true,
           keyboardType: TextInputType.multiline,
-          textInputAction: TextInputAction.next,
+          textInputAction: TextInputAction.newline,
           style: TextStyle(
             color: Color(ref.watch(memoTextColorProvider)),
             fontSize: 16 * ref.watch(memoFontSizeProvider),
@@ -951,8 +951,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         );
         Widget descField = TextFormField(
           controller: _descriptionController,
-          maxLines: isWide ? 8 : 4,
-          minLines: isWide ? 8 : 4,
+          maxLines: isWide ? 20 : 10,
+          minLines: isWide ? 20 : 10,
           enableInteractiveSelection: true,
           keyboardType: TextInputType.multiline,
           textInputAction: TextInputAction.newline,

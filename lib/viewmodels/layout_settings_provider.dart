@@ -228,6 +228,12 @@ class TaskProjectLayoutSettings {
   final double titleFontSize; // タイトルフォントサイズ（倍率）
   final double memoFontSize; // メモフォントサイズ（倍率）
   final double descriptionFontSize; // 説明フォントサイズ（倍率）
+  final int titleTextColor; // タイトルテキスト色
+  final String titleFontFamily; // タイトルフォントファミリー
+  final int memoTextColor; // メモテキスト色
+  final String memoFontFamily; // メモフォントファミリー
+  final int descriptionTextColor; // 説明テキスト色
+  final String descriptionFontFamily; // 説明フォントファミリー
 
   TaskProjectLayoutSettings({
     this.defaultCrossAxisCount = 4,
@@ -239,6 +245,12 @@ class TaskProjectLayoutSettings {
     this.titleFontSize = 1.0,
     this.memoFontSize = 1.0,
     this.descriptionFontSize = 1.0,
+    this.titleTextColor = 0xFF000000, // デフォルトは黒
+    this.titleFontFamily = '',
+    this.memoTextColor = 0xFF000000, // デフォルトは黒
+    this.memoFontFamily = '',
+    this.descriptionTextColor = 0xFF000000, // デフォルトは黒
+    this.descriptionFontFamily = '',
   });
 
   TaskProjectLayoutSettings copyWith({
@@ -251,6 +263,12 @@ class TaskProjectLayoutSettings {
     double? titleFontSize,
     double? memoFontSize,
     double? descriptionFontSize,
+    int? titleTextColor,
+    String? titleFontFamily,
+    int? memoTextColor,
+    String? memoFontFamily,
+    int? descriptionTextColor,
+    String? descriptionFontFamily,
   }) {
     return TaskProjectLayoutSettings(
       defaultCrossAxisCount: defaultCrossAxisCount ?? this.defaultCrossAxisCount,
@@ -262,6 +280,12 @@ class TaskProjectLayoutSettings {
       titleFontSize: titleFontSize ?? this.titleFontSize,
       memoFontSize: memoFontSize ?? this.memoFontSize,
       descriptionFontSize: descriptionFontSize ?? this.descriptionFontSize,
+      titleTextColor: titleTextColor ?? this.titleTextColor,
+      titleFontFamily: titleFontFamily ?? this.titleFontFamily,
+      memoTextColor: memoTextColor ?? this.memoTextColor,
+      memoFontFamily: memoFontFamily ?? this.memoFontFamily,
+      descriptionTextColor: descriptionTextColor ?? this.descriptionTextColor,
+      descriptionFontFamily: descriptionFontFamily ?? this.descriptionFontFamily,
     );
   }
 
@@ -276,6 +300,12 @@ class TaskProjectLayoutSettings {
       'titleFontSize': titleFontSize,
       'memoFontSize': memoFontSize,
       'descriptionFontSize': descriptionFontSize,
+      'titleTextColor': titleTextColor,
+      'titleFontFamily': titleFontFamily,
+      'memoTextColor': memoTextColor,
+      'memoFontFamily': memoFontFamily,
+      'descriptionTextColor': descriptionTextColor,
+      'descriptionFontFamily': descriptionFontFamily,
     };
   }
 
@@ -290,6 +320,12 @@ class TaskProjectLayoutSettings {
       titleFontSize: json['titleFontSize']?.toDouble() ?? 1.0,
       memoFontSize: json['memoFontSize']?.toDouble() ?? 1.0,
       descriptionFontSize: json['descriptionFontSize']?.toDouble() ?? 1.0,
+      titleTextColor: json['titleTextColor'] ?? 0xFF000000,
+      titleFontFamily: json['titleFontFamily'] ?? '',
+      memoTextColor: json['memoTextColor'] ?? 0xFF000000,
+      memoFontFamily: json['memoFontFamily'] ?? '',
+      descriptionTextColor: json['descriptionTextColor'] ?? 0xFF000000,
+      descriptionFontFamily: json['descriptionFontFamily'] ?? '',
     );
   }
 }
@@ -368,6 +404,36 @@ class TaskProjectLayoutSettingsNotifier extends StateNotifier<TaskProjectLayoutS
 
   void updateDescriptionFontSize(double fontSize) {
     state = state.copyWith(descriptionFontSize: fontSize);
+    _saveSettings();
+  }
+
+  void updateTitleTextColor(int color) {
+    state = state.copyWith(titleTextColor: color);
+    _saveSettings();
+  }
+
+  void updateTitleFontFamily(String fontFamily) {
+    state = state.copyWith(titleFontFamily: fontFamily);
+    _saveSettings();
+  }
+
+  void updateMemoTextColor(int color) {
+    state = state.copyWith(memoTextColor: color);
+    _saveSettings();
+  }
+
+  void updateMemoFontFamily(String fontFamily) {
+    state = state.copyWith(memoFontFamily: fontFamily);
+    _saveSettings();
+  }
+
+  void updateDescriptionTextColor(int color) {
+    state = state.copyWith(descriptionTextColor: color);
+    _saveSettings();
+  }
+
+  void updateDescriptionFontFamily(String fontFamily) {
+    state = state.copyWith(descriptionFontFamily: fontFamily);
     _saveSettings();
   }
 

@@ -1034,6 +1034,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
                             onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
                             onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                            onCopyLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).copyLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
                           onShowMessage: _showCenterMessage,
                           ),
                         ),
@@ -1115,6 +1116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
                           onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
                           onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                          onCopyLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).copyLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
                         onShowMessage: _showCenterMessage,
                         ),
                       ),
@@ -1206,6 +1208,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             onFavoriteToggle: (g) => ref.read(linkViewModelProvider.notifier).toggleGroupFavorite(g),
                             onLinkFavoriteToggle: (g, l) => ref.read(linkViewModelProvider.notifier).toggleLinkFavorite(g, l),
                             onMoveLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).moveLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
+                            onCopyLinkToGroup: (link, fromGroupId, toGroupId) => ref.read(linkViewModelProvider.notifier).copyLinkToGroup(link: link, fromGroupId: fromGroupId, toGroupId: toGroupId),
                           onShowMessage: _showCenterMessage,
                           );
                         },

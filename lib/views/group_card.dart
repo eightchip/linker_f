@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:path/path.dart' as p;
@@ -8,6 +9,8 @@ import 'dart:async';
 import '../models/group.dart';
 import '../models/link_item.dart';
 import '../viewmodels/layout_settings_provider.dart';
+import '../viewmodels/link_viewmodel.dart';
+import '../services/snackbar_service.dart';
 import 'home_screen.dart';
 import 'task_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -503,6 +506,7 @@ class GroupCard extends ConsumerStatefulWidget with IconBuilderMixin {
   final void Function(Group) onFavoriteToggle;
   final void Function(Group, LinkItem) onLinkFavoriteToggle;
   final void Function(LinkItem link, String fromGroupId, String toGroupId)? onMoveLinkToGroup;
+  final Future<void> Function(LinkItem link, String fromGroupId, String toGroupId)? onCopyLinkToGroup;
   final void Function(String, {IconData? icon, Color? color}) onShowMessage;
   final String? searchQuery;
 
@@ -523,6 +527,7 @@ class GroupCard extends ConsumerStatefulWidget with IconBuilderMixin {
     required this.onFavoriteToggle,
     required this.onLinkFavoriteToggle,
     this.onMoveLinkToGroup,
+    this.onCopyLinkToGroup,
     required this.onShowMessage,
     this.searchQuery,
   });
@@ -612,6 +617,7 @@ class _GroupCardState extends ConsumerState<GroupCard> {
             onFavoriteToggle: widget.onFavoriteToggle,
             onLinkFavoriteToggle: widget.onLinkFavoriteToggle,
             onMoveLinkToGroup: widget.onMoveLinkToGroup,
+            onCopyLinkToGroup: widget.onCopyLinkToGroup,
             searchQuery: widget.searchQuery,
           ),
         ),
@@ -870,6 +876,7 @@ class _GroupCardContent extends ConsumerStatefulWidget {
   final void Function(Group) onFavoriteToggle;
   final void Function(Group, LinkItem) onLinkFavoriteToggle;
   final void Function(LinkItem link, String fromGroupId, String toGroupId)? onMoveLinkToGroup;
+  final Future<void> Function(LinkItem link, String fromGroupId, String toGroupId)? onCopyLinkToGroup;
   final String? searchQuery;
 
   const _GroupCardContent({
@@ -888,6 +895,7 @@ class _GroupCardContent extends ConsumerStatefulWidget {
     required this.onFavoriteToggle,
     required this.onLinkFavoriteToggle,
     this.onMoveLinkToGroup,
+    this.onCopyLinkToGroup,
     this.searchQuery,
   });
 
@@ -898,6 +906,8 @@ class _GroupCardContent extends ConsumerStatefulWidget {
 class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconBuilderMixin {
   bool showOnlyFavorites = false;
   bool _hovering = false;
+  // ドラッグ開始時のCtrlキーの状態を保存
+  bool? _dragControlKeyState;
 
   @override
   Widget build(BuildContext context) {
@@ -1044,9 +1054,23 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                   onAcceptWithDetails: (data) {
                     final link = data.data['link'] as LinkItem;
                     final fromGroupId = data.data['fromGroupId'] as String;
-                    if (widget.onMoveLinkToGroup != null) {
-                      widget.onMoveLinkToGroup!(link, fromGroupId, widget.group.id);
+                    // ドラッグ開始時に保存されたCtrlキーの状態を取得（コピー）
+                    final isCopy = _dragControlKeyState ?? false;
+                    if (isCopy) {
+                      // コピー処理
+                      if (widget.onCopyLinkToGroup != null) {
+                        widget.onCopyLinkToGroup!(link, fromGroupId, widget.group.id);
+                      }
+                    } else {
+                      // 移動処理
+                      if (widget.onMoveLinkToGroup != null) {
+                        widget.onMoveLinkToGroup!(link, fromGroupId, widget.group.id);
+                      }
                     }
+                    // 状態をリセット
+                    setState(() {
+                      _dragControlKeyState = null;
+                    });
                   },
                   builder: (context, candidateData, rejectedData) {
                     return Center(
@@ -1137,9 +1161,23 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
         onAcceptWithDetails: (data) {
           final link = data.data['link'] as LinkItem;
           final fromGroupId = data.data['fromGroupId'] as String;
-          if (widget.onMoveLinkToGroup != null) {
-            widget.onMoveLinkToGroup!(link, fromGroupId, widget.group.id);
+          // ドラッグ開始時に保存されたCtrlキーの状態を取得（コピー）
+          final isCopy = _dragControlKeyState ?? false;
+          if (isCopy) {
+            // コピー処理
+            if (widget.onCopyLinkToGroup != null) {
+              widget.onCopyLinkToGroup!(link, fromGroupId, widget.group.id);
+            }
+          } else {
+            // 移動処理
+            if (widget.onMoveLinkToGroup != null) {
+              widget.onMoveLinkToGroup!(link, fromGroupId, widget.group.id);
+            }
           }
+          // 状態をリセット
+          setState(() {
+            _dragControlKeyState = null;
+          });
         },
         builder: (context, candidateData, rejectedData) {
           return ReorderableListView(
@@ -1210,10 +1248,25 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
         : (isDark ? Colors.grey.shade800.withValues(alpha: 0.3) : Colors.grey.shade50.withValues(alpha: 0.5));
     
     bool hovering = false;
-  return KeyedSubtree(
+    return KeyedSubtree(
     key: key,
     child: Draggable<Map<String, dynamic>>(
-      data: {'link': item, 'fromGroupId': widget.group.id},
+      data: {
+        'link': item, 
+        'fromGroupId': widget.group.id,
+      },
+      onDragStarted: () {
+        // ドラッグ開始時にCtrlキーの状態を保存
+        setState(() {
+          _dragControlKeyState = HardwareKeyboard.instance.isControlPressed;
+        });
+      },
+      onDragEnd: (details) {
+        // ドラッグ終了時に状態をリセット
+        setState(() {
+          _dragControlKeyState = null;
+        });
+      },
       feedback: Material(
         color: Colors.transparent,
         child: SizedBox(
@@ -1243,6 +1296,9 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
           onExit: (_) => setState(() => hovering = false),
           child: GestureDetector(
             onTap: () => _launchLink(item),
+            onSecondaryTapDown: (details) {
+              _showLinkContextMenu(context, item, details.globalPosition);
+            },
             child: Consumer(
               builder: (context, ref, child) {
                 final layoutSettings = ref.watch(layoutSettingsProvider);
@@ -1690,6 +1746,168 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
   Future<void> _launchLink(LinkItem item) async {
     // LinkViewModelのlaunchLinkメソッドを呼び出して、lastUsedを更新する
     widget.onLaunchLink(item);
+  }
+
+  /// リンクの右クリックメニューを表示
+  void _showLinkContextMenu(BuildContext context, LinkItem item, Offset position) {
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(position.dx, position.dy, 0, 0),
+        Rect.fromLTWH(0, 0, overlay.size.width, overlay.size.height),
+      ),
+      items: [
+        PopupMenuItem<String>(
+          value: 'copy',
+          child: Row(
+            children: [
+              Icon(Icons.copy, size: 18, color: Colors.blue),
+              const SizedBox(width: 8),
+              const Text('コピー'),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'move',
+          child: Row(
+            children: [
+              Icon(Icons.drive_file_move, size: 18, color: Colors.orange),
+              const SizedBox(width: 8),
+              const Text('移動先を選択'),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == null) return;
+      
+      switch (value) {
+        case 'copy':
+          _showCopyToGroupDialog(context, item);
+          break;
+        case 'move':
+          _showMoveToGroupDialog(context, item);
+          break;
+      }
+    });
+  }
+
+  /// コピー先グループ選択ダイアログ
+  void _showCopyToGroupDialog(BuildContext context, LinkItem item) {
+    final groups = ref.read(linkViewModelProvider).groups;
+    final currentGroup = widget.group;
+    final availableGroups = groups.where((g) => g.id != currentGroup.id).toList();
+    
+    if (availableGroups.isEmpty) {
+      SnackBarService.showWarning(context, 'コピー先のグループがありません');
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('コピー先を選択'),
+        content: SizedBox(
+          width: 300,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: availableGroups.length,
+            itemBuilder: (context, index) {
+              final group = availableGroups[index];
+              return ListTile(
+                leading: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: group.color != null ? Color(group.color!) : Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                title: Text(group.title),
+                subtitle: Text('${group.items.length}件のリンク'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  if (widget.onCopyLinkToGroup != null) {
+                    try {
+                      await widget.onCopyLinkToGroup!(item, currentGroup.id, group.id);
+                      SnackBarService.showSuccess(context, '「${item.label}」を「${group.title}」にコピーしました');
+                    } catch (e) {
+                      SnackBarService.showError(context, 'コピーに失敗しました: $e');
+                    }
+                  } else {
+                    SnackBarService.showError(context, 'コピー機能が利用できません');
+                  }
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 移動先グループ選択ダイアログ
+  void _showMoveToGroupDialog(BuildContext context, LinkItem item) {
+    final groups = ref.read(linkViewModelProvider).groups;
+    final currentGroup = widget.group;
+    final availableGroups = groups.where((g) => g.id != currentGroup.id).toList();
+    
+    if (availableGroups.isEmpty) {
+      SnackBarService.showWarning(context, '移動先のグループがありません');
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('移動先を選択'),
+        content: SizedBox(
+          width: 300,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: availableGroups.length,
+            itemBuilder: (context, index) {
+              final group = availableGroups[index];
+              return ListTile(
+                leading: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: group.color != null ? Color(group.color!) : Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                title: Text(group.title),
+                subtitle: Text('${group.items.length}件のリンク'),
+                onTap: () {
+                  Navigator.pop(context);
+                  if (widget.onMoveLinkToGroup != null) {
+                    widget.onMoveLinkToGroup!(item, currentGroup.id, group.id);
+                    SnackBarService.showSuccess(context, '「${item.label}」を「${group.title}」に移動しました');
+                  } else {
+                    SnackBarService.showError(context, '移動機能が利用できません');
+                  }
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+        ],
+      ),
+    );
   }
 
   // メモプレビュー用のオーバーレイ

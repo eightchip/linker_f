@@ -610,7 +610,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildMenuItem(context, ref, 'グリッド設定', Icons.grid_view, 'grid', 'リンク画面'),
           _buildMenuItem(context, ref, 'カード設定', Icons.view_agenda, 'card', 'リンク・タスク画面'),
           _buildMenuItem(context, ref, 'アイテム設定', Icons.link, 'item', 'リンク画面'),
-          _buildMenuItem(context, ref, 'コンパクトビュー設定', Icons.view_module, 'task_project', 'タスク一覧'),
+          _buildMenuItem(context, ref, 'カードビュー設定', Icons.view_module, 'task_project', 'タスク一覧'),
         ]),
         _buildMenuSection('データ', [
           _buildMenuItem(context, ref, 'バックアップ', Icons.backup, 'backup'),
@@ -1180,6 +1180,267 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           'description'
         ),
       ],
+    );
+  }
+
+  /// カードビュー専用フォント設定セクション
+  Widget _buildCardViewFontSettings(
+    BuildContext context,
+    WidgetRef ref,
+    TaskProjectLayoutSettings settings,
+    TaskProjectLayoutSettingsNotifier notifier,
+  ) {
+    final isDarkMode = ref.watch(darkModeProvider);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'フォント設定',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'カードビューで表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます',
+          style: TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const SizedBox(height: 16),
+        
+        // タイトル設定
+        _buildCardViewFieldSettings(
+          context,
+          ref,
+          'タイトル',
+          settings.titleTextColor,
+          settings.titleFontSize,
+          settings.titleFontFamily,
+          isDarkMode,
+          (color) => notifier.updateTitleTextColor(color),
+          (fontSize) => notifier.updateTitleFontSize(fontSize),
+          (fontFamily) => notifier.updateTitleFontFamily(fontFamily),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // 本文設定
+        _buildCardViewFieldSettings(
+          context,
+          ref,
+          '本文',
+          settings.memoTextColor,
+          settings.memoFontSize,
+          settings.memoFontFamily,
+          isDarkMode,
+          (color) => notifier.updateMemoTextColor(color),
+          (fontSize) => notifier.updateMemoFontSize(fontSize),
+          (fontFamily) => notifier.updateMemoFontFamily(fontFamily),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // 依頼先への説明設定
+        _buildCardViewFieldSettings(
+          context,
+          ref,
+          '依頼先への説明',
+          settings.descriptionTextColor,
+          settings.descriptionFontSize,
+          settings.descriptionFontFamily,
+          isDarkMode,
+          (color) => notifier.updateDescriptionTextColor(color),
+          (fontSize) => notifier.updateDescriptionFontSize(fontSize),
+          (fontFamily) => notifier.updateDescriptionFontFamily(fontFamily),
+        ),
+      ],
+    );
+  }
+
+  /// カードビュー専用フィールド設定
+  Widget _buildCardViewFieldSettings(
+    BuildContext context,
+    WidgetRef ref,
+    String fieldName,
+    int currentColor,
+    double currentFontSize,
+    String currentFontFamily,
+    bool isDarkMode,
+    void Function(int) onColorChanged,
+    void Function(double) onFontSizeChanged,
+    void Function(String) onFontFamilyChanged,
+  ) {
+    // テキスト色の選択肢（10種類）- ダークモード対応
+    final textColorOptions = [
+      0xFF000000, // 黒（ライトモード用）
+      0xFFFFFFFF, // 白（ダークモード用）
+      0xFF3B82F6, // ブルー（両モード対応）
+      0xFFEF4444, // レッド（両モード対応）
+      0xFFF59E0B, // オレンジ（両モード対応）
+      0xFF10B981, // グリーン（両モード対応）
+      0xFF8B5CF6, // パープル（両モード対応）
+      0xFFEC4899, // ピンク（両モード対応）
+      0xFF6B7280, // グレー（両モード対応）
+      0xFFFBBF24, // イエロー（両モード対応）
+    ];
+    
+    final textColorNames = [
+      '黒', '白', 'ブルー', 'レッド', 'オレンジ', 
+      'グリーン', 'パープル', 'ピンク', 'グレー', 'イエロー'
+    ];
+
+    // フォントファミリーの選択肢
+    final fontFamilyOptions = [
+      '', // デフォルト
+      'Noto Sans JP',
+      'Hiragino Sans',
+      'Yu Gothic',
+      'Meiryo',
+      'MS Gothic',
+      'MS Mincho',
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$fieldName設定', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
+            
+            // テキスト色設定
+            const Text('テキスト色', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 5,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 1.2,
+              ),
+              itemCount: textColorOptions.length,
+              itemBuilder: (context, index) {
+                final color = textColorOptions[index];
+                final name = textColorNames[index];
+                final isSelected = color == currentColor;
+                
+                return InkWell(
+                  onTap: () => onColorChanged(color),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color(color),
+                      borderRadius: BorderRadius.circular(8),
+                      border: isSelected 
+                        ? Border.all(color: isDarkMode ? Colors.black : Colors.white, width: 3)
+                        : Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300, width: 1),
+                      boxShadow: isSelected 
+                        ? [BoxShadow(
+                            color: isDarkMode 
+                              ? Colors.blue.withOpacity(0.7) 
+                              : Colors.blue.withOpacity(0.5), 
+                            blurRadius: 4, 
+                            spreadRadius: 1
+                          )]
+                        : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          color: _getContrastColor(Color(color)),
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // フォントサイズ設定
+            const Text('フォントサイズ', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: currentFontSize,
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 15,
+                    onChanged: onFontSizeChanged,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${(currentFontSize * 100).round()}%',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // フォントサイズのプレビュー
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
+              ),
+              child: Text(
+                'プレビュー: このテキストのサイズが$fieldNameに適用されます',
+                style: TextStyle(
+                  color: Color(currentColor),
+                  fontSize: 14 * currentFontSize,
+                  fontFamily: currentFontFamily.isEmpty ? null : currentFontFamily,
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // フォントファミリー設定
+            const Text('フォントファミリー', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: currentFontFamily.isEmpty ? null : currentFontFamily,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              items: fontFamilyOptions.map((font) {
+                return DropdownMenuItem<String>(
+                  value: font.isEmpty ? null : font,
+                  child: Text(font.isEmpty ? 'デフォルト' : font),
+                );
+              }).toList(),
+              onChanged: (value) => onFontFamilyChanged(value ?? ''),
+            ),
+            const SizedBox(height: 8),
+            // フォントファミリーのプレビュー
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
+              ),
+              child: Text(
+                'フォントプレビュー: このテキストのフォントが$fieldNameに適用されます',
+                style: TextStyle(
+                  color: Color(currentColor),
+                  fontSize: 14 * currentFontSize,
+                  fontFamily: currentFontFamily.isEmpty ? null : currentFontFamily,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -2576,7 +2837,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('コンパクトビュー設定', Icons.view_module),
+        _buildSectionHeader('カードビュー設定', Icons.view_module),
         const SizedBox(height: 16),
         
         // グリッド設定
@@ -2736,53 +2997,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         
         const SizedBox(height: 16),
         
-        // フォント設定
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'フォント設定',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                Text('タイトルフォントサイズ: ${(taskProjectLayoutSettings.titleFontSize * 100).round()}%'),
-                Slider(
-                  value: taskProjectLayoutSettings.titleFontSize,
-                  min: 0.5,
-                  max: 2.0,
-                  divisions: 15,
-                  label: '${(taskProjectLayoutSettings.titleFontSize * 100).round()}%',
-                  onChanged: (value) => notifier.updateTitleFontSize(value),
-                ),
-                
-                const SizedBox(height: 16),
-                Text('メモフォントサイズ: ${(taskProjectLayoutSettings.memoFontSize * 100).round()}%'),
-                Slider(
-                  value: taskProjectLayoutSettings.memoFontSize,
-                  min: 0.5,
-                  max: 2.0,
-                  divisions: 15,
-                  label: '${(taskProjectLayoutSettings.memoFontSize * 100).round()}%',
-                  onChanged: (value) => notifier.updateMemoFontSize(value),
-                ),
-                
-                const SizedBox(height: 16),
-                Text('説明フォントサイズ: ${(taskProjectLayoutSettings.descriptionFontSize * 100).round()}%'),
-                Slider(
-                  value: taskProjectLayoutSettings.descriptionFontSize,
-                  min: 0.5,
-                  max: 2.0,
-                  divisions: 15,
-                  label: '${(taskProjectLayoutSettings.descriptionFontSize * 100).round()}%',
-                  onChanged: (value) => notifier.updateDescriptionFontSize(value),
-                ),
-              ],
-            ),
-          ),
-        ),
+        // フォント設定（カードビュー専用）
+        _buildCardViewFontSettings(context, ref, taskProjectLayoutSettings, notifier),
         
         const SizedBox(height: 16),
         
@@ -2792,10 +3008,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => UnifiedDialog(
-                title: 'コンパクトビュー設定をリセット',
+                title: 'カードビュー設定をリセット',
                 icon: Icons.restore,
                 iconColor: Colors.orange,
-                content: const Text('コンパクトビューの設定を初期値にリセットしますか？\nこの操作は取り消せません。'),
+                content: const Text('カードビューの設定を初期値にリセットしますか？\nこの操作は取り消せません。'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),

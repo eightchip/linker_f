@@ -2070,11 +2070,24 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   child: Builder(
                     builder: (context) {
                       print('TextField構築時: _searchFocusNode.hasFocus=${_searchFocusNode.hasFocus}');
-                      return TextField(
+                      return Focus(
+                        focusNode: _searchFocusNode,
+                        onKeyEvent: (node, event) {
+                          if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+                            setState(() {
+                              _showSearchSuggestions = false;
+                            });
+                            return KeyEventResult.handled;
+                          }
+                          return KeyEventResult.ignored;
+                        },
+                        child: TextField(
                         key: const ValueKey('task_search_field'),
                         controller: _searchController,                 // ← controller を使う
-                        focusNode: _searchFocusNode,
                         textInputAction: TextInputAction.search,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                         decoration: InputDecoration(
                           hintText: _useRegex 
                             ? '正規表現で検索（例: ^プロジェクト.*完了\$）'
@@ -2101,6 +2114,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                     setState(() {
                                       _searchQuery = '';
                                       _userTypedSearch = false;
+                                      _showSearchSuggestions = false;
                                     });
                                   },
                                   tooltip: 'クリア',
@@ -2162,7 +2176,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                             _addToSearchHistory(value.trim());
                           }
                         },
-                      );
+                      ),
+                    );
                     },
                   ),
                 ),
@@ -2325,27 +2340,33 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     minHeight: 32,
                     minWidth: 70,
                   ),
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.view_headline, size: 16),
-                          SizedBox(width: 4),
-                          Text('コ', style: TextStyle(fontSize: 12)),
-                        ],
+                  children: [
+                    Tooltip(
+                      message: 'カードビュー',
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.view_headline, size: 16),
+                            SizedBox(width: 4),
+                            Text('カ', style: TextStyle(fontSize: 12)),
+                          ],
+                        ),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.view_list, size: 16),
-                          SizedBox(width: 4),
-                          Text('標', style: TextStyle(fontSize: 12)),
-                        ],
+                    Tooltip(
+                      message: 'リストビュー',
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.view_list, size: 16),
+                            SizedBox(width: 4),
+                            Text('リ', style: TextStyle(fontSize: 12)),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -3516,25 +3537,72 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     );
   }
 
-  /// コンパクトモード用の優先度インジケーター（漢字一文字）
+  /// コンパクトモード用の優先度インジケーター（漢字一文字、クリックで変更可能）
   Widget _buildCompactPriorityIndicator(TaskItem task) {
-    final priorityInfo = _getPriorityInfoForList(task.priority);
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        color: priorityInfo['color'] as Color,
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          priorityInfo['text'] as String,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+    return PopupMenuButton<TaskPriority>(
+      tooltip: '優先度を変更',
+      initialValue: task.priority,
+      padding: EdgeInsets.zero,
+      offset: const Offset(0, 8),
+      onSelected: (priority) {
+        ref.read(taskViewModelProvider.notifier).setTaskPriority(task.id, priority);
+      },
+      itemBuilder: (context) {
+        return TaskPriority.values.map((priority) {
+          final info = _getPriorityInfoForList(priority);
+          final isSelected = priority == task.priority;
+          return PopupMenuItem<TaskPriority>(
+            value: priority,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.circle,
+                  color: info['color'] as Color,
+                  size: 14,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    info['text'] as String,
+                    style: TextStyle(
+                      color: Colors.grey.shade900,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 18,
+                  ),
+              ],
+            ),
+          );
+        }).toList();
+      },
+      child: Builder(
+        builder: (context) {
+          final priorityInfo = _getPriorityInfoForList(task.priority);
+          return Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: priorityInfo['color'] as Color,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                priorityInfo['text'] as String,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -5965,9 +6033,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                         HighlightedText(
                           text: suggestion.text,
                           highlight: _searchQuery,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -6712,7 +6781,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   final query = _searchHistory[index];
                   return ListTile(
                     leading: const Icon(Icons.search, size: 20),
-                    title: Text(query),
+                    title: Text(
+                      query,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, size: 18),
                       onPressed: () {
@@ -7268,12 +7342,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     // レイアウト設定を取得
     final layoutSettings = ref.watch(taskProjectLayoutSettingsProvider);
     final fontSize = ref.watch(uiDensityProvider);
-    final titleFontSize = ref.watch(titleFontSizeProvider);
-    final titleFontFamily = ref.watch(titleFontFamilyProvider);
-    final memoFontSize = ref.watch(memoFontSizeProvider);
-    final memoFontFamily = ref.watch(memoFontFamilyProvider);
-    final descriptionFontSize = ref.watch(descriptionFontSizeProvider);
-    final descriptionFontFamily = ref.watch(descriptionFontFamilyProvider);
+    // カードビュー専用のフォント設定を使用
+    final titleFontSize = layoutSettings.titleFontSize;
+    final titleFontFamily = layoutSettings.titleFontFamily;
+    final titleTextColor = layoutSettings.titleTextColor;
+    final memoFontSize = layoutSettings.memoFontSize;
+    final memoFontFamily = layoutSettings.memoFontFamily;
+    final memoTextColor = layoutSettings.memoTextColor;
+    final descriptionFontSize = layoutSettings.descriptionFontSize;
+    final descriptionFontFamily = layoutSettings.descriptionFontFamily;
+    final descriptionTextColor = layoutSettings.descriptionTextColor;
     
     // 列数を計算（自動調整または手動設定）
     final crossAxisCount = layoutSettings.autoAdjustLayout
@@ -7318,10 +7396,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       fontSize: fontSize,
                       titleFontSize: titleFontSize,
                       titleFontFamily: titleFontFamily,
+                      titleTextColor: titleTextColor,
                       memoFontSize: memoFontSize,
                       memoFontFamily: memoFontFamily,
+                      memoTextColor: memoTextColor,
                       descriptionFontSize: descriptionFontSize,
                       descriptionFontFamily: descriptionFontFamily,
+                      descriptionTextColor: descriptionTextColor,
                     ),
                   );
                 }).toList(),
@@ -7356,10 +7437,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             fontSize: fontSize,
             titleFontSize: titleFontSize,
             titleFontFamily: titleFontFamily,
+            titleTextColor: titleTextColor,
             memoFontSize: memoFontSize,
             memoFontFamily: memoFontFamily,
+            memoTextColor: memoTextColor,
             descriptionFontSize: descriptionFontSize,
             descriptionFontFamily: descriptionFontFamily,
+            descriptionTextColor: descriptionTextColor,
           );
         },
       );
@@ -7404,10 +7488,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     required double fontSize,
     required double titleFontSize,
     required String titleFontFamily,
+    required int titleTextColor,
     required double memoFontSize,
     required String memoFontFamily,
+    required int memoTextColor,
     required double descriptionFontSize,
     required String descriptionFontFamily,
+    required int descriptionTextColor,
   }) {
     final bool hasSubTaskBadge = task.hasSubTasks || task.totalSubTasksCount > 0;
     final isHovered = _hoveredTaskIds.contains(task.id);
@@ -7567,11 +7654,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                 text: task.title,
                                 highlight: _searchQuery,
                                 style: TextStyle(
-                                  color: _getTaskTitleColor(),
+                                  color: task.status == TaskStatus.completed 
+                                      ? Color(titleTextColor).withOpacity(0.5)
+                                      : Color(titleTextColor),
                                   decoration: task.status == TaskStatus.completed 
                                       ? TextDecoration.lineThrough 
                                       : null,
-                                  fontSize: 13 * titleFontSize * layoutSettings.titleFontSize,
+                                  fontSize: 13 * titleFontSize,
                                   fontWeight: FontWeight.w600,
                                   fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
                                 ),
@@ -7579,11 +7668,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                             : Text(
                                 task.title,
                                 style: TextStyle(
-                                  color: _getTaskTitleColor(),
+                                  color: task.status == TaskStatus.completed 
+                                      ? Color(titleTextColor).withOpacity(0.5)
+                                      : Color(titleTextColor),
                                   decoration: task.status == TaskStatus.completed 
                                       ? TextDecoration.lineThrough 
                                       : null,
-                                  fontSize: 13 * titleFontSize * layoutSettings.titleFontSize,
+                                  fontSize: 13 * titleFontSize,
                                   fontWeight: FontWeight.w600,
                                   fontFamily: titleFontFamily.isEmpty ? null : titleFontFamily,
                                 ),
@@ -7632,10 +7723,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   if (task.assignedTo != null && task.assignedTo!.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      '依頼先: ${task.assignedTo}',
+                      '${task.assignedTo}',
                       style: TextStyle(
-                        fontSize: 10 * memoFontSize * layoutSettings.memoFontSize,
-                        color: Colors.grey[700],
+                        fontSize: 10 * memoFontSize,
+                        color: Color(memoTextColor),
                         fontFamily: memoFontFamily.isEmpty ? null : memoFontFamily,
                       ),
                       maxLines: isExpanded ? null : 1,
@@ -7648,8 +7739,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     Text(
                       task.description!,
                       style: TextStyle(
-                        fontSize: 10 * descriptionFontSize * layoutSettings.descriptionFontSize,
-                        color: Colors.grey[600],
+                        fontSize: 10 * descriptionFontSize,
+                        color: Color(descriptionTextColor),
                         fontFamily: descriptionFontFamily.isEmpty ? null : descriptionFontFamily,
                       ),
                       maxLines: isExpanded ? null : 1,
@@ -7721,6 +7812,44 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                             ),
                           ),
                         ),
+                      // アクションメニュー（コピー・同期・削除）
+                      PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert, size: 14, color: Colors.grey.shade600),
+                        tooltip: 'アクション',
+                        onSelected: (value) => _handleTaskAction(value, task),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'copy',
+                            child: Row(
+                              children: [
+                                Icon(Icons.copy, color: Colors.blue, size: 16),
+                                const SizedBox(width: 8),
+                                Text('コピー', style: TextStyle(color: Colors.blue, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'sync_to_calendar',
+                            child: Row(
+                              children: [
+                                Icon(Icons.sync, color: Colors.green, size: 16),
+                                const SizedBox(width: 8),
+                                Text('このタスクを同期', style: TextStyle(color: Colors.green, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, color: Colors.red, size: 16),
+                                const SizedBox(width: 8),
+                                Text('削除', style: TextStyle(color: Colors.red, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   ],
