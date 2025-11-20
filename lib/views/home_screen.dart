@@ -288,7 +288,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         print('✅ Ctrl+E 検出: メモ一括編集ダイアログを表示');
         _showMemoBulkEditDialog(context);
       }
-      // ⑥ショートカット (F1): ヘルプを表示
+      // ⑥グループの並び順を変更 (Ctrl+O): グループ並び順変更ダイアログを表示
+      else if (key == LogicalKeyboardKey.keyO && isControlPressed) {
+        print('✅ Ctrl+O 検出: グループ並び順変更ダイアログを表示');
+        _showGroupOrderDialog(context);
+      }
+      // ⑦ショートカット (F1): ヘルプを表示
       else if (key == LogicalKeyboardKey.f1) {
         print('✅ F1 検出: ヘルプ表示');
         _showShortcutHelp(context);
@@ -498,6 +503,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ShortcutHelpEntry('Ctrl + F', '検索バーを開く'),
         ShortcutHelpEntry('Ctrl + T', 'タスク管理画面を開く'),
         ShortcutHelpEntry('Ctrl + E', 'メモ一括編集を開く'),
+        ShortcutHelpEntry('Ctrl + O', 'グループの並び順を変更'),
         ShortcutHelpEntry('Ctrl + Shift + S', '設定を開く'),
         ShortcutHelpEntry('→', '3点メニューを表示'),
         ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
@@ -659,6 +665,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         case 'memo_bulk_edit':
                           _showMemoBulkEditDialog(context);
                           break;
+                        case 'group_order':
+                          _showGroupOrderDialog(context);
+                          break;
                         case 'shortcut_help':
                           _showShortcutHelp(context);
                           break;
@@ -720,7 +729,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ),
-                      // ⑥ショートカット
+                      // ⑥グループの並び順を変更
+                      PopupMenuItem(
+                        value: 'group_order',
+                        child: Row(
+                          children: [
+                            Icon(Icons.sort, color: Colors.purple, size: 20),
+                            SizedBox(width: 8),
+                            Text('グループの並び順を変更 (Ctrl+O)'),
+                          ],
+                        ),
+                      ),
+                      // ⑦ショートカット
                       PopupMenuItem(
                         value: 'shortcut_help',
                         child: Row(
@@ -731,7 +751,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ),
-                      // ⑦設定
+                      // ⑧設定
                       PopupMenuItem(
                         value: 'settings',
                         child: Row(
@@ -742,7 +762,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ),
-                      // ⑧ヘルプセンター
+                      // ⑨ヘルプセンター
                       PopupMenuItem(
                         value: 'help_center',
                         child: Row(
@@ -1412,6 +1432,131 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: const Text('削除'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showGroupOrderDialog(BuildContext context) {
+    final groups = ref.read(linkViewModelProvider).groups;
+    if (groups.length < 2) {
+      SnackBarService.showWarning(context, '並び順を変更するには2つ以上のグループが必要です');
+      return;
+    }
+
+    // 並び順を変更可能なリストを作成
+    List<Group> orderedGroups = List<Group>.from(groups);
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.sort, color: Colors.purple),
+              SizedBox(width: 8),
+              Text('グループの並び順を変更'),
+            ],
+          ),
+          content: SizedBox(
+            width: 500,
+            height: 600,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    'ドラッグ&ドロップで並び順を変更できます',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ),
+                Expanded(
+                  child: ReorderableListView.builder(
+                    itemCount: orderedGroups.length,
+                    onReorder: (oldIndex, newIndex) {
+                      setDialogState(() {
+                        if (oldIndex < newIndex) {
+                          newIndex -= 1;
+                        }
+                        final item = orderedGroups.removeAt(oldIndex);
+                        orderedGroups.insert(newIndex, item);
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final group = orderedGroups[index];
+                      final groupColor = group.color != null ? Color(group.color!) : Colors.blue;
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      
+                      return Card(
+                        key: ValueKey(group.id),
+                        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        color: isDark ? Colors.grey[850] : Colors.grey[50],
+                        child: ListTile(
+                          leading: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.drag_handle,
+                                color: Colors.grey[500],
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: groupColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.folder,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                          title: Text(
+                            group.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text('${group.items.length}件のリンク'),
+                          trailing: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: groupColor,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // 並び順を保存
+                await ref.read(linkViewModelProvider.notifier).updateGroupsOrder(orderedGroups);
+                Navigator.pop(context);
+                SnackBarService.showSuccess(context, 'グループの並び順を変更しました');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('保存'),
+            ),
+          ],
+        ),
       ),
     );
   }

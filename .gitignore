@@ -54,3 +54,4 @@ app.*.map.json
 *.pdf
 *.pptx
 *.ppt
+*.py

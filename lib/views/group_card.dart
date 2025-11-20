@@ -787,7 +787,7 @@ class _GroupCardState extends ConsumerState<GroupCard> {
       
       if (folderCount > 0) {
         if (folderCount == 1) {
-          messages.add('フォルダを追加しました');
+          messages.add('フォルダを1個追加しました');
         } else {
           messages.add('$folderCount個のフォルダを追加しました');
         }
