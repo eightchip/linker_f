@@ -464,8 +464,8 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       margin: 0;
       padding: 48px 32px;
       line-height: 1.7;
-      background: linear-gradient(135deg, #fff5f8 0%, #f4f8ff 100%);
-      color: #2f2a2a;
+      background: linear-gradient(135deg, #e0f2fe 0%, #d1fae5 100%);
+      color: #1e293b;
       display: flex;
       justify-content: center;
     }
@@ -475,18 +475,18 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       background: #ffffff;
       border-radius: 28px;
       padding: 56px 64px;
-      box-shadow: 0 18px 45px rgba(217, 72, 123, 0.12), 0 12px 26px rgba(109, 157, 246, 0.14);
+      box-shadow: 0 18px 45px rgba(37, 99, 235, 0.12), 0 12px 26px rgba(14, 184, 166, 0.14);
     }
     h1 {
       font-size: 2.2em;
-      color: #d9487b;
+      color: #2563eb;
       margin-bottom: 0.6em;
-      border-bottom: 4px solid rgba(217, 72, 123, 0.22);
+      border-bottom: 4px solid rgba(37, 99, 235, 0.25);
       padding-bottom: 0.35em;
     }
     h2 {
       font-size: 1.6em;
-      color: #6d9df6;
+      color: #0d9488;
       margin-top: 2.4em;
       margin-bottom: 0.8em;
       position: relative;
@@ -500,11 +500,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       width: 6px;
       height: calc(100% - 16px);
       border-radius: 3px;
-      background: linear-gradient(180deg, rgba(217, 72, 123, 0.8), rgba(109, 157, 246, 0.8));
+      background: linear-gradient(180deg, rgba(37, 99, 235, 0.8), rgba(14, 184, 166, 0.8));
     }
     h3 {
       font-size: 1.3em;
-      color: rgba(217, 72, 123, 0.9);
+      color: #059669;
       margin-top: 1.8em;
       margin-bottom: 0.6em;
     }
@@ -524,25 +524,25 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       background: rgba(255, 255, 255, 0.96);
       border-radius: 18px;
       overflow: hidden;
-      box-shadow: inset 0 0 0 1px rgba(217, 72, 123, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.1);
     }
     th, td {
-      border: 1px solid rgba(217, 72, 123, 0.15);
+      border: 1px solid rgba(37, 99, 235, 0.18);
       padding: 12px 16px;
       text-align: left;
     }
     th {
-      background: rgba(217, 72, 123, 0.12);
-      color: #c33768;
+      background: rgba(37, 99, 235, 0.1);
+      color: #1e40af;
       font-weight: 600;
     }
     blockquote {
       margin: 1.4em 0;
       padding: 18px 24px;
-      background: rgba(109, 157, 246, 0.12);
-      border-left: 6px solid rgba(109, 157, 246, 0.65);
+      background: rgba(14, 184, 166, 0.1);
+      border-left: 6px solid rgba(14, 184, 166, 0.7);
       border-radius: 18px;
-      color: #2f3a5a;
+      color: #0f766e;
     }
     pre {
       background: rgba(42, 45, 54, 0.08);
@@ -551,10 +551,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       overflow-x: auto;
     }
     code {
-      background: rgba(217, 72, 123, 0.12);
+      background: rgba(37, 99, 235, 0.1);
       padding: 2px 6px;
       border-radius: 6px;
       font-size: 0.95em;
+      color: #1e40af;
     }
     img {
       max-width: 100%;
@@ -563,10 +564,10 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       margin: 24px 0;
     }
     a {
-      color: #2873f0;
+      color: #2563eb;
       font-weight: 600;
       text-decoration: none;
-      border-bottom: 1px dashed rgba(40, 115, 240, 0.4);
+      border-bottom: 1px dashed rgba(37, 99, 235, 0.5);
     }
     a:hover {
       border-bottom-style: solid;
@@ -751,7 +752,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xfffff5f8), Color(0xfff3f7ff)],
+          colors: [Color(0xffe0f2fe), Color(0xffd1fae5)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
