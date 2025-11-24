@@ -98,6 +98,10 @@ class _ShowTaskTemplateIntent extends Intent {
   const _ShowTaskTemplateIntent();
 }
 
+class _ShowMemoBulkEditIntent extends Intent {
+  const _ShowMemoBulkEditIntent();
+}
+
 class _ShowScheduleIntent extends Intent {
   const _ShowScheduleIntent();
 }
@@ -1415,6 +1419,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyH): const _ToggleHeaderIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN): const _ShowTaskDialogIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB): const _ToggleSelectionModeIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyE): const _ShowMemoBulkEditIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyE): const _ExportCsvIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyS): const _ShowSettingsIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyG): const _ShowGroupMenuIntent(),
@@ -1453,6 +1458,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 final focused = FocusManager.instance.primaryFocus;
                 if (focused?.context?.widget is! EditableText) {
                   _toggleSelectionMode();
+                }
+                _restoreFocusIfNeeded();
+                return null;
+              },
+            ),
+            _ShowMemoBulkEditIntent: CallbackAction<_ShowMemoBulkEditIntent>(
+              onInvoke: (_) {
+                final focused = FocusManager.instance.primaryFocus;
+                if (focused?.context?.widget is! EditableText) {
+                  HomeScreen.showMemoBulkEditDialog(context, ref);
                 }
                 _restoreFocusIfNeeded();
                 return null;
@@ -1866,6 +1881,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     Icon(Icons.settings, color: Colors.grey, size: 20),
                     SizedBox(width: 8),
                     Text('設定 (Ctrl+Shift+S)'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'memo_bulk_edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_note, color: Colors.blue, size: 20),
+                    SizedBox(width: 8),
+                    Text('メモ一括編集 (Ctrl+E)'),
                   ],
                 ),
               ),
@@ -4674,6 +4699,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           ),
         );
         break;
+      case 'memo_bulk_edit':
+        HomeScreen.showMemoBulkEditDialog(context, ref);
+        break;
       case 'schedule':
         Navigator.push(
           context,
@@ -5477,6 +5505,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       if (isEditing) return false;
       print('✅ Ctrl+B 検出: 一括選択モード');
       _toggleSelectionMode();
+      return true;
+    } else if (event.logicalKey == LogicalKeyboardKey.keyE && isControlPressed && !isShiftPressed) {
+      if (isEditing) return false;
+      print('✅ Ctrl+E 検出: メモ一括編集');
+      HomeScreen.showMemoBulkEditDialog(context, ref);
       return true;
     } else if (event.logicalKey == LogicalKeyboardKey.keyE && isControlPressed && isShiftPressed) {
       if (isEditing) return false;

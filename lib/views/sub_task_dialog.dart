@@ -296,6 +296,10 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: _addSubTask,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade700,
+                          foregroundColor: Colors.white,
+                        ),
                         child: Text(_isEditing ? '更新' : '追加'),
                       ),
                       if (_isEditing) ...[

@@ -32,6 +32,224 @@ import 'settings_screen.dart';
 import 'task_screen.dart';
 
 
+// メモ一括編集ダイアログのヘルパークラス
+class _MemoBulkEditHelper {
+  static Color getAdjustedColor(int baseColor, double intensity, double contrast) {
+    final color = Color(baseColor);
+    
+    // HSL色空間に変換
+    final hsl = HSLColor.fromColor(color);
+    
+    // 濃淡調整: 明度を調整（0.5〜1.5の範囲で0.2〜0.8の明度にマッピング）
+    final adjustedLightness = (0.2 + (intensity - 0.5) * 0.6).clamp(0.1, 0.9);
+    
+    // コントラスト調整: 彩度を調整（0.7〜1.5の範囲で0.3〜1.0の彩度にマッピング）
+    final adjustedSaturation = (0.3 + (contrast - 0.7) * 0.875).clamp(0.1, 1.0);
+    
+    // 調整された色を返す
+    return HSLColor.fromAHSL(
+      color.alpha / 255.0,
+      hsl.hue,
+      adjustedSaturation,
+      adjustedLightness,
+    ).toColor();
+  }
+  
+  static void showMemoBulkEditDialog(BuildContext context, WidgetRef ref) {
+    final groups = ref.read(linkViewModelProvider).groups;
+    final allMemoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
+      .where((entry) => entry.value.memo?.isNotEmpty == true)
+      .toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = ref.read(accentColorProvider);
+    final colorIntensity = ref.read(colorIntensityProvider);
+    final colorContrast = ref.read(colorContrastProvider);
+    final adjustedAccentColor = getAdjustedColor(accentColor, colorIntensity, colorContrast);
+    final memoControllers = <String, TextEditingController>{};
+    for (final entry in allMemoLinks) {
+      memoControllers[entry.value.id] = TextEditingController(text: entry.value.memo ?? '');
+    }
+    final searchController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final searchQuery = searchController.text.toLowerCase();
+          final memoLinks = searchQuery.isEmpty
+              ? allMemoLinks
+              : allMemoLinks.where((entry) {
+                  final link = entry.value;
+                  return link.label.toLowerCase().contains(searchQuery) ||
+                      (link.memo?.toLowerCase().contains(searchQuery) ?? false);
+                }).toList();
+          
+          return AlertDialog(
+            title: const Text('メモ一括編集'),
+            content: SizedBox(
+              width: 1000,
+              height: 1000,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 検索バー
+                  TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: '検索（リンク名・メモ内容）',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                searchController.clear();
+                                setState(() {});
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  // 検索結果数表示
+                  if (searchQuery.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        '${memoLinks.length}件の結果',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  // リスト
+                  Expanded(
+                    child: memoLinks.isEmpty
+                        ? Center(
+                            child: Text(
+                              searchQuery.isNotEmpty
+                                  ? '検索結果がありません'
+                                  : 'メモが登録されているリンクがありません',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          )
+                        : Scrollbar(
+                            child: ListView(
+                              children: memoLinks.map((entry) {
+                                final link = entry.value;
+                                final controller = memoControllers[link.id]!;
+                                final isOverflow = (link.memo?.split('\n').length ?? 0) > 5 || (link.memo?.length ?? 0) > 100;
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 6,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              color: adjustedAccentColor,
+                                              borderRadius: BorderRadius.circular(3),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Icon(Icons.link, color: Colors.blue, size: 18),
+                                          const SizedBox(width: 4),
+                                          InkWell(
+                                            onTap: () {
+                                              ref.read(linkViewModelProvider.notifier).launchLink(link);
+                                            },
+                                            child: Text(
+                                              link.label,
+                                              style: TextStyle(
+                                                color: isDark ? Colors.white : Colors.black,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16 * ref.watch(uiDensityProvider),
+                                                decoration: TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      MouseRegion(
+                                        cursor: isOverflow ? SystemMouseCursors.help : SystemMouseCursors.basic,
+                                        child: Tooltip(
+                                          message: isOverflow ? link.memo! : '',
+                                          child: TextField(
+                                            controller: controller,
+                                            maxLines: 3,
+                                            minLines: 1,
+                                            decoration: InputDecoration(
+                                              filled: true,
+                                              fillColor: Theme.of(context).colorScheme.surface,
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                                borderSide: BorderSide(
+                                                  color: adjustedAccentColor.withValues(alpha: isDark ? 0.7 : 0.5),
+                                                  width: 2,
+                                                ),
+                                              ),
+                                              contentPadding: const EdgeInsets.all(10),
+                                            ),
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('閉じる'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  for (final entry in allMemoLinks) {
+                    final link = entry.value;
+                    final newMemo = memoControllers[link.id]!.text;
+                    // 空文字列の場合はセンチネル値を使用（メモ削除）
+                    final memoValue = newMemo.trim().isEmpty ? LinkItem.nullSentinel : newMemo.trim();
+                    if (memoValue != link.memo) {
+                      final updated = link.copyWith(memo: memoValue);
+                      await ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
+                        groupId: entry.key.id,
+                        updated: updated,
+                      );
+                    }
+                  }
+                  Navigator.pop(context);
+                },
+                child: const Text('まとめて保存'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
 // ハイライト用のウィジェット
 class HighlightedText extends StatelessWidget {
   final String text;
@@ -147,6 +365,11 @@ class HomeScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  
+  // メモ一括編集ダイアログを表示するstaticメソッド（タスク画面からも呼び出し可能）
+  static void showMemoBulkEditDialog(BuildContext context, WidgetRef ref) {
+    _MemoBulkEditHelper.showMemoBulkEditDialog(context, ref);
+  }
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
@@ -159,24 +382,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // 色の濃淡とコントラストを調整した色を取得
   Color _getAdjustedColor(int baseColor, double intensity, double contrast) {
-    final color = Color(baseColor);
-    
-    // HSL色空間に変換
-    final hsl = HSLColor.fromColor(color);
-    
-    // 濃淡調整: 明度を調整（0.5〜1.5の範囲で0.2〜0.8の明度にマッピング）
-    final adjustedLightness = (0.2 + (intensity - 0.5) * 0.6).clamp(0.1, 0.9);
-    
-    // コントラスト調整: 彩度を調整（0.7〜1.5の範囲で0.3〜1.0の彩度にマッピング）
-    final adjustedSaturation = (0.3 + (contrast - 0.7) * 0.875).clamp(0.1, 1.0);
-    
-    // 調整された色を返す
-    return HSLColor.fromAHSL(
-      color.alpha / 255.0,
-      hsl.hue,
-      adjustedSaturation,
-      adjustedLightness,
-    ).toColor();
+    return _MemoBulkEditHelper.getAdjustedColor(baseColor, intensity, contrast);
   }
   List<String> _availableTags = []; // 利用可能なタグ一覧
   // 表示モード管理
@@ -1781,132 +1987,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // メモ一括編集ダイアログを表示するメソッド
   void _showMemoBulkEditDialog(BuildContext context) {
-    final groups = ref.read(linkViewModelProvider).groups;
-    final memoLinks = groups.expand((g) => g.items.map((l) => MapEntry(g, l)))
-      .where((entry) => entry.value.memo?.isNotEmpty == true)
-      .toList();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentColor = ref.read(accentColorProvider);
-    final colorIntensity = ref.read(colorIntensityProvider);
-    final colorContrast = ref.read(colorContrastProvider);
-    final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
-    final memoControllers = <String, TextEditingController>{};
-    for (final entry in memoLinks) {
-      memoControllers[entry.value.id] = TextEditingController(text: entry.value.memo ?? '');
-    }
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('メモ一括編集'),
-          content: SizedBox(
-            width: 1000,
-            height: 1000,
-            child: Scrollbar(
-              child: ListView(
-                children: memoLinks.map((entry) {
-                  final link = entry.value;
-                  final controller = memoControllers[link.id]!;
-                  final isOverflow = (link.memo?.split('\n').length ?? 0) > 5 || (link.memo?.length ?? 0) > 100;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: adjustedAccentColor,
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(Icons.link, color: Colors.blue, size: 18),
-                            const SizedBox(width: 4),
-                            InkWell(
-                              onTap: () {
-                                ref.read(linkViewModelProvider.notifier).launchLink(link);
-                              },
-                              child: Text(
-                                link.label,
-                                style: TextStyle(
-                                  color: isDark ? Colors.white : Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16 * ref.watch(uiDensityProvider),
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        MouseRegion(
-                          cursor: isOverflow ? SystemMouseCursors.help : SystemMouseCursors.basic,
-                          child: Tooltip(
-                            message: isOverflow ? link.memo! : '',
-                            child: TextField(
-                              controller: controller,
-                              maxLines: 3,
-                              minLines: 1,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Theme.of(context).colorScheme.surface,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(
-                                    color: adjustedAccentColor.withValues(alpha: isDark ? 0.7 : 0.5),
-                                    width: 2,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.all(10),
-                              ),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('閉じる'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                for (final entry in memoLinks) {
-                  final link = entry.value;
-                  final newMemo = memoControllers[link.id]!.text;
-                  // 空文字列の場合はセンチネル値を使用（メモ削除）
-                  final memoValue = newMemo.trim().isEmpty ? LinkItem.nullSentinel : newMemo.trim();
-                  if (memoValue != link.memo) {
-                    final updated = link.copyWith(memo: memoValue);
-                    await ref.read(linkViewModelProvider.notifier).updateLinkInGroup(
-                      groupId: entry.key.id,
-                      updated: updated,
-                    );
-                  }
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('まとめて保存'),
-            ),
-          ],
-        ),
-      ),
-    );
+    _MemoBulkEditHelper.showMemoBulkEditDialog(context, ref);
   }
-
+  
   List<Widget> _buildLinkTypeRadios() {
     return [
       const Text('タイプ: ', style: TextStyle(fontSize: 10)),

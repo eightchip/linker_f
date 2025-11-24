@@ -1896,6 +1896,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     await ref.read(taskViewModelProvider.notifier).updateSubTaskStatistics(widget.task!.id);
                     setState((){});
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    foregroundColor: Colors.white,
+                  ),
                   child: Text(_editingSubTask == null ? '追加' : '更新'),
                 ),
               ],
