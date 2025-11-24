@@ -1416,7 +1416,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       child: Shortcuts(
         shortcuts: <LogicalKeySet, Intent>{
           // ショートカットキーを定義（フォーカスに依存しない）
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyH): const _ToggleHeaderIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyF): const _ToggleHeaderIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN): const _ShowTaskDialogIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB): const _ToggleSelectionModeIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyE): const _ShowMemoBulkEditIntent(),
@@ -1950,7 +1950,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       size: 20,
                     ),
                     SizedBox(width: 8),
-                    Text(_showHeaderSection ? '統計・検索バーを非表示 (Ctrl+H)' : '統計・検索バーを表示 (Ctrl+H)'),
+                    Text(_showHeaderSection ? '統計・検索バーを非表示 (Ctrl+F)' : '統計・検索バーを表示 (Ctrl+F)'),
                   ],
                 ),
               ),
@@ -3640,6 +3640,80 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     }
     
     return buffer.toString();
+  }
+
+  /// コンパクトモード用のタグ表示（折りたたみ時は最大3-4個、オーバーフロー時は「+N」）
+  Widget _buildCompactTagsDisplay(List<String> tags, bool isExpanded) {
+    if (tags.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    const maxVisibleTags = 4; // 折りたたみ時に表示する最大タグ数
+    final visibleTags = isExpanded ? tags : tags.take(maxVisibleTags).toList();
+    final remainingCount = tags.length - visibleTags.length;
+    
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: [
+        ...visibleTags.map((tag) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isDarkMode 
+                  ? Colors.grey.shade700 
+                  : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: isDarkMode 
+                    ? Colors.grey.shade600 
+                    : Colors.grey.shade300,
+                width: 0.5,
+              ),
+            ),
+            child: Text(
+              tag,
+              style: TextStyle(
+                fontSize: 9,
+                color: isDarkMode 
+                    ? Colors.grey.shade200 
+                    : Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          );
+        }),
+        if (remainingCount > 0)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isDarkMode 
+                  ? Colors.blue.shade800 
+                  : Colors.blue.shade100,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: isDarkMode 
+                    ? Colors.blue.shade600 
+                    : Colors.blue.shade300,
+                width: 0.5,
+              ),
+            ),
+            child: Text(
+              '+$remainingCount',
+              style: TextStyle(
+                fontSize: 9,
+                color: isDarkMode 
+                    ? Colors.blue.shade100 
+                    : Colors.blue.shade800,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   /// コンパクトモード用のリンク表示（アコーディオン）
@@ -5598,7 +5672,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         ShortcutHelpEntry('Ctrl + S', '予定表を開く'),
         ShortcutHelpEntry('Ctrl + G', 'グループ化メニュー'),
         ShortcutHelpEntry('Ctrl + Shift + T', 'テンプレートから作成'),
-        ShortcutHelpEntry('Ctrl + H', '統計・検索バー表示/非表示'),
+        ShortcutHelpEntry('Ctrl + F', '統計・検索バー表示/非表示'),
         ShortcutHelpEntry('Ctrl + Z', '詳細表示/非表示切り替え'),
         ShortcutHelpEntry('Ctrl + X', 'コンパクト⇔標準表示切り替え'),
         ShortcutHelpEntry('← / →', 'ホームへ戻る / 3点メニューを開く'),
@@ -5737,7 +5811,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 size: 20,
               ),
               SizedBox(width: 8),
-              Text(_showHeaderSection ? '統計・検索バーを非表示 (Ctrl+H)' : '統計・検索バーを表示 (Ctrl+H)'),
+              Text(_showHeaderSection ? '統計・検索バーを非表示 (Ctrl+F)' : '統計・検索バーを表示 (Ctrl+F)'),
             ],
           ),
         ),
@@ -7728,7 +7802,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   ),
                   // 依頼先/メモ（1行表示または展開時は全表示）
                   if (task.assignedTo != null && task.assignedTo!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: isExpanded ? 6 : 4),
                     Text(
                       '${task.assignedTo}',
                       style: TextStyle(
@@ -7742,7 +7816,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   ],
                   // 説明（1行表示または展開時は全表示）
                   if (task.description != null && task.description!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: isExpanded ? 6 : 4),
                     Text(
                       task.description!,
                       style: TextStyle(
@@ -7754,12 +7828,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       overflow: isExpanded ? null : TextOverflow.ellipsis,
                     ),
                   ],
+                  // タグ表示（折りたたみ時は1行、最大3-4個、オーバーフロー時は「+N」）
+                  if (task.tags.isNotEmpty) ...[
+                    SizedBox(height: isExpanded ? 6 : 4),
+                    _buildCompactTagsDisplay(task.tags, isExpanded),
+                  ],
                   // リンク表示（展開時のみまたはアコーディオン）
                   if (hasValidLinks && relatedLinks.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: isExpanded ? 8 : 4),
                     _buildCompactLinksDisplay(task, relatedLinks, isLinksExpanded || isExpanded, expandedLinksKey),
                   ],
-                  const SizedBox(height: 6),
+                  SizedBox(height: isExpanded ? 8 : 6),
                   // フッター: ステータス + 優先度 + その他
                   Row(
                     children: [
