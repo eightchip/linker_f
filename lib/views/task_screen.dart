@@ -162,7 +162,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   List<Map<String, String>> _sortOrders = [{'field': 'dueDate', 'order': 'asc'}]; // 第3順位まで設定可能
   bool _showFilters = false; // フィルター表示/非表示の切り替え
   bool _showHeaderSection = true; // 統計情報と検索バーの表示/非表示の切り替え
-  ListViewMode _listViewMode = ListViewMode.standard; // リストビュー表示モード（デフォルトは標準）
+  ListViewMode _listViewMode = ListViewMode.compact; // リストビュー表示モード（デフォルトはカードビュー）
   int _compactGridColumns = 4; // コンパクトモードのグリッド列数（デフォルト4列）
   final FocusNode _appBarMenuFocusNode = FocusNode();
   late FocusNode _searchFocusNode;
@@ -6162,7 +6162,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         });
       }
     } catch (e) {
-      _listViewMode = ListViewMode.standard;
+      _listViewMode = ListViewMode.compact;
       _compactGridColumns = 4;
     }
   }
