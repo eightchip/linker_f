@@ -243,7 +243,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     
     // 検索履歴を読み込み
     _loadSearchHistory();
-    // ピン留めを読み込み
+    // ピン留めを読み込み（非同期）
     _loadPinnedTasks();
     // 保存されたフィルターを読み込み
     _loadSavedFilterPresets();
@@ -326,18 +326,46 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     return const [WindowControlButtons()];
   }
 
-  void _loadPinnedTasks() {
+  Future<void> _loadPinnedTasks() async {
     try {
-      final box = Hive.box('pinnedTasks');
+      // ボックスが開かれるまで待つ
+      final box = await Hive.openBox('pinnedTasks');
       final ids = box.get('ids', defaultValue: <String>[]) as List;
-      _pinnedTaskIds = ids.map((e) => e.toString()).toSet();
-    } catch (_) {}
+      if (mounted) {
+        setState(() {
+          _pinnedTaskIds = ids.map((e) => e.toString()).toSet();
+        });
+      }
+    } catch (e) {
+      print('ピン留めタスク読み込みエラー: $e');
+      // エラー時は既に開いているボックスを試す
+      try {
+        final box = Hive.box('pinnedTasks');
+        final ids = box.get('ids', defaultValue: <String>[]) as List;
+        if (mounted) {
+          setState(() {
+            _pinnedTaskIds = ids.map((e) => e.toString()).toSet();
+          });
+        }
+      } catch (_) {}
+    }
   }
 
-  void _savePinnedTasks() {
+  Future<void> _savePinnedTasks() async {
     try {
-      Hive.box('pinnedTasks').put('ids', _pinnedTaskIds.toList());
-    } catch (_) {}
+      // ボックスが開かれるまで待つ
+      final box = await Hive.openBox('pinnedTasks');
+      await box.put('ids', _pinnedTaskIds.toList());
+      await box.flush(); // 確実に保存
+    } catch (e) {
+      print('ピン留めタスク保存エラー: $e');
+      // エラー時は既に開いているボックスを試す
+      try {
+        final box = Hive.box('pinnedTasks');
+        box.put('ids', _pinnedTaskIds.toList());
+        await box.flush();
+      } catch (_) {}
+    }
   }
 
   void _togglePinTask(String taskId) {
@@ -347,7 +375,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       } else {
         _pinnedTaskIds.add(taskId);
       }
-      _savePinnedTasks();
+    });
+    // 非同期で保存（setStateの外で実行、awaitしない）
+    _savePinnedTasks().catchError((e) {
+      print('ピン留めタスク保存エラー（再試行）: $e');
     });
   }
 
@@ -7447,59 +7478,109 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     final cardHeight = layoutSettings.cardHeight;
     
     // ピン留めタスクを上部に固定表示
-    Widget buildGridSection(List<TaskItem> taskList) {
+    Widget buildGridSection(List<TaskItem> taskList, {bool isInScrollView = false}) {
       if (taskList.isEmpty) return const SizedBox.shrink();
       
       if (layoutSettings.autoAdjustCardHeight) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final availableWidth = constraints.maxWidth;
-            final padding = spacing * 0.75;
-            final effectiveWidth = availableWidth - (padding * 2);
-            final crossAxisSpacing = spacing;
-            final itemWidth = (effectiveWidth - (crossAxisCount - 1) * crossAxisSpacing) / crossAxisCount;
-            
-            return Padding(
-              padding: EdgeInsets.all(padding),
-              child: Wrap(
-                spacing: crossAxisSpacing,
-                runSpacing: spacing,
-                alignment: WrapAlignment.start,
-                children: taskList.map((task) {
-                  return SizedBox(
-                    width: itemWidth,
-                    child: _buildCompactTaskCard(
-                      task,
-                      isSelected: _selectedTaskIds.contains(task.id),
-                      cardWidth: itemWidth,
-                      minCardHeight: cardHeight,
-                      layoutSettings: layoutSettings,
-                      fontSize: fontSize,
-                      titleFontSize: titleFontSize,
-                      titleFontFamily: titleFontFamily,
-                      titleTextColor: titleTextColor,
-                      memoFontSize: memoFontSize,
-                      memoFontFamily: memoFontFamily,
-                      memoTextColor: memoTextColor,
-                      descriptionFontSize: descriptionFontSize,
-                      descriptionFontFamily: descriptionFontFamily,
-                      descriptionTextColor: descriptionTextColor,
-                    ),
-                  );
-                }).toList(),
-              ),
-            );
-          },
-        );
+        // Expanded内で使用する場合は、ScrollViewでラップする必要がある
+        if (!isInScrollView) {
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              final padding = spacing * 0.75;
+              final effectiveWidth = availableWidth - (padding * 2);
+              final crossAxisSpacing = spacing;
+              final itemWidth = (effectiveWidth - (crossAxisCount - 1) * crossAxisSpacing) / crossAxisCount;
+              
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.all(padding),
+                  child: Wrap(
+                    spacing: crossAxisSpacing,
+                    runSpacing: spacing,
+                    alignment: WrapAlignment.start,
+                    children: taskList.map((task) {
+                      return SizedBox(
+                        width: itemWidth,
+                        child: _buildCompactTaskCard(
+                          task,
+                          isSelected: _selectedTaskIds.contains(task.id),
+                          cardWidth: itemWidth,
+                          minCardHeight: cardHeight,
+                          layoutSettings: layoutSettings,
+                          fontSize: fontSize,
+                          titleFontSize: titleFontSize,
+                          titleFontFamily: titleFontFamily,
+                          titleTextColor: titleTextColor,
+                          memoFontSize: memoFontSize,
+                          memoFontFamily: memoFontFamily,
+                          memoTextColor: memoTextColor,
+                          descriptionFontSize: descriptionFontSize,
+                          descriptionFontFamily: descriptionFontFamily,
+                          descriptionTextColor: descriptionTextColor,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            },
+          );
+        } else {
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+              final padding = spacing * 0.75;
+              final effectiveWidth = availableWidth - (padding * 2);
+              final crossAxisSpacing = spacing;
+              final itemWidth = (effectiveWidth - (crossAxisCount - 1) * crossAxisSpacing) / crossAxisCount;
+              
+              return Padding(
+                padding: EdgeInsets.all(padding),
+                child: Wrap(
+                  spacing: crossAxisSpacing,
+                  runSpacing: spacing,
+                  alignment: WrapAlignment.start,
+                  children: taskList.map((task) {
+                    return SizedBox(
+                      width: itemWidth,
+                      child: _buildCompactTaskCard(
+                        task,
+                        isSelected: _selectedTaskIds.contains(task.id),
+                        cardWidth: itemWidth,
+                        minCardHeight: cardHeight,
+                        layoutSettings: layoutSettings,
+                        fontSize: fontSize,
+                        titleFontSize: titleFontSize,
+                        titleFontFamily: titleFontFamily,
+                        titleTextColor: titleTextColor,
+                        memoFontSize: memoFontSize,
+                        memoFontFamily: memoFontFamily,
+                        memoTextColor: memoTextColor,
+                        descriptionFontSize: descriptionFontSize,
+                        descriptionFontFamily: descriptionFontFamily,
+                        descriptionTextColor: descriptionTextColor,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
+          );
+        }
       }
       
       // 固定アスペクト比のグリッドビュー
       final childAspectRatio = cardWidth / cardHeight;
       
+      // Expanded内で使用する場合は、shrinkWrapをfalseにして親のExpandedでスクロール可能にする
+      // SingleChildScrollView内で使用する場合は、shrinkWrapをtrueにしてスクロール無効にする
       return GridView.builder(
         padding: EdgeInsets.all(spacing * 0.75),
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: isInScrollView, // SingleChildScrollView内の場合はtrue、Expanded内の場合はfalse
+        physics: isInScrollView 
+            ? const NeverScrollableScrollPhysics() // SingleChildScrollView内の場合はスクロール無効
+            : null, // Expanded内の場合はデフォルトのphysicsを使用（ClampingScrollPhysics）
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
           childAspectRatio: childAspectRatio,
@@ -7530,6 +7611,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       );
     }
     
+    // ピン留めタスクがない場合、スクロールしないようにする
+    // Expanded内で配置されているため、スクロール可能にならないようにする
+    
     // ピン留めタスクがある場合は固定表示
     if (pinnedTasks.isNotEmpty) {
       return SingleChildScrollView(
@@ -7546,17 +7630,19 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   ),
                 ),
               ),
-              child: buildGridSection(pinnedTasks),
+              child: buildGridSection(pinnedTasks, isInScrollView: true),
             ),
             // 通常タスク（スクロール可能）
-            if (unpinnedTasks.isNotEmpty) buildGridSection(unpinnedTasks),
+            if (unpinnedTasks.isNotEmpty) buildGridSection(unpinnedTasks, isInScrollView: true),
           ],
         ),
       );
     }
     
     // ピン留めタスクがない場合は通常表示
-    return buildGridSection(unpinnedTasks);
+    // Expanded内で配置されているため、スクロール可能にする
+    // isInScrollView: false で呼び出す（デフォルト値）
+    return buildGridSection(unpinnedTasks, isInScrollView: false);
   }
 
   /// コンパクトモード用のタスクカード（カード形式）

@@ -544,35 +544,31 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
     // 選択された予定を取得
     final selectedEvents = _selectedIndices.map((index) => filtered[index]).toList();
 
-    TaskItem? selectedTask;
+    // 各予定に対してタスクを割り当て（メニューを継続表示）
+    for (final item in selectedEvents) {
+      TaskItem? selectedTask;
 
-    if (_preselectedTaskId != null) {
-      try {
-        selectedTask = _incompleteTasks.firstWhere((task) => task.id == _preselectedTaskId);
-      } catch (_) {
-        selectedTask = null;
+      if (_preselectedTaskId != null) {
+        try {
+          selectedTask = _incompleteTasks.firstWhere((task) => task.id == _preselectedTaskId);
+        } catch (_) {
+          selectedTask = null;
+        }
       }
-    }
 
-    selectedTask ??= await showDialog<TaskItem>(
-      context: context,
-      builder: (context) => _TaskSelectionDialog(
-        tasks: _incompleteTasks,
-        preselectedTaskId: _preselectedTaskId,
-      ),
-    );
+      selectedTask ??= await showDialog<TaskItem>(
+        context: context,
+        builder: (context) => _TaskSelectionDialog(
+          tasks: _incompleteTasks,
+          preselectedTaskId: _preselectedTaskId,
+        ),
+      );
 
-    if (selectedTask == null) return;
+      if (selectedTask == null) continue; // キャンセルされた場合は次の予定へ
 
-    _preselectedTaskId = null;
-
-    // 予定をタスクに割り当て
-    try {
-      final scheduleViewModel = ref.read(scheduleViewModelProvider.notifier);
-      int successCount = 0;
-      int updateCount = 0;
-
-      for (final item in selectedEvents) {
+      // 予定をタスクに割り当て
+      try {
+        final scheduleViewModel = ref.read(scheduleViewModelProvider.notifier);
         final scheduleItem = _outlookService.convertEventToScheduleItem(
           taskId: selectedTask.id,
           outlookEvent: item.event,
@@ -591,25 +587,27 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
             outlookEntryId: scheduleItem.outlookEntryId,
           );
           await scheduleViewModel.updateSchedule(updatedSchedule);
-          updateCount++;
         } else {
           // 新規予定を追加
           await scheduleViewModel.addSchedule(scheduleItem);
-          successCount++;
+        }
+      } catch (e) {
+        if (mounted) {
+          SnackBarService.showError(context, '予定「${item.event['Subject']}」の割り当てに失敗しました: $e');
         }
       }
+    }
 
-      if (mounted) {
-        SnackBarService.showSuccess(
-          context,
-          '${successCount}件の予定を追加、${updateCount}件の予定を更新しました',
-        );
-        Navigator.pop(context, true);
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarService.showError(context, '予定の割り当てに失敗しました: $e');
-      }
+    // すべての割り当てが完了したら成功メッセージを表示
+    if (mounted && selectedEvents.isNotEmpty) {
+      SnackBarService.showSuccess(
+        context,
+        '${selectedEvents.length}件の予定を割り当てました',
+      );
+      // ダイアログは閉じずに継続表示
+      setState(() {
+        _selectedIndices.clear();
+      });
     }
   }
 

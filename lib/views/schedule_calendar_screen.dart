@@ -211,8 +211,6 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             icon: Icon(
               _currentView == ScheduleCalendarView.list
                   ? Icons.view_list
-                  : _currentView == ScheduleCalendarView.week
-                      ? Icons.view_week
                       : Icons.calendar_month,
               color: Theme.of(context).colorScheme.primary,
             ),
@@ -230,16 +228,6 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                     Icon(Icons.view_list),
                     SizedBox(width: 8),
                     Text('リスト表示'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: ScheduleCalendarView.week,
-                child: Row(
-                  children: [
-                    Icon(Icons.view_week),
-                    SizedBox(width: 8),
-                    Text('週次表示'),
                   ],
                 ),
               ),
@@ -927,9 +915,10 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     switch (_currentView) {
       case ScheduleCalendarView.list:
         return _buildListView(sortedDates, schedulesByDate, tasks, now);
-      case ScheduleCalendarView.week:
-        return _buildWeekView(schedulesByDate, taskMap);
       case ScheduleCalendarView.month:
+        return _buildMonthView(schedulesByDate, taskMap);
+      case ScheduleCalendarView.week:
+        // 週次表示は削除されたため、月次表示にフォールバック
         return _buildMonthView(schedulesByDate, taskMap);
     }
   }
@@ -965,102 +954,6 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     );
   }
 
-  Widget _buildWeekView(
-    Map<DateTime, List<ScheduleItem>> schedulesByDate,
-    Map<String, TaskItem> taskMap,
-  ) {
-    final sortedDates = schedulesByDate.keys.toList()..sort();
-    final Map<DateTime, List<DateTime>> weekGroups = {};
-    for (final date in sortedDates) {
-      final weekStart = date.subtract(Duration(days: date.weekday - 1));
-      weekGroups.putIfAbsent(weekStart, () => []);
-      weekGroups[weekStart]!.add(date);
-    }
-    final weekStarts = weekGroups.keys.toList()..sort();
-    final dayLabelFormat =
-        _localeInitialized ? DateFormat('M/d(E)', 'ja_JP') : DateFormat('M/d (E)');
-    final headerFormat = DateFormat('yyyy/MM/dd');
-    final timeFormat = DateFormat('HH:mm');
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      itemCount: weekStarts.length,
-      itemBuilder: (context, index) {
-        final weekStart = weekStarts[index];
-        final weekEnd = weekStart.add(const Duration(days: 6));
-        final days = List.generate(7, (offset) => weekStart.add(Duration(days: offset)));
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 1,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${headerFormat.format(weekStart)} 〜 ${headerFormat.format(weekEnd)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-                const SizedBox(height: 8),
-                ...days
-                    .where((day) => (schedulesByDate[day] ?? []).isNotEmpty)
-                    .map((day) {
-                  final entries = schedulesByDate[day] ?? [];
-                  final label = dayLabelFormat.format(day);
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 90,
-                          child: Text(
-                            label,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: entries.map((schedule) {
-                              final task = taskMap[schedule.taskId];
-                              final title = schedule.title.isNotEmpty
-                                  ? schedule.title
-                                  : task?.title ?? '';
-                              final time = timeFormat.format(schedule.startDateTime);
-                              final isMeetingRoom =
-                                  (schedule.calendarOwner?.trim().isNotEmpty ?? false);
-                              final displayTitle =
-                                  isMeetingRoom ? '🏢 $title' : title;
-                              return Text(
-                                '$time  $displayTitle',
-                                style: TextStyle(
-                                  height: 1.3,
-                                  color: isMeetingRoom
-                                      ? Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.9)
-                                      : null,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildMonthView(
     Map<DateTime, List<ScheduleItem>> schedulesByDate,
@@ -1102,9 +995,37 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  monthHeaderFormat.format(monthStart),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        monthHeaderFormat.format(monthStart),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                    ),
+                    // 月次表示用のExcel出力ボタン
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.content_copy, size: 18),
+                      tooltip: 'エクセルにコピー（1セル形式）',
+                      onSelected: (value) {
+                        if (value == 'onecell') {
+                          _copyMonthToExcel(monthStart, schedulesByDate, taskMap);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'onecell',
+                          child: Row(
+                            children: [
+                              Icon(Icons.content_copy, size: 20),
+                              SizedBox(width: 8),
+                              Text('エクセルにコピー（1セル形式）'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 ...days
@@ -1575,6 +1496,89 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     if (mounted) {
       final formatText = isOneCellForm ? '1セル形式' : '表形式';
       SnackBarService.showSuccess(context, '${filteredSchedules.length}件の予定を$formatTextでクリップボードにコピーしました（エクセルに貼り付け可能）');
+    }
+  }
+
+  /// 月次表示の予定をエクセル形式でクリップボードにコピー（1セル形式）
+  Future<void> _copyMonthToExcel(
+    DateTime monthStart,
+    Map<DateTime, List<ScheduleItem>> schedulesByDate,
+    Map<String, TaskItem> taskMap,
+  ) async {
+    final tasks = ref.read(taskViewModelProvider);
+    final timeFormat = DateFormat('HH:mm');
+    final oneCellDateFormat = DateFormat('MM/dd');
+    
+    // 月の全日付を取得
+    final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
+    final daysInMonth = monthEnd.day;
+    final days = List.generate(
+      daysInMonth,
+      (offset) => DateTime(monthStart.year, monthStart.month, offset + 1),
+    );
+    
+    // 予定がある日の予定を取得
+    final List<ScheduleItem> monthSchedules = [];
+    for (final day in days) {
+      final daySchedules = schedulesByDate[day] ?? [];
+      monthSchedules.addAll(daySchedules);
+    }
+    
+    if (monthSchedules.isEmpty) {
+      if (mounted) {
+        SnackBarService.showWarning(context, 'この月には予定がありません');
+      }
+      return;
+    }
+    
+    // 日付順にソート
+    monthSchedules.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
+    
+    final buffer = StringBuffer();
+    
+    // 1セル形式（列挙形式）
+    for (final schedule in monthSchedules) {
+      final task = taskMap[schedule.taskId] ?? tasks.firstWhere(
+        (t) => t.id == schedule.taskId,
+        orElse: () => TaskItem(
+          id: schedule.taskId,
+          title: 'タスクが見つかりません',
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      final dateLabel = oneCellDateFormat.format(schedule.startDateTime);
+      final startTime = timeFormat.format(schedule.startDateTime);
+      final endTime = schedule.endDateTime != null
+          ? timeFormat.format(schedule.endDateTime!)
+          : null;
+      final location = (schedule.location ?? '')
+          .replaceAll('\t', ' ')
+          .replaceAll('\n', ' ')
+          .trim();
+      final displayTitle = schedule.title.isNotEmpty
+          ? schedule.title
+          : task.title;
+
+      final bufferLine = StringBuffer('・$dateLabel $startTime');
+      if (endTime != null && endTime.isNotEmpty) {
+        bufferLine.write('~$endTime');
+      }
+      if (location.isNotEmpty) {
+        bufferLine.write(' $location');
+      }
+      bufferLine.write(' $displayTitle');
+      buffer.writeln(bufferLine.toString());
+    }
+    
+    // クリップボードにコピー
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+    
+    if (mounted) {
+      SnackBarService.showSuccess(
+        context,
+        '${monthSchedules.length}件の予定を1セル形式でクリップボードにコピーしました（エクセルに貼り付け可能）',
+      );
     }
   }
 }
