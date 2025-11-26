@@ -13,6 +13,7 @@ import 'dart:convert';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
 import '../views/home_screen.dart'; // HighlightedText用
+import '../widgets/global_menu_dialog.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/link_viewmodel.dart';
 import '../viewmodels/sub_task_viewmodel.dart';
@@ -131,7 +132,9 @@ class _ToggleListViewModeIntent extends Intent {
 }
 
 class TaskScreen extends ConsumerStatefulWidget {
-  const TaskScreen({super.key});
+  final String? initialMenuAction;
+  
+  const TaskScreen({super.key, this.initialMenuAction});
 
   @override
   ConsumerState<TaskScreen> createState() => _TaskScreenState();
@@ -261,6 +264,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         });
       }
     });
+
+    // 初期メニューアクションを実行（遷移後に自動実行）
+    if (widget.initialMenuAction != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _executeInitialMenuAction(widget.initialMenuAction!);
+        }
+      });
+    }
 
     _initializeSettings().then((_) {
       if (!mounted) return;
@@ -1867,130 +1879,70 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 }//if (event is KeyDownEvent)
                 return KeyEventResult.ignored;
               },
-            child: Builder(
-              key: _menuButtonKey,
-              builder: (context) => PopupMenuButton<String>(
-            onSelected: (value) => _handleMenuAction(value),
-            itemBuilder: (context) => [
-              // 新しいタスク作成
-              PopupMenuItem(
-                value: 'add_task',
-                child: Row(
-                  children: [
-                    Icon(Icons.add, color: Colors.green, size: 20),
-                    SizedBox(width: 8),
-                    Text('新しいタスク (Ctrl+N)'),
-                  ],
+              child: Builder(
+                key: _menuButtonKey,
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  tooltip: 'グローバルメニュー',
+                  onPressed: () async {
+                    final result = await showDialog<String>(
+                      context: context,
+                      builder: (context) => const GlobalMenuDialog(),
+                    );
+                    
+                    if (result == null || !mounted) return;
+                    
+                    // 共通メニュー
+                    if (result == 'settings') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      );
+                    } else if (result == 'help_center') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HelpCenterScreen(),
+                        ),
+                      );
+                    } else if (result == 'memo_bulk_edit') {
+                      HomeScreen.showMemoBulkEditDialog(context, ref);
+                    }
+                    // リンク管理画面のメニュー項目（まずリンク管理画面に遷移）
+                    else if (result == 'add_group' || result == 'search' || 
+                             result == 'group_order' || result == 'shortcut_help') {
+                      if (Navigator.of(context).canPop()) {
+                        // 通常のナビゲーション（ホーム画面から来た場合）
+                        Navigator.of(context).pop();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomeScreen(initialMenuAction: result),
+                          ),
+                        );
+                      } else {
+                        // タスク管理デフォルトトグルがオンの場合（ルート画面の場合）
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => HomeScreen(initialMenuAction: result),
+                          ),
+                        );
+                      }
+                    } else if (result == 'task') {
+                      // タスク管理画面に遷移（既にタスク管理画面にいるので何もしない）
+                    }
+                    // タスク管理画面のメニュー項目
+                    else {
+                      _handleMenuAction(result);
+                    }
+                  },
                 ),
-              ),
-              // 一括選択モード
-              PopupMenuItem(
-                value: 'bulk_select',
-                child: Row(
-                  children: [
-                    Icon(Icons.checklist, color: Colors.blue, size: 20),
-                    SizedBox(width: 8),
-                    Text('一括選択モード (Ctrl+B)'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'export',
-                child: Row(
-                  children: [
-                    Icon(Icons.download, color: Colors.green, size: 20),
-                    SizedBox(width: 8),
-                    Text('CSV出力 (Ctrl+Shift+E)'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.grey, size: 20),
-                    SizedBox(width: 8),
-                    Text('設定 (Ctrl+Shift+S)'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'memo_bulk_edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_note, color: Colors.blue, size: 20),
-                    SizedBox(width: 8),
-                    Text('メモ一括編集 (Ctrl+E)'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-            // スケジュール一覧
-              PopupMenuItem(
-              value: 'schedule',
-                child: Row(
-                  children: [
-                  Icon(Icons.calendar_month, color: Colors.orange, size: 20),
-                  const SizedBox(width: 8),
-                const Text('スケジュール一覧 (Ctrl+S)'),
-                ],
               ),
             ),
-            PopupMenuItem(
-              value: 'help_center',
-              child: Row(
-                children: [
-                  Icon(Icons.help_outline, color: Colors.indigo, size: 20),
-                  const SizedBox(width: 8),
-                  const Text('ヘルプセンター'),
-                ],
-              ),
-            ),
-            const PopupMenuDivider(),
-            // グループ化
-            PopupMenuItem(
-              value: 'group_menu',
-              child: Row(
-                children: [
-                  Icon(Icons.group, color: Colors.purple, size: 20),
-                    SizedBox(width: 8),
-                  Text('グループ化 (Ctrl+G)'),
-                  ],
-                ),
-              ),
-              // テンプレートから作成
-              PopupMenuItem(
-                value: 'task_template',
-                child: Row(
-                  children: [
-                    Icon(Icons.content_copy, color: Colors.teal, size: 20),
-                    SizedBox(width: 8),
-                    Text('テンプレートから作成 (Ctrl+Shift+T)'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'toggle_header',
-                child: Row(
-                  children: [
-                    Icon(
-                      _showHeaderSection ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Text(_showHeaderSection ? '統計・検索バーを非表示 (Ctrl+F)' : '統計・検索バーを表示 (Ctrl+F)'),
-                  ],
-                ),
-              ),
-            ],//itemBuilder
-          ),
-          ),
-        ),
-        ..._buildWindowControlButtons(),
-         ],//else
+            ..._buildWindowControlButtons(),
+          ],//else
          ],//actions
        ),
         body: Column(
@@ -4783,6 +4735,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         parentTaskTitle: task.title,
       ),
     );
+  }
+
+  /// 初期メニューアクションを実行
+  void _executeInitialMenuAction(String action) {
+    if (!mounted) return;
+    _handleMenuAction(action);
   }
 
   void _handleMenuAction(String action) {
@@ -7822,8 +7780,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                 highlight: _searchQuery,
                                 style: TextStyle(
                                   color: task.status == TaskStatus.completed 
-                                      ? Color(titleTextColor).withOpacity(0.5)
-                                      : Color(titleTextColor),
+                                      ? _getCompactTaskTitleColor(titleTextColor).withOpacity(0.5)
+                                      : _getCompactTaskTitleColor(titleTextColor),
                                   decoration: task.status == TaskStatus.completed 
                                       ? TextDecoration.lineThrough 
                                       : null,
@@ -7836,8 +7794,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                 task.title,
                                 style: TextStyle(
                                   color: task.status == TaskStatus.completed 
-                                      ? Color(titleTextColor).withOpacity(0.5)
-                                      : Color(titleTextColor),
+                                      ? _getCompactTaskTitleColor(titleTextColor).withOpacity(0.5)
+                                      : _getCompactTaskTitleColor(titleTextColor),
                                   decoration: task.status == TaskStatus.completed 
                                       ? TextDecoration.lineThrough 
                                       : null,
@@ -8935,6 +8893,20 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   Color _getTaskTitleColor() {
     final isDarkMode = ref.watch(darkModeProvider);
     final customColor = Color(ref.watch(titleTextColorProvider));
+    
+    // ダークモードの場合は自動的に白、ライトモードの場合はカスタム色または黒
+    if (isDarkMode) {
+      return Colors.white;
+    } else {
+      // カスタム色が設定されている場合はそれを使用、デフォルトは黒
+      return customColor.value == 0xFF000000 ? Colors.black : customColor;
+    }
+  }
+
+  /// カードビュー用のタスクタイトルの文字色を取得（ダークモード対応）
+  Color _getCompactTaskTitleColor(int titleTextColor) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final customColor = Color(titleTextColor);
     
     // ダークモードの場合は自動的に白、ライトモードの場合はカスタム色または黒
     if (isDarkMode) {

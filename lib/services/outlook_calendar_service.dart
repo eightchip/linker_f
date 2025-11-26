@@ -78,7 +78,66 @@ class OutlookCalendarService {
       final start = startDate ?? DateTime.now();
       final end = endDate ?? DateTime.now().add(const Duration(days: 30));
 
-      final script = '''
+      // PowerShellスクリプトファイルを使用
+      final appdataPath = Platform.environment['APPDATA'] ?? 
+        'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
+      final scriptPath = '$appdataPath\\Apps\\get_calendar_events.ps1';
+      
+      // スクリプトファイルの存在確認
+      final scriptFile = File(scriptPath);
+      if (!await scriptFile.exists()) {
+        // スクリプトファイルがない場合は、インラインスクリプトを使用（後方互換性）
+        return await _getCalendarEventsInline(start, end);
+      }
+
+      // PowerShellスクリプトファイルを実行
+      final result = await Process.run('powershell.exe', [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        scriptPath,
+        '-StartDate', start.toIso8601String(),
+        '-EndDate', end.toIso8601String(),
+      ]).timeout(
+        const Duration(seconds: 60),
+        onTimeout: () {
+          if (kDebugMode) {
+            print('Outlook予定取得: タイムアウト');
+          }
+          return ProcessResult(0, 1, 'timeout', 'PowerShell実行がタイムアウトしました（60秒）');
+        },
+      );
+
+      if (result.exitCode != 0) {
+        final errorMessage = result.stderr.toString();
+        if (kDebugMode) {
+          print('PowerShellスクリプト実行エラー: $errorMessage');
+        }
+        // エラー時はインラインスクリプトにフォールバック
+        return await _getCalendarEventsInline(start, end);
+      }
+
+      final output = result.stdout.toString().trim();
+      return _parseJsonList(output);
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('=== Outlook Calendar 予定取得エラー ===');
+        print('エラー: $e');
+        print('スタックトレース: $stackTrace');
+        print('=====================================');
+      }
+      ErrorHandler.logError('Outlook Calendar 予定取得', e, stackTrace);
+      rethrow;
+    }
+  }
+
+  /// インラインスクリプトを使用して予定を取得（後方互換性のため）
+  Future<List<Map<String, dynamic>>> _getCalendarEventsInline(
+    DateTime start,
+    DateTime end,
+  ) async {
+    final script = '''
 function Sanitize([string]\$value) {
     if ([string]::IsNullOrEmpty(\$value)) { return "" }
     return (\$value -replace "[\\r\\n\\u0000]", " ").Trim()
@@ -250,12 +309,7 @@ try {
     }
     if (\$outlook) { 
         try {
-            # Outlookを明示的に終了
-            try {
-                \$outlook.Quit()
-            } catch {
-                # Quit()が失敗しても続行
-            }
+            # Outlookを明示的に終了しない（他のプロセスが使用している可能性があるため）
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject(\$outlook) | Out-Null
         } catch { }
         \$outlook = \$null
@@ -270,23 +324,13 @@ try {
 }
 ''';
 
-      // タイムアウトと再試行を設定（大量の予定がある場合に備えて60秒）
-      final output = await _runPowerShellScript(
-        script,
-        maxRetries: 3,
-        timeoutSeconds: 60,
-      );
-      return _parseJsonList(output);
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        print('=== Outlook Calendar 予定取得エラー ===');
-        print('エラー: $e');
-        print('スタックトレース: $stackTrace');
-        print('=====================================');
-      }
-      ErrorHandler.logError('Outlook Calendar 予定取得', e, stackTrace);
-      rethrow;
-    }
+    // タイムアウトと再試行を設定（大量の予定がある場合に備えて60秒）
+    final output = await _runPowerShellScript(
+      script,
+      maxRetries: 3,
+      timeoutSeconds: 60,
+    );
+    return _parseJsonList(output);
   }
 
   /// Outlook予定をScheduleItemに変換

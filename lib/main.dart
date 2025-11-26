@@ -678,9 +678,9 @@ Future<void> _initializeOutlookAutoSync(WidgetRef ref) async {
     
     print('Outlook自動取込を開始します');
     
-    // 初回同期を実行（アプリ起動時）
+    // 初回同期を実行（アプリ起動時、ダイアログを表示）
     final autoSyncService = OutlookAutoSyncService();
-    await autoSyncService.syncOutlookCalendar(ref);
+    await autoSyncService.syncOutlookCalendar(ref, showDialog: true);
     
     // 自動取込頻度に応じて定期実行を開始
     final frequency = settingsService.outlookAutoSyncFrequency;

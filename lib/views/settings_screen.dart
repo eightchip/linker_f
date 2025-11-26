@@ -5732,6 +5732,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         '手動実行',
                       ),
                       
+                      _buildPowerShellFileInfo(
+                        'get_calendar_events.ps1',
+                        'Outlookカレンダー予定取得',
+                        'Outlookカレンダーから予定を取得してタスクに割り当てる機能',
+                        '%APPDATA%\\Apps\\',
+                        '自動実行',
+                      ),
+                      
                       const SizedBox(height: 12),
                       
                       Container(

@@ -19,7 +19,8 @@ class OutlookAutoSyncService {
   
   /// 自動取込を実行
   /// [ref] RiverpodのRef（TaskViewModelとScheduleViewModelにアクセスするため）
-  Future<void> syncOutlookCalendar(WidgetRef ref) async {
+  /// [showDialog] ダイアログを表示するかどうか（起動時はtrue）
+  Future<void> syncOutlookCalendar(WidgetRef ref, {bool showDialog = false}) async {
     try {
       // 設定を確認
       final isEnabled = _settingsService.outlookAutoSyncEnabled;
@@ -65,6 +66,13 @@ class OutlookAutoSyncService {
         print('期間: $periodDays日');
       }
 
+      // ダイアログを表示する場合
+      if (showDialog) {
+        SnackBarService.showGlobalInfo(
+          'Outlookから予定を取得しています...',
+        );
+      }
+
       // Outlookから予定を取得（タイムアウト・再試行付き）
       List<Map<String, dynamic>> events = [];
       try {
@@ -77,9 +85,15 @@ class OutlookAutoSyncService {
         if (kDebugMode) {
           print('予定取得エラー: $e');
         }
-        SnackBarService.showGlobalInfo(
-          'Outlookから予定を取得できませんでした。後でもう一度お試しください。',
-        );
+        if (showDialog) {
+          SnackBarService.showGlobalError(
+            'Outlookから予定を取得できませんでした。後でもう一度お試しください。\nエラー: $e',
+          );
+        } else {
+          SnackBarService.showGlobalInfo(
+            'Outlookから予定を取得できませんでした。後でもう一度お試しください。',
+          );
+        }
         rethrow;
       }
 
@@ -140,22 +154,45 @@ class OutlookAutoSyncService {
         print('スキップ: $skippedCount件');
       }
 
-      // メッセージを表示（追加があった場合のみ）
-      if (addedCount > 0 || skippedCount > 0) {
+      // メッセージを表示
+      if (showDialog) {
+        // ダイアログを表示する場合
         if (addedCount > 0) {
           SnackBarService.showGlobalSuccess(
-            'Outlook自動取り込み完了: ${addedCount}件の予定を追加しました',
+            'Outlook自動取り込み完了\n取得: ${events.length}件\n追加: $addedCount件\nスキップ: $skippedCount件',
           );
         } else if (skippedCount > 0) {
           SnackBarService.showGlobalInfo(
-            'Outlook自動取り込み完了: ${skippedCount}件の予定は既に取り込まれています',
+            'Outlook自動取り込み完了\n取得: ${events.length}件\n追加: 0件\nスキップ: $skippedCount件（既に取り込まれています）',
           );
+        } else {
+          SnackBarService.showGlobalInfo(
+            'Outlook自動取り込み完了\n取得: ${events.length}件\n取り込む予定はありませんでした',
+          );
+        }
+      } else {
+        // 通常のメッセージ表示
+        if (addedCount > 0 || skippedCount > 0) {
+          if (addedCount > 0) {
+            SnackBarService.showGlobalSuccess(
+              'Outlook自動取り込み完了: ${addedCount}件の予定を追加しました',
+            );
+          } else if (skippedCount > 0) {
+            SnackBarService.showGlobalInfo(
+              'Outlook自動取り込み完了: ${skippedCount}件の予定は既に取り込まれています',
+            );
+          }
         }
       }
     } catch (e) {
       ErrorHandler.logError('Outlook自動取込', e);
       if (kDebugMode) {
         print('Outlook自動取込エラー: $e');
+      }
+      if (showDialog) {
+        SnackBarService.showGlobalError(
+          'Outlook自動取り込み中にエラーが発生しました。\nエラー: $e',
+        );
       }
     }
   }

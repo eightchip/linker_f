@@ -27,10 +27,52 @@ import 'group_card.dart';
 import '../widgets/unified_dialog.dart';
 import '../widgets/window_control_buttons.dart';
 import '../widgets/shortcut_help_dialog.dart';
+import '../widgets/global_menu_dialog.dart';
 import 'help_center_screen.dart';
 import 'settings_screen.dart';
 import 'task_screen.dart';
+import 'schedule_calendar_screen.dart';
 
+// ショートカットキー用のIntentクラス
+class _AddGroupIntent extends Intent {
+  const _AddGroupIntent();
+}
+
+class _SearchIntent extends Intent {
+  const _SearchIntent();
+}
+
+class _TaskScreenIntent extends Intent {
+  const _TaskScreenIntent();
+}
+
+class _MemoBulkEditIntent extends Intent {
+  const _MemoBulkEditIntent();
+}
+
+class _GroupOrderIntent extends Intent {
+  const _GroupOrderIntent();
+}
+
+class _ShortcutHelpIntent extends Intent {
+  const _ShortcutHelpIntent();
+}
+
+class _SettingsIntent extends Intent {
+  const _SettingsIntent();
+}
+
+class _PopupMenuIntent extends Intent {
+  const _PopupMenuIntent();
+}
+
+class _EscapeIntent extends Intent {
+  const _EscapeIntent();
+}
+
+class _TabIntent extends Intent {
+  const _TabIntent();
+}
 
 // メモ一括編集ダイアログのヘルパークラス
 class _MemoBulkEditHelper {
@@ -361,7 +403,9 @@ class _TextMatch {
 }
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  final String? initialMenuAction;
+  
+  const HomeScreen({super.key, this.initialMenuAction});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -369,6 +413,197 @@ class HomeScreen extends ConsumerStatefulWidget {
   // メモ一括編集ダイアログを表示するstaticメソッド（タスク画面からも呼び出し可能）
   static void showMemoBulkEditDialog(BuildContext context, WidgetRef ref) {
     _MemoBulkEditHelper.showMemoBulkEditDialog(context, ref);
+  }
+
+  // リンク管理画面のメソッドを静的メソッドとして公開（タスク管理画面からも呼び出し可能）
+  static void showAddGroupDialog(BuildContext context, WidgetRef ref) {
+    final titleController = TextEditingController();
+    int selectedColor = Colors.black.value; // デフォルト黒
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Add New Group'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Group Title',
+                  hintText: 'Enter group title...',
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              ColorPaletteSelector(
+                selectedColor: selectedColor,
+                onColorSelected: (color) => setState(() => selectedColor = color),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleController.text.isNotEmpty) {
+                  ref.read(linkViewModelProvider.notifier).createGroup(
+                    title: titleController.text,
+                    color: selectedColor,
+                    labels: null,
+                  );
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void showGroupOrderDialog(BuildContext context, WidgetRef ref) {
+    final groups = ref.read(linkViewModelProvider).groups;
+    if (groups.length < 2) {
+      SnackBarService.showWarning(context, '並び順を変更するには2つ以上のグループが必要です');
+      return;
+    }
+
+    // 並び順を変更可能なリストを作成
+    List<Group> orderedGroups = List<Group>.from(groups);
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.sort, color: Colors.purple),
+              SizedBox(width: 8),
+              Text('グループの並び順を変更'),
+            ],
+          ),
+          content: SizedBox(
+            width: 500,
+            height: 600,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    'ドラッグ&ドロップで並び順を変更できます',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ),
+                Expanded(
+                  child: ReorderableListView.builder(
+                    itemCount: orderedGroups.length,
+                    onReorder: (oldIndex, newIndex) {
+                      setDialogState(() {
+                        if (oldIndex < newIndex) {
+                          newIndex -= 1;
+                        }
+                        final item = orderedGroups.removeAt(oldIndex);
+                        orderedGroups.insert(newIndex, item);
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final group = orderedGroups[index];
+                      final groupColor = group.color != null ? Color(group.color!) : Colors.blue;
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      
+                      return Card(
+                        key: ValueKey(group.id),
+                        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        color: isDark ? Colors.grey[850] : Colors.grey[50],
+                        child: ListTile(
+                          leading: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.drag_handle,
+                                color: Colors.grey[500],
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: groupColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.folder,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                          title: Text(
+                            group.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text('${group.items.length}件のリンク'),
+                          trailing: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: groupColor,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(linkViewModelProvider.notifier).updateGroupsOrder(orderedGroups);
+                Navigator.pop(context);
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void showShortcutHelp(BuildContext context) {
+    showShortcutHelpDialog(
+      context,
+      title: 'リンク管理ショートカット',
+      entries: const [
+        ShortcutHelpEntry('Ctrl + N', 'グループを追加'),
+        ShortcutHelpEntry('Ctrl + F', '検索バーを開く'),
+        ShortcutHelpEntry('Ctrl + T', 'タスク管理画面を開く'),
+        ShortcutHelpEntry('Ctrl + E', 'メモ一括編集を開く'),
+        ShortcutHelpEntry('Ctrl + O', 'グループの並び順を変更'),
+        ShortcutHelpEntry('Ctrl + Shift + S', '設定を開く'),
+        ShortcutHelpEntry('→', '3点メニューを表示'),
+        ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
+        ShortcutHelpEntry('Esc', '検索バーを閉じる'),
+        ShortcutHelpEntry('Tab', 'リンクタイプフィルターを切り替え'),
+        ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
+      ],
+    );
   }
 }
 
@@ -397,9 +632,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // 検索バー用のFocusNode
   final FocusNode _searchFocusNode = FocusNode();
 
+  /// 初期メニューアクションを実行
+  void _executeInitialMenuAction(String action) {
+    final context = this.context;
+    if (!mounted) return;
+    
+    switch (action) {
+      case 'add_group':
+        _showAddGroupDialog(context);
+        break;
+      case 'search':
+        setState(() {
+          _showSearchBar = true;
+        });
+        // 検索バーにフォーカス
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _searchFocusNode.requestFocus();
+        });
+        break;
+      case 'group_order':
+        _showGroupOrderDialog(context);
+        break;
+      case 'shortcut_help':
+        _showShortcutHelp(context);
+        break;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+
+    // 初期メニューアクションを実行（遷移後に自動実行）
+    if (widget.initialMenuAction != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _executeInitialMenuAction(widget.initialMenuAction!);
+      });
+    }
 
     // FocusNodeのリスナーを追加
     _shortcutFocusNode.addListener(() {
@@ -701,23 +970,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   // ショートカットヘルプダイアログ
   void _showShortcutHelp(BuildContext context) {
-    showShortcutHelpDialog(
-      context,
-      title: 'リンク管理ショートカット',
-      entries: const [
-        ShortcutHelpEntry('Ctrl + N', 'グループを追加'),
-        ShortcutHelpEntry('Ctrl + F', '検索バーを開く'),
-        ShortcutHelpEntry('Ctrl + T', 'タスク管理画面を開く'),
-        ShortcutHelpEntry('Ctrl + E', 'メモ一括編集を開く'),
-        ShortcutHelpEntry('Ctrl + O', 'グループの並び順を変更'),
-        ShortcutHelpEntry('Ctrl + Shift + S', '設定を開く'),
-        ShortcutHelpEntry('→', '3点メニューを表示'),
-        ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
-        ShortcutHelpEntry('Esc', '検索バーを閉じる'),
-        ShortcutHelpEntry('Tab', 'リンクタイプフィルターを切り替え'),
-        ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
-      ],
-    );
+    HomeScreen.showShortcutHelp(context);
   }
 
   @override
@@ -809,11 +1062,168 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onDoubleTapDown: (details) {
             _showJumpButtons(details.globalPosition);
           },
-          child: KeyboardListener(
-            focusNode: _shortcutFocusNode,
-            onKeyEvent: _handleShortcut,
-            autofocus: true,
-            child: Scaffold(
+          child: Shortcuts(
+            shortcuts: <LogicalKeySet, Intent>{
+              // ショートカットキーを定義（フォーカスに依存しない）
+              LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN): const _AddGroupIntent(),
+              LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyF): const _SearchIntent(),
+              LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyT): const _TaskScreenIntent(),
+              LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyE): const _MemoBulkEditIntent(),
+              LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO): const _GroupOrderIntent(),
+              LogicalKeySet(LogicalKeyboardKey.f1): const _ShortcutHelpIntent(),
+              LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyS): const _SettingsIntent(),
+              LogicalKeySet(LogicalKeyboardKey.arrowRight): const _PopupMenuIntent(),
+              LogicalKeySet(LogicalKeyboardKey.escape): const _EscapeIntent(),
+              LogicalKeySet(LogicalKeyboardKey.tab): const _TabIntent(),
+            },
+            child: Actions(
+              actions: <Type, Action<Intent>>{
+                _AddGroupIntent: CallbackAction<_AddGroupIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    final focused = FocusManager.instance.primaryFocus;
+                    if (focused?.context?.widget is! EditableText) {
+                      _showAddGroupDialog(context);
+                    }
+                    return null;
+                  },
+                ),
+                _SearchIntent: CallbackAction<_SearchIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    final focused = FocusManager.instance.primaryFocus;
+                    if (focused?.context?.widget is! EditableText) {
+                      setState(() {
+                        _showSearchBar = true;
+                      });
+                      // 検索バーが表示された後にフォーカスを設定
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _searchFocusNode.requestFocus();
+                      });
+                    }
+                    return null;
+                  },
+                ),
+                _TaskScreenIntent: CallbackAction<_TaskScreenIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    final focused = FocusManager.instance.primaryFocus;
+                    if (focused?.context?.widget is! EditableText) {
+                      _showTaskScreen(context);
+                    }
+                    return null;
+                  },
+                ),
+                _MemoBulkEditIntent: CallbackAction<_MemoBulkEditIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    final focused = FocusManager.instance.primaryFocus;
+                    if (focused?.context?.widget is! EditableText) {
+                      _showMemoBulkEditDialog(context);
+                    }
+                    return null;
+                  },
+                ),
+                _GroupOrderIntent: CallbackAction<_GroupOrderIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    final focused = FocusManager.instance.primaryFocus;
+                    if (focused?.context?.widget is! EditableText) {
+                      _showGroupOrderDialog(context);
+                    }
+                    return null;
+                  },
+                ),
+                _ShortcutHelpIntent: CallbackAction<_ShortcutHelpIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    _showShortcutHelp(context);
+                    return null;
+                  },
+                ),
+                _SettingsIntent: CallbackAction<_SettingsIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    _showSettingsScreen(context);
+                    return null;
+                  },
+                ),
+                _PopupMenuIntent: CallbackAction<_PopupMenuIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    final focused = FocusManager.instance.primaryFocus;
+                    if (focused?.context?.widget is! EditableText) {
+                      _showPopupMenu(context);
+                    }
+                    return null;
+                  },
+                ),
+                _EscapeIntent: CallbackAction<_EscapeIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    setState(() {
+                      _showSearchBar = false;
+                      _searchQuery = '';
+                    });
+                    return null;
+                  },
+                ),
+                _TabIntent: CallbackAction<_TabIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    final focused = FocusManager.instance.primaryFocus;
+                    if (focused?.context?.widget is! EditableText) {
+                      setState(() {
+                        if (_selectedLinkTypeFilter == null) {
+                          _selectedLinkTypeFilter = LinkType.file;
+                        } else if (_selectedLinkTypeFilter == LinkType.file) {
+                          _selectedLinkTypeFilter = LinkType.folder;
+                        } else if (_selectedLinkTypeFilter == LinkType.folder) {
+                          _selectedLinkTypeFilter = LinkType.url;
+                        } else if (_selectedLinkTypeFilter == LinkType.url) {
+                          _selectedLinkTypeFilter = null; // すべてに戻る
+                        }
+                      });
+                    }
+                    return null;
+                  },
+                ),
+              },
+              child: Focus(
+                autofocus: true,
+                canRequestFocus: true,
+                skipTraversal: true,
+                child: Scaffold(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.95),
               appBar: AppBar(
                 title: Row(
@@ -850,136 +1260,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onPressed: () => _showShortcutHelp(context),
                     ),
                   ),
-                  // 3点ドットメニュー（全ての機能を統合）
-                  PopupMenuButton<String>(
+                  // 3点ドットメニュー（グローバルメニュー）
+                  IconButton(
                     icon: Icon(Icons.more_vert, size: iconSize),
-                    tooltip: 'その他のオプション',
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'add_group':
-                          _showAddGroupDialog(context);
-                          break;
-                        case 'search':
-                          setState(() {
-                            _showSearchBar = !_showSearchBar;
-                            if (!_showSearchBar) _searchQuery = '';
-                          });
-                          break;
-                        case 'task':
-                          _showTaskScreen(context);
-                          break;
-                        case 'memo_bulk_edit':
-                          _showMemoBulkEditDialog(context);
-                          break;
-                        case 'group_order':
-                          _showGroupOrderDialog(context);
-                          break;
-                        case 'shortcut_help':
-                          _showShortcutHelp(context);
-                          break;
-                        case 'settings':
-                          _showSettingsScreen(context);
-                          break;
-                        case 'help_center':
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HelpCenterScreen(),
-                            ),
-                          );
-                          break;
+                    tooltip: 'グローバルメニュー',
+                    onPressed: () async {
+                      final result = await showDialog<String>(
+                        context: context,
+                        builder: (context) => const GlobalMenuDialog(),
+                      );
+                      
+                      if (result == null || !mounted) return;
+                      
+                      // 共通メニュー
+                      if (result == 'settings') {
+                        _showSettingsScreen(context);
+                      } else if (result == 'help_center') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HelpCenterScreen(),
+                          ),
+                        );
+                      } else if (result == 'memo_bulk_edit') {
+                        _showMemoBulkEditDialog(context);
+                      }
+                      // リンク管理画面のメニュー項目
+                      else if (result == 'add_group') {
+                        _showAddGroupDialog(context);
+                      } else if (result == 'search') {
+                        setState(() {
+                          _showSearchBar = !_showSearchBar;
+                          if (!_showSearchBar) _searchQuery = '';
+                        });
+                      } else if (result == 'group_order') {
+                        _showGroupOrderDialog(context);
+                      } else if (result == 'shortcut_help') {
+                        _showShortcutHelp(context);
+                      }
+                      // タスク管理画面のメニュー項目（まずタスク管理画面に遷移）
+                      else if (result == 'add_task' || result == 'bulk_select' || 
+                               result == 'export' || result == 'group_menu' || 
+                               result == 'task_template' || result == 'toggle_header') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TaskScreen(initialMenuAction: result),
+                          ),
+                        );
+                      } else if (result == 'schedule') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ScheduleCalendarScreen(),
+                          ),
+                        );
+                      } else if (result == 'task') {
+                        _showTaskScreen(context);
                       }
                     },
-                    itemBuilder: (context) => [
-                      // ①追加
-                      PopupMenuItem(
-                        value: 'add_group',
-                        child: Row(
-                          children: [
-                            Icon(Icons.add, color: Colors.green, size: 20),
-                            SizedBox(width: 8),
-                            Text('グループを追加 (Ctrl+N)'),
-                          ],
-                        ),
-                      ),
-                      // ②検索
-                      PopupMenuItem(
-                        value: 'search',
-                        child: Row(
-                          children: [
-                            Icon(Icons.search, color: Colors.blue, size: 20),
-                            SizedBox(width: 8),
-                            Text('検索 (Ctrl+F)'),
-                          ],
-                        ),
-                      ),
-                      // ③タスク
-                      PopupMenuItem(
-                        value: 'task',
-                        child: Row(
-                          children: [
-                            Icon(Icons.task_alt, color: Colors.orange, size: 20),
-                            SizedBox(width: 8),
-                            Text('タスク管理 (Ctrl+T）'),
-                          ],
-                        ),
-                      ),
-                      // ⑤メモ一括編集
-                      PopupMenuItem(
-                        value: 'memo_bulk_edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.notes, color: Colors.teal, size: 20),
-                            SizedBox(width: 8),
-                            Text('メモ一括編集 (Ctrl+E)'),
-                          ],
-                        ),
-                      ),
-                      // ⑥グループの並び順を変更
-                      PopupMenuItem(
-                        value: 'group_order',
-                        child: Row(
-                          children: [
-                            Icon(Icons.sort, color: Colors.purple, size: 20),
-                            SizedBox(width: 8),
-                            Text('グループの並び順を変更 (Ctrl+O)'),
-                          ],
-                        ),
-                      ),
-                      // ⑦ショートカット
-                      PopupMenuItem(
-                        value: 'shortcut_help',
-                        child: Row(
-                          children: [
-                            Icon(Icons.keyboard, color: Colors.indigo, size: 20),
-                            SizedBox(width: 8),
-                            Text('ショートカットキー (F1)'),
-                          ],
-                        ),
-                      ),
-                      // ⑧設定
-                      PopupMenuItem(
-                        value: 'settings',
-                        child: Row(
-                          children: [
-                            Icon(Icons.settings, color: Colors.grey, size: 20),
-                            SizedBox(width: 8),
-                            Text('設定 (Ctrl+Shift+S)'),
-                          ],
-                        ),
-                      ),
-                      // ⑨ヘルプセンター
-                      PopupMenuItem(
-                        value: 'help_center',
-                        child: Row(
-                          children: [
-                            Icon(Icons.help_outline, color: Colors.indigo, size: 20),
-                            SizedBox(width: 8),
-                            const Text('ヘルプセンター'),
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
                   ..._buildWindowControlButtons(),
                 ],
@@ -1125,6 +1464,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
+    ),
+    )
     );
   }
 
