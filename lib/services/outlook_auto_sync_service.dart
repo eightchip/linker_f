@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/outlook_calendar_service.dart';
 import '../services/settings_service.dart';
@@ -6,6 +7,7 @@ import '../services/snackbar_service.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import '../utils/error_handler.dart';
+import '../widgets/unified_dialog.dart';
 
 /// Outlook自動取込サービス
 /// 個人Outlookカレンダーから予定を自動的に取り込む
@@ -19,8 +21,9 @@ class OutlookAutoSyncService {
   
   /// 自動取込を実行
   /// [ref] RiverpodのRef（TaskViewModelとScheduleViewModelにアクセスするため）
+  /// [context] BuildContext（ダイアログ表示用、nullの場合はスナックバーのみ）
   /// [showDialog] ダイアログを表示するかどうか（起動時はtrue）
-  Future<void> syncOutlookCalendar(WidgetRef ref, {bool showDialog = false}) async {
+  Future<void> syncOutlookCalendar(WidgetRef ref, {BuildContext? context, bool showDialog = false}) async {
     try {
       // 設定を確認
       final isEnabled = _settingsService.outlookAutoSyncEnabled;
@@ -47,6 +50,26 @@ class OutlookAutoSyncService {
       }
       if (kDebugMode) {
         print('Outlook可用性確認完了');
+      }
+
+      // 確認ダイアログを表示（showDialogがtrueでcontextが利用可能な場合）
+      if (showDialog && context != null) {
+        final confirmed = await UnifiedDialogHelper.showConfirmDialog(
+          context,
+          title: 'Outlookスケジュール取得',
+          message: 'スケジュールを取得しますか？',
+          confirmText: '取得',
+          cancelText: 'キャンセル',
+          icon: Icons.calendar_today,
+          iconColor: Colors.blue,
+        );
+        
+        if (confirmed != true) {
+          if (kDebugMode) {
+            print('ユーザーがスケジュール取得をキャンセルしました');
+          }
+          return;
+        }
       }
 
       // 専用タスクを取得または作成
@@ -157,18 +180,48 @@ class OutlookAutoSyncService {
       // メッセージを表示
       if (showDialog) {
         // ダイアログを表示する場合
-        if (addedCount > 0) {
-          SnackBarService.showGlobalSuccess(
-            'Outlook自動取り込み完了\n取得: ${events.length}件\n追加: $addedCount件\nスキップ: $skippedCount件',
-          );
-        } else if (skippedCount > 0) {
-          SnackBarService.showGlobalInfo(
-            'Outlook自動取り込み完了\n取得: ${events.length}件\n追加: 0件\nスキップ: $skippedCount件（既に取り込まれています）',
-          );
+        if (context != null) {
+          // 結果ダイアログを表示
+          if (addedCount > 0) {
+            await UnifiedDialogHelper.showInfoDialog(
+              context,
+              title: 'Outlook自動取り込み完了',
+              message: '取得: ${events.length}件\n追加: $addedCount件\nスキップ: $skippedCount件',
+              icon: Icons.check_circle,
+              iconColor: Colors.green,
+            );
+          } else if (skippedCount > 0) {
+            await UnifiedDialogHelper.showInfoDialog(
+              context,
+              title: 'Outlook自動取り込み完了',
+              message: '取得: ${events.length}件\n追加: 0件\nスキップ: $skippedCount件（既に取り込まれています）',
+              icon: Icons.info_outline,
+              iconColor: Colors.blue,
+            );
+          } else {
+            await UnifiedDialogHelper.showInfoDialog(
+              context,
+              title: 'Outlook自動取り込み完了',
+              message: '取得: ${events.length}件\n取り込む予定はありませんでした',
+              icon: Icons.info_outline,
+              iconColor: Colors.blue,
+            );
+          }
         } else {
-          SnackBarService.showGlobalInfo(
-            'Outlook自動取り込み完了\n取得: ${events.length}件\n取り込む予定はありませんでした',
-          );
+          // contextがない場合はスナックバーで表示
+          if (addedCount > 0) {
+            SnackBarService.showGlobalSuccess(
+              'Outlook自動取り込み完了\n取得: ${events.length}件\n追加: $addedCount件\nスキップ: $skippedCount件',
+            );
+          } else if (skippedCount > 0) {
+            SnackBarService.showGlobalInfo(
+              'Outlook自動取り込み完了\n取得: ${events.length}件\n追加: 0件\nスキップ: $skippedCount件（既に取り込まれています）',
+            );
+          } else {
+            SnackBarService.showGlobalInfo(
+              'Outlook自動取り込み完了\n取得: ${events.length}件\n取り込む予定はありませんでした',
+            );
+          }
         }
       } else {
         // 通常のメッセージ表示

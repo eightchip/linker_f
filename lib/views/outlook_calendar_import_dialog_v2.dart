@@ -556,11 +556,17 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
         }
       }
 
+      // 予定情報から候補タスクを推測
+      final eventSubject = (item.event['Subject'] as String? ?? '').toLowerCase();
+      final eventLocation = (item.event['Location'] as String? ?? '').toLowerCase();
+      
       selectedTask ??= await showDialog<TaskItem>(
         context: context,
         builder: (context) => _TaskSelectionDialog(
           tasks: _incompleteTasks,
           preselectedTaskId: _preselectedTaskId,
+          eventSubject: eventSubject,
+          eventLocation: eventLocation,
         ),
       );
 
@@ -944,8 +950,15 @@ class _FilteredEvent {
 class _TaskSelectionDialog extends StatefulWidget {
   final List<TaskItem> tasks;
   final String? preselectedTaskId;
+  final String? eventSubject;
+  final String? eventLocation;
 
-  const _TaskSelectionDialog({required this.tasks, this.preselectedTaskId});
+  const _TaskSelectionDialog({
+    required this.tasks,
+    this.preselectedTaskId,
+    this.eventSubject,
+    this.eventLocation,
+  });
 
   @override
   State<_TaskSelectionDialog> createState() => _TaskSelectionDialogState();
@@ -954,6 +967,15 @@ class _TaskSelectionDialog extends StatefulWidget {
 class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
   final TextEditingController _searchController = TextEditingController();
   TaskStatus? _selectedStatus;
+  bool _showAllTasks = false;
+  List<TaskItem>? _candidateTasks;
+
+  @override
+  void initState() {
+    super.initState();
+    // 候補タスクを推測
+    _candidateTasks = _findCandidateTasks();
+  }
 
   @override
   void dispose() {
@@ -961,9 +983,77 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
     super.dispose();
   }
 
+  /// 予定情報から候補タスクを推測
+  List<TaskItem> _findCandidateTasks() {
+    if (widget.eventSubject == null && widget.eventLocation == null) {
+      return widget.tasks;
+    }
+
+    final candidates = <({TaskItem task, int score})>[];
+
+    for (final task in widget.tasks) {
+      int score = 0;
+      final taskTitle = task.title.toLowerCase();
+      final taskDescription = task.description?.toLowerCase() ?? '';
+      final taskTags = task.tags.map((t) => t.toLowerCase()).toList();
+
+      // タイトルマッチング（高スコア）
+      if (widget.eventSubject != null && widget.eventSubject!.isNotEmpty) {
+        if (taskTitle.contains(widget.eventSubject!) || widget.eventSubject!.contains(taskTitle)) {
+          score += 10;
+        }
+        // 部分マッチ
+        final subjectWords = widget.eventSubject!.split(RegExp(r'\s+'));
+        for (final word in subjectWords) {
+          if (word.length > 2 && taskTitle.contains(word)) {
+            score += 3;
+          }
+        }
+      }
+
+      // 説明文マッチング
+      if (widget.eventSubject != null && taskDescription.contains(widget.eventSubject!)) {
+        score += 5;
+      }
+
+      // 場所マッチング
+      if (widget.eventLocation != null && widget.eventLocation!.isNotEmpty) {
+        if (taskDescription.contains(widget.eventLocation!)) {
+          score += 5;
+        }
+        if (taskTags.any((tag) => tag.contains(widget.eventLocation!))) {
+          score += 3;
+        }
+      }
+
+      // タグマッチング
+      if (widget.eventSubject != null) {
+        for (final tag in taskTags) {
+          if (tag.contains(widget.eventSubject!) || widget.eventSubject!.contains(tag)) {
+            score += 2;
+          }
+        }
+      }
+
+      if (score > 0) {
+        candidates.add((task: task, score: score));
+      }
+    }
+
+    // スコアでソート（降順）
+    candidates.sort((a, b) => b.score.compareTo(a.score));
+
+    // 上位5件を返す（スコアが0より大きいもののみ）
+    return candidates.take(5).map((c) => c.task).toList();
+  }
+
   List<TaskItem> get _filteredTasks {
     final query = _searchController.text.trim().toLowerCase();
-    return widget.tasks.where((task) {
+    final tasksToShow = _showAllTasks || _candidateTasks == null || _candidateTasks!.isEmpty
+        ? widget.tasks
+        : _candidateTasks!;
+
+    return tasksToShow.where((task) {
       final matchesStatus = _selectedStatus == null || task.status == _selectedStatus;
       if (!matchesStatus) return false;
 
@@ -1109,6 +1199,41 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
                 ),
               ],
             ),
+            // 候補タスクがある場合の表示
+            if (!_showAllTasks && _candidateTasks != null && _candidateTasks!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.lightbulb_outline, color: Colors.blue.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${_candidateTasks!.length}件の候補タスクが見つかりました',
+                        style: TextStyle(
+                          color: Colors.blue.shade900,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _showAllTasks = true;
+                        });
+                      },
+                      child: const Text('候補をさらに表示'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const Divider(),
             Expanded(
               child: filteredTasks.isEmpty

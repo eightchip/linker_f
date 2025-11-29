@@ -100,12 +100,12 @@ class OutlookCalendarService {
         '-StartDate', start.toIso8601String(),
         '-EndDate', end.toIso8601String(),
       ]).timeout(
-        const Duration(seconds: 60),
+        const Duration(seconds: 45), // タイムアウトを短縮（45秒）
         onTimeout: () {
           if (kDebugMode) {
-            print('Outlook予定取得: タイムアウト');
+            print('Outlook予定取得: タイムアウト（45秒）');
           }
-          return ProcessResult(0, 1, 'timeout', 'PowerShell実行がタイムアウトしました（60秒）');
+          return ProcessResult(0, 1, 'timeout', 'PowerShell実行がタイムアウトしました（45秒）');
         },
       );
 
@@ -119,6 +119,13 @@ class OutlookCalendarService {
       }
 
       final output = result.stdout.toString().trim();
+      if (output.isEmpty) {
+        if (kDebugMode) {
+          print('PowerShellスクリプトの出力が空です');
+        }
+        return [];
+      }
+      
       return _parseJsonList(output);
     } catch (e, stackTrace) {
       if (kDebugMode) {

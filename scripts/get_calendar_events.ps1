@@ -15,6 +15,7 @@ $outlook = $null
 $namespace = $null
 $calendar = $null
 $items = $null
+$filteredItems = $null
 $rawEvents = @()
 
 try {
@@ -48,35 +49,46 @@ try {
     }
     
     $items.IncludeRecurrences = $true
+    $items.Sort("[Start]", $true)  # 開始日時でソート（昇順）
     
-    # アイテムを安全に列挙
-    $itemCount = $items.Count
-    for ($i = 1; $i -le $itemCount; $i++) {
-        $item = $null
+    # Restrictメソッドを使用して日付範囲でフィルタリング（より安全で効率的）
+    $filter = "[Start] >= '" + $startDate.ToString("yyyy-MM-ddTHH:mm:ss") + "' AND [Start] <= '" + $endDate.ToString("yyyy-MM-ddTHH:mm:ss") + "'"
+    try {
+        $filteredItems = $items.Restrict($filter)
+    } catch {
+        # Restrictが失敗した場合は全アイテムを使用（後でフィルタリング）
+        Write-Warning "Restrictメソッドが失敗しました。全アイテムを使用します: $($_.Exception.Message)"
+        $filteredItems = $items
+    }
+    
+    # フィルタリングされたアイテムを安全に列挙（foreachを使用）
+    $processedCount = 0
+    $maxItems = 10000  # 最大処理件数を制限（無限ループ防止）
+    
+    foreach ($item in $filteredItems) {
+        if ($processedCount -ge $maxItems) {
+            Write-Warning "最大処理件数（$maxItems件）に達しました。処理を中断します。"
+            break
+        }
+        
         try {
-            $item = $items.Item($i)
-            if ($null -eq $item) { continue }
-            
             # 型チェック
             if (-not ($item -is [Microsoft.Office.Interop.Outlook.AppointmentItem])) { 
-                if ($item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($item) | Out-Null }
                 continue 
             }
             
-            # 日付範囲チェック
+            # 日付範囲チェック（Restrictでフィルタリング済みだが、念のため再チェック）
             if ($null -eq $item.Start) { 
-                if ($item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($item) | Out-Null }
                 continue 
             }
             
+            $itemStart = $null
             try {
                 $itemStart = [DateTime]$item.Start
                 if ($itemStart -lt $startDate -or $itemStart -gt $endDate) { 
-                    if ($item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($item) | Out-Null }
                     continue 
                 }
             } catch {
-                if ($item) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($item) | Out-Null }
                 continue
             }
             
@@ -109,28 +121,18 @@ try {
                 if ($null -ne $item.IsOnlineMeeting) { $event.IsOnlineMeeting = [bool]$item.IsOnlineMeeting }
                 
                 $rawEvents += $event
+                $processedCount++
             } catch {
                 # 個別アイテムの処理エラーは無視して続行
-            } finally {
-                if ($item) { 
-                    try {
-                        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($item) | Out-Null
-                    } catch {
-                        # 解放エラーは無視
-                    }
-                    $item = $null
-                }
+            }
+            
+            # 定期的にガベージコレクションを実行（メモリリーク防止）
+            if ($processedCount % 500 -eq 0) {
+                [System.GC]::Collect()
+                [System.GC]::WaitForPendingFinalizers()
             }
         } catch {
-            # アイテム取得エラーは無視して続行
-            if ($item) { 
-                try {
-                    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($item) | Out-Null
-                } catch {
-                    # 解放エラーは無視
-                }
-                $item = $null
-            }
+            # アイテム処理エラーは無視して続行
         }
     }
 
@@ -153,26 +155,34 @@ try {
     Write-Error "予定取得エラー: $($_.Exception.Message)"
     @() | ConvertTo-Json
 } finally {
-    # COMオブジェクトの安全な解放
-    if ($items) { 
+    # フィルタリングされたアイテムコレクションを解放（itemsとは別のオブジェクトの場合）
+    if ($null -ne $filteredItems -and $filteredItems -ne $items) {
+        try {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($filteredItems) | Out-Null
+        } catch { }
+        $filteredItems = $null
+    }
+    
+    # COMオブジェクトの安全な解放（逆順で解放）
+    if ($null -ne $items) { 
         try {
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject($items) | Out-Null
         } catch { }
         $items = $null
     }
-    if ($calendar) { 
+    if ($null -ne $calendar) { 
         try {
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject($calendar) | Out-Null
         } catch { }
         $calendar = $null
     }
-    if ($namespace) { 
+    if ($null -ne $namespace) { 
         try {
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject($namespace) | Out-Null
         } catch { }
         $namespace = $null
     }
-    if ($outlook) { 
+    if ($null -ne $outlook) { 
         try {
             # Outlookを明示的に終了しない（他のプロセスが使用している可能性があるため）
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook) | Out-Null
@@ -186,5 +196,8 @@ try {
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
     [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
+    
+    # 追加の待機時間（COMオブジェクトの完全な解放を確実にする）
+    Start-Sleep -Milliseconds 200
 }
-

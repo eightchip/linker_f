@@ -131,6 +131,10 @@ class _ToggleListViewModeIntent extends Intent {
   const _ToggleListViewModeIntent();
 }
 
+class _HelpCenterIntent extends Intent {
+  const _HelpCenterIntent();
+}
+
 class TaskScreen extends ConsumerStatefulWidget {
   final String? initialMenuAction;
   
@@ -238,6 +242,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   @override
   void initState() {
     super.initState();
+    print('🔵 [initState] TaskScreen初期化開始');
+    
+    // 列数の読み込みは_loadListViewMode()で行う（Hiveボックスが開かれた後）
+    
     _settingsService = SettingsService.instance;
     _searchFocusNode = FocusNode();
     _searchController = TextEditingController();
@@ -252,8 +260,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     _loadSavedFilterPresets();
     // カスタム順序を読み込み
     _loadCustomTaskOrder();
-    // リストビュー表示モードを読み込み
-    _loadListViewMode();
     
     // 検索コントローラーのリスナーを追加（初期化直後）
     _searchController.addListener(() {
@@ -293,6 +299,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     
     // WidgetsBindingObserverを追加
     WidgetsBinding.instance.addObserver(this);
+    
+    // リストビュー表示モードを読み込み（mountedが確実にtrueになった後）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        print('🔵 [initState] addPostFrameCallback: 列数を読み込み');
+        _loadListViewMode();
+      }
+    });
   }
   
   @override
@@ -395,7 +409,34 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   }
 
   @override
+  void deactivate() {
+    // 画面が非表示になった時に列数を保存
+    print('🔴 [deactivate] TaskScreen非表示、列数を保存: $_compactGridColumns');
+    _saveListViewMode().catchError((e) {
+      print('🔴 [deactivate] 列数設定保存エラー: $e');
+    });
+    super.deactivate();
+  }
+  
+  @override
+  void activate() {
+    // 画面が再表示された時に列数を読み込み
+    super.activate();
+    print('🟡 [activate] TaskScreen再表示、列数を読み込み');
+    if (mounted) {
+      _loadListViewMode().catchError((e) {
+        print('🟡 [activate] 列数読み込みエラー: $e');
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    // 画面破棄前に列数設定を確実に保存（念のため）
+    print('🔴 [dispose] TaskScreen破棄、列数を保存: $_compactGridColumns');
+    _saveListViewMode().catchError((e) {
+      print('🔴 [dispose] 列数設定保存エラー: $e');
+    });
     WidgetsBinding.instance.removeObserver(this);
     _rootKeyFocus.dispose();
     _searchController.dispose();
@@ -1472,6 +1513,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           LogicalKeySet(LogicalKeyboardKey.arrowRight): const _ShowPopupMenuIntent(),
           LogicalKeySet(LogicalKeyboardKey.arrowDown): const _FocusMenuIntent(),
           LogicalKeySet(LogicalKeyboardKey.f1): const _ShowShortcutHelpIntent(),
+          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyH): const _HelpCenterIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ): const _ToggleDetailIntent(),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyX): const _ToggleListViewModeIntent(),
         },
@@ -1597,6 +1639,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 return null;
               },
             ),
+            _HelpCenterIntent: CallbackAction<_HelpCenterIntent>(
+              onInvoke: (_) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HelpCenterScreen(),
+                  ),
+                );
+                return null;
+              },
+            ),
             _ToggleDetailIntent: CallbackAction<_ToggleDetailIntent>(
               onInvoke: (_) {
                 // Ctrl+Z: 詳細トグル（すべて詳細表示/非表示）
@@ -1626,7 +1679,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     _listViewMode = _listViewMode == ListViewMode.compact 
                         ? ListViewMode.standard 
                         : ListViewMode.compact;
-                    _saveListViewMode();
+                  });
+                  _saveListViewMode().catchError((e) {
+                    print('列数設定保存エラー: $e');
                   });
                 }
                 _restoreFocusIfNeeded();
@@ -2340,7 +2395,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   onPressed: (index) {
                     setState(() {
                       _listViewMode = index == 0 ? ListViewMode.compact : ListViewMode.standard;
-                      _saveListViewMode();
+                    });
+                    _saveListViewMode().catchError((e) {
+                      print('列数設定保存エラー: $e');
                     });
                   },
                   borderRadius: BorderRadius.circular(8),
@@ -2396,11 +2453,25 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       ],
                     ),
                     tooltip: 'グリッド列数を変更',
-                    onSelected: (value) {
+                    onSelected: (value) async {
+                      print('🟡 [列数変更] onSelected呼び出し: 新しい値=$value, 現在の値=$_compactGridColumns');
                       setState(() {
                         _compactGridColumns = value;
-                        _saveListViewMode();
                       });
+                      print('🟡 [列数変更] setState後: _compactGridColumns=$_compactGridColumns');
+                      // 確実に保存（同期実行）
+                      await _saveListViewMode();
+                      // 保存が完了したことを確認
+                      final box = Hive.box('filterPresets');
+                      final savedValue = box.get('compactGridColumns', defaultValue: 4) as int;
+                      print('🟡 [列数変更] 保存完了確認: 保存値=$savedValue, 現在値=$_compactGridColumns');
+                      if (savedValue != _compactGridColumns) {
+                        print('⚠️ [列数変更] 警告: 保存値と現在値が一致しません！');
+                        // 再試行
+                        box.put('compactGridColumns', _compactGridColumns);
+                        await box.flush();
+                        print('🟡 [列数変更] 再保存完了');
+                      }
                     },
                     itemBuilder: (context) => [
                       for (int i = 2; i <= 8; i++)
@@ -5632,7 +5703,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         _listViewMode = _listViewMode == ListViewMode.compact 
             ? ListViewMode.standard 
             : ListViewMode.compact;
-        _saveListViewMode();
+      });
+      _saveListViewMode().catchError((e) {
+        print('列数設定保存エラー: $e');
       });
       return true;
     }
@@ -6134,39 +6207,78 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   }
 
   /// リストビュー表示モードを読み込み
-  void _loadListViewMode() {
+  Future<void> _loadListViewMode() async {
+    print('🔵 [_loadListViewMode] 開始');
     try {
-      final box = Hive.box('filterPresets');
+      // Hiveボックスが開かれていない場合は開く
+      Box box;
+      try {
+        box = Hive.box('filterPresets');
+        if (!box.isOpen) {
+          print('🔵 [_loadListViewMode] ボックスが開かれていないため開きます');
+          box = await Hive.openBox('filterPresets');
+        }
+      } catch (e) {
+        print('🔵 [_loadListViewMode] ボックスを開きます: $e');
+        box = await Hive.openBox('filterPresets');
+      }
+      
       final modeString = box.get('listViewMode') as String?;
       final columns = box.get('compactGridColumns', defaultValue: 4) as int;
       
+      print('🔵 [_loadListViewMode] Hiveから読み込んだ値: columns=$columns, modeString=$modeString');
+      print('🔵 [_loadListViewMode] 現在の値: _compactGridColumns=$_compactGridColumns, _listViewMode=$_listViewMode');
+      
+      // 直接値を設定
       if (modeString != null) {
-        setState(() {
-          _listViewMode = modeString == 'compact' ? ListViewMode.compact : ListViewMode.standard;
-          _compactGridColumns = columns;
-        });
-      } else {
-        setState(() {
-          _compactGridColumns = columns;
-        });
+        _listViewMode = modeString == 'compact' ? ListViewMode.compact : ListViewMode.standard;
       }
-    } catch (e) {
+      _compactGridColumns = columns;
+      
+      print('🔵 [_loadListViewMode] 設定後の値: _compactGridColumns=$_compactGridColumns, _listViewMode=$_listViewMode');
+      
+      // UI更新のためにsetStateを呼ぶ
+      if (mounted) {
+        setState(() {});
+        print('🔵 [_loadListViewMode] setState呼び出し完了');
+      } else {
+        print('🔵 [_loadListViewMode] mounted=falseのためsetStateをスキップ');
+      }
+    } catch (e, stackTrace) {
+      print('🔵 [_loadListViewMode] エラー: $e');
+      print('🔵 [_loadListViewMode] スタックトレース: $stackTrace');
       _listViewMode = ListViewMode.compact;
       _compactGridColumns = 4;
+      if (mounted) {
+        setState(() {});
+      }
     }
+    print('🔵 [_loadListViewMode] 終了');
   }
 
 
   /// リストビュー表示モードを保存
-  void _saveListViewMode() {
+  Future<void> _saveListViewMode() async {
+    print('🟢 [_saveListViewMode] 開始: _compactGridColumns=$_compactGridColumns, _listViewMode=$_listViewMode');
     try {
       final box = Hive.box('filterPresets');
       final modeString = _listViewMode == ListViewMode.compact ? 'compact' : 'standard';
+      
+      print('🟢 [_saveListViewMode] 保存前のHive値: compactGridColumns=${box.get('compactGridColumns', defaultValue: 4)}');
+      
       box.put('listViewMode', modeString);
       box.put('compactGridColumns', _compactGridColumns);
+      
+      print('🟢 [_saveListViewMode] 保存後のHive値（flush前）: compactGridColumns=${box.get('compactGridColumns', defaultValue: 4)}');
+      
+      await box.flush(); // 確実にディスクに保存
+      
+      print('🟢 [_saveListViewMode] flush完了');
+      print('🟢 [_saveListViewMode] 最終確認: compactGridColumns=${box.get('compactGridColumns', defaultValue: 4)}');
     } catch (e) {
-      // エラーは無視
+      print('🟢 [_saveListViewMode] エラー: $e');
     }
+    print('🟢 [_saveListViewMode] 終了');
   }
 
   /// 保存されたフィルタープリセットを読み込み

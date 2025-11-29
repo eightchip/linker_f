@@ -63,7 +63,7 @@ class _GlobalMenuDialogState extends ConsumerState<GlobalMenuDialog> {
                   _buildMenuItem(
                     icon: Icons.help_outline,
                     iconColor: Colors.indigo,
-                    title: 'ヘルプセンター',
+                    title: 'ヘルプセンター (Ctrl+H)',
                     value: 'help_center',
                   ),
                   _buildMenuItem(

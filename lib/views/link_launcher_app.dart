@@ -6,6 +6,7 @@ import '../services/settings_service.dart';
 import '../services/schedule_reminder_service.dart';
 import 'home_screen.dart';
 import 'task_screen.dart';
+import '../main.dart' show navigatorKey;
 
 // 起動画面を決定するProvider
 final startScreenProvider = FutureProvider<Widget>((ref) async {
@@ -35,8 +36,6 @@ class LinkLauncherApp extends ConsumerStatefulWidget {
 }
 
 class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
-  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
   @override
   void initState() {
     super.initState();
@@ -86,7 +85,7 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
     });
     
     return MaterialApp(
-      navigatorKey: navigatorKey,
+      navigatorKey: navigatorKey, // グローバルなnavigatorKeyを使用
       title: 'Link Navigator',
       debugShowCheckedModeBanner: false,
       // ちらつきを防ぐための設定

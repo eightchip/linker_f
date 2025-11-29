@@ -486,8 +486,10 @@ Future<void> _initializeProviders(WidgetRef ref) async {
     final uiNotifier = ref.read(uiCustomizationProvider.notifier);
     uiNotifier.refreshSettings();
     
-    // Outlook自動取込の初期化
-    await _initializeOutlookAutoSync(ref);
+    // Outlook自動取込の初期化（少し遅延してcontextが利用可能になるのを待つ）
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      await _initializeOutlookAutoSync(ref);
+    });
   } catch (e) {
     // エラーが発生してもアプリケーションは継続
   }
@@ -678,9 +680,12 @@ Future<void> _initializeOutlookAutoSync(WidgetRef ref) async {
     
     print('Outlook自動取込を開始します');
     
+    // navigatorKeyからcontextを取得
+    final context = navigatorKey.currentContext;
+    
     // 初回同期を実行（アプリ起動時、ダイアログを表示）
     final autoSyncService = OutlookAutoSyncService();
-    await autoSyncService.syncOutlookCalendar(ref, showDialog: true);
+    await autoSyncService.syncOutlookCalendar(ref, context: context, showDialog: true);
     
     // 自動取込頻度に応じて定期実行を開始
     final frequency = settingsService.outlookAutoSyncFrequency;

@@ -74,6 +74,10 @@ class _TabIntent extends Intent {
   const _TabIntent();
 }
 
+class _HelpCenterIntent extends Intent {
+  const _HelpCenterIntent();
+}
+
 // メモ一括編集ダイアログのヘルパークラス
 class _MemoBulkEditHelper {
   static Color getAdjustedColor(int baseColor, double intensity, double contrast) {
@@ -1071,6 +1075,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyE): const _MemoBulkEditIntent(),
               LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyO): const _GroupOrderIntent(),
               LogicalKeySet(LogicalKeyboardKey.f1): const _ShortcutHelpIntent(),
+              LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyH): const _HelpCenterIntent(),
               LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyS): const _SettingsIntent(),
               LogicalKeySet(LogicalKeyboardKey.arrowRight): const _PopupMenuIntent(),
               LogicalKeySet(LogicalKeyboardKey.escape): const _EscapeIntent(),
@@ -1156,6 +1161,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return null;
                     }
                     _showShortcutHelp(context);
+                    return null;
+                  },
+                ),
+                _HelpCenterIntent: CallbackAction<_HelpCenterIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HelpCenterScreen(),
+                      ),
+                    );
                     return null;
                   },
                 ),
