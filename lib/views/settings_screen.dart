@@ -4552,26 +4552,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.folder, color: Colors.grey, size: 12),
-              const SizedBox(width: 4),
-              Text(
-                '格納場所: $location',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade600,
-                ),
+              Row(
+                children: [
+                  Icon(Icons.folder, color: Colors.grey, size: 12),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '格納場所:\n$location',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Icon(Icons.play_arrow, color: Colors.green, size: 12),
-              const SizedBox(width: 4),
-              Text(
-                '実行方法: $usage',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.green.shade600,
-                ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.play_arrow, color: Colors.green, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    '実行方法: $usage',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.green.shade600,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -5707,37 +5719,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(height: 12),
                       
-                      _buildPowerShellFileInfo(
-                        'company_outlook_test.ps1',
-                        'Outlook接続テスト',
-                        'Outlookアプリケーションとの接続をテストします',
-                        '%APPDATA%\\Apps\\',
-                        '手動実行',
-                      ),
-                      
-                      
-                      _buildPowerShellFileInfo(
-                        'compose_mail.ps1',
-                        'メール作成支援',
-                        'タスクから返信メールを作成する際の支援機能',
-                        '%APPDATA%\\Apps\\',
-                        '手動実行',
-                      ),
-                      
-                      _buildPowerShellFileInfo(
-                        'find_sent.ps1',
-                        '送信メール検索',
-                        '送信済みメールの検索・確認機能',
-                        '%APPDATA%\\Apps\\',
-                        '手動実行',
-                      ),
-                      
-                      _buildPowerShellFileInfo(
-                        'get_calendar_events.ps1',
-                        'Outlookカレンダー予定取得',
-                        'Outlookカレンダーから予定を取得してタスクに割り当てる機能',
-                        '%APPDATA%\\Apps\\',
-                        '自動実行',
+                      Builder(
+                        builder: (context) {
+                          // 実行ファイルのディレクトリパスを取得
+                          String portablePath = '実行ファイルと同じディレクトリ\\Apps';
+                          try {
+                            final executablePath = Platform.resolvedExecutable;
+                            final executableDir = File(executablePath).parent.path;
+                            portablePath = '$executableDir\\Apps';
+                          } catch (e) {
+                            // エラー時はデフォルト表示を使用
+                          }
+                          
+                          final appdataPath = Platform.environment['APPDATA'] ?? 
+                            'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
+                          
+                          return Column(
+                            children: [
+                              _buildPowerShellFileInfo(
+                                'company_outlook_test.ps1',
+                                'Outlook接続テスト',
+                                'Outlookアプリケーションとの接続をテストします',
+                                'ポータブル版: $portablePath\\\nインストール版: $appdataPath\\Apps\\',
+                                '手動実行',
+                              ),
+                              
+                              
+                              _buildPowerShellFileInfo(
+                                'compose_mail.ps1',
+                                'メール作成支援',
+                                'タスクから返信メールを作成する際の支援機能',
+                                'ポータブル版: $portablePath\\\nインストール版: $appdataPath\\Apps\\',
+                                '手動実行',
+                              ),
+                              
+                              _buildPowerShellFileInfo(
+                                'find_sent.ps1',
+                                '送信メール検索',
+                                '送信済みメールの検索・確認機能',
+                                'ポータブル版: $portablePath\\\nインストール版: $appdataPath\\Apps\\',
+                                '手動実行',
+                              ),
+                              
+                              _buildPowerShellFileInfo(
+                                'get_calendar_events.ps1',
+                                'Outlookカレンダー予定取得',
+                                'Outlookカレンダーから予定を取得してタスクに割り当てる機能',
+                                'ポータブル版: $portablePath\\\nインストール版: $appdataPath\\Apps\\',
+                                '自動実行',
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       
                       const SizedBox(height: 12),
@@ -5766,18 +5799,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Text(
-                              '• 管理者権限は不要（ユーザーレベルで実行可能）\n'
-                              '• すべてのファイルは %APPDATA%\\Apps\\ に配置してください\n'
-                              '  （例: C:\\Users\\<user>\\AppData\\Roaming\\Apps）\n'
-                              '• ファイル名は正確に一致させる必要があります\n'
-                              '• 実行ポリシーが制限されている場合は手動で許可が必要です\n'
-                              '• 会社PCのセキュリティポリシーにより動作しない場合があります',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.orange.shade700,
-                                height: 1.4,
-                              ),
+                            Builder(
+                              builder: (context) {
+                                // 実行ファイルのディレクトリパスを取得
+                                String portablePath = '実行ファイルと同じディレクトリ\\Apps';
+                                try {
+                                  final executablePath = Platform.resolvedExecutable;
+                                  final executableDir = File(executablePath).parent.path;
+                                  portablePath = '$executableDir\\Apps';
+                                } catch (e) {
+                                  // エラー時はデフォルト表示を使用
+                                }
+                                
+                                final appdataPath = Platform.environment['APPDATA'] ?? 
+                                  'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
+                                
+                                return Text(
+                                  '• 管理者権限は不要（ユーザーレベルで実行可能）\n'
+                                  '• ファイル名は正確に一致させる必要があります\n'
+                                  '• 実行ポリシーが制限されている場合は手動で許可が必要です\n'
+                                  '• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n'
+                                  '【配置場所】以下のいずれかに配置してください：\n'
+                                  '1. ポータブル版: $portablePath\n'
+                                  '2. インストール版: $appdataPath\\Apps',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.orange.shade700,
+                                    height: 1.4,
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),

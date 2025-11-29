@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/schedule_item.dart';
 import '../utils/error_handler.dart';
+import '../utils/script_path_resolver.dart';
 
 /// Outlook Calendar連携サービス
 /// Outlook COMオブジェクトを使用してカレンダーから予定を取得
@@ -78,15 +79,13 @@ class OutlookCalendarService {
       final start = startDate ?? DateTime.now();
       final end = endDate ?? DateTime.now().add(const Duration(days: 30));
 
-      // PowerShellスクリプトファイルを使用
-      final appdataPath = Platform.environment['APPDATA'] ?? 
-        'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
-      final scriptPath = '$appdataPath\\Apps\\get_calendar_events.ps1';
-      
-      // スクリプトファイルの存在確認
-      final scriptFile = File(scriptPath);
-      if (!await scriptFile.exists()) {
+      // PowerShellスクリプトファイルのパスを解決（ポータブル版対応）
+      final scriptPath = await ScriptPathResolver.resolveScriptPath('get_calendar_events.ps1');
+      if (scriptPath == null) {
         // スクリプトファイルがない場合は、インラインスクリプトを使用（後方互換性）
+        if (kDebugMode) {
+          print('📁 [OutlookCalendarService] スクリプトが見つからないため、インラインスクリプトを使用します');
+        }
         return await _getCalendarEventsInline(start, end);
       }
 

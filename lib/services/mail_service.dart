@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
 import '../models/sent_mail_log.dart';
 import '../services/email_contact_service.dart';
+import '../utils/script_path_resolver.dart';
 
 class MailService {
   static final MailService _instance = MailService._internal();
@@ -178,14 +179,10 @@ class MailService {
       final htmlBody = _createHtmlBody(body);
       await File(htmlPath).writeAsString(htmlBody, encoding: utf8);
 
-      final appdataPath = Platform.environment['APPDATA'] ?? 
-        'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
-      final scriptPath = '$appdataPath\\Apps\\compose_mail.ps1';
-      
-      // スクリプトファイルの存在確認
-      if (!await File(scriptPath).exists()) {
-        throw Exception('PowerShellスクリプトが見つかりません: $scriptPath\n'
-            'インストーラーを使用するか、手動で配置してください。');
+      // スクリプトファイルのパスを解決（ポータブル版対応）
+      final scriptPath = await ScriptPathResolver.resolveScriptPath('compose_mail.ps1');
+      if (scriptPath == null) {
+        throw Exception(ScriptPathResolver.getErrorMessage('compose_mail.ps1'));
       }
       
       // PowerShellスクリプトを実行
@@ -381,14 +378,10 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
   /// 送信済み検索（Outlook デスクトップ）
   Future<void> openOutlookSentSearch(String token) async {
     try {
-      final appdataPath = Platform.environment['APPDATA'] ?? 
-        'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
-      final scriptPath = '$appdataPath\\Apps\\find_sent.ps1';
-      
-      // スクリプトファイルの存在確認
-      if (!await File(scriptPath).exists()) {
-        throw Exception('PowerShellスクリプトが見つかりません: $scriptPath\n'
-            'インストーラーを使用するか、手動で配置してください。');
+      // スクリプトファイルのパスを解決（ポータブル版対応）
+      final scriptPath = await ScriptPathResolver.resolveScriptPath('find_sent.ps1');
+      if (scriptPath == null) {
+        throw Exception(ScriptPathResolver.getErrorMessage('find_sent.ps1'));
       }
       
       final result = await Process.run('powershell.exe', [
@@ -661,15 +654,11 @@ ${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。
   /// Outlook送信済み検索
   Future<bool> searchSentMail(String token) async {
     try {
-      final appdataPath = Platform.environment['APPDATA'] ?? 
-        'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
-      final scriptPath = '$appdataPath\\Apps\\find_sent.ps1';
-      
-      // スクリプトファイルの存在確認
-      final scriptFile = File(scriptPath);
-      if (!await scriptFile.exists()) {
+      // スクリプトファイルのパスを解決（ポータブル版対応）
+      final scriptPath = await ScriptPathResolver.resolveScriptPath('find_sent.ps1');
+      if (scriptPath == null) {
         if (kDebugMode) {
-          print('PowerShellスクリプトが見つかりません: $scriptPath');
+          print('PowerShellスクリプトが見つかりません: find_sent.ps1');
         }
         return false;
       }
