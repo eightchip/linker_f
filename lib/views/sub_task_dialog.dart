@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/sub_task.dart';
 import '../viewmodels/sub_task_viewmodel.dart';
 import '../viewmodels/task_viewmodel.dart';
+import '../l10n/app_localizations.dart';
 
 class SubTaskDialog extends ConsumerStatefulWidget {
   final String parentTaskId;
@@ -211,7 +212,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'サブタスク: ${widget.parentTaskTitle}',
+                    '${AppLocalizations.of(context)!.subtask}: ${widget.parentTaskTitle}',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
@@ -222,7 +223,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '$completedCount/$totalCount 完了',
+                    '$completedCount/$totalCount ${AppLocalizations.of(context)!.completed}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -256,13 +257,13 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                       Expanded(
                         child: TextFormField(
                           controller: _titleController,
-                          decoration: const InputDecoration(
-                            labelText: 'サブタスクタイトル *',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: '${AppLocalizations.of(context)!.subtaskTitle} *',
+                            border: const OutlineInputBorder(),
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'タイトルを入力してください';
+                              return AppLocalizations.of(context)!.enterTitle;
                             }
                             return null;
                           },
@@ -272,9 +273,9 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                       Expanded(
                         child: TextFormField(
                           controller: _estimatedMinutesController,
-                          decoration: const InputDecoration(
-                            labelText: '推定時間 (分)',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.estimatedTime,
+                            border: const OutlineInputBorder(),
                           ),
                           keyboardType: TextInputType.number,
                         ),
@@ -287,9 +288,9 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                       Expanded(
                         child: TextFormField(
                           controller: _descriptionController,
-                          decoration: const InputDecoration(
-                            labelText: '説明',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: AppLocalizations.of(context)!.description,
+                            border: const OutlineInputBorder(),
                           ),
                         ),
                       ),
@@ -300,7 +301,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                           backgroundColor: Colors.orange.shade700,
                           foregroundColor: Colors.white,
                         ),
-                        child: Text(_isEditing ? '更新' : '追加'),
+                        child: Text(_isEditing ? AppLocalizations.of(context)!.update : AppLocalizations.of(context)!.add),
                       ),
                       if (_isEditing) ...[
                         const SizedBox(width: 8),
@@ -319,9 +320,9 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
             // サブタスクリスト（並び替え可能）
             Expanded(
               child: subTasks.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
-                        'サブタスクがありません',
+                        AppLocalizations.of(context)!.noSubtasks,
                         style: TextStyle(
                           color: Colors.grey,
                           fontSize: 16,
@@ -385,14 +386,14 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                                   Text(subTask.description!),
                                 if (subTask.estimatedMinutes != null)
                                   Text(
-                                    '推定時間: ${subTask.estimatedMinutes}分',
+                                    AppLocalizations.of(context)!.estimatedTimeMinutes(subTask.estimatedMinutes!),
                                     style: TextStyle(
                                       color: Colors.grey[600],
                                       fontSize: 12,
                                     ),
                                   ),
                                 Text(
-                                  '作成日: ${DateFormat('yyyy/MM/dd HH:mm').format(subTask.createdAt)}',
+                                  '${AppLocalizations.of(context)!.creationDate}: ${DateFormat('yyyy/MM/dd HH:mm').format(subTask.createdAt)}',
                                   style: TextStyle(
                                     color: Colors.grey[600],
                                     fontSize: 12,
@@ -437,7 +438,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('閉じる'),
+                  child: Text(AppLocalizations.of(context)!.close),
                 ),
               ],
             ),

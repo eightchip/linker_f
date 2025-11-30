@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1037,25 +1038,25 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             _buildBulkPriorityMenuItem(
               context,
               TaskPriority.low,
-              '低',
+              AppLocalizations.of(context)!.low,
               Colors.grey,
             ),
             _buildBulkPriorityMenuItem(
               context,
               TaskPriority.medium,
-              '中',
+              AppLocalizations.of(context)!.medium,
               Colors.orange,
             ),
             _buildBulkPriorityMenuItem(
               context,
               TaskPriority.high,
-              '高',
+              AppLocalizations.of(context)!.high,
               Colors.red,
             ),
             _buildBulkPriorityMenuItem(
               context,
               TaskPriority.urgent,
-              '緊急',
+              AppLocalizations.of(context)!.urgent,
               Colors.deepPurple,
             ),
           ],
@@ -1166,7 +1167,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 ),
               ),
               CheckboxListTile(
-                title: const Text('期限日をクリア'),
+                title: Text(AppLocalizations.of(context)!.clearDueDate),
                 value: selectedDate == null,
                 onChanged: (value) {
                   setDialogState(() {
@@ -1740,7 +1741,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.98),
           appBar: AppBar(
             title: _isSelectionMode 
-              ? Text('${_selectedTaskIds.length}件選択中')
+              ? Text(AppLocalizations.of(context)!.itemsSelected(_selectedTaskIds.length))
               : Row(
                   children: [
                     Container(
@@ -1758,7 +1759,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'タスク管理',
+                      AppLocalizations.of(context)!.taskManagement,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: appBarTitleFontSize,
@@ -1775,7 +1776,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               : IconButton(
                   onPressed: () => _navigateToHome(context),
                   icon: const Icon(Icons.arrow_back),
-                  tooltip: 'ホーム画面に戻る',
+                  tooltip: AppLocalizations.of(context)!.homeScreen,
                 ),
             actions: [
               if (_isSelectionMode) ...[
@@ -1792,13 +1793,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 ? Icons.deselect 
                 : Icons.select_all),
               tooltip: _selectedTaskIds.length == filteredTasks.length 
-                ? '全解除' 
-                : '全選択',
+                ? AppLocalizations.of(context)!.deselectAll 
+                : AppLocalizations.of(context)!.selectAll,
             ),
           // 一括操作メニューボタン
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            tooltip: '一括操作',
+            tooltip: AppLocalizations.of(context)!.bulkOperations,
             enabled: !_selectedTaskIds.isEmpty,
             onSelected: (value) async {
               switch (value) {
@@ -1826,13 +1827,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'status',
                 child: Row(
                   children: [
-                    Icon(Icons.play_circle_outline, size: 20),
-                    SizedBox(width: 8),
-                    Text('ステータス変更'),
+                    const Icon(Icons.play_circle_outline, size: 20),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.statusChange),
                   ],
                 ),
               ),
@@ -1897,13 +1898,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 ),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
                     Icon(Icons.delete, size: 20, color: Colors.red),
                     SizedBox(width: 8),
-                    Text('削除', style: TextStyle(color: Colors.red)),
+                    Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: Colors.red)),
                   ],
                 ),
               ),
@@ -1938,7 +1939,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 key: _menuButtonKey,
                 builder: (context) => IconButton(
                   icon: const Icon(Icons.more_vert),
-                  tooltip: 'グローバルメニュー',
+                  tooltip: AppLocalizations.of(context)!.globalMenu,
                   onPressed: () async {
                     final result = await showDialog<String>(
                       context: context,
@@ -2056,12 +2057,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: _buildStatItem('総', total, Icons.list),
+                child: _buildStatItem(AppLocalizations.of(context)!.total, total, Icons.list),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: _buildStatItem(
-                  '未',
+                  AppLocalizations.of(context)!.notStartedShort,
                   pending,
                   Icons.radio_button_unchecked,
                   Colors.grey,
@@ -2070,7 +2071,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: _buildStatItem(
-                  '進',
+                  AppLocalizations.of(context)!.inProgressShort,
                   inProgress,
                   Icons.pending,
                   Colors.blue,
@@ -2079,7 +2080,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: _buildStatItem(
-                  '完',
+                  AppLocalizations.of(context)!.completedShort,
                   completed,
                   Icons.check_circle,
                   Colors.green,
@@ -2092,7 +2093,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Tooltip(
-              message: _expandedTaskIds.isEmpty ? 'すべて詳細表示' : 'すべて詳細非表示',
+              message: _expandedTaskIds.isEmpty ? AppLocalizations.of(context)!.showAllDetails : AppLocalizations.of(context)!.hideAllDetails,
               child: IconButton(
                 onPressed: () {
                   setState(() {
@@ -2153,8 +2154,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                         ),
                         decoration: InputDecoration(
                           hintText: _useRegex 
-                            ? '正規表現で検索（例: ^プロジェクト.*完了\$）'
-                            : 'タスクを検索（タイトル・説明・タグ・依頼先）',
+                            ? AppLocalizations.of(context)!.searchWithRegex
+                            : AppLocalizations.of(context)!.searchTasks,
                           hintStyle: TextStyle(
                             fontSize: 14,
                             color: Theme.of(context).hintColor,
@@ -2167,7 +2168,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                               IconButton(
                                 icon: const Icon(Icons.history, size: 20),
                                 onPressed: _showSearchHistory,
-                                tooltip: '検索履歴',
+                                tooltip: AppLocalizations.of(context)!.searchHistory,
                               ),
                               if (_searchQuery.isNotEmpty) ...[
                                 IconButton(
@@ -2180,7 +2181,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                       _showSearchSuggestions = false;
                                     });
                                   },
-                                  tooltip: 'クリア',
+                                  tooltip: AppLocalizations.of(context)!.clear,
                                 ),
                               ],
                               IconButton(
@@ -2193,7 +2194,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                     _useRegex = !_useRegex;
                                   });
                                 },
-                                tooltip: _useRegex ? '通常検索に切り替え' : '正規表現検索に切り替え',
+                                tooltip: _useRegex ? AppLocalizations.of(context)!.switchToNormalSearch : AppLocalizations.of(context)!.switchToRegexSearch,
                               ),
                               IconButton(
                                 icon: const Icon(Icons.tune, size: 20),
@@ -2202,7 +2203,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                     _showSearchOptions = !_showSearchOptions;
                                   });
                                 },
-                                tooltip: '検索オプション',
+                                tooltip: AppLocalizations.of(context)!.searchOptions,
                               ),
                             ],
                           ),
@@ -2259,25 +2260,25 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     ),
                     value: _filterPriority,
                     items: [
-                      const DropdownMenuItem(
+                      DropdownMenuItem(
                         value: 'all',
-                        child: Text('すべて'),
+                        child: Text(AppLocalizations.of(context)!.all),
                       ),
                       DropdownMenuItem(
                         value: 'low',
-                        child: _buildPriorityDropdownItem('低', Colors.green),
+                        child: _buildPriorityDropdownItem(AppLocalizations.of(context)!.low, Colors.green),
                       ),
                       DropdownMenuItem(
                         value: 'medium',
-                        child: _buildPriorityDropdownItem('中', Colors.orange),
+                        child: _buildPriorityDropdownItem(AppLocalizations.of(context)!.medium, Colors.orange),
                       ),
                       DropdownMenuItem(
                         value: 'high',
-                        child: _buildPriorityDropdownItem('高', Colors.red),
+                        child: _buildPriorityDropdownItem(AppLocalizations.of(context)!.high, Colors.red),
                       ),
                       DropdownMenuItem(
                         value: 'urgent',
-                        child: _buildPriorityDropdownItem('緊急', Colors.purple),
+                        child: _buildPriorityDropdownItem(AppLocalizations.of(context)!.urgent, Colors.purple),
                       ),
                     ],
                     onChanged: (value) {
@@ -2296,7 +2297,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 // フィルター保存・読み込みボタン
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.bookmark, size: AppIconSizes.medium),
-                  tooltip: 'フィルターの保存・読み込み',
+                  tooltip: AppLocalizations.of(context)!.saveLoadFilters,
                   onSelected: (value) {
                     switch (value) {
                       case 'save':
@@ -2320,64 +2321,64 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'save',
                       child: Row(
                         children: [
-                          Icon(Icons.save, size: 20),
-                          SizedBox(width: 8),
-                          Text('現在のフィルターを保存'),
+                          const Icon(Icons.save, size: 20),
+                          const SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!.saveCurrentFilter),
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'load',
                       child: Row(
                         children: [
-                          Icon(Icons.folder_open, size: 20),
-                          SizedBox(width: 8),
-                          Text('フィルター管理'),
+                          const Icon(Icons.folder_open, size: 20),
+                          const SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!.filterManagement),
                         ],
                       ),
                     ),
                     const PopupMenuDivider(),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'quick_urgent',
                       child: Row(
                         children: [
-                          Icon(Icons.priority_high, size: 20, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('緊急タスク'),
+                          const Icon(Icons.priority_high, size: 20, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!.urgentTasks),
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'quick_today',
                       child: Row(
                         children: [
-                          Icon(Icons.today, size: 20, color: Colors.blue),
-                          SizedBox(width: 8),
-                          Text('今日のタスク'),
+                          const Icon(Icons.today, size: 20, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!.todayTasks),
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'quick_pending',
                       child: Row(
                         children: [
-                          Icon(Icons.pending, size: 20, color: Colors.orange),
-                          SizedBox(width: 8),
-                          Text('未着手タスク'),
+                          const Icon(Icons.pending, size: 20, color: Colors.orange),
+                          const SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!.notStartedTasks),
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'quick_in_progress',
                       child: Row(
                         children: [
-                          Icon(Icons.play_arrow, size: 20, color: Colors.green),
-                          SizedBox(width: 8),
-                          Text('進行中タスク'),
+                          const Icon(Icons.play_arrow, size: 20, color: Colors.green),
+                          const SizedBox(width: 8),
+                          Text(AppLocalizations.of(context)!.inProgressTasks),
                         ],
                       ),
                     ),
@@ -2407,7 +2408,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   ),
                   children: [
                     Tooltip(
-                      message: 'カードビュー',
+                      message: AppLocalizations.of(context)!.cardView,
                       child: const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         child: Row(
@@ -2421,7 +2422,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       ),
                     ),
                     Tooltip(
-                      message: 'リストビュー',
+                      message: AppLocalizations.of(context)!.listView,
                       child: const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         child: Row(
@@ -2447,12 +2448,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                         Icon(Icons.grid_view, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          '${_compactGridColumns}列',
+                          '${_compactGridColumns}${AppLocalizations.of(context)!.columns}',
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
-                    tooltip: 'グリッド列数を変更',
+                    tooltip: AppLocalizations.of(context)!.changeGridColumns,
                     onSelected: (value) async {
                       print('🟡 [列数変更] onSelected呼び出し: 新しい値=$value, 現在の値=$_compactGridColumns');
                       setState(() {
@@ -2482,7 +2483,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                               if (_compactGridColumns == i)
                                 const Icon(Icons.check, size: 16, color: Colors.green),
                               if (_compactGridColumns == i) const SizedBox(width: 8),
-                              Text('$i列'),
+                              Text('$i${AppLocalizations.of(context)!.columns}'),
                             ],
                           ),
                         ),
@@ -2500,7 +2501,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       _showFilters = !_showFilters;
                     });
                   },
-                  tooltip: _showFilters ? 'フィルターを隠す' : 'フィルターを表示',
+                  tooltip: _showFilters ? AppLocalizations.of(context)!.hideFilters : AppLocalizations.of(context)!.showFilters,
                   padding: const EdgeInsets.all(4),
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 ),
@@ -2515,13 +2516,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   Widget _buildStatItem(String label, int count, IconData icon, [Color? color]) {
     // ラベルを展開（「完」→「完了」など）
     String fullLabel = label;
-    if (label == '総') fullLabel = '総タスク';
-    else if (label == '未') fullLabel = '未着手';
-    else if (label == '進') fullLabel = '進行中';
-    else if (label == '完') fullLabel = '完了';
+    if (label == AppLocalizations.of(context)!.total) fullLabel = AppLocalizations.of(context)!.totalTasks;
+    else if (label == AppLocalizations.of(context)!.notStartedShort) fullLabel = AppLocalizations.of(context)!.notStarted;
+    else if (label == AppLocalizations.of(context)!.inProgressShort) fullLabel = AppLocalizations.of(context)!.inProgress;
+    else if (label == AppLocalizations.of(context)!.completedShort) fullLabel = AppLocalizations.of(context)!.completed;
     
     return Tooltip(
-      message: count == 0 ? '$fullLabel: 0件' : '$fullLabel: $count件（タップで詳細表示）',
+      message: count == 0 ? AppLocalizations.of(context)!.countItems(fullLabel, 0) : '${AppLocalizations.of(context)!.countItems(fullLabel, count)}（${AppLocalizations.of(context)!.tapForDetails}）',
       waitDuration: const Duration(milliseconds: 500),
       child: InkWell(
         onTap: () => _showStatisticsDetail(fullLabel, count),
@@ -2790,7 +2791,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     
     return Row(
       children: [
-        const Text('ステータス:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        Text(AppLocalizations.of(context)!.status + ':', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
         const SizedBox(width: 8),
         Expanded(
           child: Wrap(
@@ -2798,7 +2799,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             runSpacing: 4,
             children: [
               FilterChip(
-                label: const Text('すべて', style: TextStyle(fontSize: 11)),
+                label: Text(AppLocalizations.of(context)!.all, style: const TextStyle(fontSize: 11)),
                 selected: _filterStatuses.contains('all'),
                 onSelected: (selected) {
                   setState(() {
@@ -2814,7 +2815,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
               ),
               FilterChip(
-                label: const Text('未着手', style: TextStyle(fontSize: 11)),
+                label: Text(AppLocalizations.of(context)!.notStarted, style: const TextStyle(fontSize: 11)),
                 selected: _filterStatuses.contains('pending'),
                 onSelected: (selected) {
                   setState(() {
@@ -2831,7 +2832,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
               ),
               FilterChip(
-                label: const Text('進行中', style: TextStyle(fontSize: 11)),
+                label: Text(AppLocalizations.of(context)!.inProgress, style: const TextStyle(fontSize: 11)),
                 selected: _filterStatuses.contains('inProgress'),
                 onSelected: (selected) {
                   setState(() {
@@ -2848,7 +2849,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
               ),
               FilterChip(
-                label: const Text('完了', style: TextStyle(fontSize: 11)),
+                label: Text(AppLocalizations.of(context)!.completed, style: const TextStyle(fontSize: 11)),
                 selected: _filterStatuses.contains('completed'),
                 onSelected: (selected) {
                   setState(() {
@@ -2873,7 +2874,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           TextButton.icon(
             onPressed: _resetFilters,
             icon: const Icon(Icons.clear, size: 16),
-            label: const Text('クリア', style: TextStyle(fontSize: 11)),
+            label: Text(AppLocalizations.of(context)!.clear, style: const TextStyle(fontSize: 11)),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               minimumSize: const Size(0, 0),
@@ -2889,7 +2890,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('並び替え順序:', style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(AppLocalizations.of(context)!.sortOrder + ':', style: const TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         // 3つの並び替え順位を横並びに
         Row(
@@ -2899,7 +2900,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('第1順位', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context)!.firstPriority, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -2913,11 +2914,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                           value: _sortOrders.isNotEmpty ? _sortOrders[0]['field'] : 'dueDate',
                           items: [
                             const DropdownMenuItem(value: 'custom', child: Text('ドラッグ順（手動）')),
-                            const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
-                            const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
-                            const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
-                            const DropdownMenuItem(value: 'created', child: Text('作成日順')),
-                            const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                            DropdownMenuItem(value: 'dueDate', child: Text(AppLocalizations.of(context)!.dueDateOrder)),
+                            DropdownMenuItem(value: 'priority', child: Text(AppLocalizations.of(context)!.priorityOrder)),
+                            DropdownMenuItem(value: 'title', child: Text(AppLocalizations.of(context)!.titleOrder)),
+                            DropdownMenuItem(value: 'created', child: Text(AppLocalizations.of(context)!.createdOrder)),
+                            DropdownMenuItem(value: 'status', child: Text(AppLocalizations.of(context)!.statusOrder)),
                           ],
                           onChanged: (value) {
                             if (value == null) return;
@@ -2953,9 +2954,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                             isDense: true,
                           ),
                           value: _sortOrders.isNotEmpty ? _sortOrders[0]['order'] : 'asc',
-                  items: const [
-                            DropdownMenuItem(value: 'asc', child: Text('昇順')),
-                            DropdownMenuItem(value: 'desc', child: Text('降順')),
+                  items: [
+                            DropdownMenuItem(value: 'asc', child: Text(AppLocalizations.of(context)!.ascending)),
+                            DropdownMenuItem(value: 'desc', child: Text(AppLocalizations.of(context)!.descending)),
                   ],
                           onChanged: (_sortOrders.isNotEmpty && _sortOrders[0]['field'] == 'custom')
                               ? null
@@ -2984,7 +2985,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('第2順位', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context)!.secondPriority, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -2997,12 +2998,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                           ),
                           value: _sortOrders.length > 1 ? _sortOrders[1]['field'] : null,
                           items: [
-                            const DropdownMenuItem(value: null, child: Text('なし')),
-                            const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
-                            const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
-                            const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
-                            const DropdownMenuItem(value: 'created', child: Text('作成日順')),
-                            const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                            DropdownMenuItem(value: null, child: Text(AppLocalizations.of(context)!.none)),
+                            DropdownMenuItem(value: 'dueDate', child: Text(AppLocalizations.of(context)!.dueDateOrder)),
+                            DropdownMenuItem(value: 'priority', child: Text(AppLocalizations.of(context)!.priorityOrder)),
+                            DropdownMenuItem(value: 'title', child: Text(AppLocalizations.of(context)!.titleOrder)),
+                            DropdownMenuItem(value: 'created', child: Text(AppLocalizations.of(context)!.createdOrder)),
+                            DropdownMenuItem(value: 'status', child: Text(AppLocalizations.of(context)!.statusOrder)),
                           ],
                           onChanged: (_sortOrders.isNotEmpty && _sortOrders[0]['field'] == 'custom')
                               ? null
@@ -3033,9 +3034,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                             isDense: true,
                           ),
                           value: _sortOrders.length > 1 ? _sortOrders[1]['order'] : 'asc',
-                          items: const [
-                            DropdownMenuItem(value: 'asc', child: Text('昇順')),
-                            DropdownMenuItem(value: 'desc', child: Text('降順')),
+                          items: [
+                            DropdownMenuItem(value: 'asc', child: Text(AppLocalizations.of(context)!.ascending)),
+                            DropdownMenuItem(value: 'desc', child: Text(AppLocalizations.of(context)!.descending)),
                           ],
                           onChanged: (_sortOrders.isNotEmpty && _sortOrders[0]['field'] == 'custom')
                               ? null
@@ -3061,7 +3062,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('第3順位', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context)!.thirdPriority, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -3074,12 +3075,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                           ),
                           value: _sortOrders.length > 2 ? _sortOrders[2]['field'] : null,
                           items: [
-                            const DropdownMenuItem(value: null, child: Text('なし')),
-                            const DropdownMenuItem(value: 'dueDate', child: Text('期限順')),
-                            const DropdownMenuItem(value: 'priority', child: Text('優先度順')),
-                            const DropdownMenuItem(value: 'title', child: Text('タイトル順')),
-                            const DropdownMenuItem(value: 'created', child: Text('作成日順')),
-                            const DropdownMenuItem(value: 'status', child: Text('ステータス順')),
+                            DropdownMenuItem(value: null, child: Text(AppLocalizations.of(context)!.none)),
+                            DropdownMenuItem(value: 'dueDate', child: Text(AppLocalizations.of(context)!.dueDateOrder)),
+                            DropdownMenuItem(value: 'priority', child: Text(AppLocalizations.of(context)!.priorityOrder)),
+                            DropdownMenuItem(value: 'title', child: Text(AppLocalizations.of(context)!.titleOrder)),
+                            DropdownMenuItem(value: 'created', child: Text(AppLocalizations.of(context)!.createdOrder)),
+                            DropdownMenuItem(value: 'status', child: Text(AppLocalizations.of(context)!.statusOrder)),
                           ],
                           onChanged: (_sortOrders.isNotEmpty && _sortOrders[0]['field'] == 'custom')
                               ? null
@@ -3110,9 +3111,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                             isDense: true,
                           ),
                           value: _sortOrders.length > 2 ? _sortOrders[2]['order'] : 'asc',
-                          items: const [
-                            DropdownMenuItem(value: 'asc', child: Text('昇順')),
-                            DropdownMenuItem(value: 'desc', child: Text('降順')),
+                          items: [
+                            DropdownMenuItem(value: 'asc', child: Text(AppLocalizations.of(context)!.ascending)),
+                            DropdownMenuItem(value: 'desc', child: Text(AppLocalizations.of(context)!.descending)),
                           ],
                           onChanged: (_sortOrders.isNotEmpty && _sortOrders[0]['field'] == 'custom')
                               ? null
@@ -3309,7 +3310,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     ? Theme.of(context).colorScheme.primary
                     : Colors.grey,
                 ),
-                tooltip: _pinnedTaskIds.contains(task.id) ? 'ピンを外す' : '上部にピン留め',
+                tooltip: _pinnedTaskIds.contains(task.id) ? AppLocalizations.of(context)!.unpin : AppLocalizations.of(context)!.pinToTop,
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
@@ -3491,7 +3492,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           Text(
             task.dueDate != null 
               ? _getRemainingDaysText(task.dueDate!)
-              : '未',
+              : AppLocalizations.of(context)!.notStartedShort,
             style: TextStyle(
               color: textColor,
               fontSize: 10,
@@ -3510,34 +3511,34 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       case TaskStatus.pending:
         statusBadge = {
           'icon': Icons.schedule,
-          'text': '未',
+          'text': AppLocalizations.of(context)!.notStartedShort,
           'color': Colors.green.shade800,
         };
         break;
       case TaskStatus.inProgress:
         statusBadge = {
           'icon': Icons.play_arrow,
-          'text': '中',
+          'text': AppLocalizations.of(context)!.inProgressShort2,
           'color': Colors.blue.shade800,
         };
         break;
       case TaskStatus.completed:
         statusBadge = {
           'icon': Icons.check,
-          'text': '完',
+          'text': AppLocalizations.of(context)!.completedShort,
           'color': Colors.grey.shade800,
         };
         break;
       case TaskStatus.cancelled:
         statusBadge = {
           'icon': Icons.cancel,
-          'text': '止',
+          'text': AppLocalizations.of(context)!.cancelledShort,
           'color': Colors.red.shade800,
         };
         break;
     }
     return PopupMenuButton<TaskStatus>(
-      tooltip: 'ステータスを変更',
+      tooltip: AppLocalizations.of(context)!.changeStatus,
       initialValue: task.status,
       padding: EdgeInsets.zero,
       offset: const Offset(0, 8),
@@ -3606,7 +3607,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   /// コンパクトモード用の優先度インジケーター（漢字一文字、クリックで変更可能）
   Widget _buildCompactPriorityIndicator(TaskItem task) {
     return PopupMenuButton<TaskPriority>(
-      tooltip: '優先度を変更',
+      tooltip: AppLocalizations.of(context)!.changePriority,
       initialValue: task.priority,
       padding: EdgeInsets.zero,
       offset: const Offset(0, 8),
@@ -3615,7 +3616,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       },
       itemBuilder: (context) {
         return TaskPriority.values.map((priority) {
-          final info = _getPriorityInfoForList(priority);
+          final info = _getPriorityInfoForList(context, priority);
           final isSelected = priority == task.priority;
           return PopupMenuItem<TaskPriority>(
             value: priority,
@@ -3649,7 +3650,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       },
       child: Builder(
         builder: (context) {
-          final priorityInfo = _getPriorityInfoForList(task.priority);
+          final priorityInfo = _getPriorityInfoForList(context, task.priority);
           return Container(
             width: 20,
             height: 20,
@@ -3792,7 +3793,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             return Tooltip(
               message: link.memo != null && link.memo!.isNotEmpty 
                   ? link.memo! 
-                  : 'メモはリンク管理画面から追加可能',
+                  : AppLocalizations.of(context)!.memoCanBeAddedFromLinkManagement,
               waitDuration: const Duration(milliseconds: 500),
               child: InkWell(
                 onTap: () => _openRelatedLink(link),
@@ -3852,8 +3853,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 ),
                 Text(
                   isExpanded 
-                    ? 'リンクを折りたたむ'
-                    : '他${links.length - maxVisibleLinks}個のリンクを表示',
+                    ? AppLocalizations.of(context)!.collapseLinks
+                    : AppLocalizations.of(context)!.showOtherLinks(links.length - maxVisibleLinks),
                   style: TextStyle(
                     color: Colors.blue[700],
                     fontSize: 11,
@@ -3953,7 +3954,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     ? Theme.of(context).colorScheme.primary
                     : Colors.grey,
                 ),
-                tooltip: _pinnedTaskIds.contains(task.id) ? 'ピンを外す' : '上部にピン留め',
+                tooltip: _pinnedTaskIds.contains(task.id) ? AppLocalizations.of(context)!.unpin : AppLocalizations.of(context)!.pinToTop,
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -3986,7 +3987,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, size: 16, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: 2),
                   Text(
-                    isExpanded ? '閉じる' : '詳細',
+                    isExpanded ? AppLocalizations.of(context)!.close : AppLocalizations.of(context)!.details,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                       fontSize: 12,
@@ -4296,7 +4297,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   children: [
                     Icon(Icons.copy, color: Colors.blue),
                     SizedBox(width: 8),
-                    Text('コピー', style: TextStyle(color: Colors.blue)),
+                    Text(AppLocalizations.of(context)!.copy, style: TextStyle(color: Colors.blue)),
                   ],
                 ),
               ),
@@ -4306,7 +4307,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   children: [
                     Icon(Icons.sync, color: Colors.green),
                     SizedBox(width: 8),
-                    Text('このタスクを同期', style: TextStyle(color: Colors.green)),
+                    Text(AppLocalizations.of(context)!.syncTask, style: TextStyle(color: Colors.green)),
                   ],
                 ),
               ),
@@ -4316,7 +4317,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   children: [
                     Icon(Icons.delete, color: Colors.red),
                     SizedBox(width: 8),
-                    Text('削除', style: TextStyle(color: Colors.red)),
+                    Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: Colors.red)),
                   ],
                 ),
               ),
@@ -4325,7 +4326,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           if (reorderIndex != null) ...[
             const SizedBox(width: 6),
             Tooltip(
-              message: 'ドラッグで順序変更',
+              message: AppLocalizations.of(context)!.dragToReorder,
               waitDuration: const Duration(milliseconds: 400),
               child: MouseRegion(
                 cursor: SystemMouseCursors.grab,
@@ -4424,7 +4425,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           Text(
             task.dueDate != null 
               ? _getRemainingDaysText(task.dueDate!)
-              : '未設定',
+              : AppLocalizations.of(context)!.notSet,
             style: TextStyle(
               color: textColor,
               fontSize: 13,
@@ -4443,14 +4444,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
     final difference = due.difference(today).inDays;
     
+    final l10n = AppLocalizations.of(context)!;
     if (difference < 0) {
-      return '${-difference}日超過';
+      return l10n.daysOverdue(-difference);
     } else if (difference == 0) {
-      return '今日';
+      return l10n.today;
     } else if (difference == 1) {
-      return 'あと1日';
+      return l10n.oneDayRemaining;
     } else if (difference <= 3) {
-      return 'あと$difference日';
+      return l10n.daysRemaining(difference);
     } else {
       return DateFormat('MM/dd').format(dueDate);
     }
@@ -4491,15 +4493,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   }
 
   Map<String, dynamic> _getPriorityInfo(TaskPriority priority) {
+    final l10n = AppLocalizations.of(context)!;
     switch (priority) {
       case TaskPriority.low:
-        return {'color': Colors.green, 'text': '低'};
+        return {'color': Colors.green, 'text': l10n.low};
       case TaskPriority.medium:
-        return {'color': Colors.orange, 'text': '中'};
+        return {'color': Colors.orange, 'text': l10n.medium};
       case TaskPriority.high:
-        return {'color': Colors.red, 'text': '高'};
+        return {'color': Colors.red, 'text': l10n.high};
       case TaskPriority.urgent:
-        return {'color': Colors.purple, 'text': '緊'};
+        return {'color': Colors.purple, 'text': l10n.urgent};
     }
   }
 
@@ -4527,28 +4530,28 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         backgroundColor = Colors.green.shade50;
         textColor = Colors.green.shade800;
         borderColor = Colors.green.shade300;
-        text = '未';
+        text = AppLocalizations.of(context)!.notStartedShort;
         icon = Icons.schedule;
         break;
       case TaskStatus.inProgress:
         backgroundColor = Colors.blue.shade50;
         textColor = Colors.blue.shade800;
         borderColor = Colors.blue.shade300;
-        text = '中';
+        text = AppLocalizations.of(context)!.inProgressShort2;
         icon = Icons.play_arrow;
         break;
       case TaskStatus.completed:
         backgroundColor = Colors.grey.shade50;
         textColor = Colors.grey.shade800;
         borderColor = Colors.grey.shade300;
-        text = '完';
+        text = AppLocalizations.of(context)!.completedShort;
         icon = Icons.check;
         break;
       case TaskStatus.cancelled:
         backgroundColor = Colors.red.shade50;
         textColor = Colors.red.shade800;
         borderColor = Colors.red.shade300;
-        text = '止';
+        text = AppLocalizations.of(context)!.cancelledShort;
         icon = Icons.cancel;
         break;
     }
@@ -4580,7 +4583,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   /// タスク管理画面用の優先度表示（色と文字1文字）
   Widget _buildPriorityIndicatorForList(TaskPriority priority) {
-    final priorityInfo = _getPriorityInfoForList(priority);
+    final priorityInfo = _getPriorityInfoForList(context, priority);
     return Container(
       width: 20,
       height: 20,
@@ -4606,25 +4609,25 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       case TaskStatus.pending:
         return {
           'icon': Icons.hourglass_empty,
-          'text': '未着手',
+          'text': AppLocalizations.of(context)!.notStarted,
           'color': Colors.green,
         };
       case TaskStatus.inProgress:
         return {
           'icon': Icons.play_circle,
-          'text': '進行中',
+          'text': AppLocalizations.of(context)!.inProgress,
           'color': Colors.blue,
         };
       case TaskStatus.completed:
         return {
           'icon': Icons.check_circle,
-          'text': '完了',
+          'text': AppLocalizations.of(context)!.completed,
           'color': Colors.grey,
         };
       case TaskStatus.cancelled:
         return {
           'icon': Icons.cancel,
-          'text': 'キャンセル',
+          'text': AppLocalizations.of(context)!.cancelled,
           'color': Colors.red,
         };
     }
@@ -4632,7 +4635,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   Widget _buildStatusSelector(TaskItem task) {
     return PopupMenuButton<TaskStatus>(
-      tooltip: 'ステータスを変更',
+      tooltip: AppLocalizations.of(context)!.changeStatus,
       initialValue: task.status,
       padding: EdgeInsets.zero,
       offset: const Offset(0, 8),
@@ -4679,7 +4682,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   Widget _buildPrioritySelector(TaskItem task) {
     return PopupMenuButton<TaskPriority>(
-      tooltip: '優先度を変更',
+      tooltip: AppLocalizations.of(context)!.changePriority,
       initialValue: task.priority,
       padding: EdgeInsets.zero,
       offset: const Offset(0, 8),
@@ -4688,7 +4691,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       },
       itemBuilder: (context) {
         return TaskPriority.values.map((priority) {
-          final info = _getPriorityInfoForList(priority);
+          final info = _getPriorityInfoForList(context, priority);
           final isSelected = priority == task.priority;
           return PopupMenuItem<TaskPriority>(
             value: priority,
@@ -4760,16 +4763,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   }
 
   /// タスク管理画面用の優先度情報を取得
-  Map<String, dynamic> _getPriorityInfoForList(TaskPriority priority) {
+  Map<String, dynamic> _getPriorityInfoForList(BuildContext context, TaskPriority priority) {
     switch (priority) {
       case TaskPriority.low:
-        return {'color': Colors.green, 'text': '低'};
+        return {'color': Colors.green, 'text': AppLocalizations.of(context)!.lowShort};
       case TaskPriority.medium:
-        return {'color': Colors.orange, 'text': '中'};
+        return {'color': Colors.orange, 'text': AppLocalizations.of(context)!.mediumShort};
       case TaskPriority.high:
-        return {'color': Colors.red, 'text': '高'};
+        return {'color': Colors.red, 'text': AppLocalizations.of(context)!.highShort};
       case TaskPriority.urgent:
-        return {'color': Colors.purple, 'text': '緊'};
+        return {'color': Colors.purple, 'text': AppLocalizations.of(context)!.urgentShort};
     }
   }
 
@@ -4897,7 +4900,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     // スナックバーで通知
     SnackBarService.showSuccess(
       context,
-      'フィルターをリセットしました',
+      AppLocalizations.of(context)!.filterReset,
     );
     
     print('🔄 フィルターリセット完了');
@@ -5070,7 +5073,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       final relatedLinks = _getRelatedLinks(task);
       final tooltipMessage = relatedLinks.map((link) {
         if (link.memo != null && link.memo!.isNotEmpty) {
-          return '${link.label}\nメモ: ${link.memo}';
+          return '${link.label}\n${AppLocalizations.of(context)!.memoLabel}: ${link.memo}';
         }
         return link.label;
       }).join('\n\n');
@@ -5725,21 +5728,21 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   void _showShortcutHelp(BuildContext context) {
     showShortcutHelpDialog(
       context,
-      title: 'タスク管理ショートカット',
-      entries: const [
-        ShortcutHelpEntry('Ctrl + N', '新しいタスクを作成'),
-        ShortcutHelpEntry('Ctrl + B', '一括選択モードを切り替え'),
-        ShortcutHelpEntry('Ctrl + Shift + E', 'CSVにエクスポート'),
-        ShortcutHelpEntry('Ctrl + Shift + S', '設定画面を開く'),
-        ShortcutHelpEntry('Ctrl + S', '予定表を開く'),
-        ShortcutHelpEntry('Ctrl + G', 'グループ化メニュー'),
-        ShortcutHelpEntry('Ctrl + Shift + T', 'テンプレートから作成'),
-        ShortcutHelpEntry('Ctrl + F', '統計・検索バー表示/非表示'),
-        ShortcutHelpEntry('Ctrl + Z', '詳細表示/非表示切り替え'),
-        ShortcutHelpEntry('Ctrl + X', 'コンパクト⇔標準表示切り替え'),
-        ShortcutHelpEntry('← / →', 'ホームへ戻る / 3点メニューを開く'),
-        ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
-        ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
+      title: AppLocalizations.of(context)!.taskManagementShortcuts,
+      entries: [
+        ShortcutHelpEntry('Ctrl + N', AppLocalizations.of(context)!.createNewTask),
+        ShortcutHelpEntry('Ctrl + B', AppLocalizations.of(context)!.toggleBatchSelectionMode),
+        ShortcutHelpEntry('Ctrl + Shift + E', AppLocalizations.of(context)!.exportToCsv),
+        ShortcutHelpEntry('Ctrl + Shift + S', AppLocalizations.of(context)!.openSettingsScreen),
+        ShortcutHelpEntry('Ctrl + S', AppLocalizations.of(context)!.openSchedule),
+        ShortcutHelpEntry('Ctrl + G', AppLocalizations.of(context)!.groupingMenu),
+        ShortcutHelpEntry('Ctrl + Shift + T', AppLocalizations.of(context)!.createFromTemplate),
+        ShortcutHelpEntry('Ctrl + F', AppLocalizations.of(context)!.toggleStatisticsSearchBar),
+        ShortcutHelpEntry('Ctrl + Z', AppLocalizations.of(context)!.toggleDetails),
+        ShortcutHelpEntry('Ctrl + X', AppLocalizations.of(context)!.toggleCompactStandardDisplay),
+        ShortcutHelpEntry('← / →', AppLocalizations.of(context)!.goHomeOrOpenThreeDotMenu),
+        ShortcutHelpEntry('↓', AppLocalizations.of(context)!.focusThreeDotMenu),
+        ShortcutHelpEntry('F1', AppLocalizations.of(context)!.showShortcutList),
             ],
     );
   }
@@ -5902,12 +5905,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     // サブタスクの詳細を取得
     final subTasks = _getSubTasksForTask(task.id);
     if (subTasks.isEmpty) {
-      return 'サブタスク: ${task.totalSubTasksCount}個\n完了: ${task.completedSubTasksCount}個';
+      return AppLocalizations.of(context)!.subtaskTooltip(task.totalSubTasksCount, task.completedSubTasksCount);
     }
 
     final buffer = StringBuffer();
-    buffer.writeln('サブタスク: ${task.totalSubTasksCount}個');
-    buffer.writeln('完了: ${task.completedSubTasksCount}個');
+    buffer.writeln('${AppLocalizations.of(context)!.subtask}: ${task.totalSubTasksCount}個');
+    buffer.writeln('${AppLocalizations.of(context)!.completed}: ${task.completedSubTasksCount}個');
     buffer.writeln('');
     
     // 最大20個まで表示
@@ -6311,12 +6314,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('フィルターを保存'),
+        title: Text(AppLocalizations.of(context)!.saveFilter),
         content: TextField(
           controller: nameController,
-          decoration: const InputDecoration(
-            labelText: 'フィルター名',
-            hintText: '例: 今週の緊急タスク',
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.filterName,
+            hintText: AppLocalizations.of(context)!.filterNameExample,
           ),
           autofocus: true,
         ),
@@ -6337,7 +6340,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 };
                 _saveFilterPresets();
                 Navigator.of(context).pop();
-                SnackBarService.showSuccess(context, 'フィルター「$name」を保存しました');
+                SnackBarService.showSuccess(context, AppLocalizations.of(context)!.filterSaved(name));
               }
             },
             child: const Text('保存'),
@@ -6352,7 +6355,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('フィルター管理'),
+        title: Text(AppLocalizations.of(context)!.filterManagement),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
@@ -6368,7 +6371,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       await _exportFilterPresets();
                     },
                     icon: const Icon(Icons.upload, size: 18),
-                    label: const Text('エクスポート'),
+                    label: Text(AppLocalizations.of(context)!.export),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
@@ -6379,7 +6382,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       await _importFilterPresets();
                     },
                     icon: const Icon(Icons.download, size: 18),
-                    label: const Text('インポート'),
+                    label: Text(AppLocalizations.of(context)!.import),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
@@ -6389,9 +6392,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               const Divider(height: 24),
               // 保存されたフィルター一覧
               if (_savedFilterPresets.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('保存されたフィルターがありません'),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(AppLocalizations.of(context)!.noSavedFilters),
                 )
               else
                 Flexible(
@@ -6435,7 +6438,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                 });
                                 _saveFilterSettings();
                                 Navigator.of(context).pop();
-                                SnackBarService.showSuccess(context, 'フィルター「$presetName」を読み込みました');
+                                SnackBarService.showSuccess(context, AppLocalizations.of(context)!.filterLoaded(presetName));
                               },
                             ),
                           ],
@@ -6470,7 +6473,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       
       // ファイル保存ダイアログを表示
       final result = await FilePicker.platform.saveFile(
-        dialogTitle: 'フィルタープリセットをエクスポート',
+        dialogTitle: AppLocalizations.of(context)!.exportFilterPresets,
         fileName: 'task_filter_presets_${DateTime.now().millisecondsSinceEpoch}.json',
         type: FileType.custom,
         allowedExtensions: ['json'],
@@ -6481,7 +6484,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         await file.writeAsString(jsonString);
         
         if (mounted) {
-          SnackBarService.showSuccess(context, 'フィルタープリセットをエクスポートしました');
+          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.filterPresetsExported);
         }
       }
     } catch (e) {
@@ -6497,7 +6500,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
-        dialogTitle: 'フィルタープリセットをインポート',
+        dialogTitle: AppLocalizations.of(context)!.importFilterPresets,
       );
       
       if (result != null && result.files.single.path != null) {
@@ -6520,7 +6523,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           if (mounted) {
             SnackBarService.showSuccess(
               context, 
-              '${importedPresets.length}件のフィルタープリセットをインポートしました'
+              AppLocalizations.of(context)!.filterPresetsImported(importedPresets.length)
             );
           }
         } else {
@@ -6578,7 +6581,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       _saveFilterSettings();
     });
     
-    SnackBarService.showInfo(context, 'クイックフィルターを適用しました');
+    SnackBarService.showInfo(context, AppLocalizations.of(context)!.quickFilterApplied);
   }
 
   /// 強化された検索クエリマッチング
@@ -6686,7 +6689,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                '検索オプション',
+                AppLocalizations.of(context)!.searchOptions,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -6699,7 +6702,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     _showSearchOptions = false;
                   });
                 },
-                tooltip: '閉じる',
+                tooltip: AppLocalizations.of(context)!.close,
               ),
             ],
           ),
@@ -6708,7 +6711,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Expanded(
                 child: CheckboxListTile(
-                  title: const Text('説明文', style: TextStyle(fontSize: 14)),
+                  title: Text(AppLocalizations.of(context)!.descriptionText, style: const TextStyle(fontSize: 14)),
                   value: _searchInDescription,
                   onChanged: (value) {
                     setState(() {
@@ -6721,7 +6724,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               Expanded(
                 child: CheckboxListTile(
-                  title: const Text('タグ', style: TextStyle(fontSize: 14)),
+                  title: Text(AppLocalizations.of(context)!.tags, style: const TextStyle(fontSize: 14)),
                   value: _searchInTags,
                   onChanged: (value) {
                     setState(() {
@@ -6734,7 +6737,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               Expanded(
                 child: CheckboxListTile(
-                  title: const Text('依頼先', style: TextStyle(fontSize: 14)),
+                  title: Text(AppLocalizations.of(context)!.requester, style: const TextStyle(fontSize: 14)),
                   value: _searchInRequester,
                   onChanged: (value) {
                     setState(() {
@@ -6757,7 +6760,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                _useRegex ? '正規表現検索モード' : '通常検索モード',
+                _useRegex ? AppLocalizations.of(context)!.regexSearchMode : AppLocalizations.of(context)!.normalSearchMode,
                 style: TextStyle(
                   fontSize: 12,
                   color: Theme.of(context).colorScheme.primary,
@@ -6769,13 +6772,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 TextButton.icon(
                   onPressed: _showSearchHistory,
                   icon: const Icon(Icons.history, size: 16),
-                  label: const Text('履歴'),
+                  label: Text(AppLocalizations.of(context)!.history),
                 ),
                 const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: _clearSearchHistory,
                   icon: const Icon(Icons.clear_all, size: 16),
-                  label: const Text('履歴クリア'),
+                  label: Text(AppLocalizations.of(context)!.clearHistory),
                 ),
               ],
             ],
@@ -6803,7 +6806,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '正規表現の使い方',
+                        AppLocalizations.of(context)!.howToUseRegex,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -6825,21 +6828,22 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   /// 正規表現の例を表示
   Widget _buildRegexExamples() {
+    final l10n = AppLocalizations.of(context)!;
     final examples = [
-      {'pattern': r'^プロジェクト', 'description': '「プロジェクト」で始まるタスク'},
-      {'pattern': r'完了$', 'description': '「完了」で終わるタスク'},
-      {'pattern': r'^プロジェクト.*完了$', 'description': '「プロジェクト」で始まり「完了」で終わるタスク'},
-      {'pattern': r'緊急|重要', 'description': '「緊急」または「重要」を含むタスク'},
-      {'pattern': r'\d{4}-\d{2}-\d{2}', 'description': '日付形式（YYYY-MM-DD）を含むタスク'},
-      {'pattern': r'[A-Z]{2,}', 'description': '2文字以上の大文字を含むタスク'},
-      {'pattern': r'^.{1,10}$', 'description': '1〜10文字のタスクタイトル'},
+      {'pattern': r'^プロジェクト', 'description': l10n.regexExample1},
+      {'pattern': r'完了$', 'description': l10n.regexExample2},
+      {'pattern': r'^プロジェクト.*完了$', 'description': l10n.regexExample3},
+      {'pattern': r'緊急|重要', 'description': l10n.regexExample4},
+      {'pattern': r'\d{4}-\d{2}-\d{2}', 'description': l10n.regexExample5},
+      {'pattern': r'[A-Z]{2,}', 'description': l10n.regexExample6},
+      {'pattern': r'^.{1,10}$', 'description': l10n.regexExample7},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'よく使うパターン:',
+          AppLocalizations.of(context)!.commonPatterns,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -6880,10 +6884,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   Clipboard.setData(ClipboardData(text: example['pattern']!));
                   SnackBarService.showSuccess(
                     context,
-                    '「${example['pattern']}」をコピーしました',
+                    AppLocalizations.of(context)!.patternCopied(example['pattern']!),
                   );
                 },
-                tooltip: 'パターンをコピー',
+                tooltip: AppLocalizations.of(context)!.copyPattern,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
                   minWidth: 24,
@@ -6924,7 +6928,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '正規表現が無効な場合は自動的に通常検索に切り替わります',
+                  AppLocalizations.of(context)!.regexInvalidWarning,
                   style: TextStyle(
                     fontSize: 10,
                     color: Theme.of(context).colorScheme.error,
@@ -7001,7 +7005,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 _clearSearchHistory();
                 Navigator.of(context).pop();
               },
-              child: const Text('履歴をクリア'),
+              child: Text(AppLocalizations.of(context)!.clearHistoryConfirm),
             ),
         ],
       ),
@@ -7100,7 +7104,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               ListTile(
                 leading: const Icon(Icons.list),
-                title: const Text('グループ化なし'),
+                title: Text(AppLocalizations.of(context)!.noGrouping),
                 trailing: _groupByOption == GroupByOption.none
                     ? const Icon(Icons.check, color: Colors.green)
                     : null,
@@ -7152,7 +7156,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.check_circle),
-                title: const Text('ステータスでグループ化'),
+                title: Text(AppLocalizations.of(context)!.groupByStatus),
                 trailing: _groupByOption == GroupByOption.status
                     ? const Icon(Icons.check, color: Colors.green)
                     : null,
@@ -7266,10 +7270,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     
     for (final task in tasks) {
       if (task.tags.isEmpty) {
-        if (!groups.containsKey('タグなし')) {
-          groups['タグなし'] = [];
+        final noTagsLabel = AppLocalizations.of(context)!.noTags;
+        if (!groups.containsKey(noTagsLabel)) {
+          groups[noTagsLabel] = [];
         }
-        groups['タグなし']!.add(task);
+        groups[noTagsLabel]!.add(task);
       } else {
         for (final tag in task.tags) {
           if (!groups.containsKey(tag)) {
@@ -7290,10 +7295,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     for (final task in tasks) {
       final linkId = task.relatedLinkId;
       if (linkId == null || linkId.isEmpty) {
-        if (!groups.containsKey('リンクなし')) {
-          groups['リンクなし'] = [];
+        final noLinksLabel = AppLocalizations.of(context)!.noLinks;
+        if (!groups.containsKey(noLinksLabel)) {
+          groups[noLinksLabel] = [];
         }
-        groups['リンクなし']!.add(task);
+        groups[noLinksLabel]!.add(task);
       } else {
         // リンクラベルを取得（簡易実装、必要に応じて_getLinkLabelを使用）
         final label = linkId; // 本来は_getLinkLabel(linkId)を使用
@@ -7309,23 +7315,24 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   /// ステータスでグループ化
   Map<String, List<TaskItem>> _groupByStatus(List<TaskItem> tasks) {
+    final l10n = AppLocalizations.of(context)!;
     final groups = <String, List<TaskItem>>{
-      '未着手': [],
-      '進行中': [],
-      '完了': [],
+      l10n.notStarted: [],
+      l10n.inProgress: [],
+      l10n.completed: [],
       'キャンセル': [],
     };
 
     for (final task in tasks) {
       switch (task.status) {
         case TaskStatus.pending:
-          groups['未着手']!.add(task);
+          groups[l10n.notStarted]!.add(task);
           break;
         case TaskStatus.inProgress:
-          groups['進行中']!.add(task);
+          groups[l10n.inProgress]!.add(task);
           break;
         case TaskStatus.completed:
-          groups['完了']!.add(task);
+          groups[l10n.completed]!.add(task);
           break;
         case TaskStatus.cancelled:
           groups['キャンセル']!.add(task);
@@ -7859,7 +7866,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                               ? Theme.of(context).colorScheme.primary
                               : Colors.grey,
                         ),
-                        tooltip: _pinnedTaskIds.contains(task.id) ? 'ピンを外す' : '上部にピン留め',
+                        tooltip: _pinnedTaskIds.contains(task.id) ? AppLocalizations.of(context)!.unpin : AppLocalizations.of(context)!.pinToTop,
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
@@ -7944,7 +7951,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                                 color: Theme.of(context).colorScheme.primary,
                               ),
                               Text(
-                                isExpanded ? '閉じる' : '詳細',
+                                isExpanded ? AppLocalizations.of(context)!.close : AppLocalizations.of(context)!.details,
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.primary,
                                   fontSize: 10,
@@ -8057,7 +8064,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       // アクションメニュー（コピー・同期・削除）
                       PopupMenuButton<String>(
                         icon: Icon(Icons.more_vert, size: 14, color: Colors.grey.shade600),
-                        tooltip: 'アクション',
+                        tooltip: AppLocalizations.of(context)!.action,
                         onSelected: (value) => _handleTaskAction(value, task),
                         itemBuilder: (context) => [
                           PopupMenuItem(
@@ -8076,7 +8083,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                               children: [
                                 Icon(Icons.sync, color: Colors.green, size: 16),
                                 const SizedBox(width: 8),
-                                Text('このタスクを同期', style: TextStyle(color: Colors.green, fontSize: 12)),
+                                Text(AppLocalizations.of(context)!.syncThisTask, style: TextStyle(color: Colors.green, fontSize: 12)),
                               ],
                             ),
                           ),
@@ -8342,11 +8349,11 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   String _getStatusText(TaskStatus status) {
     switch (status) {
       case TaskStatus.pending:
-        return '未着手';
+        return AppLocalizations.of(context)!.notStarted;
       case TaskStatus.inProgress:
-        return '進行中';
+        return AppLocalizations.of(context)!.inProgress;
       case TaskStatus.completed:
-        return '完了';
+        return AppLocalizations.of(context)!.completed;
       case TaskStatus.cancelled:
         return 'キャンセル';
     }
@@ -8902,7 +8909,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         return Tooltip(
           message: link.memo != null && link.memo!.isNotEmpty 
               ? link.memo! 
-              : 'メモはリンク管理画面から追加可能',
+              : AppLocalizations.of(context)!.memoCanBeAddedFromLinkManagement,
           waitDuration: const Duration(milliseconds: 500),
                   child: GestureDetector(
                     onTap: () {

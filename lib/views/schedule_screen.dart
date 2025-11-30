@@ -7,6 +7,7 @@ import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../services/snackbar_service.dart';
+import '../l10n/app_localizations.dart';
 import 'task_dialog.dart';
 
 enum ScheduleLayout { detailed, compact }
@@ -847,7 +848,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                     children: [
                       if (!isCompact && startedAt != null)
                         _buildDateBadge(
-                          '着手',
+                          AppLocalizations.of(context)!.started,
                           startedAt,
                           colorScheme.secondary,
                           dueDate,
@@ -862,7 +863,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                           fontSize,
                         ),
                       _buildDateBadge(
-                        '期限',
+                          AppLocalizations.of(context)!.dueDate,
                         dueDate,
                         _getDueDateColor(dueDate),
                         dueDate,

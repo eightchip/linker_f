@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import '../l10n/app_localizations.dart';
 
 class WindowControlButtons extends StatefulWidget {
   final double iconSize;
@@ -83,14 +84,14 @@ class _WindowControlButtonsState extends State<WindowControlButtons>
       IconButton(
         padding: widget.padding ?? EdgeInsets.zero,
         iconSize: widget.iconSize,
-        tooltip: '最小化',
+        tooltip: AppLocalizations.of(context)!.minimize,
         icon: const Icon(Icons.remove),
         onPressed: () async => windowManager.minimize(),
       ),
       IconButton(
         padding: widget.padding ?? EdgeInsets.zero,
         iconSize: widget.iconSize,
-        tooltip: _isMaximized ? '元のサイズに戻す' : '最大化',
+        tooltip: _isMaximized ? AppLocalizations.of(context)!.restoreWindow : AppLocalizations.of(context)!.maximize,
         icon: Icon(_isMaximized ? Icons.filter_none : Icons.crop_square),
         onPressed: _toggleWindowSize,
       ),

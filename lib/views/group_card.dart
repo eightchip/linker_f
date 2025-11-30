@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:path/path.dart' as p;
+import '../l10n/app_localizations.dart';
 import 'dart:io';
 import 'dart:async';
 import '../models/group.dart';
@@ -985,7 +986,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                   children: [
                     IconButton(
                       icon: Icon(Icons.edit, size: 20 * scale), // アイコンサイズ拡大
-                      tooltip: 'グループ名を編集',
+                      tooltip: AppLocalizations.of(context)!.editGroupName,
                       onPressed: () => widget.onEditGroupTitle?.call(group.title),
                       iconSize: 22 * scale,
                       padding: EdgeInsets.all(6 * scale), // さらに詰めて
@@ -1004,7 +1005,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                     IconButton(
                       icon: Icon(Icons.delete, size: 20 * scale),
                       onPressed: widget.onDeleteGroup,
-                      tooltip: 'グループを削除',
+                      tooltip: AppLocalizations.of(context)!.deleteGroup,
                       iconSize: 22 * scale,
                       padding: EdgeInsets.all(6 * scale), // さらに詰めて
                       constraints: BoxConstraints(
@@ -1022,7 +1023,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                     IconButton(
                       icon: Icon(Icons.add, size: 20 * scale),
                       onPressed: widget.onAddLink,
-                      tooltip: 'リンクを追加',
+                      tooltip: AppLocalizations.of(context)!.addLink,
                       iconSize: 22 * scale,
                       padding: EdgeInsets.all(6 * scale), // さらに詰めて
                       constraints: BoxConstraints(
@@ -1384,7 +1385,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                               color: item.memo?.isNotEmpty == true ? Colors.orange.shade600 : Colors.grey.shade600, 
                               size: layoutSettings.linkItemIconSize * 0.9 * scale
                             ),
-                            tooltip: item.memo?.isNotEmpty == true ? item.memo! : 'メモ追加',
+                            tooltip: item.memo?.isNotEmpty == true ? item.memo! : AppLocalizations.of(context)!.addMemo,
                             onPressed: () async {
                               final controller = TextEditingController(text: item.memo ?? '');
                               final result = await showDialog<String>(
@@ -1463,7 +1464,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                         IconButton(
                           icon: Icon(Icons.task_alt, size: 18 * scale),
                           onPressed: () => _createTaskFromLink(context, item),
-                          tooltip: item.hasActiveTasks ? 'アクティブなタスクがあります' : 'このリンクからタスクを作成',
+                          tooltip: item.hasActiveTasks ? AppLocalizations.of(context)!.activeTaskExists : AppLocalizations.of(context)!.createTaskFromLink,
                           constraints: BoxConstraints(
                             minWidth: layoutSettings.buttonSize * scale,
                             minHeight: layoutSettings.buttonSize * scale,
@@ -1484,7 +1485,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                         IconButton(
                           icon: Icon(Icons.edit, size: 18 * scale),
                           onPressed: () => _showEditLinkDialog(context, item),
-                          tooltip: 'リンクを編集',
+                          tooltip: AppLocalizations.of(context)!.editLink,
                           constraints: BoxConstraints(
                             minWidth: layoutSettings.buttonSize * scale,
                             minHeight: layoutSettings.buttonSize * scale,
@@ -1503,7 +1504,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                         IconButton(
                           icon: Icon(Icons.delete, size: 18 * scale),
                           onPressed: () => widget.onDeleteLink(item.id),
-                          tooltip: 'リンクを削除',
+                          tooltip: AppLocalizations.of(context)!.deleteLink,
                           constraints: BoxConstraints(
                             minWidth: layoutSettings.buttonSize * scale,
                             minHeight: layoutSettings.buttonSize * scale,
@@ -1762,7 +1763,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
             children: [
               Icon(Icons.copy, size: 18, color: Colors.blue),
               const SizedBox(width: 8),
-              const Text('コピー'),
+              Text(AppLocalizations.of(context)!.copy),
             ],
           ),
         ),
@@ -1772,7 +1773,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
             children: [
               Icon(Icons.drive_file_move, size: 18, color: Colors.orange),
               const SizedBox(width: 8),
-              const Text('移動先を選択'),
+              Text(AppLocalizations.of(context)!.selectMoveDestination),
             ],
           ),
         ),
@@ -1798,14 +1799,14 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
     final availableGroups = groups.where((g) => g.id != currentGroup.id).toList();
     
     if (availableGroups.isEmpty) {
-      SnackBarService.showWarning(context, 'コピー先のグループがありません');
+      SnackBarService.showWarning(context, AppLocalizations.of(context)!.noCopyDestinationGroups);
       return;
     }
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('コピー先を選択'),
+        title: Text(AppLocalizations.of(context)!.selectCopyDestination),
         content: SizedBox(
           width: 300,
           child: ListView.builder(
@@ -1823,18 +1824,18 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                   ),
                 ),
                 title: Text(group.title),
-                subtitle: Text('${group.items.length}件のリンク'),
+                subtitle: Text(AppLocalizations.of(context)!.linksCount(group.items.length)),
                 onTap: () async {
                   Navigator.pop(context);
                   if (widget.onCopyLinkToGroup != null) {
                     try {
                       await widget.onCopyLinkToGroup!(item, currentGroup.id, group.id);
-                      SnackBarService.showSuccess(context, '「${item.label}」を「${group.title}」にコピーしました');
+                      SnackBarService.showSuccess(context, AppLocalizations.of(context)!.linkCopied(item.label, group.title));
                     } catch (e) {
-                      SnackBarService.showError(context, 'コピーに失敗しました: $e');
+                      SnackBarService.showError(context, AppLocalizations.of(context)!.copyFailed(e.toString()));
                     }
                   } else {
-                    SnackBarService.showError(context, 'コピー機能が利用できません');
+                    SnackBarService.showError(context, AppLocalizations.of(context)!.copyNotAvailable);
                   }
                 },
               );
@@ -1858,14 +1859,14 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
     final availableGroups = groups.where((g) => g.id != currentGroup.id).toList();
     
     if (availableGroups.isEmpty) {
-      SnackBarService.showWarning(context, '移動先のグループがありません');
+      SnackBarService.showWarning(context, AppLocalizations.of(context)!.noMoveDestinationGroups);
       return;
     }
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('移動先を選択'),
+        title: Text(AppLocalizations.of(context)!.selectMoveDestination),
         content: SizedBox(
           width: 300,
           child: ListView.builder(
@@ -1883,14 +1884,14 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                   ),
                 ),
                 title: Text(group.title),
-                subtitle: Text('${group.items.length}件のリンク'),
+                subtitle: Text(AppLocalizations.of(context)!.linksCount(group.items.length)),
                 onTap: () {
                   Navigator.pop(context);
                   if (widget.onMoveLinkToGroup != null) {
                     widget.onMoveLinkToGroup!(item, currentGroup.id, group.id);
-                    SnackBarService.showSuccess(context, '「${item.label}」を「${group.title}」に移動しました');
+                    SnackBarService.showSuccess(context, AppLocalizations.of(context)!.linkMoved(item.label, group.title));
                   } else {
-                    SnackBarService.showError(context, '移動機能が利用できません');
+                    SnackBarService.showError(context, AppLocalizations.of(context)!.moveNotAvailable);
                   }
                 },
               );

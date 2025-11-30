@@ -55,3 +55,6 @@ app.*.map.json
 *.pptx
 *.ppt
 *.py
+
+# Generated localization files
+lib/l10n/app_localizations*.dart

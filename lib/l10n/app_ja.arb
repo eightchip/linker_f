@@ -1,0 +1,1442 @@
+{
+  "@@locale": "ja",
+  "appTitle": "Link Navigator",
+  "@appTitle": {
+    "description": "アプリケーションのタイトル"
+  },
+  "settings": "設定",
+  "@settings": {
+    "description": "設定画面のタイトル"
+  },
+  "general": "一般",
+  "@general": {
+    "description": "一般設定セクション"
+  },
+  "theme": "テーマ",
+  "@theme": {
+    "description": "テーマ設定セクション"
+  },
+  "font": "フォント",
+  "@font": {
+    "description": "フォント設定セクション"
+  },
+  "backup": "バックアップ",
+  "@backup": {
+    "description": "バックアップ設定セクション"
+  },
+  "notifications": "通知",
+  "@notifications": {
+    "description": "通知設定セクション"
+  },
+  "outlook": "Outlook連携",
+  "@outlook": {
+    "description": "Outlook連携設定セクション"
+  },
+  "language": "言語",
+  "@language": {
+    "description": "言語設定"
+  },
+  "japanese": "日本語",
+  "@japanese": {
+    "description": "日本語"
+  },
+  "english": "English",
+  "@english": {
+    "description": "英語"
+  },
+  "enableAutomaticImport": "自動取込を有効にする",
+  "@enableAutomaticImport": {
+    "description": "自動取込を有効にするスイッチのタイトル"
+  },
+  "enableAutomaticImportDescription": "Outlookの個人カレンダーから予定を自動的に取り込みます。取り込んだ予定は「Outlook連携（自動取込）」タスクに紐づけられます。\n\n⚠️ 注意: 自動取込実行時に起動しているOutlookが落ちる場合があります。",
+  "@enableAutomaticImportDescription": {
+    "description": "自動取込機能の説明"
+  },
+  "importPeriod": "取込期間",
+  "@importPeriod": {
+    "description": "取込期間セクションのタイトル"
+  },
+  "importPeriodDescription": "明日を起点に、どこまで未来の予定を取り込むか設定します。",
+  "@importPeriodDescription": {
+    "description": "取込期間の説明"
+  },
+  "automaticImportFrequency": "自動取込の頻度",
+  "@automaticImportFrequency": {
+    "description": "自動取込の頻度セクションのタイトル"
+  },
+  "onlyOnAppStart": "アプリ起動時のみ",
+  "@onlyOnAppStart": {
+    "description": "アプリ起動時のみの頻度オプション"
+  },
+  "every30Minutes": "30分ごと",
+  "@every30Minutes": {
+    "description": "30分ごとの頻度オプション"
+  },
+  "every1Hour": "1時間ごと",
+  "@every1Hour": {
+    "description": "1時間ごとの頻度オプション"
+  },
+  "everyMorning9am": "毎朝9:00",
+  "@everyMorning9am": {
+    "description": "毎朝9:00の頻度オプション"
+  },
+  "oneWeek": "1週間",
+  "@oneWeek": {
+    "description": "1週間の期間オプション"
+  },
+  "twoWeeks": "2週間",
+  "@twoWeeks": {
+    "description": "2週間の期間オプション"
+  },
+  "oneMonth": "1ヶ月",
+  "@oneMonth": {
+    "description": "1ヶ月の期間オプション"
+  },
+  "threeMonths": "3ヶ月",
+  "@threeMonths": {
+    "description": "3ヶ月の期間オプション"
+  },
+  "halfYear": "半年",
+  "@halfYear": {
+    "description": "半年の期間オプション"
+  },
+  "oneYear": "1年",
+  "@oneYear": {
+    "description": "1年の期間オプション"
+  },
+  "taskManagement": "タスク管理",
+  "@taskManagement": {
+    "description": "タスク管理画面のタイトル"
+  },
+  "linkManagement": "リンク管理",
+  "@linkManagement": {
+    "description": "リンク管理画面のタイトル"
+  },
+  "itemsSelected": "{count}件選択中",
+  "@itemsSelected": {
+    "description": "選択中のアイテム数",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "startWithTaskScreen": "タスク画面で起動",
+  "@startWithTaskScreen": {
+    "description": "タスク画面で起動する設定のタイトル"
+  },
+  "startWithTaskScreenDescription": "アプリ起動時にタスク画面をデフォルトで表示します。オフにすると、リンク管理画面で起動します。",
+  "@startWithTaskScreenDescription": {
+    "description": "タスク画面で起動する設定の説明"
+  },
+  "appearance": "外観",
+  "@appearance": {
+    "description": "外観設定セクション"
+  },
+  "layout": "レイアウト",
+  "@layout": {
+    "description": "レイアウト設定セクション"
+  },
+  "data": "データ",
+  "@data": {
+    "description": "データ設定セクション"
+  },
+  "integration": "連携",
+  "@integration": {
+    "description": "連携設定セクション"
+  },
+  "others": "その他",
+  "@others": {
+    "description": "その他設定セクション"
+  },
+  "startupSettings": "起動設定",
+  "@startupSettings": {
+    "description": "起動設定メニュー項目"
+  },
+  "themeSettings": "テーマ設定",
+  "@themeSettings": {
+    "description": "テーマ設定メニュー項目"
+  },
+  "fontSettings": "フォント設定",
+  "@fontSettings": {
+    "description": "フォント設定メニュー項目"
+  },
+  "uiCustomization": "UIカスタマイズ",
+  "@uiCustomization": {
+    "description": "UIカスタマイズメニュー項目"
+  },
+  "gridSettings": "グリッド設定",
+  "@gridSettings": {
+    "description": "グリッド設定メニュー項目"
+  },
+  "cardSettings": "カード設定",
+  "@cardSettings": {
+    "description": "カード設定メニュー項目"
+  },
+  "itemSettings": "アイテム設定",
+  "@itemSettings": {
+    "description": "アイテム設定メニュー項目"
+  },
+  "cardViewSettings": "カードビュー設定",
+  "@cardViewSettings": {
+    "description": "カードビュー設定メニュー項目"
+  },
+  "notificationSettings": "通知設定",
+  "@notificationSettings": {
+    "description": "通知設定メニュー項目"
+  },
+  "gmailIntegration": "Gmail連携",
+  "@gmailIntegration": {
+    "description": "Gmail連携メニュー項目"
+  },
+  "reset": "リセット",
+  "@reset": {
+    "description": "リセットメニュー項目"
+  },
+  "allScreens": "全画面共通",
+  "@allScreens": {
+    "description": "全画面共通の説明"
+  },
+  "linkScreen": "リンク画面",
+  "@linkScreen": {
+    "description": "リンク画面の説明"
+  },
+  "linkAndTaskScreens": "リンク・タスク画面",
+  "@linkAndTaskScreens": {
+    "description": "リンク・タスク画面の説明"
+  },
+  "taskList": "タスク一覧",
+  "@taskList": {
+    "description": "タスク一覧の説明"
+  },
+  "integrationSettingsRequired": "各連携機能には個別の設定が必要です",
+  "@integrationSettingsRequired": {
+    "description": "連携機能の説明"
+  },
+  "darkMode": "ダークモード",
+  "@darkMode": {
+    "description": "ダークモードのタイトル"
+  },
+  "useDarkTheme": "ダークテーマを使用",
+  "@useDarkTheme": {
+    "description": "ダークテーマの説明"
+  },
+  "cancel": "キャンセル",
+  "@cancel": {
+    "description": "キャンセルボタン"
+  },
+  "resetSettings": "設定をリセット",
+  "@resetSettings": {
+    "description": "設定をリセットボタン"
+  },
+  "resetSettingsConfirm": "すべてのUI設定をデフォルト値にリセットしますか？\nこの操作は取り消せません。",
+  "@resetSettingsConfirm": {
+    "description": "設定リセットの確認メッセージ"
+  },
+  "resetExecuted": "リセット実行",
+  "@resetExecuted": {
+    "description": "リセット実行ボタン"
+  },
+  "uiSettingsReset": "UI設定をリセット",
+  "@uiSettingsReset": {
+    "description": "UI設定をリセットボタン"
+  },
+  "uiSettingsResetConfirm": "すべてのUIカスタマイズ設定をデフォルト値にリセットします。\n\nこの操作は取り消せません。\n本当に実行しますか？",
+  "@uiSettingsResetConfirm": {
+    "description": "UI設定リセットの確認メッセージ"
+  },
+  "uiSettingsResetSuccess": "UI設定をリセットしました",
+  "@uiSettingsResetSuccess": {
+    "description": "UI設定リセット成功メッセージ"
+  },
+  "save": "保存",
+  "@save": {
+    "description": "保存ボタン"
+  },
+  "close": "閉じる",
+  "@close": {
+    "description": "閉じるボタン"
+  },
+  "addGroup": "グループを追加",
+  "@addGroup": {
+    "description": "グループを追加メニュー項目"
+  },
+  "search": "検索",
+  "@search": {
+    "description": "検索メニュー項目"
+  },
+  "memoBulkEdit": "メモ一括編集",
+  "@memoBulkEdit": {
+    "description": "メモ一括編集メニュー項目"
+  },
+  "shortcutKeys": "ショートカットキー",
+  "@shortcutKeys": {
+    "description": "ショートカットキーメニュー項目"
+  },
+  "linkManagementShortcuts": "リンク管理ショートカット",
+  "@linkManagementShortcuts": {
+    "description": "リンク管理ショートカットヘルプのタイトル"
+  },
+  "addGroupShortcut": "グループを追加",
+  "@addGroupShortcut": {
+    "description": "グループを追加ショートカットの説明"
+  },
+  "openSearchBar": "検索バーを開く",
+  "@openSearchBar": {
+    "description": "検索バーを開くショートカットの説明"
+  },
+  "openTaskManagement": "タスク管理画面を開く",
+  "@openTaskManagement": {
+    "description": "タスク管理画面を開くショートカットの説明"
+  },
+  "openMemoBulkEdit": "メモ一括編集を開く",
+  "@openMemoBulkEdit": {
+    "description": "メモ一括編集を開くショートカットの説明"
+  },
+  "changeGroupOrder": "グループの並び順を変更",
+  "@changeGroupOrder": {
+    "description": "グループの並び順を変更ショートカットの説明"
+  },
+  "openSettings": "設定を開く",
+  "@openSettings": {
+    "description": "設定を開くショートカットの説明"
+  },
+  "showThreeDotMenu": "3点メニューを表示",
+  "@showThreeDotMenu": {
+    "description": "3点メニューを表示ショートカットの説明"
+  },
+  "focusThreeDotMenu": "3点メニューにフォーカス",
+  "@focusThreeDotMenu": {
+    "description": "3点メニューにフォーカスショートカットの説明"
+  },
+  "closeSearchBar": "検索バーを閉じる",
+  "@closeSearchBar": {
+    "description": "検索バーを閉じるショートカットの説明"
+  },
+  "switchLinkTypeFilter": "リンクタイプフィルターを切り替え",
+  "@switchLinkTypeFilter": {
+    "description": "リンクタイプフィルターを切り替えショートカットの説明"
+  },
+  "showShortcutList": "ショートカット一覧を表示",
+  "@showShortcutList": {
+    "description": "ショートカット一覧を表示ショートカットの説明"
+  },
+  "linksCount": "{count}件のリンク",
+  "@linksCount": {
+    "description": "リンク数",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchLinkNameMemo": "検索（リンク名・メモ内容）",
+  "@searchLinkNameMemo": {
+    "description": "検索フィールドのプレースホルダー"
+  },
+  "resultsCount": "{count}件の結果",
+  "@resultsCount": {
+    "description": "検索結果数",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noSearchResults": "検索結果がありません",
+  "@noSearchResults": {
+    "description": "検索結果なしメッセージ"
+  },
+  "noMemoLinks": "メモが登録されているリンクがありません",
+  "@noMemoLinks": {
+    "description": "メモなしリンクメッセージ"
+  },
+  "saveAll": "まとめて保存",
+  "@saveAll": {
+    "description": "まとめて保存ボタン"
+  },
+  "searchPlaceholder": "検索（ファイル名・フォルダ名・URL・タグ）",
+  "@searchPlaceholder": {
+    "description": "検索バーのプレースホルダー"
+  },
+  "type": "タイプ",
+  "@type": {
+    "description": "タイプフィルターのラベル"
+  },
+  "all": "すべて",
+  "@all": {
+    "description": "すべてのタイプ"
+  },
+  "url": "URL",
+  "@url": {
+    "description": "URLタイプ"
+  },
+  "folder": "フォルダ",
+  "@folder": {
+    "description": "フォルダタイプ"
+  },
+  "file": "ファイル",
+  "@file": {
+    "description": "ファイルタイプ"
+  },
+  "globalMenu": "グローバルメニュー",
+  "@globalMenu": {
+    "description": "グローバルメニューのタイトル"
+  },
+  "common": "共通",
+  "@common": {
+    "description": "共通メニューセクション"
+  },
+  "linkManagementEnabled": "リンク管理（リンク管理画面で有効）",
+  "@linkManagementEnabled": {
+    "description": "リンク管理メニューセクション"
+  },
+  "taskManagementEnabled": "タスク管理（タスク管理画面で有効）",
+  "@taskManagementEnabled": {
+    "description": "タスク管理メニューセクション"
+  },
+  "newTask": "新しいタスク",
+  "@newTask": {
+    "description": "新しいタスクメニュー項目"
+  },
+  "bulkSelectMode": "一括選択モード",
+  "@bulkSelectMode": {
+    "description": "一括選択モードメニュー項目"
+  },
+  "csvExport": "CSV出力",
+  "@csvExport": {
+    "description": "CSV出力メニュー項目"
+  },
+  "scheduleList": "スケジュール一覧",
+  "@scheduleList": {
+    "description": "スケジュール一覧メニュー項目"
+  },
+  "grouping": "グループ化",
+  "@grouping": {
+    "description": "グループ化メニュー項目"
+  },
+  "createFromTemplate": "テンプレートから作成",
+  "@createFromTemplate": {
+    "description": "テンプレートから作成メニュー項目"
+  },
+  "toggleStatisticsSearchBar": "統計・検索バー表示/非表示",
+  "@toggleStatisticsSearchBar": {
+    "description": "統計・検索バー表示/非表示メニュー項目"
+  },
+  "helpCenter": "ヘルプセンター",
+  "@helpCenter": {
+    "description": "ヘルプセンターメニュー項目"
+  },
+  "pathOrUrl": "パス/URL",
+  "@pathOrUrl": {
+    "description": "パス/URLラベル"
+  },
+  "enterPathOrUrl": "ファイルパスまたはURLを入力...",
+  "@enterPathOrUrl": {
+    "description": "パス/URL入力フィールドのプレースホルダー"
+  },
+  "selectFolderIcon": "フォルダアイコンを選択:",
+  "@selectFolderIcon": {
+    "description": "フォルダアイコン選択のラベル"
+  },
+  "homeScreen": "ホーム画面に戻る",
+  "@homeScreen": {
+    "description": "ホーム画面に戻るツールチップ"
+  },
+  "exitSelectionMode": "選択モードを終了",
+  "@exitSelectionMode": {
+    "description": "選択モードを終了ツールチップ"
+  },
+  "searchTasks": "タスクを検索（タイトル・説明・タグ・依頼先）",
+  "@searchTasks": {
+    "description": "タスク管理画面の検索バープレースホルダー"
+  },
+  "searchWithRegex": "正規表現で検索（例: ^プロジェクト.*完了\\$）",
+  "@searchWithRegex": {
+    "description": "正規表現検索のプレースホルダー"
+  },
+  "searchHistory": "検索履歴",
+  "@searchHistory": {
+    "description": "検索履歴ツールチップ"
+  },
+  "clear": "クリア",
+  "@clear": {
+    "description": "クリアツールチップ"
+  },
+  "switchToNormalSearch": "通常検索に切り替え",
+  "@switchToNormalSearch": {
+    "description": "通常検索に切り替えツールチップ"
+  },
+  "switchToRegexSearch": "正規表現検索に切り替え",
+  "@switchToRegexSearch": {
+    "description": "正規表現検索に切り替えツールチップ"
+  },
+  "searchOptions": "検索オプション",
+  "@searchOptions": {
+    "description": "検索オプションツールチップ"
+  },
+  "addMemo": "メモ追加",
+  "@addMemo": {
+    "description": "メモ追加ツールチップ"
+  },
+  "memoCanBeAddedFromLinkManagement": "メモはリンク管理画面から追加可能",
+  "@memoCanBeAddedFromLinkManagement": {
+    "description": "メモ追加可能メッセージ"
+  },
+  "unpin": "ピンを外す",
+  "@unpin": {
+    "description": "ピンを外すツールチップ"
+  },
+  "pinToTop": "上部にピン留め",
+  "@pinToTop": {
+    "description": "ピン留めツールチップ"
+  },
+  "changeStatus": "ステータスを変更",
+  "@changeStatus": {
+    "description": "ステータス変更ツールチップ"
+  },
+  "changePriority": "優先度を変更",
+  "@changePriority": {
+    "description": "優先度変更ツールチップ"
+  },
+  "hideFilters": "フィルターを隠す",
+  "@hideFilters": {
+    "description": "フィルターを隠すツールチップ"
+  },
+  "showFilters": "フィルターを表示",
+  "@showFilters": {
+    "description": "フィルターを表示ツールチップ"
+  },
+  "changeGridColumns": "グリッド列数を変更",
+  "@changeGridColumns": {
+    "description": "グリッド列数変更ツールチップ"
+  },
+  "saveLoadFilters": "フィルターの保存・読み込み",
+  "@saveLoadFilters": {
+    "description": "フィルター保存・読み込みツールチップ"
+  },
+  "bulkOperations": "一括操作",
+  "@bulkOperations": {
+    "description": "一括操作ツールチップ"
+  },
+  "memoLabel": "メモ",
+  "@memoLabel": {
+    "description": "メモラベル"
+  },
+  "selectAll": "全選択",
+  "@selectAll": {
+    "description": "全選択ツールチップ"
+  },
+  "deselectAll": "全解除",
+  "@deselectAll": {
+    "description": "全解除ツールチップ"
+  },
+  "cardView": "カードビュー",
+  "@cardView": {
+    "description": "カードビューツールチップ"
+  },
+  "listView": "リストビュー",
+  "@listView": {
+    "description": "リストビューツールチップ"
+  },
+  "status": "ステータス",
+  "@status": {
+    "description": "ステータスラベル"
+  },
+  "notStarted": "未着手",
+  "@notStarted": {
+    "description": "未着手ステータス"
+  },
+  "inProgress": "進行中",
+  "@inProgress": {
+    "description": "進行中ステータス"
+  },
+  "completed": "完了",
+  "@completed": {
+    "description": "完了ステータス"
+  },
+  "sortOrder": "並び替え順序",
+  "@sortOrder": {
+    "description": "並び替え順序ラベル"
+  },
+  "firstPriority": "第1順位",
+  "@firstPriority": {
+    "description": "第1順位ラベル"
+  },
+  "secondPriority": "第2順位",
+  "@secondPriority": {
+    "description": "第2順位ラベル"
+  },
+  "thirdPriority": "第3順位",
+  "@thirdPriority": {
+    "description": "第3順位ラベル"
+  },
+  "dueDateOrder": "期限順",
+  "@dueDateOrder": {
+    "description": "期限順並び替え"
+  },
+  "statusOrder": "ステータス順",
+  "@statusOrder": {
+    "description": "ステータス順並び替え"
+  },
+  "ascending": "昇順",
+  "@ascending": {
+    "description": "昇順並び替え"
+  },
+  "descending": "降順",
+  "@descending": {
+    "description": "降順並び替え"
+  },
+  "priorityOrder": "優先度順",
+  "@priorityOrder": {
+    "description": "優先度順ラベル"
+  },
+  "titleOrder": "タイトル順",
+  "@titleOrder": {
+    "description": "タイトル順ラベル"
+  },
+  "createdOrder": "作成日順",
+  "@createdOrder": {
+    "description": "作成日順ラベル"
+  },
+  "none": "なし",
+  "@none": {
+    "description": "なしオプション"
+  },
+  "details": "詳細",
+  "@details": {
+    "description": "詳細ボタン"
+  },
+  "collapseLinks": "リンクを折りたたむ",
+  "@collapseLinks": {
+    "description": "リンクを折りたたむボタン"
+  },
+  "expandLinks": "リンクを展開",
+  "@expandLinks": {
+    "description": "リンクを展開ボタン"
+  },
+  "subtask": "サブタスク",
+  "@subtask": {
+    "description": "サブタスクラベル"
+  },
+  "subtaskTooltip": "サブタスク: {total}個\n完了: {completed}個",
+  "@subtaskTooltip": {
+    "description": "サブタスクツールチップ",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "completed": {
+        "type": "int"
+      }
+    }
+  },
+  "showAllDetails": "すべて詳細表示",
+  "@showAllDetails": {
+    "description": "すべて詳細表示ツールチップ"
+  },
+  "hideAllDetails": "すべて詳細非表示",
+  "@hideAllDetails": {
+    "description": "すべて詳細非表示ツールチップ"
+  },
+  "toggleDetails": "詳細表示/非表示切り替え",
+  "@toggleDetails": {
+    "description": "詳細表示/非表示切り替えショートカット説明"
+  },
+  "columns": "列",
+  "@columns": {
+    "description": "列数ラベル"
+  },
+  "notStartedTasks": "未着手タスク",
+  "@notStartedTasks": {
+    "description": "未着手タスクラベル"
+  },
+  "inProgressTasks": "進行中タスク",
+  "@inProgressTasks": {
+    "description": "進行中タスクラベル"
+  },
+  "statusChange": "ステータス変更",
+  "@statusChange": {
+    "description": "ステータス変更ラベル"
+  },
+  "clearDueDate": "期限日をクリア",
+  "@clearDueDate": {
+    "description": "期限日をクリアボタン"
+  },
+  "clearHistory": "履歴クリア",
+  "@clearHistory": {
+    "description": "履歴クリアボタン"
+  },
+  "clearHistoryConfirm": "履歴をクリア",
+  "@clearHistoryConfirm": {
+    "description": "履歴をクリア確認ボタン"
+  },
+  "noGrouping": "グループ化なし",
+  "@noGrouping": {
+    "description": "グループ化なしオプション"
+  },
+  "groupByStatus": "ステータスでグループ化",
+  "@groupByStatus": {
+    "description": "ステータスでグループ化オプション"
+  },
+  "noTags": "タグなし",
+  "@noTags": {
+    "description": "タグなしラベル"
+  },
+  "noLinks": "リンクなし",
+  "@noLinks": {
+    "description": "リンクなしラベル"
+  },
+  "countItems": "{label}: {count}件",
+  "@countItems": {
+    "description": "件数表示",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tapForDetails": "タップで詳細表示",
+  "@tapForDetails": {
+    "description": "タップで詳細表示メッセージ"
+  },
+  "deleteGroup": "グループを削除",
+  "@deleteGroup": {
+    "description": "グループを削除ツールチップ"
+  },
+  "addLink": "リンクを追加",
+  "@addLink": {
+    "description": "リンクを追加ツールチップ"
+  },
+  "editLink": "リンクを編集",
+  "@editLink": {
+    "description": "リンクを編集ツールチップ"
+  },
+  "deleteLink": "リンクを削除",
+  "@deleteLink": {
+    "description": "リンクを削除ツールチップ"
+  },
+  "addTaskFromLink": "リンクからタスクを追加",
+  "@addTaskFromLink": {
+    "description": "リンクからタスクを追加ツールチップ"
+  },
+  "copy": "コピー",
+  "@copy": {
+    "description": "コピーメニュー項目"
+  },
+  "syncTask": "このタスクを同期",
+  "@syncTask": {
+    "description": "タスク同期メニュー項目"
+  },
+  "delete": "削除",
+  "@delete": {
+    "description": "削除メニュー項目"
+  },
+  "high": "高",
+  "@high": {
+    "description": "優先度：高"
+  },
+  "medium": "中",
+  "@medium": {
+    "description": "優先度：中"
+  },
+  "low": "低",
+  "@low": {
+    "description": "優先度：低"
+  },
+  "urgent": "緊急",
+  "@urgent": {
+    "description": "優先度：緊急"
+  },
+  "lowShort": "低",
+  "@lowShort": {
+    "description": "優先度：低（短縮版）"
+  },
+  "mediumShort": "中",
+  "@mediumShort": {
+    "description": "優先度：中（短縮版）"
+  },
+  "highShort": "高",
+  "@highShort": {
+    "description": "優先度：高（短縮版）"
+  },
+  "urgentShort": "緊",
+  "@urgentShort": {
+    "description": "優先度：緊急（短縮版）"
+  },
+  "cancelled": "キャンセル",
+  "@cancelled": {
+    "description": "キャンセルステータス"
+  },
+  "cancelledShort": "止",
+  "@cancelledShort": {
+    "description": "キャンセルステータス（短縮版）"
+  },
+  "dueDate": "期限",
+  "@dueDate": {
+    "description": "期限ラベル"
+  },
+  "started": "着手",
+  "@started": {
+    "description": "着手ラベル"
+  },
+  "linkManagementShortcuts": "リンク管理ショートカット",
+  "@linkManagementShortcuts": {
+    "description": "リンク管理ショートカットダイアログタイトル"
+  },
+  "taskManagementShortcuts": "タスク管理ショートカット",
+  "@taskManagementShortcuts": {
+    "description": "タスク管理ショートカットダイアログタイトル"
+  },
+  "minimize": "最小化",
+  "@minimize": {
+    "description": "ウィンドウ最小化ツールチップ"
+  },
+  "maximize": "最大化",
+  "@maximize": {
+    "description": "ウィンドウ最大化ツールチップ"
+  },
+  "restoreWindow": "元のサイズに戻す",
+  "@restoreWindow": {
+    "description": "ウィンドウを元のサイズに戻すツールチップ"
+  },
+  "shortcutList": "ショートカット一覧",
+  "@shortcutList": {
+    "description": "ショートカット一覧ツールチップ"
+  },
+  "scheduleScreen": "予定表",
+  "@scheduleScreen": {
+    "description": "予定表画面タイトル"
+  },
+  "searchSchedule": "予定タイトル、タスク名、場所で検索",
+  "@searchSchedule": {
+    "description": "予定表検索バーのプレースホルダー"
+  },
+  "switchView": "表示切り替え",
+  "@switchView": {
+    "description": "表示切り替えツールチップ"
+  },
+  "listView": "リスト表示",
+  "@listView": {
+    "description": "リスト表示メニュー項目"
+  },
+  "monthlyView": "月次表示",
+  "@monthlyView": {
+    "description": "月次表示メニュー項目"
+  },
+  "showPast": "過去を表示",
+  "@showPast": {
+    "description": "過去を表示チェックボックス"
+  },
+  "importFromOutlook": "Outlookから予定を取り込む",
+  "@importFromOutlook": {
+    "description": "Outlookから予定を取り込むツールチップ"
+  },
+  "copyToExcel": "エクセルにコピー",
+  "@copyToExcel": {
+    "description": "エクセルにコピーツールチップ"
+  },
+  "copyToExcelSelected": "エクセルにコピー（選択された{count}日分の予定をクリップボードにコピー）",
+  "@copyToExcelSelected": {
+    "description": "エクセルにコピー（選択日付あり）",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "copyToExcelSelectDate": "エクセルにコピー（日付を選択してください）",
+  "@copyToExcelSelectDate": {
+    "description": "エクセルにコピー（日付未選択）"
+  },
+  "tableFormat": "表形式（複数列）",
+  "@tableFormat": {
+    "description": "表形式メニュー項目"
+  },
+  "oneCellFormat": "1セル形式（列挙）",
+  "@oneCellFormat": {
+    "description": "1セル形式メニュー項目"
+  },
+  "action": "アクション",
+  "@action": {
+    "description": "アクションメニューツールチップ"
+  },
+  "today": "今日",
+  "@today": {
+    "description": "今日の期限日"
+  },
+  "daysRemaining": "あと{count}日",
+  "@daysRemaining": {
+    "description": "残り日数",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oneDayRemaining": "あと1日",
+  "@oneDayRemaining": {
+    "description": "残り1日"
+  },
+  "daysOverdue": "{count}日超過",
+  "@daysOverdue": {
+    "description": "超過日数",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notSet": "未設定",
+  "@notSet": {
+    "description": "未設定ラベル"
+  },
+  "showOtherLinks": "他{count}個のリンクを表示",
+  "@showOtherLinks": {
+    "description": "他のリンクを表示",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editTask": "タスクを編集",
+  "@editTask": {
+    "description": "タスク編集ダイアログタイトル"
+  },
+  "newTask": "新しいタスク",
+  "@newTask": {
+    "description": "新規タスクダイアログタイトル"
+  },
+  "title": "タイトル",
+  "@title": {
+    "description": "タイトルラベル"
+  },
+  "body": "本文",
+  "@body": {
+    "description": "本文ラベル"
+  },
+  "descriptionForRequestor": "依頼先への説明",
+  "@descriptionForRequestor": {
+    "description": "依頼先への説明ラベル"
+  },
+  "tags": "タグ",
+  "@tags": {
+    "description": "タグラベル"
+  },
+  "startDate": "着手日",
+  "@startDate": {
+    "description": "着手日ラベル"
+  },
+  "completionDate": "完了日",
+  "@completionDate": {
+    "description": "完了日ラベル"
+  },
+  "reminderFunction": "リマインダー機能",
+  "@reminderFunction": {
+    "description": "リマインダー機能ラベル"
+  },
+  "linkAssociation": "リンク関連付け",
+  "@linkAssociation": {
+    "description": "リンク関連付けラベル"
+  },
+  "relatedLinks": "関連リンク",
+  "@relatedLinks": {
+    "description": "関連リンクラベル"
+  },
+  "pinning": "ピン留め",
+  "@pinning": {
+    "description": "ピン留めラベル"
+  },
+  "schedule": "予定",
+  "@schedule": {
+    "description": "予定ラベル"
+  },
+  "emailSendingFunction": "メール送信機能",
+  "@emailSendingFunction": {
+    "description": "メール送信機能ラベル"
+  },
+  "openEmailSendingFunction": "メール送信機能を開く",
+  "@openEmailSendingFunction": {
+    "description": "メール送信機能を開くラベル"
+  },
+  "collapseMailFunction": "メール機能を折りたたむ",
+  "@collapseMailFunction": {
+    "description": "メール機能を折りたたむラベル"
+  },
+  "update": "更新",
+  "@update": {
+    "description": "更新ボタン"
+  },
+  "selectStartDate": "着手日を選択",
+  "@selectStartDate": {
+    "description": "着手日選択プレースホルダー"
+  },
+  "subtaskTitle": "サブタスクタイトル",
+  "@subtaskTitle": {
+    "description": "サブタスクタイトルラベル"
+  },
+  "estimatedTime": "推定時間 (分)",
+  "@estimatedTime": {
+    "description": "推定時間ラベル"
+  },
+  "description": "説明",
+  "@description": {
+    "description": "説明ラベル"
+  },
+  "add": "追加",
+  "@add": {
+    "description": "追加ボタン"
+  },
+  "creationDate": "作成日",
+  "@creationDate": {
+    "description": "作成日ラベル"
+  },
+  "subtaskName": "サブタスク名",
+  "@subtaskName": {
+    "description": "サブタスク名ラベル"
+  },
+  "enterTitle": "タイトルを入力してください",
+  "@enterTitle": {
+    "description": "タイトル入力エラーメッセージ"
+  },
+  "bodyTextCanDisplayUpTo8Lines": "本文は8行まで表示できます。",
+  "@bodyTextCanDisplayUpTo8Lines": {
+    "description": "本文の行数制限説明"
+  },
+  "noSubtasks": "サブタスクがありません",
+  "@noSubtasks": {
+    "description": "サブタスクなしメッセージ"
+  },
+  "estimatedTimeMinutes": "推定時間: {minutes}分",
+  "@estimatedTimeMinutes": {
+    "description": "推定時間表示",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "completed": "完了",
+  "@completed": {
+    "description": "完了ラベル"
+  },
+  "create": "作成",
+  "@create": {
+    "description": "作成ボタン"
+  },
+  "selectDueDate": "期限日を選択",
+  "@selectDueDate": {
+    "description": "期限日選択プレースホルダー"
+  },
+  "priority": "優先度",
+  "@priority": {
+    "description": "優先度ラベル"
+  },
+  "clearStartDate": "着手日をクリア",
+  "@clearStartDate": {
+    "description": "着手日をクリアツールチップ"
+  },
+  "selectCompletionDate": "完了日を選択",
+  "@selectCompletionDate": {
+    "description": "完了日選択プレースホルダー"
+  },
+  "clearCompletionDate": "完了日をクリア",
+  "@clearCompletionDate": {
+    "description": "完了日をクリアツールチップ"
+  },
+  "pinnedToTop": "上部にピン留め中",
+  "@pinnedToTop": {
+    "description": "上部にピン留め中ラベル"
+  },
+  "saveLoadFilters": "フィルター保存・読み込み",
+  "@saveLoadFilters": {
+    "description": "フィルター保存・読み込みツールチップ"
+  },
+  "howToUseRegex": "正規表現の使い方",
+  "@howToUseRegex": {
+    "description": "正規表現の使い方タイトル"
+  },
+  "commonPatterns": "よく使うパターン:",
+  "@commonPatterns": {
+    "description": "よく使うパターンラベル"
+  },
+  "copyPattern": "パターンをコピー",
+  "@copyPattern": {
+    "description": "パターンをコピーツールチップ"
+  },
+  "patternCopied": "「{pattern}」をコピーしました",
+  "@patternCopied": {
+    "description": "パターンコピー完了メッセージ",
+    "placeholders": {
+      "pattern": {
+        "type": "String"
+      }
+    }
+  },
+  "regexInvalidWarning": "正規表現が無効な場合は自動的に通常検索に切り替わります",
+  "@regexInvalidWarning": {
+    "description": "正規表現無効時の警告メッセージ"
+  },
+  "regexExample1": "「プロジェクト」で始まるタスク",
+  "@regexExample1": {
+    "description": "正規表現例1の説明"
+  },
+  "regexExample2": "「完了」で終わるタスク",
+  "@regexExample2": {
+    "description": "正規表現例2の説明"
+  },
+  "regexExample3": "「プロジェクト」で始まり「完了」で終わるタスク",
+  "@regexExample3": {
+    "description": "正規表現例3の説明"
+  },
+  "regexExample4": "「緊急」または「重要」を含むタスク",
+  "@regexExample4": {
+    "description": "正規表現例4の説明"
+  },
+  "regexExample5": "日付形式（YYYY-MM-DD）を含むタスク",
+  "@regexExample5": {
+    "description": "正規表現例5の説明"
+  },
+  "regexExample6": "2文字以上の大文字を含むタスク",
+  "@regexExample6": {
+    "description": "正規表現例6の説明"
+  },
+  "regexExample7": "1〜10文字のタスクタイトル",
+  "@regexExample7": {
+    "description": "正規表現例7の説明"
+  },
+  "saveFilter": "フィルターを保存",
+  "@saveFilter": {
+    "description": "フィルターを保存ダイアログタイトル"
+  },
+  "filterName": "フィルター名",
+  "@filterName": {
+    "description": "フィルター名ラベル"
+  },
+  "filterNameExample": "例: 今週の緊急タスク",
+  "@filterNameExample": {
+    "description": "フィルター名の例"
+  },
+  "filterSaved": "フィルター「{name}」を保存しました",
+  "@filterSaved": {
+    "description": "フィルター保存完了メッセージ",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noSavedFilters": "保存されたフィルターがありません",
+  "@noSavedFilters": {
+    "description": "保存されたフィルターなしメッセージ"
+  },
+  "filterLoaded": "フィルター「{name}」を読み込みました",
+  "@filterLoaded": {
+    "description": "フィルター読み込み完了メッセージ",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFilterPresets": "フィルタープリセットをエクスポート",
+  "@exportFilterPresets": {
+    "description": "フィルタープリセットをエクスポートダイアログタイトル"
+  },
+  "filterPresetsExported": "フィルタープリセットをエクスポートしました",
+  "@filterPresetsExported": {
+    "description": "フィルタープリセットエクスポート完了メッセージ"
+  },
+  "importFilterPresets": "フィルタープリセットをインポート",
+  "@importFilterPresets": {
+    "description": "フィルタープリセットをインポートダイアログタイトル"
+  },
+  "filterPresetsImported": "{count}件のフィルタープリセットをインポートしました",
+  "@filterPresetsImported": {
+    "description": "フィルタープリセットインポート完了メッセージ",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "export": "エクスポート",
+  "@export": {
+    "description": "エクスポートボタン"
+  },
+  "import": "インポート",
+  "@import": {
+    "description": "インポートボタン"
+  },
+  "quickFilterApplied": "クイックフィルターを適用しました",
+  "@quickFilterApplied": {
+    "description": "クイックフィルター適用完了メッセージ"
+  },
+  "filterReset": "フィルターをリセットしました",
+  "@filterReset": {
+    "description": "フィルターリセット完了メッセージ"
+  },
+  "editGroupName": "グループ名を編集",
+  "@editGroupName": {
+    "description": "グループ名を編集ツールチップ"
+  },
+  "createTaskFromLink": "このリンクからタスクを作成",
+  "@createTaskFromLink": {
+    "description": "リンクからタスクを作成ツールチップ"
+  },
+  "activeTaskExists": "アクティブなタスクがあります",
+  "@activeTaskExists": {
+    "description": "アクティブなタスクがある場合のツールチップ"
+  },
+  "selectCopyDestination": "コピー先を選択",
+  "@selectCopyDestination": {
+    "description": "コピー先選択ダイアログタイトル"
+  },
+  "selectMoveDestination": "移動先を選択",
+  "@selectMoveDestination": {
+    "description": "移動先選択ダイアログタイトル"
+  },
+  "linksCount": "{count}件のリンク",
+  "@linksCount": {
+    "description": "リンク数表示",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linkCopied": "「{linkName}」を「{groupName}」にコピーしました",
+  "@linkCopied": {
+    "description": "リンクコピー完了メッセージ",
+    "placeholders": {
+      "linkName": {
+        "type": "String"
+      },
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkMoved": "「{linkName}」を「{groupName}」に移動しました",
+  "@linkMoved": {
+    "description": "リンク移動完了メッセージ",
+    "placeholders": {
+      "linkName": {
+        "type": "String"
+      },
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "copyFailed": "コピーに失敗しました: {error}",
+  "@copyFailed": {
+    "description": "コピー失敗メッセージ",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "copyNotAvailable": "コピー機能が利用できません",
+  "@copyNotAvailable": {
+    "description": "コピー機能が利用できないメッセージ"
+  },
+  "moveNotAvailable": "移動機能が利用できません",
+  "@moveNotAvailable": {
+    "description": "移動機能が利用できないメッセージ"
+  },
+  "noCopyDestinationGroups": "コピー先のグループがありません",
+  "@noCopyDestinationGroups": {
+    "description": "コピー先グループなしメッセージ"
+  },
+  "noMoveDestinationGroups": "移動先のグループがありません",
+  "@noMoveDestinationGroups": {
+    "description": "移動先グループなしメッセージ"
+  },
+  "dragToReorder": "ドラッグ&ドロップで並び順を変更できます",
+  "@dragToReorder": {
+    "description": "ドラッグ&ドロップ説明文"
+  },
+  "groupOrderChanged": "グループの並び順を変更しました",
+  "@groupOrderChanged": {
+    "description": "グループ並び順変更完了メッセージ"
+  },
+  "taskTemplate": "タスクテンプレート",
+  "@taskTemplate": {
+    "description": "タスクテンプレートダイアログタイトル"
+  },
+  "selectTemplate": "テンプレートを選択",
+  "@selectTemplate": {
+    "description": "テンプレート選択セクションタイトル"
+  },
+  "taskDetails": "タスク詳細",
+  "@taskDetails": {
+    "description": "タスク詳細セクションタイトル"
+  },
+  "templateName": "テンプレート名",
+  "@templateName": {
+    "description": "テンプレート名ラベル"
+  },
+  "templateNameExample": "例: 会議準備、定期報告など",
+  "@templateNameExample": {
+    "description": "テンプレート名の例"
+  },
+  "createTask": "タスクを作成",
+  "@createTask": {
+    "description": "タスク作成ボタン"
+  },
+  "editTemplate": "テンプレート編集",
+  "@editTemplate": {
+    "description": "テンプレート編集ツールチップ"
+  },
+  "editComplete": "編集完了",
+  "@editComplete": {
+    "description": "編集完了ツールチップ"
+  },
+  "addNewTemplate": "新しいテンプレートを追加",
+  "@addNewTemplate": {
+    "description": "新しいテンプレート追加ツールチップ"
+  },
+  "syncThisTask": "このタスクを同期",
+  "@syncThisTask": {
+    "description": "このタスクを同期メニュー項目"
+  },
+  "taskCreated": "タスクを作成しました",
+  "@taskCreated": {
+    "description": "タスク作成完了メッセージ"
+  },
+  "reminder": "リマインダー",
+  "@reminder": {
+    "description": "リマインダーラベル"
+  },
+  "selectPlease": "選択してください",
+  "@selectPlease": {
+    "description": "選択してくださいプレースホルダー"
+  },
+  "createNewTask": "新しいタスクを作成",
+  "@createNewTask": {
+    "description": "新しいタスクを作成ショートカット説明"
+  },
+  "toggleBatchSelectionMode": "一括選択モードを切り替え",
+  "@toggleBatchSelectionMode": {
+    "description": "一括選択モードを切り替えショートカット説明"
+  },
+  "exportToCsv": "CSVにエクスポート",
+  "@exportToCsv": {
+    "description": "CSVにエクスポートショートカット説明"
+  },
+  "openSettingsScreen": "設定画面を開く",
+  "@openSettingsScreen": {
+    "description": "設定画面を開くショートカット説明"
+  },
+  "openSchedule": "予定表を開く",
+  "@openSchedule": {
+    "description": "予定表を開くショートカット説明"
+  },
+  "groupingMenu": "グループ化メニュー",
+  "@groupingMenu": {
+    "description": "グループ化メニューショートカット説明"
+  },
+  "createFromTemplate": "テンプレートから作成",
+  "@createFromTemplate": {
+    "description": "テンプレートから作成ショートカット説明"
+  },
+  "toggleStatisticsSearchBar": "統計・検索バー表示/非表示",
+  "@toggleStatisticsSearchBar": {
+    "description": "統計・検索バー表示/非表示ショートカット説明"
+  },
+  "toggleCompactStandardDisplay": "コンパクト⇔標準表示切り替え",
+  "@toggleCompactStandardDisplay": {
+    "description": "コンパクト⇔標準表示切り替えショートカット説明"
+  },
+  "goHomeOrOpenThreeDotMenu": "ホームへ戻る / 3点メニューを開く",
+  "@goHomeOrOpenThreeDotMenu": {
+    "description": "ホームへ戻る / 3点メニューを開くショートカット説明"
+  },
+  "focusThreeDotMenu": "3点メニューにフォーカス",
+  "@focusThreeDotMenu": {
+    "description": "3点メニューにフォーカスショートカット説明"
+  },
+  "showShortcutList": "ショートカット一覧を表示",
+  "@showShortcutList": {
+    "description": "ショートカット一覧を表示ショートカット説明"
+  },
+  "history": "履歴",
+  "@history": {
+    "description": "履歴ラベル"
+  },
+  "task": "タスク",
+  "@task": {
+    "description": "タスクラベル"
+  },
+  "saveCurrentFilter": "現在のフィルターを保存",
+  "@saveCurrentFilter": {
+    "description": "現在のフィルターを保存メニュー項目"
+  },
+  "filterManagement": "フィルター管理",
+  "@filterManagement": {
+    "description": "フィルター管理メニュー項目"
+  },
+  "urgentTasks": "緊急タスク",
+  "@urgentTasks": {
+    "description": "緊急タスクメニュー項目"
+  },
+  "todayTasks": "今日のタスク",
+  "@todayTasks": {
+    "description": "今日のタスクメニュー項目"
+  },
+  "total": "総",
+  "@total": {
+    "description": "総タスクラベル"
+  },
+  "totalTasks": "総タスク",
+  "@totalTasks": {
+    "description": "総タスクラベル（完全版）"
+  },
+  "inProgressShort": "進",
+  "@inProgressShort": {
+    "description": "進行中ラベル（短縮版）"
+  },
+  "completedShort": "完",
+  "@completedShort": {
+    "description": "完了ラベル（短縮版）"
+  },
+  "notStartedShort": "未",
+  "@notStartedShort": {
+    "description": "未着手ラベル（短縮版）"
+  },
+  "inProgressShort2": "中",
+  "@inProgressShort2": {
+    "description": "進行中ラベル（短縮版2）"
+  },
+  "searchOptions": "検索オプション",
+  "@searchOptions": {
+    "description": "検索オプションタイトル"
+  },
+  "descriptionText": "説明文",
+  "@descriptionText": {
+    "description": "説明文ラベル"
+  },
+  "requester": "依頼先",
+  "@requester": {
+    "description": "依頼先ラベル"
+  },
+  "normalSearchMode": "通常検索モード",
+  "@normalSearchMode": {
+    "description": "通常検索モードラベル"
+  },
+  "regexSearchMode": "正規表現検索モード",
+  "@regexSearchMode": {
+    "description": "正規表現検索モードラベル"
+  },
+  "changeStatus": "ステータスを変更",
+  "@changeStatus": {
+    "description": "ステータスを変更ツールチップ"
+  }
+}
+

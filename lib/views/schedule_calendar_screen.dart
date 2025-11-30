@@ -12,6 +12,7 @@ import 'home_screen.dart'; // HighlightedText用
 import 'outlook_calendar_import_dialog_v2.dart';
 import '../widgets/shortcut_help_dialog.dart';
 import '../services/snackbar_service.dart';
+import '../l10n/app_localizations.dart';
 
 enum ScheduleCalendarView { list, week, month }
 
@@ -197,17 +198,17 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           },
           child: Scaffold(
       appBar: AppBar(
-        title: const Text('予定表'),
+        title: Text(AppLocalizations.of(context)!.scheduleScreen),
         actions: [
           Tooltip(
-            message: 'ショートカット一覧 (F1)',
+            message: '${AppLocalizations.of(context)!.shortcutList} (F1)',
             child: IconButton(
               icon: Icon(Icons.help_outline, color: Theme.of(context).colorScheme.primary),
               onPressed: () => _showShortcutGuide(context),
             ),
           ),
           PopupMenuButton<ScheduleCalendarView>(
-            tooltip: '表示切り替え',
+            tooltip: AppLocalizations.of(context)!.switchView,
             icon: Icon(
               _currentView == ScheduleCalendarView.list
                   ? Icons.view_list
@@ -221,23 +222,23 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
               });
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: ScheduleCalendarView.list,
                 child: Row(
                   children: [
                     Icon(Icons.view_list),
                     SizedBox(width: 8),
-                    Text('リスト表示'),
+                    Text(AppLocalizations.of(context)!.listView),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: ScheduleCalendarView.month,
                 child: Row(
                   children: [
                     Icon(Icons.calendar_month),
                     SizedBox(width: 8),
-                    Text('月次表示'),
+                    Text(AppLocalizations.of(context)!.monthlyView),
                   ],
                 ),
               ),
@@ -274,7 +275,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                   });
                 },
               ),
-              const Text('過去を表示', style: TextStyle(fontSize: 14)),
+              Text(AppLocalizations.of(context)!.showPast, style: const TextStyle(fontSize: 14)),
               const SizedBox(width: 8),
             ],
           ),
@@ -282,8 +283,8 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           PopupMenuButton<String>(
             icon: const Icon(Icons.content_copy),
             tooltip: _selectedDates.isEmpty 
-                ? 'エクセルにコピー（日付を選択してください）'
-                : 'エクセルにコピー（選択された${_selectedDates.length}日分の予定をクリップボードにコピー）',
+                ? AppLocalizations.of(context)!.copyToExcelSelectDate
+                : AppLocalizations.of(context)!.copyToExcelSelected(_selectedDates.length),
             onSelected: (value) {
               if (_currentView != ScheduleCalendarView.list) {
                 SnackBarService.showInfo(context, 'エクセルコピーはリスト表示時のみ利用できます。');
@@ -296,23 +297,23 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'table',
                 child: Row(
                   children: [
                     Icon(Icons.table_chart, size: 20),
                     SizedBox(width: 8),
-                    Text('表形式（複数列）'),
+                    Text(AppLocalizations.of(context)!.tableFormat),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'onecell',
                 child: Row(
                   children: [
                     Icon(Icons.list, size: 20),
                     SizedBox(width: 8),
-                    Text('1セル形式（列挙）'),
+                    Text(AppLocalizations.of(context)!.oneCellFormat),
                   ],
                 ),
               ),
@@ -321,7 +322,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           // Outlook連携ボタン
           IconButton(
             icon: const Icon(Icons.cloud_download),
-            tooltip: 'Outlookから予定を取り込む',
+            tooltip: AppLocalizations.of(context)!.importFromOutlook,
             onPressed: () async {
               final result = await showDialog(
                 context: context,
@@ -359,7 +360,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     decoration: InputDecoration(
-                      hintText: '予定タイトル、タスク名、場所で検索',
+                      hintText: AppLocalizations.of(context)!.searchSchedule,
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
@@ -388,11 +389,11 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                 // タスクフィルター（予定あり未完了タスクのみ）
                 DropdownButton<String?>(
                   value: _selectedTaskId,
-                  hint: const Text('タスク'),
+                  hint: Text(AppLocalizations.of(context)!.task),
                   items: [
-                    const DropdownMenuItem<String?>(
+                    DropdownMenuItem<String?>(
                       value: null,
-                      child: Text('すべて'),
+                      child: Text(AppLocalizations.of(context)!.all),
                     ),
                     // 予定があり、未完了のタスクのみ表示
                     ...tasks.where((task) {

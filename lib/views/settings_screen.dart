@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../l10n/app_localizations.dart';
 import '../services/settings_service.dart';
 import '../services/notification_service.dart';
 import '../services/windows_notification_service.dart';
@@ -160,6 +161,7 @@ class SettingsState {
   final bool outlookAutoSyncEnabled;
   final int outlookAutoSyncPeriodDays;
   final String outlookAutoSyncFrequency;
+  final String locale;
 
   SettingsState({
     this.autoBackup = true,
@@ -178,6 +180,7 @@ class SettingsState {
     this.outlookAutoSyncEnabled = false,
     this.outlookAutoSyncPeriodDays = 30,
     this.outlookAutoSyncFrequency = 'on_startup',
+    this.locale = 'ja',
   });
 
   SettingsState copyWith({
@@ -197,6 +200,7 @@ class SettingsState {
     bool? outlookAutoSyncEnabled,
     int? outlookAutoSyncPeriodDays,
     String? outlookAutoSyncFrequency,
+    String? locale,
   }) {
     return SettingsState(
       autoBackup: autoBackup ?? this.autoBackup,
@@ -215,6 +219,7 @@ class SettingsState {
       outlookAutoSyncEnabled: outlookAutoSyncEnabled ?? this.outlookAutoSyncEnabled,
       outlookAutoSyncPeriodDays: outlookAutoSyncPeriodDays ?? this.outlookAutoSyncPeriodDays,
       outlookAutoSyncFrequency: outlookAutoSyncFrequency ?? this.outlookAutoSyncFrequency,
+      locale: locale ?? this.locale,
     );
   }
 }
@@ -246,6 +251,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         outlookAutoSyncEnabled: _service.outlookAutoSyncEnabled,
         outlookAutoSyncPeriodDays: _service.outlookAutoSyncPeriodDays,
         outlookAutoSyncFrequency: _service.outlookAutoSyncFrequency,
+        locale: _service.locale,
         isLoading: false,
       );
     } catch (e) {
@@ -329,6 +335,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(outlookAutoSyncFrequency: value);
   }
 
+  Future<void> setLocale(String value) async {
+    await _service.setLocale(value);
+    state = state.copyWith(locale: value);
+  }
+
   Future<void> resetToDefaults() async {
     await _service.resetToDefaults();
     await _loadSettings();
@@ -364,12 +375,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       onKey: _handleKeyEvent,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('設定'),
+          title: Text(AppLocalizations.of(context)!.settings),
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () => settingsNotifier._loadSettings(),
-              tooltip: '設定を再読み込み',
+              tooltip: AppLocalizations.of(context)!.settings,
             ),
           ],
         ),
@@ -595,36 +606,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildSettingsMenu(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return ListView(
       padding: const EdgeInsets.all(12), // パディングを増やして余裕のあるレイアウトに
       children: [
-        _buildMenuSection('一般', [
-          _buildMenuItem(context, ref, '起動設定', Icons.settings, 'general'),
+        _buildMenuSection(l10n.general, [
+          _buildMenuItem(context, ref, l10n.startupSettings, Icons.settings, 'general'),
         ]),
-        _buildMenuSection('外観', [
-          _buildMenuItem(context, ref, 'テーマ設定', Icons.palette, 'theme', '全画面共通'),
-          _buildMenuItem(context, ref, 'フォント設定', Icons.text_fields, 'font', '全画面共通'),
-          _buildMenuItem(context, ref, 'UIカスタマイズ', Icons.tune, 'ui_customization', '全画面共通'),
+        _buildMenuSection(l10n.appearance, [
+          _buildMenuItem(context, ref, l10n.themeSettings, Icons.palette, 'theme', l10n.allScreens),
+          _buildMenuItem(context, ref, l10n.fontSettings, Icons.text_fields, 'font', l10n.allScreens),
+          _buildMenuItem(context, ref, l10n.uiCustomization, Icons.tune, 'ui_customization', l10n.allScreens),
         ]),
-        _buildMenuSection('レイアウト', [
-          _buildMenuItem(context, ref, 'グリッド設定', Icons.grid_view, 'grid', 'リンク画面'),
-          _buildMenuItem(context, ref, 'カード設定', Icons.view_agenda, 'card', 'リンク・タスク画面'),
-          _buildMenuItem(context, ref, 'アイテム設定', Icons.link, 'item', 'リンク画面'),
-          _buildMenuItem(context, ref, 'カードビュー設定', Icons.view_module, 'task_project', 'タスク一覧'),
+        _buildMenuSection(l10n.layout, [
+          _buildMenuItem(context, ref, l10n.gridSettings, Icons.grid_view, 'grid', l10n.linkScreen),
+          _buildMenuItem(context, ref, l10n.cardSettings, Icons.view_agenda, 'card', l10n.linkAndTaskScreens),
+          _buildMenuItem(context, ref, l10n.itemSettings, Icons.link, 'item', l10n.linkScreen),
+          _buildMenuItem(context, ref, l10n.cardViewSettings, Icons.view_module, 'task_project', l10n.taskList),
         ]),
-        _buildMenuSection('データ', [
-          _buildMenuItem(context, ref, 'バックアップ', Icons.backup, 'backup'),
+        _buildMenuSection(l10n.data, [
+          _buildMenuItem(context, ref, l10n.backup, Icons.backup, 'backup'),
         ]),
-        _buildMenuSection('通知', [
-          _buildMenuItem(context, ref, '通知設定', Icons.notifications, 'notifications'),
+        _buildMenuSection(l10n.notifications, [
+          _buildMenuItem(context, ref, l10n.notificationSettings, Icons.notifications, 'notifications'),
         ]),
-        _buildMenuSection('連携', [
+        _buildMenuSection(l10n.integration, [
           _buildMenuItem(context, ref, 'Google Calendar', FontAwesomeIcons.calendarCheck, 'google_calendar'),
-          _buildMenuItem(context, ref, 'Outlook', FontAwesomeIcons.microsoft, 'outlook'),
-          _buildMenuItem(context, ref, 'Gmail連携', FontAwesomeIcons.envelope, 'gmail_api'),
-        ], subtitle: '各連携機能には個別の設定が必要です'),
-        _buildMenuSection('その他', [
-          _buildMenuItem(context, ref, 'リセット', Icons.restore, 'reset'),
+          _buildMenuItem(context, ref, l10n.outlook, FontAwesomeIcons.microsoft, 'outlook'),
+          _buildMenuItem(context, ref, l10n.gmailIntegration, FontAwesomeIcons.envelope, 'gmail_api'),
+        ], subtitle: l10n.integrationSettingsRequired),
+        _buildMenuSection(l10n.others, [
+          _buildMenuItem(context, ref, l10n.reset, Icons.restore, 'reset'),
         ]),
       ],
     );
@@ -825,10 +838,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildGeneralSection(SettingsState state, SettingsNotifier notifier) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('起動設定', Icons.settings),
+        _buildSectionHeader(l10n.general, Icons.settings),
         const SizedBox(height: 16),
         
         Card(
@@ -836,9 +851,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                // 言語選択
+                _buildLanguageSelector(state, notifier),
+                const Divider(),
+                const SizedBox(height: 8),
+                // タスク画面で起動
                 _buildSwitchWithDescription(
-                  title: 'タスク画面で起動',
-                  description: 'アプリ起動時にタスク画面をデフォルトで表示します。オフにすると、リンク管理画面で起動します。',
+                  title: l10n.startWithTaskScreen,
+                  description: l10n.startWithTaskScreenDescription,
                   value: state.startWithTaskScreen,
                   onChanged: notifier.setStartWithTaskScreen,
                 ),
@@ -849,13 +869,61 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ],
     );
   }
-
-
-  Widget _buildThemeSection(BuildContext context, WidgetRef ref, bool currentDarkMode, int currentAccentColor) {
+  
+  /// 言語選択UI
+  Widget _buildLanguageSelector(SettingsState state, SettingsNotifier notifier) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('テーマ設定', Icons.palette),
+        Row(
+          children: [
+            Icon(Icons.language, size: 20, color: Colors.blue),
+            const SizedBox(width: 8),
+            Text(
+              l10n.language,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SegmentedButton<String>(
+          segments: [
+            ButtonSegment<String>(
+              value: 'ja',
+              label: Text(l10n.japanese),
+              icon: const Icon(Icons.flag, size: 16),
+            ),
+            ButtonSegment<String>(
+              value: 'en',
+              label: Text(l10n.english),
+              icon: const Icon(Icons.flag, size: 16),
+            ),
+          ],
+          selected: {state.locale},
+          onSelectionChanged: (Set<String> newSelection) {
+            final selectedLocale = newSelection.first;
+            notifier.setLocale(selectedLocale);
+            // 言語変更後、アプリを再起動する必要がある場合のメッセージ
+            // 実際には、MaterialAppのlocaleが変更されれば自動的に反映される
+          },
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildThemeSection(BuildContext context, WidgetRef ref, bool currentDarkMode, int currentAccentColor) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(l10n.themeSettings, Icons.palette),
         const SizedBox(height: 16),
         
         Card(
@@ -865,8 +933,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SwitchListTile(
-                  title: const Text('ダークモード'),
-                  subtitle: const Text('ダークテーマを使用'),
+                  title: Text(l10n.darkMode),
+                  subtitle: Text(l10n.useDarkTheme),
                   value: currentDarkMode,
                   onChanged: (value) async {
                     ref.read(darkModeProvider.notifier).state = value;
@@ -2180,17 +2248,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () async {
+                  final l10n = AppLocalizations.of(context)!;
                   final confirmed = await showDialog<bool>(
                     context: context,
                     builder: (context) => UnifiedDialog(
-                      title: '設定をリセット',
+                      title: l10n.resetSettings,
                       icon: Icons.restore,
                       iconColor: Colors.orange,
-                      content: const Text('すべてのUI設定をデフォルト値にリセットしますか？\nこの操作は取り消せません。'),
+                      content: Text(l10n.resetSettingsConfirm),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('キャンセル'),
+                          child: Text(l10n.cancel),
                         ),
                         ElevatedButton(
                           onPressed: () => Navigator.pop(context, true),
@@ -2198,7 +2267,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             backgroundColor: Colors.orange,
                             foregroundColor: Colors.white,
                           ),
-                          child: const Text('リセット'),
+                          child: Text(l10n.reset),
                         ),
                       ],
                     ),
@@ -2209,13 +2278,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     if (context.mounted) {
                       SnackBarService.showSuccess(
                         context,
-                        'UI設定をリセットしました',
+                        l10n.uiSettingsResetSuccess,
                       );
                     }
                   }
                 },
                 icon: const Icon(Icons.restore),
-                label: const Text('設定をリセット'),
+                label: Text(AppLocalizations.of(context)!.resetSettings),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   foregroundColor: Colors.white,
@@ -4293,7 +4362,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             if (context.mounted) {
                               SnackBarService.showSuccess(
                                 context,
-                                'UI設定をリセットしました',
+                                AppLocalizations.of(context)!.uiSettingsResetSuccess,
                               );
                             }
                           }

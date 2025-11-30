@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../services/keyboard_shortcut_service.dart';
 import '../services/settings_service.dart';
@@ -7,6 +9,7 @@ import '../services/schedule_reminder_service.dart';
 import 'home_screen.dart';
 import 'task_screen.dart';
 import '../main.dart' show navigatorKey;
+import 'settings_screen.dart' show settingsProvider;
 
 // 起動画面を決定するProvider
 final startScreenProvider = FutureProvider<Widget>((ref) async {
@@ -74,6 +77,10 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
     final colorIntensity = ref.watch(colorIntensityProvider);
     final colorContrast = ref.watch(colorContrastProvider);
     
+    // 言語設定を取得（settingsProviderを監視して変更時に再構築）
+    final settingsState = ref.watch(settingsProvider);
+    final locale = Locale(settingsState.locale);
+    
     // 調整されたアクセントカラーを計算
     final adjustedAccentColor = _getAdjustedColor(accentColor, colorIntensity, colorContrast);
     
@@ -88,6 +95,18 @@ class _LinkLauncherAppState extends ConsumerState<LinkLauncherApp> {
       navigatorKey: navigatorKey, // グローバルなnavigatorKeyを使用
       title: 'Link Navigator',
       debugShowCheckedModeBanner: false,
+      // 多言語対応
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('ja', ''), // 日本語
+        Locale('en', ''), // 英語
+      ],
+      locale: locale,
       // ちらつきを防ぐための設定
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       // フォントサイズをアプリ全体に適用

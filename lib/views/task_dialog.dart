@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
@@ -634,7 +635,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              widget.task != null ? 'タスクを編集' : '新しいタスク',
+                              widget.task != null ? AppLocalizations.of(context)!.editTask : AppLocalizations.of(context)!.newTask,
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
                           ],
@@ -711,13 +712,13 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                           }
                         },
                         style: AppButtonStyles.text(context),
-                        child: const Text('キャンセル'),
+                        child: Text(AppLocalizations.of(context)!.cancel),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: _saveTask,
                         style: AppButtonStyles.primary(context),
-                        child: Text(widget.task != null ? '更新' : '作成'),
+                        child: Text(widget.task != null ? AppLocalizations.of(context)!.update : AppLocalizations.of(context)!.create),
                       ),
                     ],
                   ),
@@ -840,7 +841,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             fontFamily: ref.watch(titleFontFamilyProvider).isEmpty ? null : ref.watch(titleFontFamilyProvider),
           ),
           decoration: InputDecoration(
-            labelText: 'タイトル *',
+            labelText: '${AppLocalizations.of(context)!.title} *',
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
@@ -884,7 +885,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'タイトルを入力してください';
+              return AppLocalizations.of(context)!.enterTitle;
             }
             return null;
           },
@@ -914,7 +915,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             fontFamily: ref.watch(memoFontFamilyProvider).isEmpty ? null : ref.watch(memoFontFamilyProvider),
           ),
           decoration: InputDecoration(
-            labelText: '本文',
+            labelText: AppLocalizations.of(context)!.body,
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
@@ -962,7 +963,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             fontFamily: ref.watch(descriptionFontFamilyProvider).isEmpty ? null : ref.watch(descriptionFontFamilyProvider),
           ),
           decoration: InputDecoration(
-            labelText: '依頼先への説明',
+            labelText: AppLocalizations.of(context)!.descriptionForRequestor,
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
@@ -1041,16 +1042,16 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     return InkWell(
       onTap: () => _selectDate(context, true),
       child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: '期限日',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: AppLocalizations.of(context)!.dueDate,
+          border: const OutlineInputBorder(),
           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         ),
         child: Row(
           children: [
             Expanded(
               child: Text(
-                _dueDate != null ? DateFormat('yyyy/MM/dd').format(_dueDate!) : '期限日を選択',
+                _dueDate != null ? DateFormat('yyyy/MM/dd').format(_dueDate!) : AppLocalizations.of(context)!.selectDueDate,
                 style: const TextStyle(fontSize: 14),
               ),
             ),
@@ -1058,7 +1059,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               IconButton(
                 onPressed: () => setState(() => _dueDate = null),
                 icon: const Icon(Icons.clear, size: 18),
-                tooltip: '期限日をクリア',
+                tooltip: AppLocalizations.of(context)!.clearDueDate,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 padding: EdgeInsets.zero,
               ),
@@ -1071,9 +1072,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   Widget _buildPriorityField(BuildContext context) {
     return DropdownButtonFormField<TaskPriority>(
       value: _priority,
-      decoration: const InputDecoration(
-        labelText: '優先度',
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context)!.priority,
+        border: const OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       ),
       isExpanded: true,
@@ -1103,9 +1104,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   Widget _buildStatusField(BuildContext context) {
     return DropdownButtonFormField<TaskStatus>(
       value: _status,
-      decoration: const InputDecoration(
-        labelText: 'ステータス',
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context)!.status,
+        border: const OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       ),
       isExpanded: true,
@@ -1136,10 +1137,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   Widget _buildTagsField(BuildContext context) {
     return TextFormField(
       controller: _tagsController,
-      decoration: const InputDecoration(
-        labelText: 'タグ',
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context)!.tags,
         hintText: 'カンマ区切りで入力（例: 仕事, 重要, プロジェクトA）',
-        border: OutlineInputBorder(),
+        border: const OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       ),
       maxLines: 2,
@@ -1150,16 +1151,16 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     return InkWell(
       onTap: () => _selectDate(context, false, isStartedAt: true),
       child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: '着手日',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: AppLocalizations.of(context)!.startDate,
+          border: const OutlineInputBorder(),
           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         ),
         child: Row(
           children: [
             Expanded(
               child: Text(
-                _startedAt != null ? DateFormat('yyyy/MM/dd').format(_startedAt!) : '着手日を選択',
+                _startedAt != null ? DateFormat('yyyy/MM/dd').format(_startedAt!) : AppLocalizations.of(context)!.selectStartDate,
                 style: const TextStyle(fontSize: 13),
               ),
             ),
@@ -1167,7 +1168,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               IconButton(
                 onPressed: () => setState(() => _startedAt = null),
                 icon: const Icon(Icons.clear, size: 16),
-                tooltip: '着手日をクリア',
+                tooltip: AppLocalizations.of(context)!.clearStartDate,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 padding: EdgeInsets.zero,
               ),
@@ -1181,16 +1182,16 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     return InkWell(
       onTap: () => _selectDate(context, false, isCompletedAt: true),
       child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: '完了日',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: AppLocalizations.of(context)!.completionDate,
+          border: const OutlineInputBorder(),
           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         ),
         child: Row(
           children: [
             Expanded(
               child: Text(
-                _completedAtManual != null ? DateFormat('yyyy/MM/dd').format(_completedAtManual!) : '完了日を選択',
+                _completedAtManual != null ? DateFormat('yyyy/MM/dd').format(_completedAtManual!) : AppLocalizations.of(context)!.selectCompletionDate,
                 style: const TextStyle(fontSize: 13),
               ),
             ),
@@ -1198,7 +1199,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               IconButton(
                 onPressed: () => setState(() => _completedAtManual = null),
                 icon: const Icon(Icons.clear, size: 16),
-                tooltip: '完了日をクリア',
+                tooltip: AppLocalizations.of(context)!.clearCompletionDate,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 padding: EdgeInsets.zero,
               ),
@@ -1223,7 +1224,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               children: [
                 Icon(Icons.schedule, color: Colors.blue.shade600, size: 20),
                 const SizedBox(width: 8),
-                const Text('リマインダー機能', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                Text(AppLocalizations.of(context)!.reminderFunction, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
                 const Spacer(),
                 if (_reminderTime != null)
                   Container(
@@ -1380,7 +1381,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             ),
             const SizedBox(width: 8),
             Text(
-              'リンク関連付け',
+              AppLocalizations.of(context)!.linkAssociation,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -1435,7 +1436,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             ),
             const SizedBox(width: 8),
             Text(
-              _isPinned ? '上部にピン留め中' : 'ピン留め',
+              _isPinned ? AppLocalizations.of(context)!.pinnedToTop : AppLocalizations.of(context)!.pinning,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -1515,7 +1516,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '関連リンク',
+            AppLocalizations.of(context)!.relatedLinks,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -1584,7 +1585,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                                 child: Tooltip(
                                   message: link.memo != null && link.memo!.isNotEmpty 
                                       ? link.memo! 
-                                      : 'メモはリンク管理画面から追加可能',
+                                      : AppLocalizations.of(context)!.memoCanBeAddedFromLinkManagement,
                                   waitDuration: const Duration(milliseconds: 500),
                                   child: Text(
                                     link.label,
@@ -1684,7 +1685,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'サブタスク',
+                  AppLocalizations.of(context)!.subtask,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -1745,10 +1746,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               children: [
                 const Icon(Icons.subdirectory_arrow_right, color: Colors.blue),
                 const SizedBox(width: 8),
-                const Text('サブタスク', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.of(context)!.subtask, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const Spacer(),
                 if (widget.task != null)
-                  Text('${subTasks.where((s)=>s.isCompleted).length}/${subTasks.length} 完了',
+                  Text('${subTasks.where((s)=>s.isCompleted).length}/${subTasks.length} ${AppLocalizations.of(context)!.completed}',
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -1765,7 +1766,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       TextField(
                         controller: _subTaskTitleController,
                         decoration: InputDecoration(
-                          labelText: 'サブタスク名',
+                          labelText: AppLocalizations.of(context)!.subtaskName,
                           filled: true,
                           fillColor: Theme.of(context).colorScheme.surface,
                           border: OutlineInputBorder(
@@ -1900,7 +1901,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     backgroundColor: Colors.orange.shade700,
                     foregroundColor: Colors.white,
                   ),
-                  child: Text(_editingSubTask == null ? '追加' : '更新'),
+                  child: Text(_editingSubTask == null ? AppLocalizations.of(context)!.add : AppLocalizations.of(context)!.update),
                 ),
               ],
             ),
@@ -2050,9 +2051,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   size: 20,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  '予定',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.schedule,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -2143,7 +2144,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               children: [
                 const Icon(Icons.calendar_today, color: Colors.orange),
                 const SizedBox(width: 8),
-                const Text('予定', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.of(context)!.schedule, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const Spacer(),
                 Text(
                   '${schedules.length}件',
@@ -2424,7 +2425,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context, false),
-                                child: const Text('キャンセル'),
+                                child: Text(AppLocalizations.of(context)!.cancel),
                               ),
                               ElevatedButton(
                                 onPressed: () => Navigator.pop(context, true),
@@ -2627,7 +2628,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('キャンセル'),
+                          child: Text(AppLocalizations.of(context)!.cancel),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
@@ -2824,14 +2825,14 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           children: [
             Icon(Icons.email, color: Colors.blue),
             const SizedBox(width: 8),
-            const Text(
-              'メール送信機能',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              AppLocalizations.of(context)!.emailSendingFunction,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),
         subtitle: Text(
-          _isMailSectionExpanded ? 'メール機能を折りたたむ' : 'メール送信機能を開く',
+          _isMailSectionExpanded ? AppLocalizations.of(context)!.collapseMailFunction : AppLocalizations.of(context)!.openEmailSendingFunction,
           style: TextStyle(
             fontSize: 12,
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),

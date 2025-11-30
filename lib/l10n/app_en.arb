@@ -1,0 +1,1295 @@
+{
+  "@@locale": "en",
+  "appTitle": "Link Navigator",
+  "@appTitle": {
+    "description": "Application title"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings screen title"
+  },
+  "general": "General",
+  "@general": {
+    "description": "General settings section"
+  },
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme settings section"
+  },
+  "font": "Font",
+  "@font": {
+    "description": "Font settings section"
+  },
+  "backup": "Backup",
+  "@backup": {
+    "description": "Backup settings section"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications settings section"
+  },
+  "outlook": "Outlook Integration",
+  "@outlook": {
+    "description": "Outlook integration settings section"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language setting"
+  },
+  "japanese": "Japanese",
+  "@japanese": {
+    "description": "Japanese language"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language"
+  },
+  "enableAutomaticImport": "Enable Automatic Import",
+  "@enableAutomaticImport": {
+    "description": "Title of the automatic import switch"
+  },
+  "enableAutomaticImportDescription": "Automatically import schedules from your Outlook personal calendar. Imported schedules are linked to the \"Outlook Integration (Auto Import)\" task.\n\n⚠️ Warning: Outlook may crash when automatic import is executed while Outlook is running.",
+  "@enableAutomaticImportDescription": {
+    "description": "Description of automatic import feature"
+  },
+  "importPeriod": "Import Period",
+  "@importPeriod": {
+    "description": "Title of import period section"
+  },
+  "importPeriodDescription": "Set how far into the future schedules will be imported, starting from tomorrow.",
+  "@importPeriodDescription": {
+    "description": "Description of import period"
+  },
+  "automaticImportFrequency": "Automatic Import Frequency",
+  "@automaticImportFrequency": {
+    "description": "Title of automatic import frequency section"
+  },
+  "onlyOnAppStart": "Only when app starts",
+  "@onlyOnAppStart": {
+    "description": "Frequency option: only when app starts"
+  },
+  "every30Minutes": "Every 30 minutes",
+  "@every30Minutes": {
+    "description": "Frequency option: every 30 minutes"
+  },
+  "every1Hour": "Every 1 hour",
+  "@every1Hour": {
+    "description": "Frequency option: every 1 hour"
+  },
+  "everyMorning9am": "Every morning at 9:00",
+  "@everyMorning9am": {
+    "description": "Frequency option: every morning at 9:00"
+  },
+  "oneWeek": "1 Week",
+  "@oneWeek": {
+    "description": "Period option: 1 week"
+  },
+  "twoWeeks": "2 Weeks",
+  "@twoWeeks": {
+    "description": "Period option: 2 weeks"
+  },
+  "oneMonth": "1 Month",
+  "@oneMonth": {
+    "description": "Period option: 1 month"
+  },
+  "threeMonths": "3 Months",
+  "@threeMonths": {
+    "description": "Period option: 3 months"
+  },
+  "halfYear": "Half Year",
+  "@halfYear": {
+    "description": "Period option: half year"
+  },
+  "oneYear": "1 Year",
+  "@oneYear": {
+    "description": "Period option: 1 year"
+  },
+  "taskManagement": "Task Management",
+  "@taskManagement": {
+    "description": "Task management screen title"
+  },
+  "linkManagement": "Link Management",
+  "@linkManagement": {
+    "description": "Link management screen title"
+  },
+  "itemsSelected": "{count} items selected",
+  "@itemsSelected": {
+    "description": "Number of selected items",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "startWithTaskScreen": "Start with Task Screen",
+  "@startWithTaskScreen": {
+    "description": "Title of the setting to start with task screen"
+  },
+  "startWithTaskScreenDescription": "Display the task screen by default when the app starts. When turned off, the app starts with the link management screen.",
+  "@startWithTaskScreenDescription": {
+    "description": "Description of the setting to start with task screen"
+  },
+  "appearance": "Appearance",
+  "@appearance": {
+    "description": "Appearance settings section"
+  },
+  "layout": "Layout",
+  "@layout": {
+    "description": "Layout settings section"
+  },
+  "data": "Data",
+  "@data": {
+    "description": "Data settings section"
+  },
+  "integration": "Integration",
+  "@integration": {
+    "description": "Integration settings section"
+  },
+  "others": "Others",
+  "@others": {
+    "description": "Others settings section"
+  },
+  "startupSettings": "Startup Settings",
+  "@startupSettings": {
+    "description": "Startup settings menu item"
+  },
+  "themeSettings": "Theme Settings",
+  "@themeSettings": {
+    "description": "Theme settings menu item"
+  },
+  "fontSettings": "Font Settings",
+  "@fontSettings": {
+    "description": "Font settings menu item"
+  },
+  "uiCustomization": "UI Customization",
+  "@uiCustomization": {
+    "description": "UI customization menu item"
+  },
+  "gridSettings": "Grid Settings",
+  "@gridSettings": {
+    "description": "Grid settings menu item"
+  },
+  "cardSettings": "Card Settings",
+  "@cardSettings": {
+    "description": "Card settings menu item"
+  },
+  "itemSettings": "Item Settings",
+  "@itemSettings": {
+    "description": "Item settings menu item"
+  },
+  "cardViewSettings": "Card View Settings",
+  "@cardViewSettings": {
+    "description": "Card view settings menu item"
+  },
+  "notificationSettings": "Notification Settings",
+  "@notificationSettings": {
+    "description": "Notification settings menu item"
+  },
+  "gmailIntegration": "Gmail Integration",
+  "@gmailIntegration": {
+    "description": "Gmail integration menu item"
+  },
+  "reset": "Reset",
+  "@reset": {
+    "description": "Reset menu item"
+  },
+  "allScreens": "All Screens",
+  "@allScreens": {
+    "description": "All screens description"
+  },
+  "linkScreen": "Link Screen",
+  "@linkScreen": {
+    "description": "Link screen description"
+  },
+  "linkAndTaskScreens": "Link & Task Screens",
+  "@linkAndTaskScreens": {
+    "description": "Link and task screens description"
+  },
+  "taskList": "Task List",
+  "@taskList": {
+    "description": "Task list description"
+  },
+  "integrationSettingsRequired": "Each integration feature requires individual settings",
+  "@integrationSettingsRequired": {
+    "description": "Integration features description"
+  },
+  "darkMode": "Dark Mode",
+  "@darkMode": {
+    "description": "Dark mode title"
+  },
+  "useDarkTheme": "Use dark theme",
+  "@useDarkTheme": {
+    "description": "Dark theme description"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "resetSettings": "Reset Settings",
+  "@resetSettings": {
+    "description": "Reset settings button"
+  },
+  "resetSettingsConfirm": "Reset all UI settings to default values?\nThis action cannot be undone.",
+  "@resetSettingsConfirm": {
+    "description": "Reset settings confirmation message"
+  },
+  "resetExecuted": "Reset",
+  "@resetExecuted": {
+    "description": "Reset execution button"
+  },
+  "uiSettingsReset": "Reset UI Settings",
+  "@uiSettingsReset": {
+    "description": "Reset UI settings button"
+  },
+  "uiSettingsResetConfirm": "Reset all UI customization settings to default values.\n\nThis action cannot be undone.\nAre you sure you want to proceed?",
+  "@uiSettingsResetConfirm": {
+    "description": "Reset UI settings confirmation message"
+  },
+  "uiSettingsResetSuccess": "UI settings have been reset",
+  "@uiSettingsResetSuccess": {
+    "description": "UI settings reset success message"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button"
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Close button"
+  },
+  "addGroup": "Add Group",
+  "@addGroup": {
+    "description": "Add group menu item"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Search menu item"
+  },
+  "memoBulkEdit": "Bulk Edit Memos",
+  "@memoBulkEdit": {
+    "description": "Bulk edit memos menu item"
+  },
+  "shortcutKeys": "Shortcut Keys",
+  "@shortcutKeys": {
+    "description": "Shortcut keys menu item"
+  },
+  "linkManagementShortcuts": "Link Management Shortcuts",
+  "@linkManagementShortcuts": {
+    "description": "Link management shortcuts help title"
+  },
+  "addGroupShortcut": "Add Group",
+  "@addGroupShortcut": {
+    "description": "Add group shortcut description"
+  },
+  "openSearchBar": "Open Search Bar",
+  "@openSearchBar": {
+    "description": "Open search bar shortcut description"
+  },
+  "openTaskManagement": "Open Task Management",
+  "@openTaskManagement": {
+    "description": "Open task management shortcut description"
+  },
+  "openMemoBulkEdit": "Open Bulk Edit Memos",
+  "@openMemoBulkEdit": {
+    "description": "Open bulk edit memos shortcut description"
+  },
+  "changeGroupOrder": "Change Group Order",
+  "@changeGroupOrder": {
+    "description": "Change group order shortcut description"
+  },
+  "openSettings": "Open Settings",
+  "@openSettings": {
+    "description": "Open settings shortcut description"
+  },
+  "showThreeDotMenu": "Show 3-dot Menu",
+  "@showThreeDotMenu": {
+    "description": "Show 3-dot menu shortcut description"
+  },
+  "focusThreeDotMenu": "Focus 3-dot Menu",
+  "@focusThreeDotMenu": {
+    "description": "Focus 3-dot menu shortcut description"
+  },
+  "closeSearchBar": "Close Search Bar",
+  "@closeSearchBar": {
+    "description": "Close search bar shortcut description"
+  },
+  "switchLinkTypeFilter": "Switch Link Type Filter",
+  "@switchLinkTypeFilter": {
+    "description": "Switch link type filter shortcut description"
+  },
+  "showShortcutList": "Show Shortcut List",
+  "@showShortcutList": {
+    "description": "Show shortcut list shortcut description"
+  },
+  "linksCount": "{count} links",
+  "@linksCount": {
+    "description": "Number of links",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchLinkNameMemo": "Search (Link Name / Memo)",
+  "@searchLinkNameMemo": {
+    "description": "Search field placeholder"
+  },
+  "resultsCount": "{count} results",
+  "@resultsCount": {
+    "description": "Number of search results",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noSearchResults": "No search results",
+  "@noSearchResults": {
+    "description": "No search results message"
+  },
+  "noMemoLinks": "No links with memos",
+  "@noMemoLinks": {
+    "description": "No memo links message"
+  },
+  "saveAll": "Save All",
+  "@saveAll": {
+    "description": "Save all button"
+  },
+  "searchPlaceholder": "Search (File name / Folder name / URL / Tag)",
+  "@searchPlaceholder": {
+    "description": "Search bar placeholder"
+  },
+  "type": "Type",
+  "@type": {
+    "description": "Type filter label"
+  },
+  "all": "All",
+  "@all": {
+    "description": "All types"
+  },
+  "url": "URL",
+  "@url": {
+    "description": "URL type"
+  },
+  "folder": "Folder",
+  "@folder": {
+    "description": "Folder type"
+  },
+  "file": "File",
+  "@file": {
+    "description": "File type"
+  },
+  "globalMenu": "Global Menu",
+  "@globalMenu": {
+    "description": "Global menu title"
+  },
+  "common": "Common",
+  "@common": {
+    "description": "Common menu section"
+  },
+  "linkManagementEnabled": "Link Management (Enabled on Link Management Screen)",
+  "@linkManagementEnabled": {
+    "description": "Link management menu section"
+  },
+  "taskManagementEnabled": "Task Management (Enabled on Task Management Screen)",
+  "@taskManagementEnabled": {
+    "description": "Task management menu section"
+  },
+  "newTask": "New Task",
+  "@newTask": {
+    "description": "New task menu item"
+  },
+  "bulkSelectMode": "Bulk Select Mode",
+  "@bulkSelectMode": {
+    "description": "Bulk select mode menu item"
+  },
+  "csvExport": "CSV Export",
+  "@csvExport": {
+    "description": "CSV export menu item"
+  },
+  "scheduleList": "Schedule List",
+  "@scheduleList": {
+    "description": "Schedule list menu item"
+  },
+  "grouping": "Grouping",
+  "@grouping": {
+    "description": "Grouping menu item"
+  },
+  "createFromTemplate": "Create from Template",
+  "@createFromTemplate": {
+    "description": "Create from template menu item"
+  },
+  "toggleStatisticsSearchBar": "Toggle Statistics / Search Bar",
+  "@toggleStatisticsSearchBar": {
+    "description": "Toggle statistics/search bar menu item"
+  },
+  "helpCenter": "Help Center",
+  "@helpCenter": {
+    "description": "Help center menu item"
+  },
+  "pathOrUrl": "Path/URL",
+  "@pathOrUrl": {
+    "description": "Path/URL label"
+  },
+  "enterPathOrUrl": "Enter file path or URL...",
+  "@enterPathOrUrl": {
+    "description": "Path/URL input field placeholder"
+  },
+  "selectFolderIcon": "Select Folder Icon:",
+  "@selectFolderIcon": {
+    "description": "Select folder icon label"
+  },
+  "homeScreen": "Return to Home Screen",
+  "@homeScreen": {
+    "description": "Return to home screen tooltip"
+  },
+  "exitSelectionMode": "Exit Selection Mode",
+  "@exitSelectionMode": {
+    "description": "Exit selection mode tooltip"
+  },
+  "searchTasks": "Search Tasks (Title / Description / Tags / Assignee)",
+  "@searchTasks": {
+    "description": "Task management screen search bar placeholder"
+  },
+  "searchWithRegex": "Search with Regex (e.g., ^Project.*Complete\\$)",
+  "@searchWithRegex": {
+    "description": "Regex search placeholder"
+  },
+  "searchHistory": "Search History",
+  "@searchHistory": {
+    "description": "Search history tooltip"
+  },
+  "clear": "Clear",
+  "@clear": {
+    "description": "Clear tooltip"
+  },
+  "switchToNormalSearch": "Switch to Normal Search",
+  "@switchToNormalSearch": {
+    "description": "Switch to normal search tooltip"
+  },
+  "switchToRegexSearch": "Switch to Regex Search",
+  "@switchToRegexSearch": {
+    "description": "Switch to regex search tooltip"
+  },
+  "searchOptions": "Search Options",
+  "@searchOptions": {
+    "description": "Search options tooltip"
+  },
+  "addMemo": "Add Memo",
+  "@addMemo": {
+    "description": "Add memo tooltip"
+  },
+  "memoCanBeAddedFromLinkManagement": "Memos can be added from the Link Management screen",
+  "@memoCanBeAddedFromLinkManagement": {
+    "description": "Memo can be added message"
+  },
+  "unpin": "Unpin",
+  "@unpin": {
+    "description": "Unpin tooltip"
+  },
+  "pinToTop": "Pin to Top",
+  "@pinToTop": {
+    "description": "Pin to top tooltip"
+  },
+  "changeStatus": "Change Status",
+  "@changeStatus": {
+    "description": "Change status tooltip"
+  },
+  "changePriority": "Change Priority",
+  "@changePriority": {
+    "description": "Change priority tooltip"
+  },
+  "hideFilters": "Hide Filters",
+  "@hideFilters": {
+    "description": "Hide filters tooltip"
+  },
+  "showFilters": "Show Filters",
+  "@showFilters": {
+    "description": "Show filters tooltip"
+  },
+  "changeGridColumns": "Change Grid Columns",
+  "@changeGridColumns": {
+    "description": "Change grid columns tooltip"
+  },
+  "saveLoadFilters": "Save / Load Filters",
+  "@saveLoadFilters": {
+    "description": "Save/load filters tooltip"
+  },
+  "bulkOperations": "Bulk Operations",
+  "@bulkOperations": {
+    "description": "Bulk operations tooltip"
+  },
+  "memoLabel": "Memo",
+  "@memoLabel": {
+    "description": "Memo label"
+  },
+  "selectAll": "Select All",
+  "@selectAll": {
+    "description": "Select all tooltip"
+  },
+  "deselectAll": "Deselect All",
+  "@deselectAll": {
+    "description": "Deselect all tooltip"
+  },
+  "cardView": "Card View",
+  "@cardView": {
+    "description": "Card view tooltip"
+  },
+  "listView": "List View",
+  "@listView": {
+    "description": "List view tooltip"
+  },
+  "status": "Status",
+  "@status": {
+    "description": "Status label"
+  },
+  "notStarted": "Not Started",
+  "@notStarted": {
+    "description": "Not started status"
+  },
+  "inProgress": "In Progress",
+  "@inProgress": {
+    "description": "In progress status"
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed status"
+  },
+  "sortOrder": "Sort Order",
+  "@sortOrder": {
+    "description": "Sort order label"
+  },
+  "firstPriority": "1st Priority",
+  "@firstPriority": {
+    "description": "1st priority label"
+  },
+  "secondPriority": "2nd Priority",
+  "@secondPriority": {
+    "description": "2nd priority label"
+  },
+  "thirdPriority": "3rd Priority",
+  "@thirdPriority": {
+    "description": "3rd priority label"
+  },
+  "dueDateOrder": "Due Date Order",
+  "@dueDateOrder": {
+    "description": "Due date order sort"
+  },
+  "statusOrder": "Status Order",
+  "@statusOrder": {
+    "description": "Status order sort"
+  },
+  "ascending": "Ascending",
+  "@ascending": {
+    "description": "Ascending sort"
+  },
+  "descending": "Descending",
+  "@descending": {
+    "description": "Descending sort"
+  },
+  "priorityOrder": "Priority Order",
+  "@priorityOrder": {
+    "description": "Priority order label"
+  },
+  "titleOrder": "Title Order",
+  "@titleOrder": {
+    "description": "Title order label"
+  },
+  "createdOrder": "Created Date Order",
+  "@createdOrder": {
+    "description": "Created date order label"
+  },
+  "none": "None",
+  "@none": {
+    "description": "None option"
+  },
+  "details": "Details",
+  "@details": {
+    "description": "Details button"
+  },
+  "collapseLinks": "Collapse Links",
+  "@collapseLinks": {
+    "description": "Collapse links button"
+  },
+  "expandLinks": "Expand Links",
+  "@expandLinks": {
+    "description": "Expand links button"
+  },
+  "subtask": "Subtask",
+  "@subtask": {
+    "description": "Subtask label"
+  },
+  "subtaskTooltip": "Subtasks: {total}\nCompleted: {completed}",
+  "@subtaskTooltip": {
+    "description": "Subtask tooltip",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "completed": {
+        "type": "int"
+      }
+    }
+  },
+  "showAllDetails": "Show All Details",
+  "@showAllDetails": {
+    "description": "Show all details tooltip"
+  },
+  "hideAllDetails": "Hide All Details",
+  "@hideAllDetails": {
+    "description": "Hide all details tooltip"
+  },
+  "toggleDetails": "Toggle Details",
+  "@toggleDetails": {
+    "description": "Toggle details shortcut description"
+  },
+  "columns": "Columns",
+  "@columns": {
+    "description": "Columns label"
+  },
+  "notStartedTasks": "Not Started Tasks",
+  "@notStartedTasks": {
+    "description": "Not started tasks label"
+  },
+  "inProgressTasks": "In Progress Tasks",
+  "@inProgressTasks": {
+    "description": "In progress tasks label"
+  },
+  "statusChange": "Change Status",
+  "@statusChange": {
+    "description": "Status change label"
+  },
+  "clearDueDate": "Clear Due Date",
+  "@clearDueDate": {
+    "description": "Clear due date button"
+  },
+  "selectDueDate": "Select Due Date",
+  "@selectDueDate": {
+    "description": "Select due date placeholder"
+  },
+  "priority": "Priority",
+  "@priority": {
+    "description": "Priority label"
+  },
+  "clearHistory": "Clear History",
+  "@clearHistory": {
+    "description": "Clear history button"
+  },
+  "clearHistoryConfirm": "Clear History",
+  "@clearHistoryConfirm": {
+    "description": "Clear history confirm button"
+  },
+  "noGrouping": "No Grouping",
+  "@noGrouping": {
+    "description": "No grouping option"
+  },
+  "groupByStatus": "Group by Status",
+  "@groupByStatus": {
+    "description": "Group by status option"
+  },
+  "noTags": "No Tags",
+  "@noTags": {
+    "description": "No tags label"
+  },
+  "noLinks": "No Links",
+  "@noLinks": {
+    "description": "No links label"
+  },
+  "countItems": "{label}: {count} items",
+  "@countItems": {
+    "description": "Item count display",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tapForDetails": "Tap for details",
+  "@tapForDetails": {
+    "description": "Tap for details message"
+  },
+  "deleteGroup": "Delete Group",
+  "@deleteGroup": {
+    "description": "Delete group tooltip"
+  },
+  "addLink": "Add Link",
+  "@addLink": {
+    "description": "Add link tooltip"
+  },
+  "editLink": "Edit Link",
+  "@editLink": {
+    "description": "Edit link tooltip"
+  },
+  "deleteLink": "Delete Link",
+  "@deleteLink": {
+    "description": "Delete link tooltip"
+  },
+  "addTaskFromLink": "Add Task from Link",
+  "@addTaskFromLink": {
+    "description": "Add task from link tooltip"
+  },
+  "copy": "Copy",
+  "@copy": {
+    "description": "Copy menu item"
+  },
+  "syncTask": "Sync This Task",
+  "@syncTask": {
+    "description": "Sync task menu item"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete menu item"
+  },
+  "high": "High",
+  "@high": {
+    "description": "Priority: High"
+  },
+  "medium": "Medium",
+  "@medium": {
+    "description": "Priority: Medium"
+  },
+  "low": "Low",
+  "@low": {
+    "description": "Priority: Low"
+  },
+  "urgent": "Urgent",
+  "@urgent": {
+    "description": "Priority: Urgent"
+  },
+  "lowShort": "L",
+  "@lowShort": {
+    "description": "Priority: Low (short)"
+  },
+  "mediumShort": "M",
+  "@mediumShort": {
+    "description": "Priority: Medium (short)"
+  },
+  "highShort": "H",
+  "@highShort": {
+    "description": "Priority: High (short)"
+  },
+  "urgentShort": "U",
+  "@urgentShort": {
+    "description": "Priority: Urgent (short)"
+  },
+  "cancelled": "Cancelled",
+  "@cancelled": {
+    "description": "Cancelled status"
+  },
+  "cancelledShort": "C",
+  "@cancelledShort": {
+    "description": "Cancelled status (short)"
+  },
+  "dueDate": "Due Date",
+  "@dueDate": {
+    "description": "Due date label"
+  },
+  "started": "Started",
+  "@started": {
+    "description": "Started label"
+  },
+  "linkManagementShortcuts": "Link Management Shortcuts",
+  "@linkManagementShortcuts": {
+    "description": "Link management shortcuts dialog title"
+  },
+  "taskManagementShortcuts": "Task Management Shortcuts",
+  "@taskManagementShortcuts": {
+    "description": "Task management shortcuts dialog title"
+  },
+  "minimize": "Minimize",
+  "@minimize": {
+    "description": "Window minimize tooltip"
+  },
+  "maximize": "Maximize",
+  "@maximize": {
+    "description": "Window maximize tooltip"
+  },
+  "restoreWindow": "Restore Window",
+  "@restoreWindow": {
+    "description": "Restore window tooltip"
+  },
+  "shortcutList": "Shortcut List",
+  "@shortcutList": {
+    "description": "Shortcut list tooltip"
+  },
+  "scheduleScreen": "Schedule",
+  "@scheduleScreen": {
+    "description": "Schedule screen title"
+  },
+  "searchSchedule": "Search by schedule title, task name, location",
+  "@searchSchedule": {
+    "description": "Schedule search bar placeholder"
+  },
+  "switchView": "Switch View",
+  "@switchView": {
+    "description": "Switch view tooltip"
+  },
+  "listView": "List View",
+  "@listView": {
+    "description": "List view menu item"
+  },
+  "monthlyView": "Monthly View",
+  "@monthlyView": {
+    "description": "Monthly view menu item"
+  },
+  "showPast": "Show Past",
+  "@showPast": {
+    "description": "Show past checkbox"
+  },
+  "importFromOutlook": "Import from Outlook",
+  "@importFromOutlook": {
+    "description": "Import from Outlook tooltip"
+  },
+  "copyToExcel": "Copy to Excel",
+  "@copyToExcel": {
+    "description": "Copy to Excel tooltip"
+  },
+  "copyToExcelSelected": "Copy to Excel (Copy {count} days of schedules to clipboard)",
+  "@copyToExcelSelected": {
+    "description": "Copy to Excel (with selected dates)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "copyToExcelSelectDate": "Copy to Excel (Please select dates)",
+  "@copyToExcelSelectDate": {
+    "description": "Copy to Excel (no dates selected)"
+  },
+  "tableFormat": "Table Format (Multiple Columns)",
+  "@tableFormat": {
+    "description": "Table format menu item"
+  },
+  "oneCellFormat": "One Cell Format (List)",
+  "@oneCellFormat": {
+    "description": "One cell format menu item"
+  },
+  "action": "Action",
+  "@action": {
+    "description": "Action menu tooltip"
+  },
+  "today": "Today",
+  "@today": {
+    "description": "Today's due date"
+  },
+  "daysRemaining": "{count} days left",
+  "@daysRemaining": {
+    "description": "Days remaining",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oneDayRemaining": "1 day left",
+  "@oneDayRemaining": {
+    "description": "One day remaining"
+  },
+  "daysOverdue": "{count} days overdue",
+  "@daysOverdue": {
+    "description": "Days overdue",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notSet": "Not Set",
+  "@notSet": {
+    "description": "Not set label"
+  },
+  "showOtherLinks": "Show {count} other links",
+  "@showOtherLinks": {
+    "description": "Show other links",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editTask": "Edit Task",
+  "@editTask": {
+    "description": "Edit task dialog title"
+  },
+  "newTask": "New Task",
+  "@newTask": {
+    "description": "New task dialog title"
+  },
+  "title": "Title",
+  "@title": {
+    "description": "Title label"
+  },
+  "body": "Body",
+  "@body": {
+    "description": "Body label"
+  },
+  "descriptionForRequestor": "Description for Requestor",
+  "@descriptionForRequestor": {
+    "description": "Description for requestor label"
+  },
+  "tags": "Tags",
+  "@tags": {
+    "description": "Tags label"
+  },
+  "startDate": "Start Date",
+  "@startDate": {
+    "description": "Start date label"
+  },
+  "completionDate": "Completion Date",
+  "@completionDate": {
+    "description": "Completion date label"
+  },
+  "reminderFunction": "Reminder Function",
+  "@reminderFunction": {
+    "description": "Reminder function label"
+  },
+  "linkAssociation": "Link Association",
+  "@linkAssociation": {
+    "description": "Link association label"
+  },
+  "relatedLinks": "Related Links",
+  "@relatedLinks": {
+    "description": "Related links label"
+  },
+  "pinning": "Pinning",
+  "@pinning": {
+    "description": "Pinning label"
+  },
+  "pinnedToTop": "Pinned to Top",
+  "@pinnedToTop": {
+    "description": "Pinned to top label"
+  },
+  "schedule": "Schedule",
+  "@schedule": {
+    "description": "Schedule label"
+  },
+  "emailSendingFunction": "Email Sending Function",
+  "@emailSendingFunction": {
+    "description": "Email sending function label"
+  },
+  "openEmailSendingFunction": "Open Email Sending Function",
+  "@openEmailSendingFunction": {
+    "description": "Open email sending function label"
+  },
+  "collapseMailFunction": "Collapse Mail Function",
+  "@collapseMailFunction": {
+    "description": "Collapse mail function label"
+  },
+  "update": "Update",
+  "@update": {
+    "description": "Update button"
+  },
+  "create": "Create",
+  "@create": {
+    "description": "Create button"
+  },
+  "selectStartDate": "Select Start Date",
+  "@selectStartDate": {
+    "description": "Select start date placeholder"
+  },
+  "selectCompletionDate": "Select Completion Date",
+  "@selectCompletionDate": {
+    "description": "Select completion date placeholder"
+  },
+  "clearStartDate": "Clear Start Date",
+  "@clearStartDate": {
+    "description": "Clear start date tooltip"
+  },
+  "clearCompletionDate": "Clear Completion Date",
+  "@clearCompletionDate": {
+    "description": "Clear completion date tooltip"
+  },
+  "subtaskTitle": "Subtask Title",
+  "@subtaskTitle": {
+    "description": "Subtask title label"
+  },
+  "estimatedTime": "Estimated Time (minutes)",
+  "@estimatedTime": {
+    "description": "Estimated time label"
+  },
+  "description": "Description",
+  "@description": {
+    "description": "Description label"
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Add button"
+  },
+  "creationDate": "Creation Date",
+  "@creationDate": {
+    "description": "Creation date label"
+  },
+  "subtaskName": "Subtask Name",
+  "@subtaskName": {
+    "description": "Subtask name label"
+  },
+  "enterTitle": "Please enter a title",
+  "@enterTitle": {
+    "description": "Title input error message"
+  },
+  "bodyTextCanDisplayUpTo8Lines": "Body text can be displayed up to 8 lines.",
+  "@bodyTextCanDisplayUpTo8Lines": {
+    "description": "Body text line limit description"
+  },
+  "noSubtasks": "No Subtasks",
+  "@noSubtasks": {
+    "description": "No subtasks message"
+  },
+  "estimatedTimeMinutes": "Estimated Time: {minutes} minutes",
+  "@estimatedTimeMinutes": {
+    "description": "Estimated time display",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed label"
+  },
+  "create": "Create",
+  "@create": {
+    "description": "Create button"
+  },
+  "selectDueDate": "Select Due Date",
+  "@selectDueDate": {
+    "description": "Select due date placeholder"
+  },
+  "priority": "Priority",
+  "@priority": {
+    "description": "Priority label"
+  },
+  "clearStartDate": "Clear Start Date",
+  "@clearStartDate": {
+    "description": "Clear start date tooltip"
+  },
+  "selectCompletionDate": "Select Completion Date",
+  "@selectCompletionDate": {
+    "description": "Select completion date placeholder"
+  },
+  "clearCompletionDate": "Clear Completion Date",
+  "@clearCompletionDate": {
+    "description": "Clear completion date tooltip"
+  },
+  "pinnedToTop": "Pinned to Top",
+  "@pinnedToTop": {
+    "description": "Pinned to top label"
+  },
+  "noSubtasks": "No Subtasks",
+  "@noSubtasks": {
+    "description": "No subtasks message"
+  },
+  "estimatedTimeMinutes": "Estimated Time: {minutes} minutes",
+  "@estimatedTimeMinutes": {
+    "description": "Estimated time display",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed label"
+  },
+  "editGroupName": "Edit Group Name",
+  "@editGroupName": {
+    "description": "Edit group name tooltip"
+  },
+  "createTaskFromLink": "Create task from this link",
+  "@createTaskFromLink": {
+    "description": "Create task from link tooltip"
+  },
+  "activeTaskExists": "Active task exists",
+  "@activeTaskExists": {
+    "description": "Active task exists tooltip"
+  },
+  "selectCopyDestination": "Select Copy Destination",
+  "@selectCopyDestination": {
+    "description": "Select copy destination dialog title"
+  },
+  "selectMoveDestination": "Select Move Destination",
+  "@selectMoveDestination": {
+    "description": "Select move destination dialog title"
+  },
+  "linksCount": "{count} links",
+  "@linksCount": {
+    "description": "Links count display",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linkCopied": "Copied \"{linkName}\" to \"{groupName}\"",
+  "@linkCopied": {
+    "description": "Link copied message",
+    "placeholders": {
+      "linkName": {
+        "type": "String"
+      },
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "linkMoved": "Moved \"{linkName}\" to \"{groupName}\"",
+  "@linkMoved": {
+    "description": "Link moved message",
+    "placeholders": {
+      "linkName": {
+        "type": "String"
+      },
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "copyFailed": "Copy failed: {error}",
+  "@copyFailed": {
+    "description": "Copy failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "copyNotAvailable": "Copy function not available",
+  "@copyNotAvailable": {
+    "description": "Copy function not available message"
+  },
+  "moveNotAvailable": "Move function not available",
+  "@moveNotAvailable": {
+    "description": "Move function not available message"
+  },
+  "noCopyDestinationGroups": "No destination groups for copy",
+  "@noCopyDestinationGroups": {
+    "description": "No copy destination groups message"
+  },
+  "noMoveDestinationGroups": "No destination groups for move",
+  "@noMoveDestinationGroups": {
+    "description": "No move destination groups message"
+  },
+  "dragToReorder": "You can change the order by drag & drop",
+  "@dragToReorder": {
+    "description": "Drag & drop description"
+  },
+  "groupOrderChanged": "Group order changed",
+  "@groupOrderChanged": {
+    "description": "Group order changed message"
+  },
+  "taskTemplate": "Task Template",
+  "@taskTemplate": {
+    "description": "Task template dialog title"
+  },
+  "selectTemplate": "Select Template",
+  "@selectTemplate": {
+    "description": "Select template section title"
+  },
+  "taskDetails": "Task Details",
+  "@taskDetails": {
+    "description": "Task details section title"
+  },
+  "templateName": "Template Name",
+  "@templateName": {
+    "description": "Template name label"
+  },
+  "templateNameExample": "Example: Meeting preparation, regular reports, etc.",
+  "@templateNameExample": {
+    "description": "Template name example"
+  },
+  "createTask": "Create Task",
+  "@createTask": {
+    "description": "Create task button"
+  },
+  "editTemplate": "Edit Template",
+  "@editTemplate": {
+    "description": "Edit template tooltip"
+  },
+  "editComplete": "Edit Complete",
+  "@editComplete": {
+    "description": "Edit complete tooltip"
+  },
+  "addNewTemplate": "Add New Template",
+  "@addNewTemplate": {
+    "description": "Add new template tooltip"
+  },
+  "syncThisTask": "Sync this task",
+  "@syncThisTask": {
+    "description": "Sync this task menu item"
+  },
+  "taskCreated": "Task created",
+  "@taskCreated": {
+    "description": "Task created message"
+  },
+  "reminder": "Reminder",
+  "@reminder": {
+    "description": "Reminder label"
+  },
+  "selectPlease": "Please select",
+  "@selectPlease": {
+    "description": "Please select placeholder"
+  },
+  "createNewTask": "Create a new task",
+  "@createNewTask": {
+    "description": "Create new task shortcut description"
+  },
+  "toggleBatchSelectionMode": "Toggle batch selection mode",
+  "@toggleBatchSelectionMode": {
+    "description": "Toggle batch selection mode shortcut description"
+  },
+  "exportToCsv": "Export to CSV",
+  "@exportToCsv": {
+    "description": "Export to CSV shortcut description"
+  },
+  "openSettingsScreen": "Open settings screen",
+  "@openSettingsScreen": {
+    "description": "Open settings screen shortcut description"
+  },
+  "openSchedule": "Open schedule",
+  "@openSchedule": {
+    "description": "Open schedule shortcut description"
+  },
+  "groupingMenu": "Grouping menu",
+  "@groupingMenu": {
+    "description": "Grouping menu shortcut description"
+  },
+  "createFromTemplate": "Create from template",
+  "@createFromTemplate": {
+    "description": "Create from template shortcut description"
+  },
+  "toggleStatisticsSearchBar": "Show/hide statistics/search bar",
+  "@toggleStatisticsSearchBar": {
+    "description": "Show/hide statistics/search bar shortcut description"
+  },
+  "toggleCompactStandardDisplay": "Toggle compact ⇔ standard display",
+  "@toggleCompactStandardDisplay": {
+    "description": "Toggle compact ⇔ standard display shortcut description"
+  },
+  "goHomeOrOpenThreeDotMenu": "Go back to home / Open 3-dot menu",
+  "@goHomeOrOpenThreeDotMenu": {
+    "description": "Go back to home / Open 3-dot menu shortcut description"
+  },
+  "focusThreeDotMenu": "Focus on 3-dot menu",
+  "@focusThreeDotMenu": {
+    "description": "Focus on 3-dot menu shortcut description"
+  },
+  "showShortcutList": "Display shortcut list",
+  "@showShortcutList": {
+    "description": "Display shortcut list shortcut description"
+  },
+  "history": "History",
+  "@history": {
+    "description": "History label"
+  },
+  "task": "Task",
+  "@task": {
+    "description": "Task label"
+  }
+}
+

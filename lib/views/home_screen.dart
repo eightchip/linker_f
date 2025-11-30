@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -130,7 +131,7 @@ class _MemoBulkEditHelper {
                 }).toList();
           
           return AlertDialog(
-            title: const Text('メモ一括編集'),
+            title: Text(AppLocalizations.of(context)!.memoBulkEdit),
             content: SizedBox(
               width: 1000,
               height: 1000,
@@ -141,7 +142,7 @@ class _MemoBulkEditHelper {
                   TextField(
                     controller: searchController,
                     decoration: InputDecoration(
-                      hintText: '検索（リンク名・メモ内容）',
+                      hintText: AppLocalizations.of(context)!.searchLinkNameMemo,
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: searchController.text.isNotEmpty
                           ? IconButton(
@@ -179,8 +180,8 @@ class _MemoBulkEditHelper {
                         ? Center(
                             child: Text(
                               searchQuery.isNotEmpty
-                                  ? '検索結果がありません'
-                                  : 'メモが登録されているリンクがありません',
+                                  ? AppLocalizations.of(context)!.noSearchResults
+                                  : AppLocalizations.of(context)!.noMemoLinks,
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                               ),
@@ -267,7 +268,7 @@ class _MemoBulkEditHelper {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('閉じる'),
+                child: Text(AppLocalizations.of(context)!.close),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -286,7 +287,7 @@ class _MemoBulkEditHelper {
                   }
                   Navigator.pop(context);
                 },
-                child: const Text('まとめて保存'),
+                child: Text(AppLocalizations.of(context)!.saveAll),
               ),
             ],
           );
@@ -485,11 +486,11 @@ class HomeScreen extends ConsumerStatefulWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.sort, color: Colors.purple),
-              SizedBox(width: 8),
-              Text('グループの並び順を変更'),
+              const Icon(Icons.sort, color: Colors.purple),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.changeGroupOrder),
             ],
           ),
           content: SizedBox(
@@ -498,11 +499,11 @@ class HomeScreen extends ConsumerStatefulWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
-                    'ドラッグ&ドロップで並び順を変更できます',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    AppLocalizations.of(context)!.dragToReorder,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ),
                 Expanded(
@@ -555,7 +556,7 @@ class HomeScreen extends ConsumerStatefulWidget {
                             group.title,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Text('${group.items.length}件のリンク'),
+                          subtitle: Text(AppLocalizations.of(context)!.linksCount(group.items.length)),
                           trailing: Text(
                             '${index + 1}',
                             style: TextStyle(
@@ -575,14 +576,14 @@ class HomeScreen extends ConsumerStatefulWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () {
                 ref.read(linkViewModelProvider.notifier).updateGroupsOrder(orderedGroups);
                 Navigator.pop(context);
               },
-              child: const Text('保存'),
+              child: Text(AppLocalizations.of(context)!.save),
             ),
           ],
         ),
@@ -593,19 +594,19 @@ class HomeScreen extends ConsumerStatefulWidget {
   static void showShortcutHelp(BuildContext context) {
     showShortcutHelpDialog(
       context,
-      title: 'リンク管理ショートカット',
-      entries: const [
-        ShortcutHelpEntry('Ctrl + N', 'グループを追加'),
-        ShortcutHelpEntry('Ctrl + F', '検索バーを開く'),
-        ShortcutHelpEntry('Ctrl + T', 'タスク管理画面を開く'),
-        ShortcutHelpEntry('Ctrl + E', 'メモ一括編集を開く'),
-        ShortcutHelpEntry('Ctrl + O', 'グループの並び順を変更'),
-        ShortcutHelpEntry('Ctrl + Shift + S', '設定を開く'),
-        ShortcutHelpEntry('→', '3点メニューを表示'),
-        ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
-        ShortcutHelpEntry('Esc', '検索バーを閉じる'),
-        ShortcutHelpEntry('Tab', 'リンクタイプフィルターを切り替え'),
-        ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
+      title: AppLocalizations.of(context)!.linkManagementShortcuts,
+      entries: [
+        const ShortcutHelpEntry('Ctrl + N', 'グループを追加'),
+        const ShortcutHelpEntry('Ctrl + F', '検索バーを開く'),
+        const ShortcutHelpEntry('Ctrl + T', 'タスク管理画面を開く'),
+        const ShortcutHelpEntry('Ctrl + E', 'メモ一括編集を開く'),
+        ShortcutHelpEntry('Ctrl + O', AppLocalizations.of(context)!.changeGroupOrder),
+        const ShortcutHelpEntry('Ctrl + Shift + S', '設定を開く'),
+        const ShortcutHelpEntry('→', '3点メニューを表示'),
+        const ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
+        const ShortcutHelpEntry('Esc', '検索バーを閉じる'),
+        const ShortcutHelpEntry('Tab', 'リンクタイプフィルターを切り替え'),
+        const ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
       ],
     );
   }
@@ -846,7 +847,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Icon(Icons.add, color: Colors.green, size: 20),
               SizedBox(width: 8),
-              Text('グループを追加 (Ctrl+N)'),
+              Text('${AppLocalizations.of(context)!.addGroup} (Ctrl+N)'),
             ],
           ),
         ),
@@ -857,7 +858,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Icon(Icons.search, color: Colors.blue, size: 20),
               SizedBox(width: 8),
-              Text('検索 (Ctrl+F)'),
+              Text('${AppLocalizations.of(context)!.search} (Ctrl+F)'),
             ],
           ),
         ),
@@ -868,7 +869,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Icon(Icons.task_alt, color: Colors.orange, size: 20),
               SizedBox(width: 8),
-              Text('タスク管理 (Ctrl+T）'),
+              Text('${AppLocalizations.of(context)!.taskManagement} (Ctrl+T)'),
             ],
           ),
         ),
@@ -879,7 +880,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Icon(Icons.notes, color: Colors.teal, size: 20),
               SizedBox(width: 8),
-              Text('メモ一括編集 (Ctrl+E)'),
+              Text('${AppLocalizations.of(context)!.memoBulkEdit} (Ctrl+E)'),
             ],
           ),
         ),
@@ -890,7 +891,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Icon(Icons.keyboard, color: Colors.blue, size: 20),
               SizedBox(width: 8),
-              Text('ショートカットキー (F1)'),
+              Text('${AppLocalizations.of(context)!.shortcutKeys} (F1)'),
             ],
           ),
         ),
@@ -901,7 +902,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Icon(Icons.settings, color: Colors.grey, size: 20),
               SizedBox(width: 8),
-              Text('設定 (Ctrl+Shift+S)'),
+              Text('${AppLocalizations.of(context)!.settings} (Ctrl+Shift+S)'),
             ],
           ),
         ),
@@ -1263,7 +1264,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'リンク管理',
+                      AppLocalizations.of(context)!.linkManagement,
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: titleFontSize),
                     ),
                   ],
@@ -1273,7 +1274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 elevation: 2,
                 actions: [
                   Tooltip(
-                    message: 'ショートカットキー (F1)',
+                    message: '${AppLocalizations.of(context)!.shortcutKeys} (F1)',
                     child: IconButton(
                       icon: Icon(Icons.help_outline, size: iconSize),
                       color: Theme.of(context).colorScheme.primary,
@@ -1283,7 +1284,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // 3点ドットメニュー（グローバルメニュー）
                   IconButton(
                     icon: Icon(Icons.more_vert, size: iconSize),
-                    tooltip: 'グローバルメニュー',
+                    tooltip: AppLocalizations.of(context)!.globalMenu,
                     onPressed: () async {
                       final result = await showDialog<String>(
                         context: context,
@@ -1362,7 +1363,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       keyboardType: TextInputType.text,
                                       textInputAction: TextInputAction.search,
                                       decoration: InputDecoration(
-                                        hintText: '検索（ファイル名・フォルダ名・URL・タグ）',
+                                        hintText: AppLocalizations.of(context)!.searchPlaceholder,
                                         prefixIcon: const Icon(Icons.search),
                                         suffixIcon: IconButton(
                                           icon: const Icon(Icons.close),
@@ -1574,7 +1575,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               context: context,
                               builder: (context) => StatefulBuilder(
                                 builder: (context, setState) => AlertDialog(
-                                  title: const Text('グループ名を編集'),
+                                  title: Text(AppLocalizations.of(context)!.editGroupName),
                                   content: SingleChildScrollView(
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -1600,14 +1601,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
-                                      child: const Text('キャンセル'),
+                                      child: Text(AppLocalizations.of(context)!.cancel),
                                     ),
                                     ElevatedButton(
                                       onPressed: () => Navigator.pop(context, {
                                         'title': controller.text,
                                         'color': selectedColor,
                                       }),
-                                      child: const Text('保存'),
+                                      child: Text(AppLocalizations.of(context)!.save),
                                     ),
                                   ],
                                 ),
@@ -1682,14 +1683,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('キャンセル'),
+                                    child: Text(AppLocalizations.of(context)!.cancel),
                                   ),
                                   ElevatedButton(
                                     onPressed: () => Navigator.pop(context, {
                                       'title': controller.text,
                                       'color': selectedColor,
                                     }),
-                                    child: const Text('保存'),
+                                    child: Text(AppLocalizations.of(context)!.save),
                                   ),
                                 ],
                               ),
@@ -1748,7 +1749,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               context: context,
                               builder: (context) => StatefulBuilder(
                                 builder: (context, setState) => AlertDialog(
-                                  title: const Text('グループ名を編集'),
+                                  title: Text(AppLocalizations.of(context)!.editGroupName),
                                   content: SingleChildScrollView(
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -1774,14 +1775,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
-                                      child: const Text('キャンセル'),
+                                      child: Text(AppLocalizations.of(context)!.cancel),
                                     ),
                                     ElevatedButton(
                                       onPressed: () => Navigator.pop(context, {
                                         'title': controller.text,
                                         'color': selectedColor,
                                       }),
-                                      child: const Text('保存'),
+                                      child: Text(AppLocalizations.of(context)!.save),
                                     ),
                                   ],
                                 ),
@@ -1894,16 +1895,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: pathController,
-                decoration: const InputDecoration(
-                  labelText: 'パス/URL',
-                  hintText: 'ファイルパスまたはURLを入力...',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.pathOrUrl,
+                  hintText: AppLocalizations.of(context)!.enterPathOrUrl,
                 ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<LinkType>(
                 value: selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'タイプ',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.type,
                 ),
                 items: LinkType.values.map((type) {
                   return DropdownMenuItem(
@@ -1944,7 +1945,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -2017,11 +2018,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.sort, color: Colors.purple),
-              SizedBox(width: 8),
-              Text('グループの並び順を変更'),
+              const Icon(Icons.sort, color: Colors.purple),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.changeGroupOrder),
             ],
           ),
           content: SizedBox(
@@ -2030,11 +2031,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
-                    'ドラッグ&ドロップで並び順を変更できます',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    AppLocalizations.of(context)!.dragToReorder,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ),
                 Expanded(
@@ -2087,7 +2088,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             group.title,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Text('${group.items.length}件のリンク'),
+                          subtitle: Text(AppLocalizations.of(context)!.linksCount(group.items.length)),
                           trailing: Text(
                             '${index + 1}',
                             style: TextStyle(
@@ -2107,20 +2108,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
                 // 並び順を保存
                 await ref.read(linkViewModelProvider.notifier).updateGroupsOrder(orderedGroups);
                 Navigator.pop(context);
-                SnackBarService.showSuccess(context, 'グループの並び順を変更しました');
+                SnackBarService.showSuccess(context, AppLocalizations.of(context)!.groupOrderChanged);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.purple,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('保存'),
+              child: Text(AppLocalizations.of(context)!.save),
             ),
           ],
         ),
@@ -2352,8 +2353,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
   
   List<Widget> _buildLinkTypeRadios() {
+    final l10n = AppLocalizations.of(context)!;
     return [
-      const Text('タイプ: ', style: TextStyle(fontSize: 10)),
+      Text('${l10n.type}: ', style: const TextStyle(fontSize: 10)),
       Radio<LinkType?>(
         value: null,
         groupValue: _selectedLinkTypeFilter,
@@ -2363,7 +2365,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           });
         },
       ),
-      const Text('すべて', style: TextStyle(fontSize: 11)),
+      Text(l10n.all, style: const TextStyle(fontSize: 11)),
       Radio<LinkType?>(
         value: LinkType.url,
         groupValue: _selectedLinkTypeFilter,
@@ -2373,7 +2375,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           });
         },
       ),
-      const Text('URL', style: TextStyle(fontSize: 11)),
+      Text(l10n.url, style: const TextStyle(fontSize: 11)),
       Radio<LinkType?>(
         value: LinkType.folder,
         groupValue: _selectedLinkTypeFilter,
@@ -2383,7 +2385,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           });
         },
       ),
-      const Text('フォルダ', style: TextStyle(fontSize: 11)),
+      Text(l10n.folder, style: const TextStyle(fontSize: 11)),
       Radio<LinkType?>(
         value: LinkType.file,
         groupValue: _selectedLinkTypeFilter,
@@ -2393,7 +2395,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           });
         },
       ),
-      const Text('ファイル', style: TextStyle(fontSize: 11)),
+      Text(l10n.file, style: const TextStyle(fontSize: 11)),
     ];
   }
 }
@@ -2937,7 +2939,7 @@ class _IconSelectorState extends State<IconSelector> {
                   const SizedBox(height: 16),
                   // アイコン選択セクション
                   Text(
-                    'フォルダアイコンを選択:',
+                    AppLocalizations.of(context)!.selectFolderIcon,
                     style: const TextStyle(fontWeight: FontWeight.bold)
                   ),
                   const SizedBox(height: 8),
@@ -3031,7 +3033,7 @@ class _IconSelectorState extends State<IconSelector> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () {

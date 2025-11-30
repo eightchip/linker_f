@@ -4,6 +4,7 @@ import 'package:hive/hive.dart';
 import '../models/task_item.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../services/snackbar_service.dart';
+import '../l10n/app_localizations.dart';
 
 /// タスクテンプレートダイアログ
 class TaskTemplateDialog extends ConsumerStatefulWidget {
@@ -158,7 +159,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'タスクテンプレート',
+                    AppLocalizations.of(context)!.taskTemplate,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -167,12 +168,12 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                   IconButton(
                     onPressed: () => _toggleEditMode(),
                     icon: Icon(_isEditing ? Icons.check : Icons.edit),
-                    tooltip: _isEditing ? '編集完了' : 'テンプレート編集',
+                    tooltip: _isEditing ? AppLocalizations.of(context)!.editComplete : AppLocalizations.of(context)!.editTemplate,
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close),
-                    tooltip: '閉じる',
+                    tooltip: AppLocalizations.of(context)!.close,
                   ),
                 ],
               ),
@@ -189,7 +190,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                     Row(
                       children: [
                         Text(
-                          'テンプレートを選択',
+                          AppLocalizations.of(context)!.selectTemplate,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -199,7 +200,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                           IconButton(
                             onPressed: _addNewTemplate,
                             icon: const Icon(Icons.add),
-                            tooltip: '新しいテンプレートを追加',
+                            tooltip: AppLocalizations.of(context)!.addNewTemplate,
                           ),
                         ],
                       ],
@@ -242,7 +243,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                                           IconButton(
                                             onPressed: () => _deleteTemplate(index),
                                             icon: const Icon(Icons.delete, size: 16),
-                                            tooltip: '削除',
+                                            tooltip: AppLocalizations.of(context)!.delete,
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),
                                           ),
@@ -290,7 +291,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                     
                     // タスク詳細フォーム
                     Text(
-                      'タスク詳細',
+                      AppLocalizations.of(context)!.taskDetails,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -304,10 +305,10 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                             // テンプレート名
                             TextField(
                               controller: _nameController,
-                              decoration: const InputDecoration(
-                                labelText: 'テンプレート名',
-                                hintText: '例: 会議準備、定期報告など',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context)!.templateName,
+                                hintText: AppLocalizations.of(context)!.templateNameExample,
+                                border: const OutlineInputBorder(),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -315,9 +316,9 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                             // タイトル
                             TextField(
                               controller: _titleController,
-                              decoration: const InputDecoration(
-                                labelText: 'タイトル',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context)!.title,
+                                border: const OutlineInputBorder(),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -325,9 +326,9 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                             // 説明
                             TextField(
                               controller: _descriptionController,
-                              decoration: const InputDecoration(
-                                labelText: '説明',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context)!.description,
+                                border: const OutlineInputBorder(),
                               ),
                               maxLines: 3,
                             ),
@@ -399,14 +400,14 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                                   child: InkWell(
                                     onTap: _selectDueDate,
                                     child: InputDecorator(
-                                      decoration: const InputDecoration(
-                                        labelText: '期限日',
-                                        border: OutlineInputBorder(),
+                                      decoration: InputDecoration(
+                                        labelText: AppLocalizations.of(context)!.dueDate,
+                                        border: const OutlineInputBorder(),
                                       ),
                                       child: Text(
                                         _dueDate != null
                                           ? '${_dueDate!.year}/${_dueDate!.month}/${_dueDate!.day}'
-                                          : '選択してください',
+                                          : AppLocalizations.of(context)!.selectPlease,
                                       ),
                                     ),
                                   ),
@@ -416,14 +417,14 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                                   child: InkWell(
                                     onTap: _selectReminderTime,
                                     child: InputDecorator(
-                                      decoration: const InputDecoration(
-                                        labelText: 'リマインダー',
-                                        border: OutlineInputBorder(),
+                                      decoration: InputDecoration(
+                                        labelText: AppLocalizations.of(context)!.reminder,
+                                        border: const OutlineInputBorder(),
                                       ),
                                       child: Text(
                                         _reminderTime != null
                                           ? '${_reminderTime!.hour.toString().padLeft(2, '0')}:${_reminderTime!.minute.toString().padLeft(2, '0')}'
-                                          : '選択してください',
+                                          : AppLocalizations.of(context)!.selectPlease,
                                       ),
                                     ),
                                   ),
@@ -443,7 +444,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('キャンセル'),
+                          child: Text(AppLocalizations.of(context)!.cancel),
                         ),
                         const SizedBox(width: 16),
                         if (_isEditing) ...[
@@ -463,7 +464,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                             backgroundColor: Theme.of(context).colorScheme.primary,
                             foregroundColor: Theme.of(context).colorScheme.onPrimary,
                           ),
-                          child: const Text('タスクを作成'),
+                          child: Text(AppLocalizations.of(context)!.createTask),
                         ),
                       ],
                     ),
@@ -676,7 +677,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
     
     SnackBarService.showSuccess(
       context,
-      'タスクを作成しました',
+      AppLocalizations.of(context)!.taskCreated,
     );
   }
 

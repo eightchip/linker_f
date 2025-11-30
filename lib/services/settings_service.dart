@@ -64,6 +64,7 @@ class SettingsService {
   static const String _descriptionFontSizeKey = 'descriptionFontSize';
   static const String _descriptionFontFamilyKey = 'descriptionFontFamily';
   static const String _startWithTaskScreenKey = 'startWithTaskScreen';
+  static const String _localeKey = 'locale';
   
   // UIカスタマイズ設定キー
   static const String _cardBorderRadiusKey = 'cardBorderRadius';
@@ -100,6 +101,7 @@ class SettingsService {
   static const double _defaultDescriptionFontSize = 1.0;
   static const String _defaultDescriptionFontFamily = '';
   static const bool _defaultStartWithTaskScreen = false;
+  static const String _defaultLocale = 'ja'; // デフォルトは日本語
   
   // UIカスタマイズデフォルト値
   static const double _defaultCardBorderRadius = 16.0;
@@ -410,6 +412,12 @@ class SettingsService {
   bool get startWithTaskScreen => _settingsBox.get(_startWithTaskScreenKey, defaultValue: _defaultStartWithTaskScreen) as bool;
   Future<void> setStartWithTaskScreen(bool value) async {
     await _settingsBox.put(_startWithTaskScreenKey, value);
+  }
+
+  /// 言語設定
+  String get locale => _settingsBox.get(_localeKey, defaultValue: _defaultLocale) as String;
+  Future<void> setLocale(String value) async {
+    await _settingsBox.put(_localeKey, value);
   }
 
 

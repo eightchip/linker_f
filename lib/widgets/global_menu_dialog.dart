@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 
 /// グローバルメニューダイアログ
 /// 共通メニューと両画面のメニュー項目をすべて表示
@@ -37,9 +38,9 @@ class _GlobalMenuDialogState extends ConsumerState<GlobalMenuDialog> {
                 children: [
                   Icon(Icons.more_vert, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: 8),
-                  const Text(
-                    'グローバルメニュー',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context)!.globalMenu,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -53,23 +54,23 @@ class _GlobalMenuDialogState extends ConsumerState<GlobalMenuDialog> {
                 padding: const EdgeInsets.all(8),
                 children: [
                   // 共通メニューセクション
-                  _buildSectionHeader('共通'),
+                  _buildSectionHeader(AppLocalizations.of(context)!.common),
                   _buildMenuItem(
                     icon: Icons.settings,
                     iconColor: Colors.grey,
-                    title: '設定 (Ctrl+Shift+S)',
+                    title: '${AppLocalizations.of(context)!.settings} (Ctrl+Shift+S)',
                     value: 'settings',
                   ),
                   _buildMenuItem(
                     icon: Icons.help_outline,
                     iconColor: Colors.indigo,
-                    title: 'ヘルプセンター (Ctrl+H)',
+                    title: '${AppLocalizations.of(context)!.helpCenter} (Ctrl+H)',
                     value: 'help_center',
                   ),
                   _buildMenuItem(
                     icon: Icons.notes,
                     iconColor: Colors.teal,
-                    title: 'メモ一括編集 (Ctrl+E)',
+                    title: '${AppLocalizations.of(context)!.memoBulkEdit} (Ctrl+E)',
                     value: 'memo_bulk_edit',
                   ),
                   const SizedBox(height: 16),
@@ -77,35 +78,35 @@ class _GlobalMenuDialogState extends ConsumerState<GlobalMenuDialog> {
                   const SizedBox(height: 16),
                   
                   // リンク管理画面のメニューセクション
-                  _buildSectionHeader('リンク管理（リンク管理画面で有効）'),
+                  _buildSectionHeader(AppLocalizations.of(context)!.linkManagementEnabled),
                   _buildMenuItem(
                     icon: Icons.add,
                     iconColor: Colors.green,
-                    title: 'グループを追加 (Ctrl+N)',
+                    title: '${AppLocalizations.of(context)!.addGroup} (Ctrl+N)',
                     value: 'add_group',
                   ),
                   _buildMenuItem(
                     icon: Icons.search,
                     iconColor: Colors.blue,
-                    title: '検索 (Ctrl+F)',
+                    title: '${AppLocalizations.of(context)!.search} (Ctrl+F)',
                     value: 'search',
                   ),
                   _buildMenuItem(
                     icon: Icons.task_alt,
                     iconColor: Colors.orange,
-                    title: 'タスク管理 (Ctrl+T)',
+                    title: '${AppLocalizations.of(context)!.taskManagement} (Ctrl+T)',
                     value: 'task',
                   ),
                   _buildMenuItem(
                     icon: Icons.sort,
                     iconColor: Colors.purple,
-                    title: 'グループの並び順を変更 (Ctrl+O)',
+                    title: '${AppLocalizations.of(context)!.changeGroupOrder} (Ctrl+O)',
                     value: 'group_order',
                   ),
                   _buildMenuItem(
                     icon: Icons.keyboard,
                     iconColor: Colors.indigo,
-                    title: 'ショートカットキー (F1)',
+                    title: '${AppLocalizations.of(context)!.shortcutKeys} (F1)',
                     value: 'shortcut_help',
                   ),
                   const SizedBox(height: 16),
@@ -113,47 +114,47 @@ class _GlobalMenuDialogState extends ConsumerState<GlobalMenuDialog> {
                   const SizedBox(height: 16),
                   
                   // タスク管理画面のメニューセクション
-                  _buildSectionHeader('タスク管理（タスク管理画面で有効）'),
+                  _buildSectionHeader(AppLocalizations.of(context)!.taskManagementEnabled),
                   _buildMenuItem(
                     icon: Icons.add,
                     iconColor: Colors.green,
-                    title: '新しいタスク (Ctrl+N)',
+                    title: '${AppLocalizations.of(context)!.newTask} (Ctrl+N)',
                     value: 'add_task',
                   ),
                   _buildMenuItem(
                     icon: Icons.checklist,
                     iconColor: Colors.blue,
-                    title: '一括選択モード (Ctrl+B)',
+                    title: '${AppLocalizations.of(context)!.bulkSelectMode} (Ctrl+B)',
                     value: 'bulk_select',
                   ),
                   _buildMenuItem(
                     icon: Icons.download,
                     iconColor: Colors.green,
-                    title: 'CSV出力 (Ctrl+Shift+E)',
+                    title: '${AppLocalizations.of(context)!.csvExport} (Ctrl+Shift+E)',
                     value: 'export',
                   ),
                   _buildMenuItem(
                     icon: Icons.calendar_month,
                     iconColor: Colors.orange,
-                    title: 'スケジュール一覧 (Ctrl+S)',
+                    title: '${AppLocalizations.of(context)!.scheduleList} (Ctrl+S)',
                     value: 'schedule',
                   ),
                   _buildMenuItem(
                     icon: Icons.group,
                     iconColor: Colors.purple,
-                    title: 'グループ化 (Ctrl+G)',
+                    title: '${AppLocalizations.of(context)!.grouping} (Ctrl+G)',
                     value: 'group_menu',
                   ),
                   _buildMenuItem(
                     icon: Icons.content_copy,
                     iconColor: Colors.teal,
-                    title: 'テンプレートから作成 (Ctrl+Shift+T)',
+                    title: '${AppLocalizations.of(context)!.createFromTemplate} (Ctrl+Shift+T)',
                     value: 'task_template',
                   ),
                   _buildMenuItem(
                     icon: Icons.visibility,
                     iconColor: Colors.grey,
-                    title: '統計・検索バー表示/非表示 (Ctrl+F)',
+                    title: '${AppLocalizations.of(context)!.toggleStatisticsSearchBar} (Ctrl+F)',
                     value: 'toggle_header',
                   ),
                 ],
