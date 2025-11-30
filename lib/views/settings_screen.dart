@@ -5867,7 +5867,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       children: [
                         _buildSwitchWithDescription(
                           title: '自動取込を有効にする',
-                          description: 'Outlookの個人カレンダーから予定を自動的に取り込みます。取り込んだ予定は「Outlook連携（自動取込）」タスクに紐づけられます。',
+                          description: 'Outlookの個人カレンダーから予定を自動的に取り込みます。取り込んだ予定は「Outlook連携（自動取込）」タスクに紐づけられます。\n\n⚠️ 注意: 自動取込実行時に起動しているOutlookが落ちる場合があります。',
                           value: ref.watch(settingsProvider).outlookAutoSyncEnabled,
                           onChanged: (value) {
                             ref.read(settingsProvider.notifier).setOutlookAutoSyncEnabled(value);
