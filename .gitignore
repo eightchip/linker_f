@@ -57,4 +57,5 @@ app.*.map.json
 *.py
 
 # Generated localization files
-lib/l10n/app_localizations*.dart
+# Note: These files are committed because they are required for the build
+# lib/l10n/app_localizations*.dart
