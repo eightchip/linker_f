@@ -577,7 +577,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cancelled => 'キャンセル';
 
   @override
-  String get cancelledShort => '止';
+  String get cancelledShort => 'X';
 
   @override
   String get dueDate => '期限';
@@ -988,16 +988,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get totalTasks => '総タスク';
 
   @override
-  String get inProgressShort => '進';
+  String get inProgressShort => 'I';
 
   @override
-  String get completedShort => '完';
+  String get completedShort => 'C';
 
   @override
-  String get notStartedShort => '未';
+  String get notStartedShort => 'N';
 
   @override
-  String get inProgressShort2 => '中';
+  String get inProgressShort2 => 'I';
 
   @override
   String get descriptionText => '説明文';
@@ -1010,4 +1010,1360 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get regexSearchMode => '正規表現検索モード';
+
+  @override
+  String get scheduleTitle => '予定タイトル';
+
+  @override
+  String get startDateTime => '開始日時';
+
+  @override
+  String get endDateTime => '終了日時';
+
+  @override
+  String get location => '場所';
+
+  @override
+  String get selectDateTime => '日時を選択';
+
+  @override
+  String get selectDateTimeOptional => '日時を選択（任意）';
+
+  @override
+  String get addSchedule => '予定を追加';
+
+  @override
+  String get updateSchedule => '予定を更新';
+
+  @override
+  String get scheduleAdded => '予定を追加しました';
+
+  @override
+  String get startDateTimeRequired => '開始日時は必須です';
+
+  @override
+  String get outlookDesktop => 'Outlook（デスクトップ）';
+
+  @override
+  String get gmailWeb => 'Gmail（Web）';
+
+  @override
+  String get outlookTest => 'Outlookをテスト';
+
+  @override
+  String get gmailTest => 'Gmailをテスト';
+
+  @override
+  String get sendHistory => '送信履歴';
+
+  @override
+  String get launchMailer => 'メーラーを起動';
+
+  @override
+  String get mailSentComplete => 'メール送信完了';
+
+  @override
+  String get launchMailerFirst => 'まずメーラーを起動してください';
+
+  @override
+  String get copyTask => 'タスクをコピー';
+
+  @override
+  String copyTaskConfirm(String title) {
+    return '「$title」をコピーしますか？';
+  }
+
+  @override
+  String get repeatPeriod => '繰り返し期間:';
+
+  @override
+  String get monthly => '月次（1か月後）';
+
+  @override
+  String get quarterly => '四半期（3か月後）';
+
+  @override
+  String get yearly => '年次（1年後）';
+
+  @override
+  String get custom => 'カスタム';
+
+  @override
+  String get copyCount => 'コピー個数:';
+
+  @override
+  String copyCountLabel(int count) {
+    return '$count個';
+  }
+
+  @override
+  String get maxCopiesMonthly => '最大12個まで（1か月ずつ期限をずらしてコピー）';
+
+  @override
+  String get maxCopiesQuarterly => '最大4個まで（3か月ずつ期限をずらしてコピー）';
+
+  @override
+  String get selectReminderTime => 'リマインダー時間を選択（任意）';
+
+  @override
+  String get copiedContent => 'コピーされる内容:';
+
+  @override
+  String get titleLabel => 'タイトル:';
+
+  @override
+  String get copySuffix => 'コピー';
+
+  @override
+  String get descriptionLabel => '説明:';
+
+  @override
+  String get requestorMemoLabel => '依頼先・メモ:';
+
+  @override
+  String get copyCountLabel2 => 'コピー個数:';
+
+  @override
+  String get dueDateLabel => '期限日:';
+
+  @override
+  String get reminderLabel => 'リマインダー:';
+
+  @override
+  String get priorityLabel => '優先度:';
+
+  @override
+  String get statusLabel => 'ステータス:';
+
+  @override
+  String get tagsLabel => 'タグ:';
+
+  @override
+  String get estimatedTimeLabel => '推定時間:';
+
+  @override
+  String get minutes => '分';
+
+  @override
+  String get subtasksLabel => 'サブタスク:';
+
+  @override
+  String get statusResetNote => '※ ステータスは「未着手」にリセットされます';
+
+  @override
+  String get subtasksCopiedNote => '※ サブタスクもコピーされます';
+
+  @override
+  String taskCopiedSuccess(int count) {
+    return 'タスクを$count個コピーしました';
+  }
+
+  @override
+  String taskCopiedPartial(int success, int failed) {
+    return 'タスクを$success個コピーしました（$failed個失敗）';
+  }
+
+  @override
+  String get taskCopyFailed => 'タスクのコピーに失敗しました';
+
+  @override
+  String get deleteTask => 'タスクを削除';
+
+  @override
+  String deleteTaskConfirm(String title) {
+    return '「$title」を削除しますか？';
+  }
+
+  @override
+  String get deleteOptions => '削除オプション:';
+
+  @override
+  String get deleteAppOnly => 'アプリのみ削除';
+
+  @override
+  String get deleteAppAndCalendar => 'アプリとGoogle Calendarから削除';
+
+  @override
+  String get appOnly => 'アプリのみ';
+
+  @override
+  String get deleteBoth => '両方削除';
+
+  @override
+  String taskDeletedSuccess(String title) {
+    return '「$title」を削除しました';
+  }
+
+  @override
+  String get deleteFailed => '削除に失敗しました';
+
+  @override
+  String taskDeletedFromBoth(String title) {
+    return '「$title」をアプリとGoogle Calendarから削除しました';
+  }
+
+  @override
+  String get confirm => '確認';
+
+  @override
+  String deleteSelectedTasks(int count) {
+    return '選択した$count件のタスクを削除しますか？';
+  }
+
+  @override
+  String backupExecuted(int count) {
+    return 'バックアップを実行しました。$count件のタスクを削除します...';
+  }
+
+  @override
+  String backupFailedContinue(String error) {
+    return 'バックアップに失敗しましたが、削除を続行します: $error';
+  }
+
+  @override
+  String get deleteSchedule => '予定を削除';
+
+  @override
+  String deleteScheduleConfirm(String title) {
+    return '「$title」を削除しますか？';
+  }
+
+  @override
+  String get warning => '警告';
+
+  @override
+  String get selectAtLeastTwoTasks => '2つ以上のタスクを選択してください';
+
+  @override
+  String get noSourceTasks => '結合元のタスクがありません';
+
+  @override
+  String get backupExecutedMerge => 'バックアップを実行しました。タスク結合を実行します...';
+
+  @override
+  String get taskMergeFailed => 'タスク結合に失敗しました';
+
+  @override
+  String get linkAssignmentFailed => 'リンク割り当てに失敗しました';
+
+  @override
+  String get statusChangeFailed => 'ステータス変更に失敗しました';
+
+  @override
+  String get priorityChangeFailed => '優先度変更に失敗しました';
+
+  @override
+  String get dueDateChangeFailed => '期限日変更に失敗しました';
+
+  @override
+  String get tagChangeFailed => 'タグ変更に失敗しました';
+
+  @override
+  String taskSyncedToCalendar(String title) {
+    return '「$title」をGoogle Calendarに同期しました';
+  }
+
+  @override
+  String taskSyncFailed(String title, String error) {
+    return '「$title」の同期に失敗しました: $error';
+  }
+
+  @override
+  String taskSyncError(String title, String error) {
+    return '「$title」の同期中にエラーが発生しました: $error';
+  }
+
+  @override
+  String get exportFailed => 'エクスポートに失敗しました';
+
+  @override
+  String get invalidFileFormat => '無効なファイル形式です';
+
+  @override
+  String get importFailed => 'インポートに失敗しました';
+
+  @override
+  String get sendHistorySearchError => '送信済み検索エラー';
+
+  @override
+  String get mailerLaunched => 'メーラーを起動しました';
+
+  @override
+  String get replyAddressNotFound => '返信先メールアドレスが見つかりません';
+
+  @override
+  String get mailerLaunchFailed => 'メーラーの起動に失敗しました';
+
+  @override
+  String linkOpenFailed(String link) {
+    return 'リンクを開けませんでした: $link';
+  }
+
+  @override
+  String uncPathOpenFailed(String path) {
+    return 'UNCパスを開けませんでした: $path';
+  }
+
+  @override
+  String urlOpenFailed(String url) {
+    return 'URLを開けませんでした: $url';
+  }
+
+  @override
+  String fileOpenFailed(String path) {
+    return 'ファイルを開けませんでした: $path';
+  }
+
+  @override
+  String get colorPresets => 'カラープリセット';
+
+  @override
+  String get applyRecommendedColors => 'ワンタップでおすすめ配色を適用';
+
+  @override
+  String get accentColor => 'アクセントカラー';
+
+  @override
+  String get colorIntensity => '色の濃淡';
+
+  @override
+  String get contrastAdjustment => 'コントラスト調整';
+
+  @override
+  String get textColorSettings => 'テキスト色設定';
+
+  @override
+  String get cardViewFieldSettingsDescription =>
+      'カードビューで表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます';
+
+  @override
+  String get realtimePreview => 'リアルタイムプレビュー';
+
+  @override
+  String get live => 'ライブ';
+
+  @override
+  String get cardSettingsDescription =>
+      'カードの見た目と動作を調整します。角丸半径、影の強さ、パディングを変更できます。';
+
+  @override
+  String get cornerRadius => '角丸半径';
+
+  @override
+  String get shadowStrength => '影の強さ';
+
+  @override
+  String get padding => 'パディング';
+
+  @override
+  String get sampleCard => 'サンプルカード';
+
+  @override
+  String get cardPreviewDescription => 'これはカードのプレビューです。設定を変更するとリアルタイムで反映されます。';
+
+  @override
+  String get sampleButton => 'サンプルボタン';
+
+  @override
+  String get outlineButton => 'アウトラインボタン';
+
+  @override
+  String get sampleInputField => 'サンプル入力フィールド';
+
+  @override
+  String currentSettings(String radius, String shadow, String padding) {
+    return '角丸: ${radius}px | 影: $shadow% | パディング: ${padding}px';
+  }
+
+  @override
+  String get buttonSettings => 'ボタン設定';
+
+  @override
+  String get cardViewShort => 'C';
+
+  @override
+  String get listViewShort => 'L';
+
+  @override
+  String get taskListDisplaySettings => 'タスクリスト表示設定';
+
+  @override
+  String get taskListFieldSettingsDescription =>
+      'タスクリストとタスク編集画面で表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます';
+
+  @override
+  String get resetCardViewSettings => 'カードビュー設定をリセット';
+
+  @override
+  String get resetCardViewSettingsConfirm =>
+      'カードビューの設定を初期値にリセットしますか？\nこの操作は取り消せません。';
+
+  @override
+  String get textColor => 'テキスト色';
+
+  @override
+  String get requestorDescription => '依頼先への説明';
+
+  @override
+  String get allScreensCommon => '全画面共通';
+
+  @override
+  String appWideFontSize(String percentage) {
+    return 'アプリ全体のフォントサイズ: $percentage%';
+  }
+
+  @override
+  String get autoLayoutAdjustment => '自動レイアウト調整';
+
+  @override
+  String get autoAdjustToScreenSize => '画面サイズに応じて自動調整';
+
+  @override
+  String fieldSettings(String fieldName) {
+    return '$fieldName設定';
+  }
+
+  @override
+  String get colorPresetSunrise => 'サンライズ';
+
+  @override
+  String get colorPresetSunriseDesc => '温かみのあるオレンジ系';
+
+  @override
+  String get colorPresetForest => 'フォレスト';
+
+  @override
+  String get colorPresetForestDesc => '落ち着いたグリーン系';
+
+  @override
+  String get colorPresetBreeze => 'ブルーブリーズ';
+
+  @override
+  String get colorPresetBreezeDesc => '爽やかなブルー系';
+
+  @override
+  String get colorPresetMidnight => 'ミッドナイト';
+
+  @override
+  String get colorPresetMidnightDesc => '夜間作業に合うダークテイスト';
+
+  @override
+  String get colorPresetSakura => 'サクラ';
+
+  @override
+  String get colorPresetSakuraDesc => '柔らかなピンク系';
+
+  @override
+  String get colorPresetCitrus => 'シトラス';
+
+  @override
+  String get colorPresetCitrusDesc => 'フレッシュな黄緑系';
+
+  @override
+  String get colorPresetSlate => 'スレート';
+
+  @override
+  String get colorPresetSlateDesc => '落ち着いたブルーグレー';
+
+  @override
+  String get colorPresetAmber => 'アンバー';
+
+  @override
+  String get colorPresetAmberDesc => '視認性の高いゴールド調';
+
+  @override
+  String get colorPresetGraphite => 'グラファイト';
+
+  @override
+  String get colorPresetGraphiteDesc => 'モダンなモノトーン';
+
+  @override
+  String presetApplied(String presetName) {
+    return '$presetNameプリセットを適用しました';
+  }
+
+  @override
+  String presetApplyFailed(String error) {
+    return 'プリセットの適用に失敗しました: $error';
+  }
+
+  @override
+  String get autoContrastOptimization => '自動コントラスト最適化';
+
+  @override
+  String get autoContrastOptimizationDesc => 'ダークモードでテキストの視認性を自動調整';
+
+  @override
+  String get iconSize => 'アイコンサイズ';
+
+  @override
+  String get linkItemIconSizeDesc =>
+      'リンクアイテムのアイコンサイズを調整します。大きくすると視認性が向上しますが、アイテム全体のサイズも大きくなります。';
+
+  @override
+  String get gridSettingsReset => 'グリッド設定';
+
+  @override
+  String get gridSettingsResetDesc => 'カラム数: 4、間隔: デフォルト';
+
+  @override
+  String get cardSettingsReset => 'カード設定';
+
+  @override
+  String get cardSettingsResetDesc => 'サイズ: デフォルト、影: デフォルト';
+
+  @override
+  String get itemSettingsReset => 'アイテム設定';
+
+  @override
+  String get itemSettingsResetDesc => 'フォントサイズ: デフォルト、アイコンサイズ: デフォルト';
+
+  @override
+  String get colorBlue => 'ブルー';
+
+  @override
+  String get colorRed => 'レッド';
+
+  @override
+  String get colorGreen => 'グリーン';
+
+  @override
+  String get colorOrange => 'オレンジ';
+
+  @override
+  String get colorPurple => 'パープル';
+
+  @override
+  String get colorPink => 'ピンク';
+
+  @override
+  String get colorCyan => 'シアン';
+
+  @override
+  String get colorGray => 'グレー';
+
+  @override
+  String get colorEmerald => 'エメラルド';
+
+  @override
+  String get colorYellow => 'イエロー';
+
+  @override
+  String get colorBlack => '黒';
+
+  @override
+  String get colorWhite => '白';
+
+  @override
+  String get light => '薄い';
+
+  @override
+  String get standard => '標準';
+
+  @override
+  String get dark => '濃い';
+
+  @override
+  String get contrastLow => '低';
+
+  @override
+  String get contrastHigh => '高';
+
+  @override
+  String get contrast => 'コントラスト';
+
+  @override
+  String get fontSize => 'フォントサイズ';
+
+  @override
+  String get fontFamily => 'フォントファミリー';
+
+  @override
+  String get defaultValue => 'デフォルト';
+
+  @override
+  String fontSizePreview(String fieldName) {
+    return 'プレビュー: このテキストのサイズが$fieldNameに適用されます';
+  }
+
+  @override
+  String fontFamilyPreview(String fieldName) {
+    return 'フォントプレビュー: このテキストのフォントが$fieldNameに適用されます';
+  }
+
+  @override
+  String get buttonSettingsDescription => 'ボタンの見た目を調整します。角丸半径と影の強さを変更できます。';
+
+  @override
+  String get borderRadius => '角丸半径';
+
+  @override
+  String borderRadiusPx(String value) {
+    return '角丸半径: ${value}px';
+  }
+
+  @override
+  String get elevation => '影の強さ';
+
+  @override
+  String elevationPx(String value) {
+    return '影の強さ: ${value}px';
+  }
+
+  @override
+  String elevationPercent(String value) {
+    return '影の強さ: $value%';
+  }
+
+  @override
+  String get inputFieldSettings => '入力フィールド設定';
+
+  @override
+  String get inputFieldSettingsDescription =>
+      'テキスト入力欄の見た目を調整します。角丸半径と枠線の太さを変更できます。';
+
+  @override
+  String get borderWidth => '枠線の太さ';
+
+  @override
+  String borderWidthPx(String value) {
+    return '枠線の太さ: ${value}px';
+  }
+
+  @override
+  String get hoverEffect => 'ホバー効果';
+
+  @override
+  String hoverEffectPercent(String value) {
+    return 'ホバー効果: $value%';
+  }
+
+  @override
+  String get gradient => 'グラデーション';
+
+  @override
+  String gradientPercent(String value) {
+    return 'グラデーション: $value%';
+  }
+
+  @override
+  String get generalSettings => '全般設定';
+
+  @override
+  String get darkModeContrastBoost => 'ダークモードコントラストブースト';
+
+  @override
+  String get autoLayoutEnabled => '自動レイアウトが有効です。画面サイズに応じて最適な列数が自動で決定されます。';
+
+  @override
+  String get largeScreen => '大画面（1920px以上）';
+
+  @override
+  String columnsDisplay(String count) {
+    return '$count列表示';
+  }
+
+  @override
+  String get optimalForDesktop => 'デスクトップモニターに最適';
+
+  @override
+  String get mediumScreen => '中画面（1200-1919px）';
+
+  @override
+  String get optimalForLaptop => 'ノートPCやタブレットに最適';
+
+  @override
+  String get smallScreen => '小画面（800-1199px）';
+
+  @override
+  String get optimalForSmallScreen => '小さな画面に最適';
+
+  @override
+  String get minimalScreen => '最小画面（800px未満）';
+
+  @override
+  String get optimalForMobile => 'モバイル表示に最適';
+
+  @override
+  String get manualLayoutEnabled => '手動レイアウト設定が有効です。固定の列数で表示されます。';
+
+  @override
+  String get fixedColumns => '固定列数';
+
+  @override
+  String get sameColumnsAllScreens => 'すべての画面サイズで同じ列数';
+
+  @override
+  String get useCase => '使用場面';
+
+  @override
+  String get maintainSpecificDisplay => '特定の表示を維持したい場合';
+
+  @override
+  String get consistentLayoutNeeded => '一貫したレイアウトが必要な場合';
+
+  @override
+  String defaultColumnCount(String count) {
+    return 'デフォルト列数: $count';
+  }
+
+  @override
+  String gridSpacing(String value) {
+    return 'グリッド間隔: ${value}px';
+  }
+
+  @override
+  String cardWidth(String value) {
+    return 'カード幅: ${value}px';
+  }
+
+  @override
+  String cardHeight(String value) {
+    return 'カード高さ: ${value}px';
+  }
+
+  @override
+  String get itemMargin => 'アイテム間マージン';
+
+  @override
+  String itemMarginPx(String value) {
+    return 'アイテム間マージン: ${value}px';
+  }
+
+  @override
+  String get itemMarginDescription =>
+      'リンクアイテム間の空白スペースを調整します。値を大きくすると、アイテム同士の間隔が広がり、見やすくなります。';
+
+  @override
+  String get itemPadding => 'アイテム内パディング';
+
+  @override
+  String itemPaddingPx(String value) {
+    return 'アイテム内パディング: ${value}px';
+  }
+
+  @override
+  String get itemPaddingDescription =>
+      'リンクアイテム内の文字やアイコンと枠線の間の空白を調整します。値を大きくすると、アイテム内がゆとりを持って見やすくなります。';
+
+  @override
+  String fontSizePx(String value) {
+    return 'フォントサイズ: ${value}px';
+  }
+
+  @override
+  String get fontSizeDescription =>
+      'リンクアイテムの文字サイズを調整します。小さくすると多くのアイテムを表示できますが、読みにくくなる場合があります。';
+
+  @override
+  String get buttonSize => 'ボタンサイズ';
+
+  @override
+  String buttonSizePx(String value) {
+    return 'ボタンサイズ: ${value}px';
+  }
+
+  @override
+  String get buttonSizeDescription =>
+      '編集・削除などのボタンのサイズを調整します。大きくすると操作しやすくなりますが、画面のスペースを多く使用します。';
+
+  @override
+  String get autoAdjustCardHeight => 'カード高さ自動調整';
+
+  @override
+  String get autoAdjustCardHeightDescription =>
+      'コンテンツ量に応じてカードの高さを自動調整（手動設定の高さを最小値として使用）';
+
+  @override
+  String get backupExport => 'データのバックアップ / エクスポート';
+
+  @override
+  String get backupLocation => '保存先: ドキュメント/backups';
+
+  @override
+  String get saveNow => '今すぐ保存';
+
+  @override
+  String get openBackupFolder => '保存先を開く';
+
+  @override
+  String get selectiveExportImport => '選択式エクスポート / インポート';
+
+  @override
+  String get selectiveExport => '選択式エクスポート';
+
+  @override
+  String get selectiveImport => '選択式インポート';
+
+  @override
+  String get autoBackup => '自動バックアップ';
+
+  @override
+  String get autoBackupDescription => '定期的にデータをバックアップ';
+
+  @override
+  String backupInterval(String days) {
+    return 'バックアップ間隔: $days日';
+  }
+
+  @override
+  String backupIntervalDays(String days) {
+    return '$days日';
+  }
+
+  @override
+  String get notificationWarning =>
+      '注意: 通知はアプリが起動中の場合のみ表示されます。アプリを閉じている場合は通知が表示されません。';
+
+  @override
+  String get showNotifications => '通知を表示';
+
+  @override
+  String get showNotificationsDescription =>
+      'タスクの期限やリマインダーが設定されている場合、デスクトップ通知を表示します。アプリが起動中の場合のみ通知が表示されます。';
+
+  @override
+  String get notificationSound => '通知音';
+
+  @override
+  String get notificationSoundDescription =>
+      '通知が表示される際に音を再生します。アプリが起動中の場合のみ音が再生されます。';
+
+  @override
+  String get testNotificationSound => '通知音をテスト';
+
+  @override
+  String get testNotificationSoundDescription =>
+      'このボタンで通知音をテストできます。アプリが起動中の場合のみ音が再生されます。';
+
+  @override
+  String get resetToDefaults => '設定をデフォルトにリセット';
+
+  @override
+  String get resetLayoutSettings => 'レイアウト設定をリセット';
+
+  @override
+  String get layoutSettingsReset => 'レイアウト設定をリセットしました';
+
+  @override
+  String get resetUISettings => 'UI設定をリセット';
+
+  @override
+  String get resetUISettingsConfirm =>
+      'すべてのUIカスタマイズ設定をデフォルト値にリセットします。\n\nこの操作は取り消せません。\n本当に実行しますか？';
+
+  @override
+  String get executeReset => 'リセット実行';
+
+  @override
+  String get resetDetails => 'リセット機能の詳細';
+
+  @override
+  String get resetFunction => 'リセット機能';
+
+  @override
+  String get resetFunctionDescription =>
+      '• 設定リセット: テーマ、通知、連携設定など\n• レイアウトリセット: グリッドサイズ、カード設定など\n• UI設定リセット: カード、ボタン、入力フィールドのカスタマイズ設定\n• データは保持: リンク、タスク、メモは削除されません\n• 詳細は「リセット機能の詳細」ボタンで確認';
+
+  @override
+  String get resetDetailsTitle => 'リセット機能の詳細';
+
+  @override
+  String get resetDetailsDescription => 'リセット機能の詳細説明:';
+
+  @override
+  String get resetToDefaultsStep => '設定をデフォルトにリセット';
+
+  @override
+  String get resetToDefaultsStepDescription => '以下の設定が初期値に戻ります:';
+
+  @override
+  String get themeSettingsReset => 'テーマ設定';
+
+  @override
+  String get themeSettingsResetValue =>
+      'ダークモード: OFF、アクセントカラー: ブルー、濃淡: 100%、コントラスト: 100%';
+
+  @override
+  String get notificationSettingsReset => '通知設定';
+
+  @override
+  String get notificationSettingsResetValue => '通知: ON、通知音: ON';
+
+  @override
+  String get integrationSettingsReset => '連携設定';
+
+  @override
+  String get integrationSettingsResetValue =>
+      'Google Calendar: OFF、Gmail連携: OFF、Outlook: OFF';
+
+  @override
+  String get backupSettingsReset => 'バックアップ設定';
+
+  @override
+  String get backupSettingsResetValue => '自動バックアップ: ON、間隔: 7日';
+
+  @override
+  String get resetLayoutSettingsStep => 'レイアウト設定をリセット';
+
+  @override
+  String get resetLayoutSettingsStepDescription => '以下のレイアウト設定が初期値に戻ります:';
+
+  @override
+  String get autoSync => '自動同期';
+
+  @override
+  String get autoSyncDescription => '定期的にGoogle Calendarと同期します';
+
+  @override
+  String syncInterval(String minutes) {
+    return '同期間隔: $minutes分';
+  }
+
+  @override
+  String get bidirectionalSync => '双方向同期';
+
+  @override
+  String get bidirectionalSyncDescription => 'アプリのタスクをGoogle Calendarに送信します';
+
+  @override
+  String get showCompletedTasks => '完了タスクを表示';
+
+  @override
+  String get showCompletedTasksDescription => 'Google Calendarで完了したタスクを表示します';
+
+  @override
+  String get credentialsFileFound => '認証情報ファイルが見つかりました';
+
+  @override
+  String get credentialsFileNotFound => '認証情報ファイルが見つかりません';
+
+  @override
+  String get outlookSettingsInfo => 'Outlook設定情報';
+
+  @override
+  String get autoLayoutAdjustmentDescription => '画面サイズに応じて自動調整';
+
+  @override
+  String get autoLayoutEnabledLabel => '自動レイアウト有効';
+
+  @override
+  String get manualLayoutSettings => '手動レイアウト設定';
+
+  @override
+  String get animationEffectSettings => 'アニメーション・エフェクト設定';
+
+  @override
+  String animationDuration(String ms) {
+    return 'アニメーション時間: ${ms}ms';
+  }
+
+  @override
+  String spacing(String value) {
+    return 'スペーシング: ${value}px';
+  }
+
+  @override
+  String darkModeContrastBoostPercent(String value) {
+    return 'ダークモードコントラストブースト: $value%';
+  }
+
+  @override
+  String get taskProjectSettingsReset => 'プロジェクト一覧設定をリセットしました';
+
+  @override
+  String get backupFolderOpened => 'バックアップフォルダを開きました';
+
+  @override
+  String get googleCalendar => 'Google Calendar';
+
+  @override
+  String get googleCalendarIntegration => 'Google Calendar連携';
+
+  @override
+  String get googleCalendarIntegrationDescription =>
+      'Google Calendarのイベントをタスクとして同期します';
+
+  @override
+  String get gmailIntegrationAbout => 'Gmail連携について';
+
+  @override
+  String get gmailIntegrationDescription =>
+      'タスク編集モーダルからGmailのメール作成画面を起動できます。\nAPIやアクセストークンの設定は不要です。\nGoogleアカウントにログイン済みのブラウザがあれば、そのままGmailの新規作成タブが開きます。';
+
+  @override
+  String get gmailUsage =>
+      '使い方：\n1. タスク編集モーダルを開く\n2. メール送信セクションでGmailを選択\n3. 宛先を入力して「メール送信」ボタンをクリック\n4. Gmailのメール作成画面が開くので、内容を確認して送信します\n（送信履歴はタスク側に記録されます）';
+
+  @override
+  String get outlookIntegration => 'Outlook連携';
+
+  @override
+  String get outlookIntegrationAbout => 'Outlook連携について';
+
+  @override
+  String get outlookIntegrationDescription =>
+      'Outlook APIを使用して、メール送信機能を利用できます。';
+
+  @override
+  String get powershellFileDetails => 'PowerShellファイルの詳細';
+
+  @override
+  String get executableDirectory => '実行ファイルと同じディレクトリ\\Apps';
+
+  @override
+  String get outlookConnectionTest => 'Outlook接続テスト';
+
+  @override
+  String get outlookConnectionTestDescription => 'Outlookアプリケーションとの接続をテストします';
+
+  @override
+  String get mailCompositionSupport => 'メール作成支援';
+
+  @override
+  String get mailCompositionSupportDescription => 'タスクから返信メールを作成する際の支援機能';
+
+  @override
+  String get sentMailSearch => '送信メール検索';
+
+  @override
+  String get sentMailSearchDescription => '送信済みメールの検索・確認機能';
+
+  @override
+  String get outlookCalendarEvents => 'Outlookカレンダー予定取得';
+
+  @override
+  String get outlookCalendarEventsDescription =>
+      'Outlookカレンダーから予定を取得してタスクに割り当てる機能';
+
+  @override
+  String get portableVersion => 'ポータブル版';
+
+  @override
+  String get installedVersion => 'インストール版';
+
+  @override
+  String get manualExecution => '手動実行';
+
+  @override
+  String get automaticExecution => '自動実行';
+
+  @override
+  String get importantNotes => '重要な注意事項';
+
+  @override
+  String importantNotesContent(String portablePath, String installedPath) {
+    return '• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】以下のいずれかに配置してください：\n1. ポータブル版: $portablePath\n2. インストール版: $installedPath';
+  }
+
+  @override
+  String get connectionTest => '接続テスト';
+
+  @override
+  String get outlookPersonalCalendarAutoImport => 'Outlook個人予定の自動取込';
+
+  @override
+  String get outlookSettingsInfoContent =>
+      '• 必要な権限: Outlook送信\n• 対応機能: メール送信、予定自動取込\n• 使用方法: タスク管理からOutlookでメールを送信、または自動取込設定を有効化';
+
+  @override
+  String get googleCalendarSetupGuide => 'Google Calendar設定ガイド';
+
+  @override
+  String get googleCalendarSetupSteps => 'Google Calendar APIを使用するための設定手順:';
+
+  @override
+  String get accessGoogleCloudConsole => 'Google Cloud Consoleにアクセス';
+
+  @override
+  String get createOrSelectProject => '新しいプロジェクトを作成または既存プロジェクトを選択';
+
+  @override
+  String get enableGoogleCalendarAPI => 'Google Calendar APIを有効化';
+
+  @override
+  String get enableGoogleCalendarAPIDescription =>
+      '「APIとサービス」→「ライブラリ」→「Google Calendar API」を検索して有効化';
+
+  @override
+  String get createOAuth2ClientID => 'OAuth2クライアントIDを作成';
+
+  @override
+  String get createOAuth2ClientIDDescription =>
+      '「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuth2クライアントID」→「デスクトップアプリケーション」';
+
+  @override
+  String get downloadCredentialsFile => '認証情報ファイルをダウンロード';
+
+  @override
+  String get downloadCredentialsFileDescription =>
+      '作成したOAuth2クライアントIDの「ダウンロード」ボタンからJSONファイルをダウンロード';
+
+  @override
+  String get placeFileInAppFolder => 'ファイルをアプリフォルダに配置';
+
+  @override
+  String get placeFileInAppFolderDescription =>
+      'ダウンロードしたJSONファイルを「oauth2_credentials.json」としてアプリフォルダに配置';
+
+  @override
+  String get executeOAuth2Authentication => 'OAuth2認証を実行';
+
+  @override
+  String get executeOAuth2AuthenticationDescription =>
+      'アプリの「OAuth2認証を開始」ボタンをクリックして認証を完了';
+
+  @override
+  String get generatedFiles => '生成されるファイル';
+
+  @override
+  String get exportOptions => 'エクスポートオプション';
+
+  @override
+  String get selectDataToExport => 'エクスポートするデータを選択してください:';
+
+  @override
+  String get linksOnly => 'リンクのみ';
+
+  @override
+  String get linksOnlyDescription => 'リンクデータのみをエクスポート';
+
+  @override
+  String get tasksOnly => 'タスクのみ';
+
+  @override
+  String get tasksOnlyDescription => 'タスクデータのみをエクスポート';
+
+  @override
+  String get both => '両方';
+
+  @override
+  String get bothDescription => 'リンクとタスクの両方をエクスポート';
+
+  @override
+  String get importOptions => 'インポートオプション';
+
+  @override
+  String get selectDataToImport => 'インポートするデータを選択してください:';
+
+  @override
+  String get linksOnlyImportDescription => 'リンクデータのみをインポート';
+
+  @override
+  String get tasksOnlyImportDescription => 'タスクデータのみをインポート';
+
+  @override
+  String get bothImportDescription => 'リンクとタスクの両方をインポート';
+
+  @override
+  String exportCompleted(String filePath) {
+    return 'エクスポートが完了しました\n保存先: $filePath';
+  }
+
+  @override
+  String get exportCompletedTitle => 'エクスポート完了';
+
+  @override
+  String get exportError => 'エクスポートエラー';
+
+  @override
+  String exportErrorMessage(String error) {
+    return 'エクスポートエラー: $error';
+  }
+
+  @override
+  String couldNotOpenFolder(String error) {
+    return 'フォルダを開けませんでした: $error';
+  }
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get selectFileToImport => 'インポートするファイルを選択';
+
+  @override
+  String importCompleted(int linksCount, int tasksCount, int groupsCount) {
+    return 'インポートが完了しました\nリンク: $linksCount件\nタスク: $tasksCount件\nグループ: $groupsCount件';
+  }
+
+  @override
+  String get importCompletedTitle => 'インポート完了';
+
+  @override
+  String get importError => 'インポートエラー';
+
+  @override
+  String importErrorMessage(String error) {
+    return 'インポートエラー: $error';
+  }
+
+  @override
+  String get oauth2AuthCompleted => 'OAuth2認証が完了しました';
+
+  @override
+  String get thisFileContains => 'このファイルには以下の情報が含まれます：';
+
+  @override
+  String get syncStatus => '同期状態';
+
+  @override
+  String get waiting => '待機中';
+
+  @override
+  String get syncing => '同期中...';
+
+  @override
+  String get syncCompleted => '同期完了';
+
+  @override
+  String get syncError => '同期エラー';
+
+  @override
+  String lastSync(String time) {
+    return '最終同期: $time';
+  }
+
+  @override
+  String processingItems(int processed, int total) {
+    return '$processed/$total件処理中...';
+  }
+
+  @override
+  String error(String message) {
+    return 'エラー: $message';
+  }
+
+  @override
+  String errorCode(String code) {
+    return 'エラーコード: $code';
+  }
+
+  @override
+  String get partialSync => '部分同期';
+
+  @override
+  String get partialSyncDescription => '選択したタスクや日付範囲のタスクのみを同期できます';
+
+  @override
+  String get individualTaskSyncInfo =>
+      '個別タスクの同期は、タスク画面の各タスクの3点ドットメニューから「このタスクを同期」を選択してください。';
+
+  @override
+  String get syncByDateRange => '日付範囲で同期';
+
+  @override
+  String get cleanupDuplicateEvents => '重複イベントをクリーンアップ';
+
+  @override
+  String get deleteOrphanedEvents => '孤立イベントを削除';
+
+  @override
+  String get orphanedEventsDeletion => '孤立イベント削除';
+
+  @override
+  String get orphanedEventsDeletionDescription =>
+      'Google Calendarに残っているが、アプリに存在しないタスクのイベントを削除します。\nアプリで削除されたタスクのイベントがGoogle Calendarに残っている場合に使用してください。\n\nこの操作は取り消せません。実行しますか？';
+
+  @override
+  String get executeDeletion => '削除実行';
+
+  @override
+  String get detectingOrphanedEvents => '孤立イベントを検出中...';
+
+  @override
+  String orphanedEventsDeletionCompleted(int count) {
+    return '孤立イベント削除完了: $count件削除';
+  }
+
+  @override
+  String orphanedEventsDeleted(int count) {
+    return '孤立イベント$count件を削除しました';
+  }
+
+  @override
+  String get noOrphanedEventsFound => '孤立イベントは見つかりませんでした';
+
+  @override
+  String get orphanedEventsDeletionFailed => '孤立イベント削除に失敗しました';
+
+  @override
+  String get orphanedEventsDeletionError => '孤立イベント削除中にエラーが発生しました';
+
+  @override
+  String get duplicateEventsCleanup => '重複イベントクリーンアップ';
+
+  @override
+  String get duplicateEventsCleanupDescription =>
+      'Google Calendarの重複したイベントを検出・削除します。\n同じタイトルと日付のイベントが複数ある場合、古いものを削除します。\n\nこの操作は取り消せません。実行しますか？';
+
+  @override
+  String get executeCleanup => 'クリーンアップ実行';
+
+  @override
+  String get detectingDuplicateEvents => '重複イベントを検出中...';
+
+  @override
+  String duplicateCleanupCompleted(int found, int removed) {
+    return '重複クリーンアップ完了: $foundグループ検出、$removed件削除';
+  }
+
+  @override
+  String duplicateEventsDeleted(int count) {
+    return '重複イベント$count件を削除しました';
+  }
+
+  @override
+  String get noDuplicateEventsFound => '重複イベントは見つかりませんでした';
+
+  @override
+  String get duplicateCleanupFailed => '重複クリーンアップに失敗しました';
+
+  @override
+  String get duplicateCleanupError => '重複クリーンアップ中にエラーが発生しました';
+
+  @override
+  String get checkSetupMethod => '設定方法を確認';
+
+  @override
+  String get authStartFailed => '認証の開始に失敗しました';
+
+  @override
+  String get storageLocation => '格納場所';
+
+  @override
+  String get executionMethod => '実行方法';
+
+  @override
+  String get startOAuth2Authentication => 'OAuth2認証を開始';
+
+  @override
+  String get appToGoogleCalendarSync => 'アプリ→Google Calendar同期';
+
+  @override
+  String appToGoogleCalendarSyncCompleted(
+    int created,
+    int updated,
+    int deleted,
+  ) {
+    return 'アプリ→Google Calendar同期完了: 作成$created件, 更新$updated件, 削除$deleted件';
+  }
+
+  @override
+  String get googleCalendarToAppSync => 'Google Calendar→アプリ同期';
+
+  @override
+  String googleCalendarToAppSyncCompleted(int added, int skipped) {
+    return 'Google Calendar→アプリ同期完了: 追加$added件, スキップ$skipped件';
+  }
+
+  @override
+  String syncErrorMessage(String error) {
+    return '同期エラー: $error';
+  }
+
+  @override
+  String errorColon(String error) {
+    return 'エラー: $error';
+  }
 }

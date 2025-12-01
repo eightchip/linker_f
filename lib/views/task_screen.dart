@@ -534,7 +534,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         if (mounted) {
           SnackBarService.showInfo(
             context,
-            'バックアップを実行しました。${deletedCount}件のタスクを削除します...',
+            AppLocalizations.of(context)!.backupExecuted(deletedCount),
           );
         }
       } catch (e) {
@@ -542,18 +542,19 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         if (mounted) {
           SnackBarService.showWarning(
             context,
-            'バックアップに失敗しましたが、削除を続行します: $e',
+            AppLocalizations.of(context)!.backupFailedContinue(e.toString()),
           );
         }
       }
     }
 
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await UnifiedDialogHelper.showDeleteConfirmDialog(
       context,
-      title: '確認',
-      message: '選択した${deletedCount}件のタスクを削除しますか？',
-      confirmText: '削除',
-      cancelText: 'キャンセル',
+      title: l10n.confirm,
+      message: l10n.deleteSelectedTasks(deletedCount),
+      confirmText: l10n.delete,
+      cancelText: l10n.cancel,
     );
 
     if (confirmed == true) {
@@ -580,7 +581,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         }
       } catch (e) {
         if (mounted) {
-          SnackBarService.showError(context, '削除に失敗しました: $e');
+          SnackBarService.showError(context, '${AppLocalizations.of(context)!.deleteFailed}: $e');
         }
       }
     }
@@ -589,7 +590,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   /// 選択されたタスクを結合
   Future<void> _mergeSelectedTasks(BuildContext context) async {
     if (_selectedTaskIds.length < 2) {
-      SnackBarService.showWarning(context, '2つ以上のタスクを選択してください');
+      SnackBarService.showWarning(context, AppLocalizations.of(context)!.selectAtLeastTwoTasks);
       return;
     }
 
@@ -661,7 +662,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           .toList();
 
       if (sourceTaskIds.isEmpty) {
-        SnackBarService.showWarning(context, '結合元のタスクがありません');
+        SnackBarService.showWarning(context, AppLocalizations.of(context)!.noSourceTasks);
         return;
       }
 
@@ -683,7 +684,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         if (mounted) {
           SnackBarService.showInfo(
             context,
-            'バックアップを実行しました。タスク結合を実行します...',
+            AppLocalizations.of(context)!.backupExecutedMerge,
           );
         }
       } catch (e) {
@@ -730,7 +731,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, 'タスク結合に失敗しました: $e');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.taskMergeFailed}: $e');
       }
     }
   }
@@ -918,7 +919,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, 'リンク割り当てに失敗しました: $e');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.linkAssignmentFailed}: $e');
       }
     }
   }
@@ -1021,7 +1022,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, 'ステータス変更に失敗しました: $e');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.statusChangeFailed}: $e');
       }
     }
   }
@@ -1126,7 +1127,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, '優先度変更に失敗しました: $e');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.priorityChangeFailed}: $e');
       }
     }
   }
@@ -1222,7 +1223,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, '期限日変更に失敗しました: $e');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.dueDateChangeFailed}: $e');
       }
     }
   }
@@ -1364,7 +1365,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, 'タグ変更に失敗しました: $e');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.tagChangeFailed}: $e');
       }
     }
   }
@@ -2064,7 +2065,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 child: _buildStatItem(
                   AppLocalizations.of(context)!.notStartedShort,
                   pending,
-                  Icons.radio_button_unchecked,
+                  Icons.schedule,
                   Colors.grey,
                 ),
               ),
@@ -2073,7 +2074,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 child: _buildStatItem(
                   AppLocalizations.of(context)!.inProgressShort,
                   inProgress,
-                  Icons.pending,
+                  Icons.play_arrow,
                   Colors.blue,
                 ),
               ),
@@ -2252,10 +2253,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 SizedBox(
                   width: 120, // 固定幅で狭く
                   child: DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                      labelText: '優先度',
+                      labelText: AppLocalizations.of(context)!.priority,
                       isDense: true,
                     ),
                     value: _filterPriority,
@@ -2409,28 +2410,28 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   children: [
                     Tooltip(
                       message: AppLocalizations.of(context)!.cardView,
-                      child: const Padding(
+                      child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.view_headline, size: 16),
                             SizedBox(width: 4),
-                            Text('カ', style: TextStyle(fontSize: 12)),
+                            Text(AppLocalizations.of(context)!.cardViewShort, style: TextStyle(fontSize: 12)),
                           ],
                         ),
                       ),
                     ),
                     Tooltip(
                       message: AppLocalizations.of(context)!.listView,
-                      child: const Padding(
+                      child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.view_list, size: 16),
                             SizedBox(width: 4),
-                            Text('リ', style: TextStyle(fontSize: 12)),
+                            Text(AppLocalizations.of(context)!.listViewShort, style: TextStyle(fontSize: 12)),
                           ],
                         ),
                       ),
@@ -2522,240 +2523,26 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     else if (label == AppLocalizations.of(context)!.completedShort) fullLabel = AppLocalizations.of(context)!.completed;
     
     return Tooltip(
-      message: count == 0 ? AppLocalizations.of(context)!.countItems(fullLabel, 0) : '${AppLocalizations.of(context)!.countItems(fullLabel, count)}（${AppLocalizations.of(context)!.tapForDetails}）',
+      message: AppLocalizations.of(context)!.countItems(fullLabel, count),
       waitDuration: const Duration(milliseconds: 500),
-      child: InkWell(
-        onTap: () => _showStatisticsDetail(fullLabel, count),
-        borderRadius: BorderRadius.circular(8),
-        child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-            Icon(icon, color: count == 0 ? Colors.grey : color, size: 16), // アイコンサイズを小さく
-        const SizedBox(height: 2),
-        Text(
-          count.toString(),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: count == 0 ? Colors.grey : color,
-            fontWeight: FontWeight.bold,
-            fontSize: 13, // フォントサイズを小さく
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: count == 0 ? Colors.grey : color, size: 16), // アイコンサイズを小さく
+          const SizedBox(height: 2),
+          Text(
+            count.toString(),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: count == 0 ? Colors.grey : color,
+              fontWeight: FontWeight.bold,
+              fontSize: 13, // フォントサイズを小さく
+            ),
           ),
-        ),
-        Text(
-          label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 9, // フォントサイズを小さく
-                color: count == 0 ? Colors.grey : null,
-              ),
-        ),
-      ],
-        ),
+        ],
       ),
     );
   }
 
-  /// 統計詳細モーダルを表示
-  void _showStatisticsDetail(String label, int count) {
-    final tasks = ref.read(taskViewModelProvider);
-    List<TaskItem> filteredTasks = [];
-    
-    switch (label) {
-      case '総タスク':
-        filteredTasks = tasks;
-        break;
-      case '未着手':
-        filteredTasks = tasks.where((t) => t.status == TaskStatus.pending).toList();
-        break;
-      case '完了':
-        filteredTasks = tasks.where((t) => t.status == TaskStatus.completed).toList();
-        break;
-      case '進行中':
-        filteredTasks = tasks.where((t) => t.status == TaskStatus.inProgress).toList();
-        break;
-      case '期限切れ':
-        final now = DateTime.now();
-        filteredTasks = tasks.where((t) => 
-          t.dueDate != null && t.dueDate!.isBefore(now) && t.status != TaskStatus.completed
-        ).toList();
-        break;
-      case '今日':
-        final today = DateTime.now();
-        final todayStart = DateTime(today.year, today.month, today.day);
-        final todayEnd = todayStart.add(const Duration(days: 1));
-        filteredTasks = tasks.where((t) => 
-          t.dueDate != null && 
-          t.dueDate!.isAfter(todayStart) && 
-          t.dueDate!.isBefore(todayEnd)
-        ).toList();
-        break;
-    }
-    
-    showDialog(
-      context: context,
-      builder: (context) {
-        final colorScheme = Theme.of(context).colorScheme;
-        final accentColor = colorScheme.primary;
-
-        return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 120, vertical: 64),
-          backgroundColor: colorScheme.surface,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    color: accentColor.withOpacity(0.08),
-                  ),
-                  width: double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$label',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: accentColor,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$count件のタスク',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: filteredTasks.isEmpty
-                      ? const Center(child: Text('該当するタスクがありません'))
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                          itemCount: filteredTasks.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final task = filteredTasks[index];
-                            final dueDate = task.dueDate;
-                            final isOverdue = dueDate != null &&
-                                dueDate.isBefore(DateTime.now()) &&
-                                task.status != TaskStatus.completed;
-                            final dueText = dueDate != null
-                                ? DateFormat('yyyy/MM/dd').format(dueDate)
-                                : '未設定';
-                            final dueColor = dueDate == null
-                                ? Colors.grey
-                                : isOverdue
-                                    ? Colors.red.shade600
-                                    : Colors.blue.shade600;
-
-                            return Material(
-                              color: colorScheme.surface,
-                              elevation: 0,
-                              borderRadius: BorderRadius.circular(18),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(18),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => TaskDialog(
-                                      task: task,
-                                      onPinChanged: () {
-                                        _loadPinnedTasks();
-                                        setState(() {});
-                                      },
-                                      onLinkReordered: () {
-                                        ref.read(taskViewModelProvider.notifier).forceReloadTasks();
-                                        setState(() {});
-                                      },
-                                    ),
-                                  );
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              task.title,
-                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: dueColor.withOpacity(0.12),
-                                                    borderRadius: BorderRadius.circular(12),
-                                                    border: Border.all(color: dueColor.withOpacity(0.3)),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.event,
-                                                        size: 14,
-                                                        color: dueColor,
-                                                      ),
-                                                      const SizedBox(width: 4),
-                                                      Text(
-                                                        '期限: $dueText',
-                                                        style: TextStyle(
-                                                          color: dueColor,
-                                                          fontWeight: FontWeight.w600,
-                                                          fontSize: 12,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 12),
-                                                _buildStatusChip(task.status),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Icon(Icons.chevron_right, color: colorScheme.outline),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-                const Divider(height: 1),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text('閉じる'),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildStatusFilterSection() {
     return Container(
@@ -3585,21 +3372,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           color: statusBadge['color'] as Color,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(statusBadge['icon'] as IconData, size: 12, color: Colors.white),
-            const SizedBox(width: 2),
-            Text(
-              statusBadge['text'] as String,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+        child: Icon(statusBadge['icon'] as IconData, size: 14, color: Colors.white),
       ),
     );
   }
@@ -4939,7 +4712,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         syncStatusNotifier.syncSuccess(
           message: '「${task.title}」の同期が完了しました',
         );
-        SnackBarService.showSuccess(context, '「${task.title}」をGoogle Calendarに同期しました');
+        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.taskSyncedToCalendar(task.title));
       } else {
         final errors = result['errors'] as List<String>?;
         final errorMessage = errors?.isNotEmpty == true ? errors!.first : '不明なエラー';
@@ -4947,99 +4720,102 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           errorMessage: errorMessage,
           message: '「${task.title}」の同期に失敗しました',
         );
-        SnackBarService.showError(context, '「${task.title}」の同期に失敗しました: $errorMessage');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.taskSyncFailed(task.title, errorMessage));
       }
     } catch (e) {
       syncStatusNotifier.syncError(
         errorMessage: e.toString(),
         message: '「${task.title}」の同期中にエラーが発生しました',
       );
-      SnackBarService.showError(context, '「${task.title}」の同期中にエラーが発生しました: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.taskSyncError(task.title, e.toString()));
     }
   }
 
   void _showDeleteConfirmation(TaskItem task) {
     showDialog(
       context: context,
-      builder: (context) => UnifiedDialog(
-        title: 'タスクを削除',
-        icon: Icons.delete_outline,
-        iconColor: Colors.red,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('「${task.title}」を削除しますか？'),
-            const SizedBox(height: AppSpacing.lg),
-            const Text(
-              '削除オプション:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+      builder: (context) {
+        final l10n = AppLocalizations.of(context)!;
+        return UnifiedDialog(
+          title: l10n.deleteTask,
+          icon: Icons.delete_outline,
+          iconColor: Colors.red,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.deleteTaskConfirm(task.title)),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                l10n.deleteOptions,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text('• ${l10n.deleteAppOnly}'),
+              Text('• ${l10n.deleteAppAndCalendar}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: AppButtonStyles.text(context),
+              child: Text(l10n.cancel),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            const Text('• アプリのみ削除'),
-            const Text('• アプリとGoogle Calendarから削除'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: AppButtonStyles.text(context),
-            child: const Text('キャンセル'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await ref.read(taskViewModelProvider.notifier).deleteTask(task.id);
-              Navigator.of(context).pop();
-                if (mounted) {
-                  SnackBarService.showSuccess(context, '「${task.title}」を削除しました');
-                }
-              } catch (e) {
-                if (mounted) {
-                  SnackBarService.showError(context, '削除に失敗しました: $e');
-                }
-              }
-            },
-            style: AppButtonStyles.warning(context),
-            child: const Text('アプリのみ'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                final result = await ref.read(taskViewModelProvider.notifier).deleteTaskWithCalendarSync(task.id);
-                Navigator.of(context).pop();
-                if (mounted) {
-                  if (result['success'] == true) {
-                    final message = result['message'] ?? '「${task.title}」をアプリとGoogle Calendarから削除しました';
-                    SnackBarService.showSuccess(context, message);
-                    
-                    // 警告メッセージがある場合は表示
-                    if (result['warning'] != null) {
-                      SnackBarService.showError(context, '警告: ${result['warning']}');
-                    }
-                  } else {
-                    final error = result['error'] ?? '削除に失敗しました';
-                    final errorCode = result['errorCode'];
-                    
-                    // 認証エラーの場合は設定画面への案内を表示
-                    if (errorCode == 'AUTH_REQUIRED' || errorCode == 'TOKEN_REFRESH_FAILED') {
-                      _showAuthErrorDialog(context, error);
-                    } else {
-                      SnackBarService.showError(context, error);
-                    }
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await ref.read(taskViewModelProvider.notifier).deleteTask(task.id);
+                  Navigator.of(context).pop();
+                  if (mounted) {
+                    SnackBarService.showSuccess(context, l10n.taskDeletedSuccess(task.title));
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    SnackBarService.showError(context, '${l10n.deleteFailed}: $e');
                   }
                 }
-              } catch (e) {
-                if (mounted) {
-                  SnackBarService.showError(context, '削除に失敗しました: $e');
+              },
+              style: AppButtonStyles.warning(context),
+              child: Text(l10n.appOnly),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final result = await ref.read(taskViewModelProvider.notifier).deleteTaskWithCalendarSync(task.id);
+                  Navigator.of(context).pop();
+                  if (mounted) {
+                    if (result['success'] == true) {
+                      final message = result['message'] ?? l10n.taskDeletedFromBoth(task.title);
+                      SnackBarService.showSuccess(context, message);
+                      
+                      // 警告メッセージがある場合は表示
+                      if (result['warning'] != null) {
+                        SnackBarService.showError(context, '${l10n.warning}: ${result['warning']}');
+                      }
+                    } else {
+                      final error = result['error'] ?? l10n.deleteFailed;
+                      final errorCode = result['errorCode'];
+                      
+                      // 認証エラーの場合は設定画面への案内を表示
+                      if (errorCode == 'AUTH_REQUIRED' || errorCode == 'TOKEN_REFRESH_FAILED') {
+                        _showAuthErrorDialog(context, error);
+                      } else {
+                        SnackBarService.showError(context, error);
+                      }
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    SnackBarService.showError(context, '${l10n.deleteFailed}: $e');
+                  }
                 }
-              }
-            },
-            style: AppButtonStyles.danger(context),
-            child: const Text('両方削除'),
-          ),
-        ],
-      ),
+              },
+              style: AppButtonStyles.danger(context),
+              child: Text(l10n.deleteBoth),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -6489,7 +6265,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, 'エクスポートに失敗しました: $e');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.exportFailed}: $e');
       }
     }
   }
@@ -6528,13 +6304,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           }
         } else {
           if (mounted) {
-            SnackBarService.showError(context, '無効なファイル形式です');
+            SnackBarService.showError(context, AppLocalizations.of(context)!.invalidFileFormat);
           }
         }
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, 'インポートに失敗しました: $e');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.importFailed}: $e');
       }
     }
   }
@@ -8073,7 +7849,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                               children: [
                                 Icon(Icons.copy, color: Colors.blue, size: 16),
                                 const SizedBox(width: 8),
-                                Text('コピー', style: TextStyle(color: Colors.blue, fontSize: 12)),
+                                Text(AppLocalizations.of(context)!.copy, style: TextStyle(color: Colors.blue, fontSize: 12)),
                               ],
                             ),
                           ),
@@ -8093,7 +7869,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                               children: [
                                 Icon(Icons.delete, color: Colors.red, size: 16),
                                 const SizedBox(width: 8),
-                                Text('削除', style: TextStyle(color: Colors.red, fontSize: 12)),
+                                Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: Colors.red, fontSize: 12)),
                               ],
                             ),
                           ),
@@ -8285,7 +8061,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       await mailService.openSentSearch(log);
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, '送信済み検索エラー: $e');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.sendHistorySearchError}: $e');
       }
     }
   }
@@ -8547,12 +8323,12 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         final mailtoUrl = 'mailto:$replyToEmail?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
         Process.run('cmd', ['/c', 'start', mailtoUrl]);
         
-        SnackBarService.showSuccess(context, 'メーラーを起動しました');
+        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.mailerLaunched);
       } else {
-        SnackBarService.showError(context, '返信先メールアドレスが見つかりません');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.replyAddressNotFound);
       }
     } catch (e) {
-      SnackBarService.showError(context, 'メーラーの起動に失敗しました: $e');
+      SnackBarService.showError(context, '${AppLocalizations.of(context)!.mailerLaunchFailed}: $e');
     }
   }
 
@@ -8673,7 +8449,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       if (kDebugMode) {
         print('リンクオープンエラー: $e');
       }
-      SnackBarService.showError(context, 'リンクを開けませんでした: $linkText');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.linkOpenFailed(linkText));
     }
   }
 
@@ -8684,7 +8460,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       final fileUrl = 'file:///${uncPath.replaceAll('\\', '/')}';
       _openFileUrl(fileUrl);
     } catch (e) {
-      SnackBarService.showError(context, 'UNCパスを開けませんでした: $uncPath');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.uncPathOpenFailed(uncPath));
     }
   }
 
@@ -8695,7 +8471,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        SnackBarService.showError(context, 'URLを開けませんでした: $url');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.urlOpenFailed(url));
       }
     } catch (e) {
       SnackBarService.showError(context, 'URLを開けませんでした: $url');
@@ -8709,7 +8485,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        SnackBarService.showError(context, 'ファイルを開けませんでした: $fileUrl');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.fileOpenFailed(fileUrl));
       }
     } catch (e) {
       SnackBarService.showError(context, 'ファイルを開けませんでした: $fileUrl');
@@ -8723,7 +8499,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        SnackBarService.showError(context, 'ファイルを開けませんでした: $path');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.fileOpenFailed(path));
       }
     } catch (e) {
       SnackBarService.showError(context, 'ファイルを開けませんでした: $path');
@@ -8959,7 +8735,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     } catch (e) {
       SnackBarService.showError(
         context,
-        'リンクを開けませんでした: ${link.label}',
+        AppLocalizations.of(context)!.linkOpenFailed(link.label),
       );
     }
   }

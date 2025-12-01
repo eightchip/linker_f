@@ -428,6 +428,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  String _getColorPresetName(BuildContext context, String presetId) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (presetId) {
+      case 'sunrise':
+        return l10n.colorPresetSunrise;
+      case 'forest':
+        return l10n.colorPresetForest;
+      case 'breeze':
+        return l10n.colorPresetBreeze;
+      case 'midnight':
+        return l10n.colorPresetMidnight;
+      case 'sakura':
+        return l10n.colorPresetSakura;
+      case 'citrus':
+        return l10n.colorPresetCitrus;
+      case 'slate':
+        return l10n.colorPresetSlate;
+      case 'amber':
+        return l10n.colorPresetAmber;
+      case 'graphite':
+        return l10n.colorPresetGraphite;
+      default:
+        return presetId;
+    }
+  }
+
+  String _getColorPresetDescription(BuildContext context, String presetId) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (presetId) {
+      case 'sunrise':
+        return l10n.colorPresetSunriseDesc;
+      case 'forest':
+        return l10n.colorPresetForestDesc;
+      case 'breeze':
+        return l10n.colorPresetBreezeDesc;
+      case 'midnight':
+        return l10n.colorPresetMidnightDesc;
+      case 'sakura':
+        return l10n.colorPresetSakuraDesc;
+      case 'citrus':
+        return l10n.colorPresetCitrusDesc;
+      case 'slate':
+        return l10n.colorPresetSlateDesc;
+      case 'amber':
+        return l10n.colorPresetAmberDesc;
+      case 'graphite':
+        return l10n.colorPresetGraphiteDesc;
+      default:
+        return '';
+    }
+  }
+
   Widget _buildColorPresetSelector(BuildContext context, WidgetRef ref) {
     final accentColor = ref.watch(accentColorProvider);
     final intensity = ref.watch(colorIntensityProvider);
@@ -439,12 +491,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       children: [
         Row(
           children: [
-            const Text('カラープリセット', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context)!.colorPresets, style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
             Icon(Icons.auto_awesome, size: 18, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 6),
             Text(
-              'ワンタップでおすすめ配色を適用',
+              AppLocalizations.of(context)!.applyRecommendedColors,
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
@@ -511,7 +563,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           children: [
                             Expanded(
                               child: Text(
-                                preset.name,
+                                _getColorPresetName(context, preset.id),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700,
@@ -526,7 +578,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         if (preset.description != null) ...[
                           const SizedBox(height: 6),
                           Text(
-                            preset.description!,
+                            _getColorPresetDescription(context, preset.id),
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 11,
@@ -589,9 +641,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         await settings.setDarkMode(preset.darkMode!);
       }
 
-      SnackBarService.showSuccess(context, '「${preset.name}」プリセットを適用しました');
+      SnackBarService.showSuccess(context, AppLocalizations.of(context)!.presetApplied(_getColorPresetName(context, preset.id)));
     } catch (e) {
-      SnackBarService.showError(context, 'プリセットの適用に失敗しました: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.presetApplyFailed(e.toString()));
     }
   }
 
@@ -632,7 +684,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildMenuItem(context, ref, l10n.notificationSettings, Icons.notifications, 'notifications'),
         ]),
         _buildMenuSection(l10n.integration, [
-          _buildMenuItem(context, ref, 'Google Calendar', FontAwesomeIcons.calendarCheck, 'google_calendar'),
+          _buildMenuItem(context, ref, AppLocalizations.of(context)!.googleCalendar, FontAwesomeIcons.calendarCheck, 'google_calendar'),
           _buildMenuItem(context, ref, l10n.outlook, FontAwesomeIcons.microsoft, 'outlook'),
           _buildMenuItem(context, ref, l10n.gmailIntegration, FontAwesomeIcons.envelope, 'gmail_api'),
         ], subtitle: l10n.integrationSettingsRequired),
@@ -948,7 +1000,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                 const SizedBox(height: 24),
 
-                const Text('アクセントカラー', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(AppLocalizations.of(context)!.accentColor, style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 _buildAccentColorGrid(context, ref, currentAccentColor),
                 
@@ -989,7 +1041,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       0xFFCA8A04, // イエロー（濃い黄色）
     ];
     final colorNames = [
-      'ブルー', 'レッド', 'グリーン', 'オレンジ', 'パープル', 'ピンク', 'シアン', 'グレー', 'エメラルド', 'イエロー'
+      AppLocalizations.of(context)!.colorBlue,
+      AppLocalizations.of(context)!.colorRed,
+      AppLocalizations.of(context)!.colorGreen,
+      AppLocalizations.of(context)!.colorOrange,
+      AppLocalizations.of(context)!.colorPurple,
+      AppLocalizations.of(context)!.colorPink,
+      AppLocalizations.of(context)!.colorCyan,
+      AppLocalizations.of(context)!.colorGray,
+      AppLocalizations.of(context)!.colorEmerald,
+      AppLocalizations.of(context)!.colorYellow,
     ];
 
     return GridView.builder(
@@ -1054,7 +1115,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       children: [
         Row(
           children: [
-            const Text('色の濃淡', style: TextStyle(fontWeight: FontWeight.w500)),
+            Text(AppLocalizations.of(context)!.colorIntensity, style: TextStyle(fontWeight: FontWeight.w500)),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1099,9 +1160,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('薄い', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-            Text('標準', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-            Text('濃い', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text(AppLocalizations.of(context)!.light, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text(AppLocalizations.of(context)!.standard, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text(AppLocalizations.of(context)!.dark, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
           ],
         ),
       ],
@@ -1117,7 +1178,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       children: [
         Row(
           children: [
-            const Text('コントラスト', style: TextStyle(fontWeight: FontWeight.w500)),
+            Text(AppLocalizations.of(context)!.contrast, style: TextStyle(fontWeight: FontWeight.w500)),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1162,9 +1223,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('低', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-            Text('標準', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-            Text('高', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text(AppLocalizations.of(context)!.contrastLow, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text(AppLocalizations.of(context)!.standard, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text(AppLocalizations.of(context)!.contrastHigh, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
           ],
         ),
       ],
@@ -1203,10 +1264,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('タスクリスト表示設定', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        Text(AppLocalizations.of(context)!.taskListDisplaySettings, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         const SizedBox(height: 8),
-        const Text(
-          'タスクリストとタスク編集画面で表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます',
+        Text(
+          AppLocalizations.of(context)!.taskListFieldSettingsDescription,
           style: TextStyle(fontSize: 14, color: Colors.grey),
         ),
         const SizedBox(height: 16),
@@ -1215,7 +1276,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildFieldSettings(
           context, 
           ref, 
-          'タイトル', 
+          AppLocalizations.of(context)!.title, 
           titleTextColorProvider, 
           titleFontSizeProvider, 
           titleFontFamilyProvider,
@@ -1226,9 +1287,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         
         // 本文設定
         _buildFieldSettings(
-          context, 
-          ref, 
-          '本文', 
+          context,
+          ref,
+          AppLocalizations.of(context)!.body,
           memoTextColorProvider, 
           memoFontSizeProvider, 
           memoFontFamilyProvider,
@@ -1241,7 +1302,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildFieldSettings(
           context, 
           ref, 
-          '依頼先への説明', 
+          AppLocalizations.of(context)!.requestorDescription, 
           descriptionTextColorProvider, 
           descriptionFontSizeProvider, 
           descriptionFontFamilyProvider,
@@ -1263,13 +1324,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'フォント設定',
+        Text(
+          AppLocalizations.of(context)!.fontSettings,
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'カードビューで表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます',
+        Text(
+          AppLocalizations.of(context)!.cardViewFieldSettingsDescription,
           style: TextStyle(fontSize: 14, color: Colors.grey),
         ),
         const SizedBox(height: 16),
@@ -1278,7 +1339,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildCardViewFieldSettings(
           context,
           ref,
-          'タイトル',
+          AppLocalizations.of(context)!.title,
           settings.titleTextColor,
           settings.titleFontSize,
           settings.titleFontFamily,
@@ -1294,7 +1355,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildCardViewFieldSettings(
           context,
           ref,
-          '本文',
+          AppLocalizations.of(context)!.body,
           settings.memoTextColor,
           settings.memoFontSize,
           settings.memoFontFamily,
@@ -1310,7 +1371,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildCardViewFieldSettings(
           context,
           ref,
-          '依頼先への説明',
+          AppLocalizations.of(context)!.requestorDescription,
           settings.descriptionTextColor,
           settings.descriptionFontSize,
           settings.descriptionFontFamily,
@@ -1351,8 +1412,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ];
     
     final textColorNames = [
-      '黒', '白', 'ブルー', 'レッド', 'オレンジ', 
-      'グリーン', 'パープル', 'ピンク', 'グレー', 'イエロー'
+      AppLocalizations.of(context)!.colorBlack,
+      AppLocalizations.of(context)!.colorWhite,
+      AppLocalizations.of(context)!.colorBlue,
+      AppLocalizations.of(context)!.colorRed,
+      AppLocalizations.of(context)!.colorOrange,
+      AppLocalizations.of(context)!.colorGreen,
+      AppLocalizations.of(context)!.colorPurple,
+      AppLocalizations.of(context)!.colorPink,
+      AppLocalizations.of(context)!.colorGray,
+      AppLocalizations.of(context)!.colorYellow,
     ];
 
     // フォントファミリーの選択肢
@@ -1372,11 +1441,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$fieldName設定', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(AppLocalizations.of(context)!.fieldSettings(fieldName), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 12),
             
             // テキスト色設定
-            const Text('テキスト色', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.textColor, style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             GridView.builder(
               shrinkWrap: true,
@@ -1430,7 +1499,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 16),
             
             // フォントサイズ設定
-            const Text('フォントサイズ', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.fontSize, style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -1460,7 +1529,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
               ),
               child: Text(
-                'プレビュー: このテキストのサイズが$fieldNameに適用されます',
+                AppLocalizations.of(context)!.fontSizePreview(fieldName),
                 style: TextStyle(
                   color: Color(currentColor),
                   fontSize: 14 * currentFontSize,
@@ -1472,7 +1541,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 16),
             
             // フォントファミリー設定
-            const Text('フォントファミリー', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.fontFamily, style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: currentFontFamily.isEmpty ? null : currentFontFamily,
@@ -1483,7 +1552,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               items: fontFamilyOptions.map((font) {
                 return DropdownMenuItem<String>(
                   value: font.isEmpty ? null : font,
-                  child: Text(font.isEmpty ? 'デフォルト' : font),
+                  child: Text(font.isEmpty ? AppLocalizations.of(context)!.defaultValue : font),
                 );
               }).toList(),
               onChanged: (value) => onFontFamilyChanged(value ?? ''),
@@ -1498,7 +1567,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
               ),
               child: Text(
-                'フォントプレビュー: このテキストのフォントが$fieldNameに適用されます',
+                AppLocalizations.of(context)!.fontFamilyPreview(fieldName),
                 style: TextStyle(
                   color: Color(currentColor),
                   fontSize: 14 * currentFontSize,
@@ -1541,8 +1610,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ];
     
     final textColorNames = [
-      '黒', '白', 'ブルー', 'レッド', 'オレンジ', 
-      'グリーン', 'パープル', 'ピンク', 'グレー', 'イエロー'
+      AppLocalizations.of(context)!.colorBlack,
+      AppLocalizations.of(context)!.colorWhite,
+      AppLocalizations.of(context)!.colorBlue,
+      AppLocalizations.of(context)!.colorRed,
+      AppLocalizations.of(context)!.colorOrange,
+      AppLocalizations.of(context)!.colorGreen,
+      AppLocalizations.of(context)!.colorPurple,
+      AppLocalizations.of(context)!.colorPink,
+      AppLocalizations.of(context)!.colorGray,
+      AppLocalizations.of(context)!.colorYellow,
     ];
 
     // フォントファミリーの選択肢
@@ -1562,11 +1639,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$fieldName設定', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16 * ref.watch(uiDensityProvider))),
+            Text(AppLocalizations.of(context)!.fieldSettings(fieldName), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16 * ref.watch(uiDensityProvider))),
             const SizedBox(height: 12),
             
             // テキスト色設定
-            const Text('テキスト色', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.textColor, style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             GridView.builder(
               shrinkWrap: true,
@@ -1635,7 +1712,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 16),
             
             // フォントサイズ設定
-            const Text('フォントサイズ', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.fontSize, style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -1680,7 +1757,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
               ),
               child: Text(
-                'プレビュー: このテキストのサイズが$fieldNameに適用されます',
+                AppLocalizations.of(context)!.fontSizePreview(fieldName),
                 style: TextStyle(
                   color: Color(ref.watch(colorProvider)),
                   fontSize: 14 * ref.watch(fontSizeProvider),
@@ -1694,7 +1771,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 16),
             
             // フォントファミリー設定
-            const Text('フォントファミリー', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(AppLocalizations.of(context)!.fontFamily, style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: currentFontFamily.isEmpty ? null : currentFontFamily,
@@ -1705,7 +1782,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               items: fontFamilyOptions.map((font) {
                 return DropdownMenuItem<String>(
                   value: font.isEmpty ? null : font,
-                  child: Text(font.isEmpty ? 'デフォルト' : font),
+                  child: Text(font.isEmpty ? AppLocalizations.of(context)!.defaultValue : font),
                 );
               }).toList(),
               onChanged: (value) async {
@@ -1736,7 +1813,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 border: Border.all(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300),
               ),
               child: Text(
-                'フォントプレビュー: このテキストのフォントが$fieldNameに適用されます',
+                AppLocalizations.of(context)!.fontFamilyPreview(fieldName),
                 style: TextStyle(
                   color: Color(ref.watch(colorProvider)),
                   fontSize: 14 * ref.watch(fontSizeProvider),
@@ -1760,7 +1837,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('UIカスタマイズ', Icons.tune),
+        _buildSectionHeader(AppLocalizations.of(context)!.uiCustomization, Icons.tune),
         const SizedBox(height: 16),
         
         // リアルタイムプレビューセクション（固定表示）
@@ -1779,7 +1856,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'リアルタイムプレビュー',
+                      AppLocalizations.of(context)!.realtimePreview,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -1805,7 +1882,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'ライブ',
+                            AppLocalizations.of(context)!.live,
                             style: TextStyle(
                               fontSize: 10,
                               color: Colors.green,
@@ -1840,9 +1917,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '角丸: ${uiState.cardBorderRadius.toStringAsFixed(1)}px | '
-                          '影: ${(uiState.shadowIntensity * 100).toStringAsFixed(0)}% | '
-                          'パディング: ${uiState.cardPadding.toStringAsFixed(1)}px',
+                          AppLocalizations.of(context)!.currentSettings(
+                            uiState.cardBorderRadius.toStringAsFixed(1),
+                            (uiState.shadowIntensity * 100).toStringAsFixed(0),
+                            uiState.cardPadding.toStringAsFixed(1),
+                          ),
                           style: TextStyle(
                             fontSize: 12,
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
@@ -1886,7 +1965,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'カード設定',
+                      AppLocalizations.of(context)!.cardSettings,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -1900,7 +1979,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         border: Border.all(color: const Color(0xFF9C27B0).withOpacity(0.3)),
                       ),
                       child: Text(
-                        'リンク・タスク画面',
+                        AppLocalizations.of(context)!.linkAndTaskScreens,
                         style: TextStyle(
                           fontSize: 10,
                           color: const Color(0xFF9C27B0),
@@ -1912,7 +1991,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'カードの見た目と動作を調整します。角丸半径、影の強さ、パディングを変更できます。',
+                  AppLocalizations.of(context)!.cardSettingsDescription,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -1921,7 +2000,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // カードの角丸半径
                 _buildSliderSetting(
-                  '角丸半径: ${uiState.cardBorderRadius.toStringAsFixed(1)}px',
+                  '${AppLocalizations.of(context)!.cornerRadius}: ${uiState.cardBorderRadius.toStringAsFixed(1)}px',
                   uiState.cardBorderRadius,
                   4.0,
                   32.0,
@@ -1932,7 +2011,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // カードの影の強さ
                 _buildSliderSetting(
-                  '影の強さ: ${uiState.cardElevation.toStringAsFixed(1)}',
+                  '${AppLocalizations.of(context)!.shadowStrength}: ${uiState.cardElevation.toStringAsFixed(1)}',
                   uiState.cardElevation,
                   0.0,
                   8.0,
@@ -1943,7 +2022,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // カードのパディング
                 _buildSliderSetting(
-                  'パディング: ${uiState.cardPadding.toStringAsFixed(1)}px',
+                  '${AppLocalizations.of(context)!.padding}: ${uiState.cardPadding.toStringAsFixed(1)}px',
                   uiState.cardPadding,
                   8.0,
                   32.0,
@@ -1972,7 +2051,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'ボタン設定',
+                      AppLocalizations.of(context)!.buttonSettings,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -1986,7 +2065,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         border: Border.all(color: const Color(0xFF2196F3).withOpacity(0.3)),
                       ),
                       child: Text(
-                        '全画面共通',
+                        AppLocalizations.of(context)!.allScreensCommon,
                         style: TextStyle(
                           fontSize: 10,
                           color: const Color(0xFF2196F3),
@@ -1998,7 +2077,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'ボタンの見た目を調整します。角丸半径と影の強さを変更できます。',
+                  AppLocalizations.of(context)!.buttonSettingsDescription,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -2007,7 +2086,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // ボタンの角丸半径
                 _buildSliderSetting(
-                  '角丸半径: ${uiState.buttonBorderRadius.toStringAsFixed(1)}px',
+                  AppLocalizations.of(context)!.borderRadiusPx(uiState.buttonBorderRadius.toStringAsFixed(1)),
                   uiState.buttonBorderRadius,
                   4.0,
                   24.0,
@@ -2018,7 +2097,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // ボタンの影の強さ
                 _buildSliderSetting(
-                  '影の強さ: ${uiState.buttonElevation.toStringAsFixed(1)}',
+                  AppLocalizations.of(context)!.elevationPx(uiState.buttonElevation.toStringAsFixed(1)),
                   uiState.buttonElevation,
                   0.0,
                   6.0,
@@ -2047,7 +2126,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '入力フィールド設定',
+                      AppLocalizations.of(context)!.inputFieldSettings,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -2061,7 +2140,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.3)),
                       ),
                       child: Text(
-                        '全画面共通',
+                        AppLocalizations.of(context)!.allScreensCommon,
                         style: TextStyle(
                           fontSize: 10,
                           color: const Color(0xFF4CAF50),
@@ -2073,7 +2152,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'テキスト入力欄の見た目を調整します。角丸半径と枠線の太さを変更できます。',
+                  AppLocalizations.of(context)!.inputFieldSettingsDescription,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -2082,7 +2161,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // 入力フィールドの角丸半径
                 _buildSliderSetting(
-                  '角丸半径: ${uiState.inputBorderRadius.toStringAsFixed(1)}px',
+                  AppLocalizations.of(context)!.borderRadiusPx(uiState.inputBorderRadius.toStringAsFixed(1)),
                   uiState.inputBorderRadius,
                   4.0,
                   24.0,
@@ -2093,7 +2172,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // 入力フィールドの枠線の太さ
                 _buildSliderSetting(
-                  '枠線の太さ: ${uiState.inputBorderWidth.toStringAsFixed(1)}px',
+                  AppLocalizations.of(context)!.borderWidthPx(uiState.inputBorderWidth.toStringAsFixed(1)),
                   uiState.inputBorderWidth,
                   0.5,
                   4.0,
@@ -2114,7 +2193,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'アニメーション・エフェクト設定',
+                  AppLocalizations.of(context)!.animationEffectSettings,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -2123,7 +2202,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // アニメーションの持続時間
                 _buildSliderSetting(
-                  'アニメーション時間: ${uiState.animationDuration}ms',
+                  AppLocalizations.of(context)!.animationDuration('${uiState.animationDuration}'),
                   uiState.animationDuration.toDouble(),
                   100.0,
                   1000.0,
@@ -2134,7 +2213,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // ホバー効果の強さ
                 _buildSliderSetting(
-                  'ホバー効果: ${(uiState.hoverEffectIntensity * 100).toStringAsFixed(0)}%',
+                  AppLocalizations.of(context)!.hoverEffectPercent((uiState.hoverEffectIntensity * 100).toStringAsFixed(0)),
                   uiState.hoverEffectIntensity,
                   0.0,
                   0.3,
@@ -2145,7 +2224,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // 影の強さ
                 _buildSliderSetting(
-                  '影の強さ: ${(uiState.shadowIntensity * 100).toStringAsFixed(0)}%',
+                  AppLocalizations.of(context)!.elevationPercent((uiState.shadowIntensity * 100).toStringAsFixed(0)),
                   uiState.shadowIntensity,
                   0.0,
                   0.5,
@@ -2156,7 +2235,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // グラデーションの強さ
                 _buildSliderSetting(
-                  'グラデーション: ${(uiState.gradientIntensity * 100).toStringAsFixed(0)}%',
+                  AppLocalizations.of(context)!.gradientPercent((uiState.gradientIntensity * 100).toStringAsFixed(0)),
                   uiState.gradientIntensity,
                   0.0,
                   0.2,
@@ -2177,7 +2256,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '全般設定',
+                  AppLocalizations.of(context)!.generalSettings,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -2197,7 +2276,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // アイコンサイズ
                 _buildSliderSetting(
-                  'アイコンサイズ: ${uiState.iconSize.toStringAsFixed(1)}px',
+                  '${AppLocalizations.of(context)!.iconSize}: ${uiState.iconSize.toStringAsFixed(1)}px',
                   uiState.iconSize,
                   16.0,
                   48.0,
@@ -2208,7 +2287,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // 要素間のスペーシング
                 _buildSliderSetting(
-                  'スペーシング: ${uiState.spacing.toStringAsFixed(1)}px',
+                  AppLocalizations.of(context)!.spacing(uiState.spacing.toStringAsFixed(1)),
                   uiState.spacing,
                   4.0,
                   24.0,
@@ -2219,8 +2298,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // 自動コントラスト最適化
                 _buildSwitchSetting(
-                  '自動コントラスト最適化',
-                  'ダークモードでテキストの視認性を自動調整',
+                  AppLocalizations.of(context)!.autoContrastOptimization,
+                  AppLocalizations.of(context)!.autoContrastOptimizationDesc,
                   uiState.autoContrastOptimization,
                   (value) => uiNotifier.setAutoContrastOptimization(value),
                 ),
@@ -2229,7 +2308,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // ダークモードコントラストブースト
                 _buildSliderSetting(
-                  'ダークモードコントラストブースト: ${(uiState.darkModeContrastBoost * 100).toStringAsFixed(0)}%',
+                  AppLocalizations.of(context)!.darkModeContrastBoostPercent((uiState.darkModeContrastBoost * 100).toStringAsFixed(0)),
                   uiState.darkModeContrastBoost,
                   1.0,
                   2.0,
@@ -2339,14 +2418,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'サンプルカード',
+                  AppLocalizations.of(context)!.sampleCard,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'これはカードのプレビューです。設定を変更するとリアルタイムで反映されます。',
+                  AppLocalizations.of(context)!.cardPreviewDescription,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 12),
@@ -2362,7 +2441,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         elevation: uiState.buttonElevation,
                       ),
-                      child: const Text('サンプルボタン'),
+                      child: Text(AppLocalizations.of(context)!.sampleButton),
                     ),
                     const SizedBox(width: 12),
                     OutlinedButton(
@@ -2378,7 +2457,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             : Colors.grey.shade400,
                         ),
                       ),
-                      child: const Text('アウトラインボタン'),
+                      child: Text(AppLocalizations.of(context)!.outlineButton),
                     ),
                   ],
                 ),
@@ -2388,7 +2467,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 // 入力フィールドプレビュー
                 TextFormField(
                   decoration: InputDecoration(
-                    hintText: 'サンプル入力フィールド',
+                    hintText: AppLocalizations.of(context)!.sampleInputField,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(uiState.inputBorderRadius),
                       borderSide: BorderSide(
@@ -2538,7 +2617,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('フォント設定', Icons.text_fields),
+        _buildSectionHeader(AppLocalizations.of(context)!.fontSettings, Icons.text_fields),
         const SizedBox(height: 16),
         
         Card(
@@ -2547,7 +2626,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('アプリ全体のフォントサイズ: ${(currentFontSize * 100).round()}%'),
+                Text(AppLocalizations.of(context)!.appWideFontSize('${(currentFontSize * 100).round()}')),
                 Slider(
                   value: currentFontSize,
                   min: 0.5,
@@ -2561,50 +2640,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 
                 const SizedBox(height: 16),
-                
-                
-                const SizedBox(height: 16),
-                
-                // 使用頻度統計の説明
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.analytics, color: Colors.green.shade600, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            '使用頻度統計機能',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade800,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '• 🔥 高頻度使用: 緑色でハイライト\n'
-                        '• ⭐ 中頻度使用: オレンジ色で表示\n'
-                        '• 📌 低頻度使用: 青色で表示\n'
-                        '• 📌 使用頻度低: グレー色で表示\n'
-                        '• 使用回数と最終使用日時を基に自動計算',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.green.shade700,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -2619,7 +2654,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('グリッド設定', Icons.grid_view),
+        _buildSectionHeader(AppLocalizations.of(context)!.gridSettings, Icons.grid_view),
         const SizedBox(height: 16),
         
         Card(
@@ -2629,8 +2664,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SwitchListTile(
-                  title: const Text('自動レイアウト調整'),
-                  subtitle: const Text('画面サイズに応じて自動調整'),
+                  title: Text(AppLocalizations.of(context)!.autoLayoutAdjustment),
+                  subtitle: Text(AppLocalizations.of(context)!.autoLayoutAdjustmentDescription),
                   value: layoutSettings.autoAdjustLayout,
                   onChanged: (value) => notifier.toggleAutoAdjustLayout(),
                 ),
@@ -2659,7 +2694,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            layoutSettings.autoAdjustLayout ? '自動レイアウト有効' : '手動レイアウト設定',
+                            layoutSettings.autoAdjustLayout ? AppLocalizations.of(context)!.autoLayoutEnabledLabel : AppLocalizations.of(context)!.manualLayoutSettings,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.primary,
@@ -2671,49 +2706,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       
                       if (layoutSettings.autoAdjustLayout) ...[
                         Text(
-                          '自動レイアウトが有効です。画面サイズに応じて最適な列数が自動で決定されます。',
+                          AppLocalizations.of(context)!.autoLayoutEnabled,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                           ),
                         ),
                         const SizedBox(height: 8),
                         _buildLayoutInfo(
-                          '大画面（1920px以上）',
-                          '6列表示',
-                          'デスクトップモニターに最適',
+                          AppLocalizations.of(context)!.largeScreen,
+                          AppLocalizations.of(context)!.columnsDisplay('6'),
+                          AppLocalizations.of(context)!.optimalForDesktop,
                         ),
                         _buildLayoutInfo(
-                          '中画面（1200-1919px）',
-                          '4列表示',
-                          'ノートPCやタブレットに最適',
+                          AppLocalizations.of(context)!.mediumScreen,
+                          AppLocalizations.of(context)!.columnsDisplay('4'),
+                          AppLocalizations.of(context)!.optimalForLaptop,
                         ),
                         _buildLayoutInfo(
-                          '小画面（800-1199px）',
-                          '3列表示',
-                          '小さな画面に最適',
+                          AppLocalizations.of(context)!.smallScreen,
+                          AppLocalizations.of(context)!.columnsDisplay('3'),
+                          AppLocalizations.of(context)!.optimalForSmallScreen,
                         ),
                         _buildLayoutInfo(
-                          '最小画面（800px未満）',
-                          '2列表示',
-                          'モバイル表示に最適',
+                          AppLocalizations.of(context)!.minimalScreen,
+                          AppLocalizations.of(context)!.columnsDisplay('2'),
+                          AppLocalizations.of(context)!.optimalForMobile,
                         ),
                       ] else ...[
                         Text(
-                          '手動レイアウト設定が有効です。固定の列数で表示されます。',
+                          AppLocalizations.of(context)!.manualLayoutEnabled,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                           ),
                         ),
                         const SizedBox(height: 8),
                         _buildLayoutInfo(
-                          '固定列数',
-                          '${layoutSettings.defaultCrossAxisCount}列表示',
-                          'すべての画面サイズで同じ列数',
+                          AppLocalizations.of(context)!.fixedColumns,
+                          AppLocalizations.of(context)!.columnsDisplay('${layoutSettings.defaultCrossAxisCount}'),
+                          AppLocalizations.of(context)!.sameColumnsAllScreens,
                         ),
                         _buildLayoutInfo(
-                          '使用場面',
-                          '特定の表示を維持したい場合',
-                          '一貫したレイアウトが必要な場合',
+                          AppLocalizations.of(context)!.useCase,
+                          AppLocalizations.of(context)!.maintainSpecificDisplay,
+                          AppLocalizations.of(context)!.consistentLayoutNeeded,
                         ),
                       ],
                     ],
@@ -2722,7 +2757,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 if (!layoutSettings.autoAdjustLayout) ...[
                   const SizedBox(height: 16),
-                  Text('デフォルト列数: ${layoutSettings.defaultCrossAxisCount}'),
+                  Text(AppLocalizations.of(context)!.defaultColumnCount('${layoutSettings.defaultCrossAxisCount}')),
                   Slider(
                     value: layoutSettings.defaultCrossAxisCount.toDouble(),
                     min: 2,
@@ -2734,7 +2769,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
                 
                 const SizedBox(height: 16),
-                Text('グリッド間隔: ${layoutSettings.defaultGridSpacing}px'),
+                Text(AppLocalizations.of(context)!.gridSpacing('${layoutSettings.defaultGridSpacing}')),
                 Slider(
                   value: layoutSettings.defaultGridSpacing,
                   min: 4,
@@ -2757,7 +2792,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('カード設定', Icons.view_agenda),
+        _buildSectionHeader(AppLocalizations.of(context)!.cardSettings, Icons.view_agenda),
         const SizedBox(height: 16),
         
         Card(
@@ -2766,7 +2801,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('カード幅: ${layoutSettings.cardWidth}px'),
+                Text(AppLocalizations.of(context)!.cardWidth('${layoutSettings.cardWidth}')),
                 Slider(
                   value: layoutSettings.cardWidth,
                   min: 150,
@@ -2777,7 +2812,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 
                 const SizedBox(height: 16),
-                Text('カード高さ: ${layoutSettings.cardHeight}px'),
+                Text(AppLocalizations.of(context)!.cardHeight('${layoutSettings.cardHeight}')),
                 Slider(
                   value: layoutSettings.cardHeight,
                   min: 80,
@@ -2800,7 +2835,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('アイテム設定', Icons.link),
+        _buildSectionHeader(AppLocalizations.of(context)!.itemSettings, Icons.link),
         const SizedBox(height: 16),
         
         Card(
@@ -2811,9 +2846,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 // アイテム間マージン
                 _buildSettingItemWithDescription(
-                  title: 'アイテム間マージン',
+                  title: AppLocalizations.of(context)!.itemMargin,
                   value: '${layoutSettings.linkItemMargin}px',
-                  description: 'リンクアイテム間の空白スペースを調整します。値を大きくすると、アイテム同士の間隔が広がり、見やすくなります。',
+                  description: AppLocalizations.of(context)!.itemMarginDescription,
                   slider: Slider(
                     value: layoutSettings.linkItemMargin,
                     min: 0,
@@ -2828,9 +2863,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // アイテム内パディング
                 _buildSettingItemWithDescription(
-                  title: 'アイテム内パディング',
+                  title: AppLocalizations.of(context)!.itemPadding,
                   value: '${layoutSettings.linkItemPadding}px',
-                  description: 'リンクアイテム内の文字やアイコンと枠線の間の空白を調整します。値を大きくすると、アイテム内がゆとりを持って見やすくなります。',
+                  description: AppLocalizations.of(context)!.itemPaddingDescription,
                   slider: Slider(
                     value: layoutSettings.linkItemPadding,
                     min: 0,
@@ -2845,9 +2880,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // フォントサイズ
                 _buildSettingItemWithDescription(
-                  title: 'フォントサイズ',
+                  title: AppLocalizations.of(context)!.fontSize,
                   value: '${layoutSettings.linkItemFontSize}px',
-                  description: 'リンクアイテムの文字サイズを調整します。小さくすると多くのアイテムを表示できますが、読みにくくなる場合があります。',
+                  description: AppLocalizations.of(context)!.fontSizeDescription,
                   slider: Slider(
                     value: layoutSettings.linkItemFontSize,
                     min: 6,
@@ -2862,9 +2897,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // アイコンサイズ
                 _buildSettingItemWithDescription(
-                  title: 'アイコンサイズ',
+                  title: AppLocalizations.of(context)!.iconSize,
                   value: '${layoutSettings.linkItemIconSize}px',
-                  description: 'リンクアイテムのアイコンサイズを調整します。大きくすると視認性が向上しますが、アイテム全体のサイズも大きくなります。',
+                  description: AppLocalizations.of(context)!.linkItemIconSizeDesc,
                   slider: Slider(
                     value: layoutSettings.linkItemIconSize,
                     min: 12,
@@ -2879,9 +2914,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // ボタンサイズ
                 _buildSettingItemWithDescription(
-                  title: 'ボタンサイズ',
+                  title: AppLocalizations.of(context)!.buttonSize,
                   value: '${layoutSettings.buttonSize}px',
-                  description: '編集・削除などのボタンのサイズを調整します。大きくすると操作しやすくなりますが、画面のスペースを多く使用します。',
+                  description: AppLocalizations.of(context)!.buttonSizeDescription,
                   slider: Slider(
                     value: layoutSettings.buttonSize,
                     min: 16,
@@ -2906,7 +2941,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('カードビュー設定', Icons.view_module),
+        _buildSectionHeader(AppLocalizations.of(context)!.cardViewSettings, Icons.view_module),
         const SizedBox(height: 16),
         
         // グリッド設定
@@ -2916,14 +2951,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'グリッド設定',
+                Text(
+                  AppLocalizations.of(context)!.gridSettings,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
-                  title: const Text('自動レイアウト調整'),
-                  subtitle: const Text('画面サイズに応じて自動調整'),
+                  title: Text(AppLocalizations.of(context)!.autoLayoutAdjustment),
+                  subtitle: Text(AppLocalizations.of(context)!.autoLayoutAdjustmentDescription),
                   value: taskProjectLayoutSettings.autoAdjustLayout,
                   onChanged: (value) => notifier.toggleAutoAdjustLayout(),
                 ),
@@ -2952,7 +2987,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            taskProjectLayoutSettings.autoAdjustLayout ? '自動レイアウト有効' : '手動レイアウト設定',
+                            taskProjectLayoutSettings.autoAdjustLayout ? AppLocalizations.of(context)!.autoLayoutEnabledLabel : AppLocalizations.of(context)!.manualLayoutSettings,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.primary,
@@ -2964,23 +2999,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       
                       if (taskProjectLayoutSettings.autoAdjustLayout) ...[
                         Text(
-                          '自動レイアウトが有効です。画面サイズに応じて最適な列数が自動で決定されます。',
+                          AppLocalizations.of(context)!.autoLayoutEnabled,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                           ),
                         ),
                       ] else ...[
                         Text(
-                          '手動レイアウト設定が有効です。固定の列数で表示されます。',
+                          AppLocalizations.of(context)!.manualLayoutEnabled,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                           ),
                         ),
                         const SizedBox(height: 8),
                         _buildLayoutInfo(
-                          '固定列数',
-                          '${taskProjectLayoutSettings.defaultCrossAxisCount}列表示',
-                          'すべての画面サイズで同じ列数',
+                          AppLocalizations.of(context)!.fixedColumns,
+                          AppLocalizations.of(context)!.columnsDisplay('${taskProjectLayoutSettings.defaultCrossAxisCount}'),
+                          AppLocalizations.of(context)!.sameColumnsAllScreens,
                         ),
                       ],
                     ],
@@ -2989,7 +3024,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 if (!taskProjectLayoutSettings.autoAdjustLayout) ...[
                   const SizedBox(height: 16),
-                  Text('デフォルト列数: ${taskProjectLayoutSettings.defaultCrossAxisCount}'),
+                  Text(AppLocalizations.of(context)!.defaultColumnCount('${taskProjectLayoutSettings.defaultCrossAxisCount}')),
                   Slider(
                     value: taskProjectLayoutSettings.defaultCrossAxisCount.toDouble(),
                     min: 2,
@@ -3001,7 +3036,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
                 
                 const SizedBox(height: 16),
-                Text('グリッド間隔: ${taskProjectLayoutSettings.defaultGridSpacing}px'),
+                Text(AppLocalizations.of(context)!.gridSpacing('${taskProjectLayoutSettings.defaultGridSpacing}')),
                 Slider(
                   value: taskProjectLayoutSettings.defaultGridSpacing,
                   min: 4,
@@ -3019,8 +3054,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         
         // カード高さ自動調整
         SwitchListTile(
-          title: const Text('カード高さ自動調整'),
-          subtitle: const Text('コンテンツ量に応じてカードの高さを自動調整（手動設定の高さを最小値として使用）'),
+          title: Text(AppLocalizations.of(context)!.autoAdjustCardHeight),
+          subtitle: Text(AppLocalizations.of(context)!.autoAdjustCardHeightDescription),
           value: taskProjectLayoutSettings.autoAdjustCardHeight,
           onChanged: (value) => notifier.toggleAutoAdjustCardHeight(),
         ),
@@ -3034,12 +3069,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'カード設定',
+                Text(
+                  AppLocalizations.of(context)!.cardSettings,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                Text('カード幅: ${taskProjectLayoutSettings.cardWidth}px'),
+                Text(AppLocalizations.of(context)!.cardWidth('${taskProjectLayoutSettings.cardWidth}')),
                 Slider(
                   value: taskProjectLayoutSettings.cardWidth,
                   min: 150,
@@ -3050,7 +3085,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 
                 const SizedBox(height: 16),
-                Text('カード高さ: ${taskProjectLayoutSettings.cardHeight}px'),
+                Text(AppLocalizations.of(context)!.cardHeight('${taskProjectLayoutSettings.cardHeight}')),
                 Slider(
                   value: taskProjectLayoutSettings.cardHeight,
                   min: 80,
@@ -3077,14 +3112,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => UnifiedDialog(
-                title: 'カードビュー設定をリセット',
+                title: AppLocalizations.of(context)!.resetCardViewSettings,
                 icon: Icons.restore,
                 iconColor: Colors.orange,
-                content: const Text('カードビューの設定を初期値にリセットしますか？\nこの操作は取り消せません。'),
+                content: Text(AppLocalizations.of(context)!.resetCardViewSettingsConfirm),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('キャンセル'),
+                    child: Text(AppLocalizations.of(context)!.cancel),
                   ),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context, true),
@@ -3092,7 +3127,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('リセット'),
+                    child: Text(AppLocalizations.of(context)!.reset),
                   ),
                 ],
               ),
@@ -3103,13 +3138,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               if (context.mounted) {
                 SnackBarService.showSuccess(
                   context,
-                  'プロジェクト一覧設定をリセットしました',
+                  AppLocalizations.of(context)!.taskProjectSettingsReset,
                 );
               }
             }
           },
           icon: const Icon(Icons.restore),
-          label: const Text('設定をリセット'),
+          label: Text(AppLocalizations.of(context)!.resetSettings),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.orange,
             foregroundColor: Colors.white,
@@ -3132,9 +3167,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final backupDir = await backupService.getBackupDirectory();
       await Process.run('explorer.exe', [backupDir.path]);
       
-      SnackBarService.showSuccess(context, 'バックアップフォルダを開きました');
+      SnackBarService.showSuccess(context, AppLocalizations.of(context)!.backupFolderOpened);
     } catch (e) {
-      SnackBarService.showError(context, 'フォルダを開けませんでした: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.couldNotOpenFolder('$e'));
     }
   }
 
@@ -3142,7 +3177,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('データのバックアップ / エクスポート', Icons.backup),
+        _buildSectionHeader(AppLocalizations.of(context)!.backupExport, Icons.backup),
         const SizedBox(height: 16),
         
         Center(
@@ -3170,7 +3205,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '保存先: ドキュメント/backups',
+                              AppLocalizations.of(context)!.backupLocation,
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.w500,
@@ -3189,7 +3224,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () => _showExportOptionsDialog(context, ref),
                         icon: const Icon(Icons.save),
-                        label: const Text('今すぐ保存'),
+                        label: Text(AppLocalizations.of(context)!.saveNow),
                         style: AppButtonStyles.primary(context),
                       ),
                     ),
@@ -3202,7 +3237,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () => _openBackupFolder(context),
                         icon: const Icon(Icons.folder_open),
-                        label: const Text('保存先を開く'),
+                        label: Text(AppLocalizations.of(context)!.openBackupFolder),
                         style: AppButtonStyles.outlined(context),
                       ),
                     ),
@@ -3219,7 +3254,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           _showImportOptionsDialog(context, ref);
                         },
                   icon: const Icon(Icons.upload),
-                        label: const Text('インポート'),
+                        label: Text(AppLocalizations.of(context)!.import),
                         style: AppButtonStyles.outlined(context),
                       ),
                     ),
@@ -3229,8 +3264,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     // 選択式エクスポート/インポート
                     const Divider(),
                     const SizedBox(height: 8),
-                    const Text(
-                      '選択式エクスポート / インポート',
+                    Text(
+                      AppLocalizations.of(context)!.selectiveExportImport,
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -3241,7 +3276,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () => _showSelectiveExportDialog(context, ref),
                         icon: const Icon(Icons.tune),
-                        label: const Text('選択式エクスポート'),
+                        label: Text(AppLocalizations.of(context)!.selectiveExport),
                         style: AppButtonStyles.primary(context),
                       ),
                     ),
@@ -3254,7 +3289,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () => _showSelectiveImportDialog(context, ref),
                         icon: const Icon(Icons.tune),
-                        label: const Text('選択式インポート'),
+                        label: Text(AppLocalizations.of(context)!.selectiveImport),
                         style: AppButtonStyles.outlined(context),
                       ),
                     ),
@@ -3263,21 +3298,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     
                     // 自動バックアップ設定
                     SwitchListTile(
-                      title: const Text('自動バックアップ'),
-                      subtitle: const Text('定期的にデータをバックアップ'),
+                      title: Text(AppLocalizations.of(context)!.autoBackup),
+                      subtitle: Text(AppLocalizations.of(context)!.autoBackupDescription),
                       value: state.autoBackup,
                       onChanged: (value) => notifier.setAutoBackup(value),
                     ),
                     
                     if (state.autoBackup) ...[
                       const SizedBox(height: 16),
-                      Text('バックアップ間隔: ${state.backupInterval}日'),
+                      Text(AppLocalizations.of(context)!.backupInterval('${state.backupInterval}')),
                       Slider(
                         value: state.backupInterval.toDouble(),
                         min: 1,
                         max: 30,
                         divisions: 29,
-                        label: '${state.backupInterval}日',
+                        label: AppLocalizations.of(context)!.backupIntervalDays('${state.backupInterval}'),
                         onChanged: (value) => notifier.setBackupInterval(value.round()),
                       ),
                     ],
@@ -3299,33 +3334,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => UnifiedDialog(
-          title: 'エクスポートオプション',
+          title: AppLocalizations.of(context)!.exportOptions,
           icon: Icons.save,
           iconColor: Colors.green,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('エクスポートするデータを選択してください:'),
+              Text(AppLocalizations.of(context)!.selectDataToExport),
               const SizedBox(height: 16),
               
               RadioListTile<String>(
-                title: const Text('リンクのみ'),
-                subtitle: const Text('リンクデータのみをエクスポート'),
+                title: Text(AppLocalizations.of(context)!.linksOnly),
+                subtitle: Text(AppLocalizations.of(context)!.linksOnlyDescription),
                 value: 'links',
                 groupValue: selectedType,
                 onChanged: (value) => setState(() => selectedType = value!),
               ),
               RadioListTile<String>(
-                title: const Text('タスクのみ'),
-                subtitle: const Text('タスクデータのみをエクスポート'),
+                title: Text(AppLocalizations.of(context)!.tasksOnly),
+                subtitle: Text(AppLocalizations.of(context)!.tasksOnlyDescription),
                 value: 'tasks',
                 groupValue: selectedType,
                 onChanged: (value) => setState(() => selectedType = value!),
               ),
               RadioListTile<String>(
-                title: const Text('両方'),
-                subtitle: const Text('リンクとタスクの両方をエクスポート'),
+                title: Text(AppLocalizations.of(context)!.both),
+                subtitle: Text(AppLocalizations.of(context)!.bothDescription),
                 value: 'both',
                 groupValue: selectedType,
                 onChanged: (value) => setState(() => selectedType = value!),
@@ -3336,7 +3371,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               style: AppButtonStyles.text(context),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -3344,7 +3379,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _performExport(context, ref, selectedType);
               },
               style: AppButtonStyles.primary(context),
-              child: const Text('エクスポート'),
+              child: Text(AppLocalizations.of(context)!.export),
             ),
           ],
         ),
@@ -3363,33 +3398,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => UnifiedDialog(
-          title: 'インポートオプション',
+          title: AppLocalizations.of(context)!.importOptions,
           icon: Icons.upload,
           iconColor: Colors.blue,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('インポートするデータを選択してください:'),
+              Text(AppLocalizations.of(context)!.selectDataToImport),
               const SizedBox(height: 16),
               
               RadioListTile<String>(
-                title: const Text('リンクのみ'),
-                subtitle: const Text('リンクデータのみをインポート'),
+                title: Text(AppLocalizations.of(context)!.linksOnly),
+                subtitle: Text(AppLocalizations.of(context)!.linksOnlyImportDescription),
                 value: 'links',
                 groupValue: selectedType,
                 onChanged: (value) => setState(() => selectedType = value!),
               ),
               RadioListTile<String>(
-                title: const Text('タスクのみ'),
-                subtitle: const Text('タスクデータのみをインポート'),
+                title: Text(AppLocalizations.of(context)!.tasksOnly),
+                subtitle: Text(AppLocalizations.of(context)!.tasksOnlyImportDescription),
                 value: 'tasks',
                 groupValue: selectedType,
                 onChanged: (value) => setState(() => selectedType = value!),
               ),
               RadioListTile<String>(
-                title: const Text('両方'),
-                subtitle: const Text('リンクとタスクの両方をインポート'),
+                title: Text(AppLocalizations.of(context)!.both),
+                subtitle: Text(AppLocalizations.of(context)!.bothImportDescription),
                 value: 'both',
                 groupValue: selectedType,
                 onChanged: (value) => setState(() => selectedType = value!),
@@ -3400,7 +3435,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               style: AppButtonStyles.text(context),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -3411,7 +3446,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _performImport(context, ref, selectedType);
               },
               style: AppButtonStyles.primary(context),
-              child: const Text('インポート'),
+              child: Text(AppLocalizations.of(context)!.import),
             ),
           ],
         ),
@@ -3478,13 +3513,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       Navigator.of(globalContext).pop();
 
       // 結果を表示
-      String message = 'エクスポートが完了しました\n';
-      message += '保存先: $filePath';
+      String message = AppLocalizations.of(context)!.exportCompleted(filePath);
       
       showDialog(
         context: globalContext,
         builder: (context) => UnifiedDialog(
-          title: 'エクスポート完了',
+          title: AppLocalizations.of(context)!.exportCompletedTitle,
           icon: Icons.check_circle,
           iconColor: Colors.green,
           content: Text(message),
@@ -3492,7 +3526,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: AppButtonStyles.primary(context),
-              child: const Text('OK'),
+              child: Text(AppLocalizations.of(context)!.ok),
             ),
           ],
         ),
@@ -3510,15 +3544,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       showDialog(
         context: globalContext,
         builder: (context) => UnifiedDialog(
-          title: 'エクスポートエラー',
+          title: AppLocalizations.of(context)!.exportError,
           icon: Icons.error,
           iconColor: Colors.red,
-          content: Text('エクスポートエラー: $e'),
+          content: Text(AppLocalizations.of(context)!.exportErrorMessage('$e')),
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: AppButtonStyles.primary(context),
-              child: const Text('OK'),
+              child: Text(AppLocalizations.of(context)!.ok),
             ),
           ],
         ),
@@ -3579,15 +3613,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       showDialog(
         context: globalContext,
         builder: (context) => UnifiedDialog(
-          title: 'エクスポート完了',
+          title: AppLocalizations.of(context)!.exportCompletedTitle,
           icon: Icons.check_circle,
           iconColor: Colors.green,
-          content: Text('エクスポートが完了しました\n保存先: $filePath'),
+          content: Text(AppLocalizations.of(context)!.exportCompleted(filePath)),
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: AppButtonStyles.primary(context),
-              child: const Text('OK'),
+              child: Text(AppLocalizations.of(context)!.ok),
             ),
           ],
         ),
@@ -3598,15 +3632,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       showDialog(
         context: globalContext,
         builder: (context) => UnifiedDialog(
-          title: 'エクスポートエラー',
+          title: AppLocalizations.of(context)!.exportError,
           icon: Icons.error,
           iconColor: Colors.red,
-          content: Text('エクスポートエラー: $e'),
+          content: Text(AppLocalizations.of(context)!.exportErrorMessage('$e')),
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: AppButtonStyles.primary(context),
-              child: const Text('OK'),
+              child: Text(AppLocalizations.of(context)!.ok),
             ),
           ],
         ),
@@ -3671,10 +3705,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         
         Navigator.of(globalContext).pop();
         
-        String message = 'インポートが完了しました\n';
-        message += 'リンク: ${importResult.links.length}件\n';
-        message += 'タスク: ${importResult.tasks.length}件\n';
-        message += 'グループ: ${importResult.groups.length}件';
+        String message = AppLocalizations.of(context)!.importCompleted(
+          importResult.links.length,
+          importResult.tasks.length,
+          importResult.groups.length,
+        );
         
         if (importResult.warnings.isNotEmpty) {
           message += '\n\n警告:\n';
@@ -3687,7 +3722,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         showDialog(
           context: globalContext,
           builder: (context) => UnifiedDialog(
-            title: 'インポート完了',
+            title: AppLocalizations.of(context)!.importCompletedTitle,
             icon: Icons.check_circle,
             iconColor: Colors.green,
             content: SingleChildScrollView(
@@ -3697,7 +3732,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: AppButtonStyles.primary(context),
-                child: const Text('OK'),
+                child: Text(AppLocalizations.of(context)!.ok),
               ),
             ],
           ),
@@ -3716,7 +3751,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: AppButtonStyles.primary(context),
-                child: const Text('OK'),
+                child: Text(AppLocalizations.of(context)!.ok),
               ),
             ],
           ),
@@ -3791,7 +3826,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: AppButtonStyles.primary(context),
-                child: const Text('OK'),
+                child: Text(AppLocalizations.of(context)!.ok),
               ),
             ],
           ),
@@ -3946,7 +3981,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: AppButtonStyles.primary(context),
-              child: const Text('OK'),
+              child: Text(AppLocalizations.of(context)!.ok),
             ),
           ],
         ),
@@ -3973,7 +4008,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: AppButtonStyles.primary(context),
-              child: const Text('OK'),
+              child: Text(AppLocalizations.of(context)!.ok),
             ),
           ],
         ),
@@ -4152,7 +4187,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-                 _buildSectionHeader('通知設定', Icons.notifications),
+                 _buildSectionHeader(AppLocalizations.of(context)!.notificationSettings, Icons.notifications),
          const SizedBox(height: 16),
          
          // 通知の制限に関する注意事項
@@ -4173,7 +4208,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                const SizedBox(width: 8),
                Expanded(
                  child: Text(
-                   '注意: 通知はアプリが起動中の場合のみ表示されます。アプリを閉じている場合は通知が表示されません。',
+                   AppLocalizations.of(context)!.notificationWarning,
                    style: TextStyle(
                      color: Colors.orange.shade800,
                      fontSize: 13,
@@ -4193,8 +4228,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               children: [
                                  _buildSwitchWithDescription(
-                   title: '通知を表示',
-                   description: 'タスクの期限やリマインダーが設定されている場合、デスクトップ通知を表示します。アプリが起動中の場合のみ通知が表示されます。',
+                   title: AppLocalizations.of(context)!.showNotifications,
+                   description: AppLocalizations.of(context)!.showNotificationsDescription,
                    value: state.showNotifications,
                    onChanged: notifier.setShowNotifications,
                  ),
@@ -4202,8 +4237,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 16),
                 
                                  _buildSwitchWithDescription(
-                   title: '通知音',
-                   description: '通知が表示される際に音を再生します。アプリが起動中の場合のみ音が再生されます。',
+                   title: AppLocalizations.of(context)!.notificationSound,
+                   description: AppLocalizations.of(context)!.notificationSoundDescription,
                    value: state.notificationSound,
                    onChanged: notifier.setNotificationSound,
                  ),
@@ -4212,7 +4247,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                                  ElevatedButton.icon(
                    icon: const Icon(Icons.volume_up),
-                   label: const Text('通知音をテスト'),
+                   label: Text(AppLocalizations.of(context)!.testNotificationSound),
                    style: ElevatedButton.styleFrom(
                      backgroundColor: Colors.green,
                      foregroundColor: Colors.white,
@@ -4242,7 +4277,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                      ),
                    ),
                    child: Text(
-                     'このボタンで通知音をテストできます。アプリが起動中の場合のみ音が再生されます。',
+                     AppLocalizations.of(context)!.testNotificationSoundDescription,
                      style: TextStyle(
                        fontSize: 11,
                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
@@ -4264,7 +4299,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('リセット', Icons.restore),
+        _buildSectionHeader(AppLocalizations.of(context)!.reset, Icons.restore),
         const SizedBox(height: 16),
         
         Center(
@@ -4280,7 +4315,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.restore, size: 24),
-                        label: const Text('設定をデフォルトにリセット', style: TextStyle(fontSize: 16)),
+                        label: Text(AppLocalizations.of(context)!.resetToDefaults, style: const TextStyle(fontSize: 16)),
                         onPressed: () => _showResetConfirmationDialog(context, notifier),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
@@ -4299,13 +4334,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.grid_view, size: 24),
-                        label: const Text('レイアウト設定をリセット', style: TextStyle(fontSize: 16)),
+                        label: Text(AppLocalizations.of(context)!.resetLayoutSettings, style: const TextStyle(fontSize: 16)),
                         onPressed: () {
                           ref.read(layoutSettingsProvider.notifier).resetToDefaults();
                           if (context.mounted) {
                             SnackBarService.showSuccess(
                               context,
-                              'レイアウト設定をリセットしました',
+                              AppLocalizations.of(context)!.layoutSettingsReset,
                             );
                           }
                         },
@@ -4326,24 +4361,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.tune, size: 24),
-                        label: const Text('UI設定をリセット', style: TextStyle(fontSize: 16)),
+                        label: Text(AppLocalizations.of(context)!.resetUISettings, style: const TextStyle(fontSize: 16)),
                         onPressed: () async {
                           final uiNotifier = ref.read(uiCustomizationProvider.notifier);
                           final confirmed = await showDialog<bool>(
                             context: context,
                             builder: (context) => UnifiedDialog(
-                              title: 'UI設定をリセット',
+                              title: AppLocalizations.of(context)!.resetUISettings,
                               icon: Icons.warning_amber_rounded,
                               iconColor: Colors.orange,
-                              content: const Text(
-                                'すべてのUIカスタマイズ設定をデフォルト値にリセットします。\n\n'
-                                'この操作は取り消せません。\n'
-                                '本当に実行しますか？',
+                              content: Text(
+                                AppLocalizations.of(context)!.resetUISettingsConfirm,
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context, false),
-                                  child: const Text('キャンセル'),
+                                  child: Text(AppLocalizations.of(context)!.cancel),
                                 ),
                                 ElevatedButton(
                                   onPressed: () => Navigator.pop(context, true),
@@ -4351,7 +4384,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     backgroundColor: Colors.orange,
                                     foregroundColor: Colors.white,
                                   ),
-                                  child: const Text('リセット実行'),
+                                  child: Text(AppLocalizations.of(context)!.executeReset),
                                 ),
                               ],
                             ),
@@ -4384,7 +4417,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.help_outline, size: 24),
-                        label: const Text('リセット機能の詳細', style: TextStyle(fontSize: 16)),
+                        label: Text(AppLocalizations.of(context)!.resetDetails, style: const TextStyle(fontSize: 16)),
                         onPressed: () => _openResetDetailsGuide(context),
                   style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.grey,
@@ -4413,7 +4446,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'リセット機能',
+                            AppLocalizations.of(context)!.resetFunction,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -4422,11 +4455,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '• 設定リセット: テーマ、通知、連携設定など\n'
-                            '• レイアウトリセット: グリッドサイズ、カード設定など\n'
-                            '• UI設定リセット: カード、ボタン、入力フィールドのカスタマイズ設定\n'
-                            '• データは保持: リンク、タスク、メモは削除されません\n'
-                            '• 詳細は「リセット機能の詳細」ボタンで確認',
+                            AppLocalizations.of(context)!.resetFunctionDescription,
                             style: TextStyle(
                               fontSize: 14, 
                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -4472,7 +4501,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => UnifiedDialog(
-        title: 'リセット機能の詳細',
+        title: AppLocalizations.of(context)!.resetDetailsTitle,
         icon: Icons.help_outline,
         iconColor: Colors.grey,
         width: 700,
@@ -4483,7 +4512,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
               children: [
               Text(
-                'リセット機能の詳細説明:',
+                AppLocalizations.of(context)!.resetDetailsDescription,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurface,
@@ -4491,27 +4520,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
                 const SizedBox(height: 16),
                 
-            _buildGuideStep('1', '設定をデフォルトにリセット'),
+            _buildGuideStep('1', AppLocalizations.of(context)!.resetToDefaultsStep),
             Text(
-              '以下の設定が初期値に戻ります:',
+              AppLocalizations.of(context)!.resetToDefaultsStepDescription,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
-            _buildResetItem('テーマ設定', 'ダークモード: OFF、アクセントカラー: ブルー、濃淡: 100%、コントラスト: 100%'),
-            _buildResetItem('通知設定', '通知: ON、通知音: ON'),
-            _buildResetItem('連携設定', 'Google Calendar: OFF、Gmail連携: OFF、Outlook: OFF'),
-            _buildResetItem('バックアップ設定', '自動バックアップ: ON、間隔: 7日'),
+            _buildResetItem(AppLocalizations.of(context)!.themeSettingsReset, AppLocalizations.of(context)!.themeSettingsResetValue),
+            _buildResetItem(AppLocalizations.of(context)!.notificationSettingsReset, AppLocalizations.of(context)!.notificationSettingsResetValue),
+            _buildResetItem(AppLocalizations.of(context)!.integrationSettingsReset, AppLocalizations.of(context)!.integrationSettingsResetValue),
+            _buildResetItem(AppLocalizations.of(context)!.backupSettingsReset, AppLocalizations.of(context)!.backupSettingsResetValue),
             const SizedBox(height: 12),
             
-            _buildGuideStep('2', 'レイアウト設定をリセット'),
+            _buildGuideStep('2', AppLocalizations.of(context)!.resetLayoutSettingsStep),
             Text(
-              '以下のレイアウト設定が初期値に戻ります:',
+              AppLocalizations.of(context)!.resetLayoutSettingsStepDescription,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
-            _buildResetItem('グリッド設定', 'カラム数: 4、間隔: デフォルト'),
-            _buildResetItem('カード設定', 'サイズ: デフォルト、影: デフォルト'),
-            _buildResetItem('アイテム設定', 'フォントサイズ: デフォルト、アイコンサイズ: デフォルト'),
+            _buildResetItem(AppLocalizations.of(context)!.gridSettingsReset, AppLocalizations.of(context)!.gridSettingsResetDesc),
+            _buildResetItem(AppLocalizations.of(context)!.cardSettingsReset, AppLocalizations.of(context)!.cardSettingsResetDesc),
+            _buildResetItem(AppLocalizations.of(context)!.itemSettingsReset, AppLocalizations.of(context)!.itemSettingsResetDesc),
             const SizedBox(height: 12),
             
             _buildGuideStep('3', 'データの保持について'),
@@ -4630,7 +4659,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      '格納場所:\n$location',
+                      '${AppLocalizations.of(context)!.storageLocation}:\n$location',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey.shade600,
@@ -4646,7 +4675,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Icon(Icons.play_arrow, color: Colors.green, size: 12),
                   const SizedBox(width: 4),
                   Text(
-                    '実行方法: $usage',
+                    '${AppLocalizations.of(context)!.executionMethod}: $usage',
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.green.shade600,
@@ -4741,7 +4770,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -4902,7 +4931,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Google Calendar連携', Icons.calendar_today),
+        _buildSectionHeader(AppLocalizations.of(context)!.googleCalendarIntegration, Icons.calendar_today),
         const SizedBox(height: 16),
         
         Card(
@@ -4913,8 +4942,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 // Google Calendar連携の有効/無効
                 SwitchListTile(
-                  title: const Text('Google Calendar連携'),
-                  subtitle: const Text('Google Calendarのイベントをタスクとして同期します'),
+                  title: Text(AppLocalizations.of(context)!.googleCalendarIntegration),
+                  subtitle: Text(AppLocalizations.of(context)!.googleCalendarIntegrationDescription),
                   value: settingsState.googleCalendarEnabled,
                   onChanged: (value) {
                     settingsNotifier.setGoogleCalendarEnabled(value);
@@ -4927,8 +4956,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   // 自動同期の有効/無効
                   SwitchListTile(
-                    title: const Text('自動同期'),
-                    subtitle: const Text('定期的にGoogle Calendarと同期します'),
+                    title: Text(AppLocalizations.of(context)!.autoSync),
+                    subtitle: Text(AppLocalizations.of(context)!.autoSyncDescription),
                     value: settingsState.googleCalendarAutoSync,
                     onChanged: (value) {
                       settingsNotifier.setGoogleCalendarAutoSync(value);
@@ -4941,7 +4970,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     
                     // 同期間隔設定
                     _buildSliderSetting(
-                      '同期間隔: ${settingsState.googleCalendarSyncInterval}分',
+                      AppLocalizations.of(context)!.syncInterval('${settingsState.googleCalendarSyncInterval}'),
                       settingsState.googleCalendarSyncInterval.toDouble(),
                       15,
                       240,
@@ -4965,8 +4994,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   // 双方向同期の有効/無効
                   SwitchListTile(
-                    title: const Text('双方向同期'),
-                    subtitle: const Text('アプリのタスクをGoogle Calendarに送信します'),
+                    title: Text(AppLocalizations.of(context)!.bidirectionalSync),
+                    subtitle: Text(AppLocalizations.of(context)!.bidirectionalSyncDescription),
                     value: settingsState.googleCalendarBidirectionalSync,
                     onChanged: (value) {
                       settingsNotifier.setGoogleCalendarBidirectionalSync(value);
@@ -4978,8 +5007,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   // 完了タスク表示設定
                   SwitchListTile(
-                    title: const Text('完了タスクを表示'),
-                    subtitle: const Text('Google Calendarで完了したタスクを表示します'),
+                    title: Text(AppLocalizations.of(context)!.showCompletedTasks),
+                    subtitle: Text(AppLocalizations.of(context)!.showCompletedTasksDescription),
                     value: settingsState.googleCalendarShowCompletedTasks,
                     onChanged: (value) {
                       settingsNotifier.setGoogleCalendarShowCompletedTasks(value);
@@ -5014,8 +5043,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             Expanded(
                               child: Text(
                                 hasCredentials 
-                                  ? '認証情報ファイルが見つかりました'
-                                  : '認証情報ファイルが見つかりません',
+                                  ? AppLocalizations.of(context)!.credentialsFileFound
+                                  : AppLocalizations.of(context)!.credentialsFileNotFound,
                                 style: TextStyle(
                                   color: hasCredentials ? Colors.green.shade700 : Colors.red.shade700,
                                   fontWeight: FontWeight.w500,
@@ -5036,7 +5065,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ElevatedButton.icon(
                         onPressed: _openGoogleCalendarSetupGuide,
                         icon: const Icon(Icons.help_outline),
-                        label: const Text('設定方法を確認'),
+                        label: Text(AppLocalizations.of(context)!.checkSetupMethod),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
@@ -5050,23 +5079,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           if (success) {
                             SnackBarService.showSuccess(
                               context,
-                              'OAuth2認証が完了しました',
+                              AppLocalizations.of(context)!.oauth2AuthCompleted,
                             );
                           } else {
                             SnackBarService.showError(
                               context,
-                              '認証の開始に失敗しました',
+                              AppLocalizations.of(context)!.authStartFailed,
                             );
                           }
                         } catch (e) {
-                          SnackBarService.showError(
-                            context,
-                            'エラー: $e',
-                          );
+                            SnackBarService.showError(
+                              context,
+                              AppLocalizations.of(context)!.errorColon('$e'),
+                            );
                         }
                       },
                       icon: const Icon(Icons.login),
-                      label: const Text('OAuth2認証を開始'),
+                      label: Text(AppLocalizations.of(context)!.startOAuth2Authentication),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
@@ -5093,17 +5122,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             
                             SnackBarService.showSuccess(
                               context, 
-                              'アプリ→Google Calendar同期完了: 作成$created件, 更新$updated件, 削除$deleted件'
+                              AppLocalizations.of(context)!.appToGoogleCalendarSyncCompleted(created, updated, deleted)
                             );
                           } else {
-                            SnackBarService.showError(context, '同期エラー: ${result['error']}');
+                            SnackBarService.showError(context, AppLocalizations.of(context)!.syncErrorMessage('${result['error']}'));
                           }
                         } catch (e) {
-                          SnackBarService.showError(context, '同期エラー: $e');
+                          SnackBarService.showError(context, AppLocalizations.of(context)!.syncErrorMessage('$e'));
                         }
                       },
                       icon: const Icon(Icons.upload),
-                      label: const Text('アプリ→Google Calendar同期'),
+                      label: Text(AppLocalizations.of(context)!.appToGoogleCalendarSync),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
@@ -5128,17 +5157,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             
                             SnackBarService.showSuccess(
                               context, 
-                              'Google Calendar→アプリ同期完了: 追加$added件, スキップ$skipped件'
+                              AppLocalizations.of(context)!.googleCalendarToAppSyncCompleted(added, skipped)
                             );
                           } else {
-                            SnackBarService.showError(context, '同期エラー: ${result['error']}');
+                            SnackBarService.showError(context, AppLocalizations.of(context)!.syncErrorMessage('${result['error']}'));
                           }
                         } catch (e) {
-                          SnackBarService.showError(context, '同期エラー: $e');
+                          SnackBarService.showError(context, AppLocalizations.of(context)!.syncErrorMessage('$e'));
                         }
                       },
                       icon: const Icon(Icons.download),
-                      label: const Text('Google Calendar→アプリ同期'),
+                      label: Text(AppLocalizations.of(context)!.googleCalendarToAppSync),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
@@ -5166,9 +5195,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '同期状態',
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context)!.syncStatus,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
           ),
@@ -5190,7 +5219,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   if (syncState.lastSyncTime != null)
                     Text(
-                      '最終同期: ${DateFormat('MM/dd HH:mm').format(syncState.lastSyncTime!)}',
+                      AppLocalizations.of(context)!.lastSync(DateFormat('MM/dd HH:mm').format(syncState.lastSyncTime!)),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -5214,7 +5243,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${syncState.processedItems ?? 0}/${syncState.totalItems}件処理中...',
+            AppLocalizations.of(context)!.processingItems(syncState.processedItems ?? 0, syncState.totalItems ?? 0),
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[600],
@@ -5236,7 +5265,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'エラー: ${syncState.errorMessage}',
+                  AppLocalizations.of(context)!.error(syncState.errorMessage ?? ''),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.red[700],
@@ -5245,7 +5274,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 if (syncState.errorCode != null)
                   Text(
-                    'エラーコード: ${syncState.errorCode}',
+                    AppLocalizations.of(context)!.errorCode(syncState.errorCode ?? ''),
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.red[600],
@@ -5288,13 +5317,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _getSyncStatusText(SyncState syncState) {
     switch (syncState.status) {
       case SyncStatus.idle:
-        return '待機中';
+        return AppLocalizations.of(context)!.waiting;
       case SyncStatus.syncing:
-        return syncState.message ?? '同期中...';
+        return syncState.message ?? AppLocalizations.of(context)!.syncing;
       case SyncStatus.success:
-        return syncState.message ?? '同期完了';
+        return syncState.message ?? AppLocalizations.of(context)!.syncCompleted;
       case SyncStatus.error:
-        return '同期エラー';
+        return AppLocalizations.of(context)!.syncError;
     }
   }
 
@@ -5303,16 +5332,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '部分同期',
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context)!.partialSync,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          '選択したタスクや日付範囲のタスクのみを同期できます',
+          AppLocalizations.of(context)!.partialSyncDescription,
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[600],
@@ -5334,7 +5363,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '個別タスクの同期は、タスク画面の各タスクの3点ドットメニューから「このタスクを同期」を選択してください。',
+                  AppLocalizations.of(context)!.individualTaskSyncInfo,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.blue[700],
@@ -5352,7 +5381,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ElevatedButton.icon(
             onPressed: () => _showDateRangeSyncDialog(ref),
             icon: const Icon(Icons.date_range),
-            label: const Text('日付範囲で同期'),
+            label: Text(AppLocalizations.of(context)!.syncByDateRange),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
@@ -5367,7 +5396,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ElevatedButton.icon(
             onPressed: () => _showDuplicateCleanupDialog(ref),
             icon: const Icon(Icons.cleaning_services),
-            label: const Text('重複イベントをクリーンアップ'),
+            label: Text(AppLocalizations.of(context)!.cleanupDuplicateEvents),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
@@ -5382,7 +5411,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ElevatedButton.icon(
             onPressed: () => _showOrphanedEventsCleanupDialog(ref),
             icon: const Icon(Icons.delete_forever),
-            label: const Text('孤立イベントを削除'),
+            label: Text(AppLocalizations.of(context)!.deleteOrphanedEvents),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.purple,
               foregroundColor: Colors.white,
@@ -5399,16 +5428,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('孤立イベント削除'),
-        content: const Text(
-          'Google Calendarに残っているが、アプリに存在しないタスクのイベントを削除します。\n'
-          'アプリで削除されたタスクのイベントがGoogle Calendarに残っている場合に使用してください。\n\n'
-          'この操作は取り消せません。実行しますか？'
-        ),
+        title: Text(AppLocalizations.of(context)!.orphanedEventsDeletion),
+        content: Text(AppLocalizations.of(context)!.orphanedEventsDeletionDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -5419,7 +5444,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               backgroundColor: Colors.purple,
               foregroundColor: Colors.white,
             ),
-            child: const Text('削除実行'),
+            child: Text(AppLocalizations.of(context)!.executeDeletion),
           ),
         ],
       ),
@@ -5433,7 +5458,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     
     try {
       syncStatusNotifier.startSync(
-        message: '孤立イベントを検出中...',
+        message: AppLocalizations.of(context)!.detectingOrphanedEvents,
       );
       
       final result = await taskViewModel.deleteOrphanedCalendarEvents();
@@ -5442,27 +5467,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final deletedCount = result['deletedCount'] ?? 0;
         
         syncStatusNotifier.syncSuccess(
-          message: '孤立イベント削除完了: $deletedCount件削除',
+          message: AppLocalizations.of(context)!.orphanedEventsDeletionCompleted(deletedCount),
         );
         
         if (deletedCount > 0) {
-          SnackBarService.showSuccess(context, '孤立イベント$deletedCount件を削除しました');
+          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.orphanedEventsDeleted(deletedCount));
         } else {
-          SnackBarService.showSuccess(context, '孤立イベントは見つかりませんでした');
+          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.noOrphanedEventsFound);
         }
       } else {
         syncStatusNotifier.syncError(
           errorMessage: result['error'] ?? '不明なエラー',
-          message: '孤立イベント削除に失敗しました',
+          message: AppLocalizations.of(context)!.orphanedEventsDeletionFailed,
         );
-        SnackBarService.showError(context, '孤立イベント削除に失敗しました: ${result['error']}');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.orphanedEventsDeletionFailed}: ${result['error']}');
       }
     } catch (e) {
       syncStatusNotifier.syncError(
         errorMessage: e.toString(),
-        message: '孤立イベント削除中にエラーが発生しました',
+        message: AppLocalizations.of(context)!.orphanedEventsDeletionError,
       );
-      SnackBarService.showError(context, '孤立イベント削除中にエラーが発生しました: $e');
+      SnackBarService.showError(context, '${AppLocalizations.of(context)!.orphanedEventsDeletionError}: $e');
     }
   }
 
@@ -5471,19 +5496,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => UnifiedDialog(
-        title: '重複イベントクリーンアップ',
+        title: AppLocalizations.of(context)!.duplicateEventsCleanup,
         icon: Icons.cleaning_services,
         iconColor: Colors.orange,
-        content: const Text(
-          'Google Calendarの重複したイベントを検出・削除します。\n'
-          '同じタイトルと日付のイベントが複数ある場合、古いものを削除します。\n\n'
-          'この操作は取り消せません。実行しますか？'
-        ),
+        content: Text(AppLocalizations.of(context)!.duplicateEventsCleanupDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             style: AppButtonStyles.text(context),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -5491,7 +5512,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               await _performDuplicateCleanup(ref);
             },
             style: AppButtonStyles.warning(context),
-            child: const Text('クリーンアップ実行'),
+            child: Text(AppLocalizations.of(context)!.executeCleanup),
           ),
         ],
       ),
@@ -5505,7 +5526,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     
     try {
       syncStatusNotifier.startSync(
-        message: '重複イベントを検出中...',
+        message: AppLocalizations.of(context)!.detectingDuplicateEvents,
       );
       
       final result = await taskViewModel.cleanupGoogleCalendarDuplicates();
@@ -5515,27 +5536,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final duplicatesRemoved = result['duplicatesRemoved'] ?? 0;
         
         syncStatusNotifier.syncSuccess(
-          message: '重複クリーンアップ完了: $duplicatesFoundグループ検出、$duplicatesRemoved件削除',
+          message: AppLocalizations.of(context)!.duplicateCleanupCompleted(duplicatesFound, duplicatesRemoved),
         );
         
         if (duplicatesRemoved > 0) {
-          SnackBarService.showSuccess(context, '重複イベント$duplicatesRemoved件を削除しました');
+          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.duplicateEventsDeleted(duplicatesRemoved));
         } else {
-          SnackBarService.showSuccess(context, '重複イベントは見つかりませんでした');
+          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.noDuplicateEventsFound);
         }
       } else {
         syncStatusNotifier.syncError(
           errorMessage: result['error'] ?? '不明なエラー',
-          message: '重複クリーンアップに失敗しました',
+          message: AppLocalizations.of(context)!.duplicateCleanupFailed,
         );
-        SnackBarService.showError(context, '重複クリーンアップに失敗しました: ${result['error']}');
+        SnackBarService.showError(context, '${AppLocalizations.of(context)!.duplicateCleanupFailed}: ${result['error']}');
       }
     } catch (e) {
       syncStatusNotifier.syncError(
         errorMessage: e.toString(),
-        message: '重複クリーンアップ中にエラーが発生しました',
+        message: AppLocalizations.of(context)!.duplicateCleanupError,
       );
-      SnackBarService.showError(context, '重複クリーンアップ中にエラーが発生しました: $e');
+      SnackBarService.showError(context, '${AppLocalizations.of(context)!.duplicateCleanupError}: $e');
     }
   }
 
@@ -5591,7 +5612,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -5644,7 +5665,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Gmail 連携', FontAwesomeIcons.envelope),
+        _buildSectionHeader(AppLocalizations.of(context)!.gmailIntegration, FontAwesomeIcons.envelope),
         const SizedBox(height: 16),
         
         Card(
@@ -5670,7 +5691,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Icon(Icons.info, color: Theme.of(context).colorScheme.primary, size: 20),
                           const SizedBox(width: 8),
                           Text(
-                            'Gmail連携について',
+                            AppLocalizations.of(context)!.gmailIntegrationAbout,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.primary,
@@ -5680,9 +5701,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'タスク編集モーダルからGmailのメール作成画面を起動できます。\n'
-                        'APIやアクセストークンの設定は不要です。\n'
-                        'Googleアカウントにログイン済みのブラウザがあれば、そのままGmailの新規作成タブが開きます。',
+                        AppLocalizations.of(context)!.gmailIntegrationDescription,
                         style: TextStyle(
                           fontSize: 14,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -5690,12 +5709,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '使い方：\n'
-                        '1. タスク編集モーダルを開く\n'
-                        '2. メール送信セクションでGmailを選択\n'
-                        '3. 宛先を入力して「メール送信」ボタンをクリック\n'
-                        '4. Gmailのメール作成画面が開くので、内容を確認して送信します\n'
-                        '（送信履歴はタスク側に記録されます）',
+                        AppLocalizations.of(context)!.gmailUsage,
                         style: TextStyle(
                           fontSize: 13,
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
@@ -5717,7 +5731,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('Outlook連携', FontAwesomeIcons.microsoft),
+        _buildSectionHeader(AppLocalizations.of(context)!.outlookIntegration, FontAwesomeIcons.microsoft),
         const SizedBox(height: 16),
         
         Card(
@@ -5741,7 +5755,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icon(Icons.info, color: Theme.of(context).colorScheme.primary, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        'Outlook連携について',
+                        AppLocalizations.of(context)!.outlookIntegrationAbout,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.primary,
@@ -5752,7 +5766,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Outlook APIを使用して、メール送信機能を利用できます。',
+                  AppLocalizations.of(context)!.outlookIntegrationDescription,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
@@ -5777,7 +5791,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Icon(Icons.description, color: Theme.of(context).colorScheme.primary, size: 20),
                           const SizedBox(width: 8),
                           Text(
-                            'PowerShellファイルの詳細',
+                            AppLocalizations.of(context)!.powershellFileDetails,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -5791,7 +5805,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Builder(
                         builder: (context) {
                           // 実行ファイルのディレクトリパスを取得
-                          String portablePath = '実行ファイルと同じディレクトリ\\Apps';
+                          String portablePath = AppLocalizations.of(context)!.executableDirectory;
                           try {
                             final executablePath = Platform.resolvedExecutable;
                             final executableDir = File(executablePath).parent.path;
@@ -5807,35 +5821,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             children: [
                               _buildPowerShellFileInfo(
                                 'company_outlook_test.ps1',
-                                'Outlook接続テスト',
-                                'Outlookアプリケーションとの接続をテストします',
-                                'ポータブル版: $portablePath\\\nインストール版: $appdataPath\\Apps\\',
-                                '手動実行',
+                                AppLocalizations.of(context)!.outlookConnectionTest,
+                                AppLocalizations.of(context)!.outlookConnectionTestDescription,
+                                '${AppLocalizations.of(context)!.portableVersion}: $portablePath\\\n${AppLocalizations.of(context)!.installedVersion}: $appdataPath\\Apps\\',
+                                AppLocalizations.of(context)!.manualExecution,
                               ),
                               
                               
                               _buildPowerShellFileInfo(
                                 'compose_mail.ps1',
-                                'メール作成支援',
-                                'タスクから返信メールを作成する際の支援機能',
-                                'ポータブル版: $portablePath\\\nインストール版: $appdataPath\\Apps\\',
-                                '手動実行',
+                                AppLocalizations.of(context)!.mailCompositionSupport,
+                                AppLocalizations.of(context)!.mailCompositionSupportDescription,
+                                '${AppLocalizations.of(context)!.portableVersion}: $portablePath\\\n${AppLocalizations.of(context)!.installedVersion}: $appdataPath\\Apps\\',
+                                AppLocalizations.of(context)!.manualExecution,
                               ),
                               
                               _buildPowerShellFileInfo(
                                 'find_sent.ps1',
-                                '送信メール検索',
-                                '送信済みメールの検索・確認機能',
-                                'ポータブル版: $portablePath\\\nインストール版: $appdataPath\\Apps\\',
-                                '手動実行',
+                                AppLocalizations.of(context)!.sentMailSearch,
+                                AppLocalizations.of(context)!.sentMailSearchDescription,
+                                '${AppLocalizations.of(context)!.portableVersion}: $portablePath\\\n${AppLocalizations.of(context)!.installedVersion}: $appdataPath\\Apps\\',
+                                AppLocalizations.of(context)!.manualExecution,
                               ),
                               
                               _buildPowerShellFileInfo(
                                 'get_calendar_events.ps1',
-                                'Outlookカレンダー予定取得',
-                                'Outlookカレンダーから予定を取得してタスクに割り当てる機能',
-                                'ポータブル版: $portablePath\\\nインストール版: $appdataPath\\Apps\\',
-                                '自動実行',
+                                AppLocalizations.of(context)!.outlookCalendarEvents,
+                                AppLocalizations.of(context)!.outlookCalendarEventsDescription,
+                                '${AppLocalizations.of(context)!.portableVersion}: $portablePath\\\n${AppLocalizations.of(context)!.installedVersion}: $appdataPath\\Apps\\',
+                                AppLocalizations.of(context)!.automaticExecution,
                               ),
                             ],
                           );
@@ -5859,7 +5873,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 Icon(Icons.warning, color: Colors.orange, size: 16),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '重要な注意事項',
+                                  AppLocalizations.of(context)!.importantNotes,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.orange.shade700,
@@ -5871,7 +5885,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             Builder(
                               builder: (context) {
                                 // 実行ファイルのディレクトリパスを取得
-                                String portablePath = '実行ファイルと同じディレクトリ\\Apps';
+                                String portablePath = AppLocalizations.of(context)!.executableDirectory;
                                 try {
                                   final executablePath = Platform.resolvedExecutable;
                                   final executableDir = File(executablePath).parent.path;
@@ -5884,13 +5898,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
                                 
                                 return Text(
-                                  '• 管理者権限は不要（ユーザーレベルで実行可能）\n'
-                                  '• ファイル名は正確に一致させる必要があります\n'
-                                  '• 実行ポリシーが制限されている場合は手動で許可が必要です\n'
-                                  '• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n'
-                                  '【配置場所】以下のいずれかに配置してください：\n'
-                                  '1. ポータブル版: $portablePath\n'
-                                  '2. インストール版: $appdataPath\\Apps',
+                                  AppLocalizations.of(context)!.importantNotesContent(portablePath, '$appdataPath\\Apps'),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.orange.shade700,
@@ -5915,7 +5923,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ElevatedButton.icon(
                       onPressed: _testOutlookConnection,
                       icon: const Icon(Icons.wifi_protected_setup),
-                      label: const Text('接続テスト'),
+                      label: Text(AppLocalizations.of(context)!.connectionTest),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
@@ -5926,7 +5934,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 24),
                 
                 // Outlook自動取込設定
-                _buildSectionHeader('Outlook個人予定の自動取込', Icons.sync),
+                _buildSectionHeader(AppLocalizations.of(context)!.outlookPersonalCalendarAutoImport, Icons.sync),
                 const SizedBox(height: 16),
                 Card(
                   child: Padding(
@@ -5935,8 +5943,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSwitchWithDescription(
-                          title: '自動取込を有効にする',
-                          description: 'Outlookの個人カレンダーから予定を自動的に取り込みます。取り込んだ予定は「Outlook連携（自動取込）」タスクに紐づけられます。\n\n⚠️ 注意: 自動取込実行時に起動しているOutlookが落ちる場合があります。',
+                          title: AppLocalizations.of(context)!.enableAutomaticImport,
+                          description: AppLocalizations.of(context)!.enableAutomaticImportDescription,
                           value: ref.watch(settingsProvider).outlookAutoSyncEnabled,
                           onChanged: (value) {
                             ref.read(settingsProvider.notifier).setOutlookAutoSyncEnabled(value);
@@ -5944,10 +5952,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         if (ref.watch(settingsProvider).outlookAutoSyncEnabled) ...[
                           const SizedBox(height: 24),
-                          _buildSectionSubHeader('取込期間'),
+                          _buildSectionSubHeader(AppLocalizations.of(context)!.importPeriod),
                           const SizedBox(height: 8),
                           Text(
-                            '明日を起点に、どこまで未来の予定を取り込むか設定します。',
+                            AppLocalizations.of(context)!.importPeriodDescription,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                               fontSize: 13,
@@ -5956,7 +5964,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           const SizedBox(height: 12),
                           _buildPeriodSelector(ref),
                           const SizedBox(height: 24),
-                          _buildSectionSubHeader('自動取込の頻度'),
+                          _buildSectionSubHeader(AppLocalizations.of(context)!.automaticImportFrequency),
                           const SizedBox(height: 8),
                           _buildFrequencySelector(ref),
                         ],
@@ -5980,7 +5988,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Outlook設定情報',
+                        AppLocalizations.of(context)!.outlookSettingsInfo,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -5988,7 +5996,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '• 必要な権限: Outlook送信\n• 対応機能: メール送信、予定自動取込\n• 使用方法: タスク管理からOutlookでメールを送信、または自動取込設定を有効化',
+                        AppLocalizations.of(context)!.outlookSettingsInfoContent,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                         ),
@@ -6010,7 +6018,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => UnifiedDialog(
-        title: 'Google Calendar設定ガイド',
+        title: AppLocalizations.of(context)!.googleCalendarSetupGuide,
         icon: Icons.calendar_today,
         iconColor: Colors.blue,
         width: 700,
@@ -6020,30 +6028,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            const Text(
-              'Google Calendar APIを使用するための設定手順:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              AppLocalizations.of(context)!.googleCalendarSetupSteps,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildGuideStep('1', 'Google Cloud Consoleにアクセス'),
+            _buildGuideStep('1', AppLocalizations.of(context)!.accessGoogleCloudConsole),
             const Text('https://console.cloud.google.com/'),
             const SizedBox(height: 12),
-            _buildGuideStep('2', '新しいプロジェクトを作成または既存プロジェクトを選択'),
+            _buildGuideStep('2', AppLocalizations.of(context)!.createOrSelectProject),
             const SizedBox(height: 12),
-            _buildGuideStep('3', 'Google Calendar APIを有効化'),
-            const Text('「APIとサービス」→「ライブラリ」→「Google Calendar API」を検索して有効化'),
+            _buildGuideStep('3', AppLocalizations.of(context)!.enableGoogleCalendarAPI),
+            Text(AppLocalizations.of(context)!.enableGoogleCalendarAPIDescription),
             const SizedBox(height: 12),
-            _buildGuideStep('4', 'OAuth2クライアントIDを作成'),
-            const Text('「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuth2クライアントID」→「デスクトップアプリケーション」'),
+            _buildGuideStep('4', AppLocalizations.of(context)!.createOAuth2ClientID),
+            Text(AppLocalizations.of(context)!.createOAuth2ClientIDDescription),
             const SizedBox(height: 12),
-            _buildGuideStep('5', '認証情報ファイルをダウンロード'),
-            const Text('作成したOAuth2クライアントIDの「ダウンロード」ボタンからJSONファイルをダウンロード'),
+            _buildGuideStep('5', AppLocalizations.of(context)!.downloadCredentialsFile),
+            Text(AppLocalizations.of(context)!.downloadCredentialsFileDescription),
             const SizedBox(height: 12),
-            _buildGuideStep('6', 'ファイルをアプリフォルダに配置'),
-            const Text('ダウンロードしたJSONファイルを「oauth2_credentials.json」としてアプリフォルダに配置'),
+            _buildGuideStep('6', AppLocalizations.of(context)!.placeFileInAppFolder),
+            Text(AppLocalizations.of(context)!.placeFileInAppFolderDescription),
             const SizedBox(height: 12),
-            _buildGuideStep('7', 'OAuth2認証を実行'),
-            const Text('アプリの「OAuth2認証を開始」ボタンをクリックして認証を完了'),
+            _buildGuideStep('7', AppLocalizations.of(context)!.executeOAuth2Authentication),
+            Text(AppLocalizations.of(context)!.executeOAuth2AuthenticationDescription),
             const SizedBox(height: 12),
             
             // トークンファイルの説明
@@ -6062,7 +6070,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icon(Icons.info, color: Colors.blue, size: 16),
                       const SizedBox(width: 6),
                       Text(
-                        '生成されるファイル',
+                        AppLocalizations.of(context)!.generatedFiles,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.blue.shade700,
@@ -6072,7 +6080,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'OAuth2認証完了後、アプリが自動的に「google_calendar_tokens.json」ファイルを生成します。',
+                    AppLocalizations.of(context)!.oauth2AuthCompleted,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.blue.shade700,
@@ -6080,7 +6088,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'このファイルには以下の情報が含まれます：',
+                    AppLocalizations.of(context)!.thisFileContains,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.blue.shade700,
@@ -6225,12 +6233,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   /// 取込期間セレクター
   Widget _buildPeriodSelector(WidgetRef ref) {
     final periodOptions = [
-      {'label': '1週間', 'days': 7},
-      {'label': '2週間', 'days': 14},
-      {'label': '1ヶ月', 'days': 30},
-      {'label': '3ヶ月', 'days': 90},
-      {'label': '半年', 'days': 180},
-      {'label': '1年', 'days': 365},
+      {'label': AppLocalizations.of(context)!.oneWeek, 'days': 7},
+      {'label': AppLocalizations.of(context)!.twoWeeks, 'days': 14},
+      {'label': AppLocalizations.of(context)!.oneMonth, 'days': 30},
+      {'label': AppLocalizations.of(context)!.threeMonths, 'days': 90},
+      {'label': AppLocalizations.of(context)!.halfYear, 'days': 180},
+      {'label': AppLocalizations.of(context)!.oneYear, 'days': 365},
     ];
 
     final currentDays = ref.watch(settingsProvider).outlookAutoSyncPeriodDays;
@@ -6259,10 +6267,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   /// 自動取込頻度セレクター
   Widget _buildFrequencySelector(WidgetRef ref) {
     final frequencyOptions = [
-      {'value': 'on_startup', 'label': 'アプリ起動時のみ'},
-      {'value': '30min', 'label': '30分ごと'},
-      {'value': '1hour', 'label': '1時間ごと'},
-      {'value': 'daily_9am', 'label': '毎朝9:00'},
+      {'value': 'on_startup', 'label': AppLocalizations.of(context)!.onlyOnAppStart},
+      {'value': '30min', 'label': AppLocalizations.of(context)!.every30Minutes},
+      {'value': '1hour', 'label': AppLocalizations.of(context)!.every1Hour},
+      {'value': 'daily_9am', 'label': AppLocalizations.of(context)!.everyMorning9am},
     ];
 
     final currentFrequency = ref.watch(settingsProvider).outlookAutoSyncFrequency;

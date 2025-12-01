@@ -2076,7 +2076,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     }
                   },
                   icon: const Icon(Icons.cloud_download, size: 16),
-                  label: const Text('Outlookから取り込む', style: TextStyle(fontSize: 12)),
+                  label: Text(AppLocalizations.of(context)!.importFromOutlook, style: const TextStyle(fontSize: 12)),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   ),
@@ -2162,8 +2162,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 TextField(
                   controller: _scheduleTitleController,
                   decoration: InputDecoration(
-                    labelText: '予定タイトル *',
-                    hintText: widget.task?.title ?? '予定タイトル',
+                    labelText: '${AppLocalizations.of(context)!.scheduleTitle} *',
+                    hintText: widget.task?.title ?? AppLocalizations.of(context)!.scheduleTitle,
                     filled: true,
                     fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
@@ -2189,7 +2189,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         onTap: () => _selectScheduleDate(context, true),
                         child: InputDecorator(
                           decoration: InputDecoration(
-                            labelText: '開始日時 *',
+                            labelText: '${AppLocalizations.of(context)!.startDateTime} *',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
@@ -2202,7 +2202,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                                 child: Text(
                                   _scheduleStartDate != null && _scheduleStartTime != null
                                       ? '${DateFormat('yyyy/MM/dd').format(_scheduleStartDate!)} ${_scheduleStartTime!.format(context)}'
-                                      : '日時を選択',
+                                      : AppLocalizations.of(context)!.selectDateTime,
                                   style: const TextStyle(fontSize: 14),
                                 ),
                               ),
@@ -2227,7 +2227,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         onTap: () => _selectScheduleDate(context, false),
                         child: InputDecorator(
                           decoration: InputDecoration(
-                            labelText: '終了日時',
+                            labelText: AppLocalizations.of(context)!.endDateTime,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
@@ -2240,7 +2240,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                                 child: Text(
                                   _scheduleEndDate != null && _scheduleEndTime != null
                                       ? '${DateFormat('yyyy/MM/dd').format(_scheduleEndDate!)} ${_scheduleEndTime!.format(context)}'
-                                      : '日時を選択（オプション）',
+                                      : AppLocalizations.of(context)!.selectDateTimeOptional,
                                   style: const TextStyle(fontSize: 14),
                                 ),
                               ),
@@ -2265,7 +2265,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 TextField(
                   controller: _scheduleLocationController,
                   decoration: InputDecoration(
-                    labelText: '場所',
+                    labelText: AppLocalizations.of(context)!.location,
                     filled: true,
                     fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
@@ -2283,7 +2283,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 TextField(
                   controller: _scheduleNotesController,
                   decoration: InputDecoration(
-                    labelText: 'メモ',
+                    labelText: AppLocalizations.of(context)!.memoLabel,
                     filled: true,
                     fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
@@ -2306,7 +2306,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       return;
                     }
                     if (_scheduleStartDate == null || _scheduleStartTime == null) {
-                      SnackBarService.showError(context, '開始日時は必須です');
+                      SnackBarService.showError(context, AppLocalizations.of(context)!.startDateTimeRequired);
                       return;
                     }
                     
@@ -2446,7 +2446,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       
                       await vm.addSchedule(newSchedule);
                       if (mounted) {
-                        SnackBarService.showSuccess(context, '予定を追加しました');
+                        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.scheduleAdded);
                       }
                     } else {
                       // 更新
@@ -2492,7 +2492,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _editingSchedule == null ? '予定を追加' : '予定を更新',
+                        _editingSchedule == null ? AppLocalizations.of(context)!.addSchedule : AppLocalizations.of(context)!.updateSchedule,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -2620,20 +2620,21 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 icon: const Icon(Icons.delete, color: Colors.red, size: 18),
                 tooltip: '削除',
                 onPressed: () async {
+                  final l10n = AppLocalizations.of(context)!;
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
-                      title: const Text('予定を削除'),
-                      content: Text('「${schedule.title}」を削除しますか？'),
+                      title: Text(l10n.deleteSchedule),
+                      content: Text(l10n.deleteScheduleConfirm(schedule.title)),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: Text(AppLocalizations.of(context)!.cancel),
+                          child: Text(l10n.cancel),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
                           style: TextButton.styleFrom(foregroundColor: Colors.red),
-                          child: const Text('削除'),
+                          child: Text(l10n.delete),
                         ),
                       ],
                     ),
@@ -2736,15 +2737,16 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   }
 
   String _getPriorityText(TaskPriority priority) {
+    final l10n = AppLocalizations.of(context)!;
     switch (priority) {
       case TaskPriority.low:
-        return '低';
+        return l10n.low;
       case TaskPriority.medium:
-        return '中';
+        return l10n.medium;
       case TaskPriority.high:
-        return '高';
+        return l10n.high;
       case TaskPriority.urgent:
-        return '緊急';
+        return l10n.urgent;
     }
   }
 
@@ -2804,15 +2806,16 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
 
   // ステータスのテキストを取得
   String _getStatusText(TaskStatus status) {
+    final l10n = AppLocalizations.of(context)!;
     switch (status) {
       case TaskStatus.pending:
-        return '未着手';
+        return l10n.notStarted;
       case TaskStatus.inProgress:
-        return '進行中';
+        return l10n.inProgress;
       case TaskStatus.completed:
-        return '完了';
+        return l10n.completed;
       case TaskStatus.cancelled:
-        return 'キャンセル';
+        return l10n.cancelled;
     }
   }
 
@@ -2955,7 +2958,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       setState(() => _selectedMailApp = value!);
                     },
                   ),
-                  const Expanded(child: Text('Outlook（デスクトップ）')),
+                  Expanded(child: Text(AppLocalizations.of(context)!.outlookDesktop)),
                 ],
               ),
               Row(
@@ -2967,7 +2970,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       setState(() => _selectedMailApp = value!);
                     },
                   ),
-                  const Expanded(child: Text('Gmail（Web）')),
+                  Expanded(child: Text(AppLocalizations.of(context)!.gmailWeb)),
                 ],
               ),
             ],
@@ -2989,7 +2992,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   child: ElevatedButton.icon(
                     onPressed: _testOutlookConnection,
                     icon: const Icon(Icons.business, size: 16),
-                    label: const Text('Outlookテスト'),
+                    label: Text(AppLocalizations.of(context)!.outlookTest),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       foregroundColor: _selectedMailApp == 'outlook' ? Colors.blue : Colors.grey.shade600,
@@ -3014,7 +3017,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   child: ElevatedButton.icon(
                     onPressed: _testGmailConnection,
                     icon: const Icon(Icons.mail, size: 16),
-                    label: const Text('Gmailテスト'),
+                    label: Text(AppLocalizations.of(context)!.gmailTest),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       foregroundColor: _selectedMailApp == 'gmail' ? Colors.red : Colors.grey.shade600,
@@ -3033,21 +3036,21 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               ElevatedButton.icon(
                 onPressed: _showHistoryDialog,
                 icon: const Icon(Icons.history),
-                label: const Text('送信履歴'),
+                label: Text(AppLocalizations.of(context)!.sendHistory),
                 style: AppButtonStyles.secondary(context),
         ),
         const SizedBox(height: 12),
               ElevatedButton.icon(
                     onPressed: _sendMail,
                     icon: const Icon(Icons.send),
-                    label: const Text('メーラーを起動'),
+                    label: Text(AppLocalizations.of(context)!.launchMailer),
                     style: AppButtonStyles.primary(context),
             ),
               const SizedBox(height: 8),
               ElevatedButton.icon(
                   onPressed: _pendingMailTo != null ? _markMailAsSent : null,
                   icon: const Icon(Icons.check_circle),
-                  label: Text(_pendingMailTo != null ? 'メール送信完了' : 'メーラーを先に起動してください'),
+                  label: Text(_pendingMailTo != null ? AppLocalizations.of(context)!.mailSentComplete : AppLocalizations.of(context)!.launchMailerFirst),
                   style: _pendingMailTo != null 
                     ? AppButtonStyles.primary(context)
                     : ElevatedButton.styleFrom(
@@ -3258,15 +3261,13 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         print('=== メールバッジ表示更新開始 ===');
         print('タスクID: ${widget.task!.id}');
         
-        // タスク画面の状態を更新（stateを直接更新）
-        final currentTasks = ref.read(taskViewModelProvider);
-        ref.read(taskViewModelProvider.notifier).state = [...currentTasks];
+        // タスク画面の状態を更新（forceReloadTasksを使用）
+        await ref.read(taskViewModelProvider.notifier).forceReloadTasks();
         
         // さらに、メールバッジの表示を強制更新するため、少し遅延して再度更新
         Future.delayed(const Duration(milliseconds: 100), () {
           if (mounted) {
-            final updatedTasks = ref.read(taskViewModelProvider);
-            ref.read(taskViewModelProvider.notifier).state = [...updatedTasks];
+            ref.read(taskViewModelProvider.notifier).forceReloadTasks();
             print('メールバッジ表示更新完了');
           }
         });
@@ -3274,8 +3275,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         // さらに遅延して最終更新
         Future.delayed(const Duration(milliseconds: 1000), () {
           if (mounted) {
-            final finalTasks = ref.read(taskViewModelProvider);
-            ref.read(taskViewModelProvider.notifier).state = [...finalTasks];
+            ref.read(taskViewModelProvider.notifier).forceReloadTasks();
             print('メールバッジ最終更新完了');
           }
         });

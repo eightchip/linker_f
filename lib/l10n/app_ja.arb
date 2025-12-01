@@ -771,7 +771,7 @@
   "@cancelled": {
     "description": "キャンセルステータス"
   },
-  "cancelledShort": "止",
+  "cancelledShort": "X",
   "@cancelledShort": {
     "description": "キャンセルステータス（短縮版）"
   },
@@ -1398,19 +1398,19 @@
   "@totalTasks": {
     "description": "総タスクラベル（完全版）"
   },
-  "inProgressShort": "進",
+  "inProgressShort": "I",
   "@inProgressShort": {
     "description": "進行中ラベル（短縮版）"
   },
-  "completedShort": "完",
+  "completedShort": "C",
   "@completedShort": {
     "description": "完了ラベル（短縮版）"
   },
-  "notStartedShort": "未",
+  "notStartedShort": "N",
   "@notStartedShort": {
     "description": "未着手ラベル（短縮版）"
   },
-  "inProgressShort2": "中",
+  "inProgressShort2": "I",
   "@inProgressShort2": {
     "description": "進行中ラベル（短縮版2）"
   },
@@ -1437,6 +1437,2061 @@
   "changeStatus": "ステータスを変更",
   "@changeStatus": {
     "description": "ステータスを変更ツールチップ"
+  },
+  "scheduleTitle": "予定タイトル",
+  "@scheduleTitle": {
+    "description": "予定タイトルラベル"
+  },
+  "startDateTime": "開始日時",
+  "@startDateTime": {
+    "description": "開始日時ラベル"
+  },
+  "endDateTime": "終了日時",
+  "@endDateTime": {
+    "description": "終了日時ラベル"
+  },
+  "location": "場所",
+  "@location": {
+    "description": "場所ラベル"
+  },
+  "selectDateTime": "日時を選択",
+  "@selectDateTime": {
+    "description": "日時選択プレースホルダー"
+  },
+  "selectDateTimeOptional": "日時を選択（任意）",
+  "@selectDateTimeOptional": {
+    "description": "日時選択プレースホルダー（任意）"
+  },
+  "addSchedule": "予定を追加",
+  "@addSchedule": {
+    "description": "予定追加ボタン"
+  },
+  "updateSchedule": "予定を更新",
+  "@updateSchedule": {
+    "description": "予定更新ボタン"
+  },
+  "scheduleAdded": "予定を追加しました",
+  "@scheduleAdded": {
+    "description": "予定追加完了メッセージ"
+  },
+  "startDateTimeRequired": "開始日時は必須です",
+  "@startDateTimeRequired": {
+    "description": "開始日時必須エラーメッセージ"
+  },
+  "outlookDesktop": "Outlook（デスクトップ）",
+  "@outlookDesktop": {
+    "description": "Outlookデスクトップラベル"
+  },
+  "gmailWeb": "Gmail（Web）",
+  "@gmailWeb": {
+    "description": "Gmail Webラベル"
+  },
+  "outlookTest": "Outlookをテスト",
+  "@outlookTest": {
+    "description": "Outlookテストボタン"
+  },
+  "gmailTest": "Gmailをテスト",
+  "@gmailTest": {
+    "description": "Gmailテストボタン"
+  },
+  "sendHistory": "送信履歴",
+  "@sendHistory": {
+    "description": "送信履歴ボタン"
+  },
+  "launchMailer": "メーラーを起動",
+  "@launchMailer": {
+    "description": "メーラー起動ボタン"
+  },
+  "mailSentComplete": "メール送信完了",
+  "@mailSentComplete": {
+    "description": "メール送信完了ボタン"
+  },
+  "launchMailerFirst": "まずメーラーを起動してください",
+  "@launchMailerFirst": {
+    "description": "メーラー起動必須メッセージ"
+  },
+  "copyTask": "タスクをコピー",
+  "@copyTask": {
+    "description": "タスクコピーダイアログタイトル"
+  },
+  "copyTaskConfirm": "「{title}」をコピーしますか？",
+  "@copyTaskConfirm": {
+    "description": "タスクコピー確認メッセージ",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatPeriod": "繰り返し期間:",
+  "@repeatPeriod": {
+    "description": "繰り返し期間ラベル"
+  },
+  "monthly": "月次（1か月後）",
+  "@monthly": {
+    "description": "月次オプション"
+  },
+  "quarterly": "四半期（3か月後）",
+  "@quarterly": {
+    "description": "四半期オプション"
+  },
+  "yearly": "年次（1年後）",
+  "@yearly": {
+    "description": "年次オプション"
+  },
+  "custom": "カスタム",
+  "@custom": {
+    "description": "カスタムオプション"
+  },
+  "copyCount": "コピー個数:",
+  "@copyCount": {
+    "description": "コピー個数ラベル"
+  },
+  "copyCountLabel": "{count}個",
+  "@copyCountLabel": {
+    "description": "コピー個数表示",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "maxCopiesMonthly": "最大12個まで（1か月ずつ期限をずらしてコピー）",
+  "@maxCopiesMonthly": {
+    "description": "月次コピー最大数説明"
+  },
+  "maxCopiesQuarterly": "最大4個まで（3か月ずつ期限をずらしてコピー）",
+  "@maxCopiesQuarterly": {
+    "description": "四半期コピー最大数説明"
+  },
+  "selectDueDate": "期限日を選択",
+  "@selectDueDate": {
+    "description": "期限日選択プレースホルダー"
+  },
+  "selectReminderTime": "リマインダー時間を選択（任意）",
+  "@selectReminderTime": {
+    "description": "リマインダー時間選択プレースホルダー"
+  },
+  "copiedContent": "コピーされる内容:",
+  "@copiedContent": {
+    "description": "コピーされる内容ラベル"
+  },
+  "titleLabel": "タイトル:",
+  "@titleLabel": {
+    "description": "タイトルラベル"
+  },
+  "copySuffix": "コピー",
+  "@copySuffix": {
+    "description": "コピーサフィックス"
+  },
+  "descriptionLabel": "説明:",
+  "@descriptionLabel": {
+    "description": "説明ラベル"
+  },
+  "requestorMemoLabel": "依頼先・メモ:",
+  "@requestorMemoLabel": {
+    "description": "依頼先・メモラベル"
+  },
+  "copyCountLabel2": "コピー個数:",
+  "@copyCountLabel2": {
+    "description": "コピー個数ラベル2"
+  },
+  "dueDateLabel": "期限日:",
+  "@dueDateLabel": {
+    "description": "期限日ラベル"
+  },
+  "reminderLabel": "リマインダー:",
+  "@reminderLabel": {
+    "description": "リマインダーラベル"
+  },
+  "priorityLabel": "優先度:",
+  "@priorityLabel": {
+    "description": "優先度ラベル"
+  },
+  "statusLabel": "ステータス:",
+  "@statusLabel": {
+    "description": "ステータスラベル"
+  },
+  "tagsLabel": "タグ:",
+  "@tagsLabel": {
+    "description": "タグラベル"
+  },
+  "estimatedTimeLabel": "推定時間:",
+  "@estimatedTimeLabel": {
+    "description": "推定時間ラベル"
+  },
+  "minutes": "分",
+  "@minutes": {
+    "description": "分単位"
+  },
+  "subtasksLabel": "サブタスク:",
+  "@subtasksLabel": {
+    "description": "サブタスクラベル"
+  },
+  "statusResetNote": "※ ステータスは「未着手」にリセットされます",
+  "@statusResetNote": {
+    "description": "ステータスリセット注意書き"
+  },
+  "subtasksCopiedNote": "※ サブタスクもコピーされます",
+  "@subtasksCopiedNote": {
+    "description": "サブタスクコピー注意書き"
+  },
+  "copy": "コピー",
+  "@copy": {
+    "description": "コピーボタン"
+  },
+  "taskCopiedSuccess": "タスクを{count}個コピーしました",
+  "@taskCopiedSuccess": {
+    "description": "タスクコピー成功メッセージ",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskCopiedPartial": "タスクを{success}個コピーしました（{failed}個失敗）",
+  "@taskCopiedPartial": {
+    "description": "タスクコピー部分成功メッセージ",
+    "placeholders": {
+      "success": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "taskCopyFailed": "タスクのコピーに失敗しました",
+  "@taskCopyFailed": {
+    "description": "タスクコピー失敗メッセージ"
+  },
+  "deleteTask": "タスクを削除",
+  "@deleteTask": {
+    "description": "タスク削除ダイアログタイトル"
+  },
+  "deleteTaskConfirm": "「{title}」を削除しますか？",
+  "@deleteTaskConfirm": {
+    "description": "タスク削除確認メッセージ",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteOptions": "削除オプション:",
+  "@deleteOptions": {
+    "description": "削除オプションラベル"
+  },
+  "deleteAppOnly": "アプリのみ削除",
+  "@deleteAppOnly": {
+    "description": "アプリのみ削除オプション"
+  },
+  "deleteAppAndCalendar": "アプリとGoogle Calendarから削除",
+  "@deleteAppAndCalendar": {
+    "description": "アプリとGoogle Calendarから削除オプション"
+  },
+  "appOnly": "アプリのみ",
+  "@appOnly": {
+    "description": "アプリのみボタン"
+  },
+  "deleteBoth": "両方削除",
+  "@deleteBoth": {
+    "description": "両方削除ボタン"
+  },
+  "taskDeletedSuccess": "「{title}」を削除しました",
+  "@taskDeletedSuccess": {
+    "description": "タスク削除成功メッセージ",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFailed": "削除に失敗しました",
+  "@deleteFailed": {
+    "description": "削除失敗メッセージ"
+  },
+  "taskDeletedFromBoth": "「{title}」をアプリとGoogle Calendarから削除しました",
+  "@taskDeletedFromBoth": {
+    "description": "タスク削除成功メッセージ（両方）",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notSet": "未設定",
+  "@notSet": {
+    "description": "未設定ラベル"
+  },
+  "low": "低",
+  "@low": {
+    "description": "優先度：低"
+  },
+  "medium": "中",
+  "@medium": {
+    "description": "優先度：中"
+  },
+  "high": "高",
+  "@high": {
+    "description": "優先度：高"
+  },
+  "urgent": "緊急",
+  "@urgent": {
+    "description": "優先度：緊急"
+  },
+  "delete": "削除",
+  "@delete": {
+    "description": "削除ボタン"
+  },
+  "confirm": "確認",
+  "@confirm": {
+    "description": "確認ラベル"
+  },
+  "deleteSelectedTasks": "選択した{count}件のタスクを削除しますか？",
+  "@deleteSelectedTasks": {
+    "description": "選択タスク削除確認メッセージ",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupExecuted": "バックアップを実行しました。{count}件のタスクを削除します...",
+  "@backupExecuted": {
+    "description": "バックアップ実行メッセージ",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupFailedContinue": "バックアップに失敗しましたが、削除を続行します: {error}",
+  "@backupFailedContinue": {
+    "description": "バックアップ失敗メッセージ",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteSchedule": "予定を削除",
+  "@deleteSchedule": {
+    "description": "予定削除ダイアログタイトル"
+  },
+  "deleteScheduleConfirm": "「{title}」を削除しますか？",
+  "@deleteScheduleConfirm": {
+    "description": "予定削除確認メッセージ",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "warning": "警告",
+  "@warning": {
+    "description": "警告ラベル"
+  },
+  "selectAtLeastTwoTasks": "2つ以上のタスクを選択してください",
+  "@selectAtLeastTwoTasks": {
+    "description": "2つ以上のタスク選択要求メッセージ"
+  },
+  "noSourceTasks": "結合元のタスクがありません",
+  "@noSourceTasks": {
+    "description": "結合元タスクなしメッセージ"
+  },
+  "backupExecutedMerge": "バックアップを実行しました。タスク結合を実行します...",
+  "@backupExecutedMerge": {
+    "description": "タスク結合前バックアップメッセージ"
+  },
+  "taskMergeFailed": "タスク結合に失敗しました",
+  "@taskMergeFailed": {
+    "description": "タスク結合失敗メッセージ"
+  },
+  "linkAssignmentFailed": "リンク割り当てに失敗しました",
+  "@linkAssignmentFailed": {
+    "description": "リンク割り当て失敗メッセージ"
+  },
+  "statusChangeFailed": "ステータス変更に失敗しました",
+  "@statusChangeFailed": {
+    "description": "ステータス変更失敗メッセージ"
+  },
+  "priorityChangeFailed": "優先度変更に失敗しました",
+  "@priorityChangeFailed": {
+    "description": "優先度変更失敗メッセージ"
+  },
+  "dueDateChangeFailed": "期限日変更に失敗しました",
+  "@dueDateChangeFailed": {
+    "description": "期限日変更失敗メッセージ"
+  },
+  "tagChangeFailed": "タグ変更に失敗しました",
+  "@tagChangeFailed": {
+    "description": "タグ変更失敗メッセージ"
+  },
+  "taskSyncedToCalendar": "「{title}」をGoogle Calendarに同期しました",
+  "@taskSyncedToCalendar": {
+    "description": "タスク同期成功メッセージ",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskSyncFailed": "「{title}」の同期に失敗しました: {error}",
+  "@taskSyncFailed": {
+    "description": "タスク同期失敗メッセージ",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "taskSyncError": "「{title}」の同期中にエラーが発生しました: {error}",
+  "@taskSyncError": {
+    "description": "タスク同期エラーメッセージ",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFailed": "エクスポートに失敗しました",
+  "@exportFailed": {
+    "description": "エクスポート失敗メッセージ"
+  },
+  "invalidFileFormat": "無効なファイル形式です",
+  "@invalidFileFormat": {
+    "description": "無効なファイル形式メッセージ"
+  },
+  "importFailed": "インポートに失敗しました",
+  "@importFailed": {
+    "description": "インポート失敗メッセージ"
+  },
+  "sendHistorySearchError": "送信済み検索エラー",
+  "@sendHistorySearchError": {
+    "description": "送信済み検索エラーメッセージ"
+  },
+  "mailerLaunched": "メーラーを起動しました",
+  "@mailerLaunched": {
+    "description": "メーラー起動成功メッセージ"
+  },
+  "replyAddressNotFound": "返信先メールアドレスが見つかりません",
+  "@replyAddressNotFound": {
+    "description": "返信先メールアドレス未検出メッセージ"
+  },
+  "mailerLaunchFailed": "メーラーの起動に失敗しました",
+  "@mailerLaunchFailed": {
+    "description": "メーラー起動失敗メッセージ"
+  },
+  "linkOpenFailed": "リンクを開けませんでした: {link}",
+  "@linkOpenFailed": {
+    "description": "リンクオープン失敗メッセージ",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "uncPathOpenFailed": "UNCパスを開けませんでした: {path}",
+  "@uncPathOpenFailed": {
+    "description": "UNCパスオープン失敗メッセージ",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "urlOpenFailed": "URLを開けませんでした: {url}",
+  "@urlOpenFailed": {
+    "description": "URLオープン失敗メッセージ",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "fileOpenFailed": "ファイルを開けませんでした: {path}",
+  "@fileOpenFailed": {
+    "description": "ファイルオープン失敗メッセージ",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "colorPresets": "カラープリセット",
+  "@colorPresets": {
+    "description": "カラープリセットラベル"
+  },
+  "applyRecommendedColors": "ワンタップでおすすめ配色を適用",
+  "@applyRecommendedColors": {
+    "description": "おすすめ配色適用説明"
+  },
+  "accentColor": "アクセントカラー",
+  "@accentColor": {
+    "description": "アクセントカラーラベル"
+  },
+  "colorIntensity": "色の濃淡",
+  "@colorIntensity": {
+    "description": "色の濃淡ラベル"
+  },
+  "contrastAdjustment": "コントラスト調整",
+  "@contrastAdjustment": {
+    "description": "コントラスト調整ラベル"
+  },
+  "textColorSettings": "テキスト色設定",
+  "@textColorSettings": {
+    "description": "テキスト色設定ラベル"
+  },
+  "fontSettings": "フォント設定",
+  "@fontSettings": {
+    "description": "フォント設定ラベル"
+  },
+  "cardViewFieldSettingsDescription": "カードビューで表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます",
+  "@cardViewFieldSettingsDescription": {
+    "description": "カードビューフィールド設定説明"
+  },
+  "title": "タイトル",
+  "@title": {
+    "description": "タイトルラベル"
+  },
+  "body": "本文",
+  "@body": {
+    "description": "本文ラベル"
+  },
+  "uiCustomization": "UIカスタマイズ",
+  "@uiCustomization": {
+    "description": "UIカスタマイズラベル"
+  },
+  "realtimePreview": "リアルタイムプレビュー",
+  "@realtimePreview": {
+    "description": "リアルタイムプレビューラベル"
+  },
+  "live": "ライブ",
+  "@live": {
+    "description": "ライブラベル"
+  },
+  "cardSettings": "カード設定",
+  "@cardSettings": {
+    "description": "カード設定ラベル"
+  },
+  "linkAndTaskScreens": "リンク・タスク画面",
+  "@linkAndTaskScreens": {
+    "description": "リンク・タスク画面ラベル"
+  },
+  "cardSettingsDescription": "カードの見た目と動作を調整します。角丸半径、影の強さ、パディングを変更できます。",
+  "@cardSettingsDescription": {
+    "description": "カード設定説明"
+  },
+  "cornerRadius": "角丸半径",
+  "@cornerRadius": {
+    "description": "角丸半径ラベル"
+  },
+  "shadowStrength": "影の強さ",
+  "@shadowStrength": {
+    "description": "影の強さラベル"
+  },
+  "padding": "パディング",
+  "@padding": {
+    "description": "パディングラベル"
+  },
+  "sampleCard": "サンプルカード",
+  "@sampleCard": {
+    "description": "サンプルカードラベル"
+  },
+  "cardPreviewDescription": "これはカードのプレビューです。設定を変更するとリアルタイムで反映されます。",
+  "@cardPreviewDescription": {
+    "description": "カードプレビュー説明"
+  },
+  "sampleButton": "サンプルボタン",
+  "@sampleButton": {
+    "description": "サンプルボタンラベル"
+  },
+  "outlineButton": "アウトラインボタン",
+  "@outlineButton": {
+    "description": "アウトラインボタンラベル"
+  },
+  "sampleInputField": "サンプル入力フィールド",
+  "@sampleInputField": {
+    "description": "サンプル入力フィールドラベル"
+  },
+  "currentSettings": "角丸: {radius}px | 影: {shadow}% | パディング: {padding}px",
+  "@currentSettings": {
+    "description": "現在の設定表示",
+    "placeholders": {
+      "radius": {
+        "type": "String"
+      },
+      "shadow": {
+        "type": "String"
+      },
+      "padding": {
+        "type": "String"
+      }
+    }
+  },
+  "buttonSettings": "ボタン設定",
+  "@buttonSettings": {
+    "description": "ボタン設定ラベル"
+  },
+  "cardViewShort": "C",
+  "@cardViewShort": {
+    "description": "カードビュー短縮表記"
+  },
+  "listViewShort": "L",
+  "@listViewShort": {
+    "description": "リストビュー短縮表記"
+  },
+  "taskListDisplaySettings": "タスクリスト表示設定",
+  "@taskListDisplaySettings": {
+    "description": "タスクリスト表示設定ラベル"
+  },
+  "taskListFieldSettingsDescription": "タスクリストとタスク編集画面で表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます",
+  "@taskListFieldSettingsDescription": {
+    "description": "タスクリストフィールド設定説明"
+  },
+  "resetCardViewSettings": "カードビュー設定をリセット",
+  "@resetCardViewSettings": {
+    "description": "カードビュー設定リセットラベル"
+  },
+  "resetCardViewSettingsConfirm": "カードビューの設定を初期値にリセットしますか？\nこの操作は取り消せません。",
+  "@resetCardViewSettingsConfirm": {
+    "description": "カードビュー設定リセット確認メッセージ"
+  },
+  "textColor": "テキスト色",
+  "@textColor": {
+    "description": "テキスト色ラベル"
+  },
+  "requestorDescription": "依頼先への説明",
+  "@requestorDescription": {
+    "description": "依頼先への説明ラベル"
+  },
+  "allScreensCommon": "全画面共通",
+  "@allScreensCommon": {
+    "description": "全画面共通ラベル"
+  },
+  "appWideFontSize": "アプリ全体のフォントサイズ: {percentage}%",
+  "@appWideFontSize": {
+    "description": "アプリ全体のフォントサイズラベル",
+    "placeholders": {
+      "percentage": {
+        "type": "String"
+      }
+    }
+  },
+  "gridSettings": "グリッド設定",
+  "@gridSettings": {
+    "description": "グリッド設定ラベル"
+  },
+  "autoLayoutAdjustment": "自動レイアウト調整",
+  "@autoLayoutAdjustment": {
+    "description": "自動レイアウト調整ラベル"
+  },
+  "autoAdjustToScreenSize": "画面サイズに応じて自動調整",
+  "@autoAdjustToScreenSize": {
+    "description": "画面サイズに応じて自動調整説明"
+  },
+  "cardViewSettings": "カードビュー設定",
+  "@cardViewSettings": {
+    "description": "カードビュー設定ラベル"
+  },
+  "cancel": "キャンセル",
+  "@cancel": {
+    "description": "キャンセルラベル"
+  },
+  "fieldSettings": "{fieldName}設定",
+  "@fieldSettings": {
+    "description": "フィールド設定ラベル",
+    "placeholders": {
+      "fieldName": {
+        "type": "String"
+      }
+    }
+  },
+  "colorPresetSunrise": "サンライズ",
+  "@colorPresetSunrise": {
+    "description": "カラープリセット名：サンライズ"
+  },
+  "colorPresetSunriseDesc": "温かみのあるオレンジ系",
+  "@colorPresetSunriseDesc": {
+    "description": "カラープリセット説明：サンライズ"
+  },
+  "colorPresetForest": "フォレスト",
+  "@colorPresetForest": {
+    "description": "カラープリセット名：フォレスト"
+  },
+  "colorPresetForestDesc": "落ち着いたグリーン系",
+  "@colorPresetForestDesc": {
+    "description": "カラープリセット説明：フォレスト"
+  },
+  "colorPresetBreeze": "ブルーブリーズ",
+  "@colorPresetBreeze": {
+    "description": "カラープリセット名：ブルーブリーズ"
+  },
+  "colorPresetBreezeDesc": "爽やかなブルー系",
+  "@colorPresetBreezeDesc": {
+    "description": "カラープリセット説明：ブルーブリーズ"
+  },
+  "colorPresetMidnight": "ミッドナイト",
+  "@colorPresetMidnight": {
+    "description": "カラープリセット名：ミッドナイト"
+  },
+  "colorPresetMidnightDesc": "夜間作業に合うダークテイスト",
+  "@colorPresetMidnightDesc": {
+    "description": "カラープリセット説明：ミッドナイト"
+  },
+  "colorPresetSakura": "サクラ",
+  "@colorPresetSakura": {
+    "description": "カラープリセット名：サクラ"
+  },
+  "colorPresetSakuraDesc": "柔らかなピンク系",
+  "@colorPresetSakuraDesc": {
+    "description": "カラープリセット説明：サクラ"
+  },
+  "colorPresetCitrus": "シトラス",
+  "@colorPresetCitrus": {
+    "description": "カラープリセット名：シトラス"
+  },
+  "colorPresetCitrusDesc": "フレッシュな黄緑系",
+  "@colorPresetCitrusDesc": {
+    "description": "カラープリセット説明：シトラス"
+  },
+  "colorPresetSlate": "スレート",
+  "@colorPresetSlate": {
+    "description": "カラープリセット名：スレート"
+  },
+  "colorPresetSlateDesc": "落ち着いたブルーグレー",
+  "@colorPresetSlateDesc": {
+    "description": "カラープリセット説明：スレート"
+  },
+  "colorPresetAmber": "アンバー",
+  "@colorPresetAmber": {
+    "description": "カラープリセット名：アンバー"
+  },
+  "colorPresetAmberDesc": "視認性の高いゴールド調",
+  "@colorPresetAmberDesc": {
+    "description": "カラープリセット説明：アンバー"
+  },
+  "colorPresetGraphite": "グラファイト",
+  "@colorPresetGraphite": {
+    "description": "カラープリセット名：グラファイト"
+  },
+  "colorPresetGraphiteDesc": "モダンなモノトーン",
+  "@colorPresetGraphiteDesc": {
+    "description": "カラープリセット説明：グラファイト"
+  },
+  "presetApplied": "{presetName}プリセットを適用しました",
+  "@presetApplied": {
+    "description": "プリセット適用成功メッセージ",
+    "placeholders": {
+      "presetName": {
+        "type": "String"
+      }
+    }
+  },
+  "presetApplyFailed": "プリセットの適用に失敗しました: {error}",
+  "@presetApplyFailed": {
+    "description": "プリセット適用失敗メッセージ",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "autoContrastOptimization": "自動コントラスト最適化",
+  "@autoContrastOptimization": {
+    "description": "自動コントラスト最適化ラベル"
+  },
+  "autoContrastOptimizationDesc": "ダークモードでテキストの視認性を自動調整",
+  "@autoContrastOptimizationDesc": {
+    "description": "自動コントラスト最適化説明"
+  },
+  "iconSize": "アイコンサイズ",
+  "@iconSize": {
+    "description": "アイコンサイズラベル"
+  },
+  "linkItemIconSizeDesc": "リンクアイテムのアイコンサイズを調整します。大きくすると視認性が向上しますが、アイテム全体のサイズも大きくなります。",
+  "@linkItemIconSizeDesc": {
+    "description": "リンクアイテムアイコンサイズ説明"
+  },
+  "gridSettingsReset": "グリッド設定",
+  "@gridSettingsReset": {
+    "description": "グリッド設定リセットラベル"
+  },
+  "gridSettingsResetDesc": "カラム数: 4、間隔: デフォルト",
+  "@gridSettingsResetDesc": {
+    "description": "グリッド設定リセット説明"
+  },
+  "cardSettingsReset": "カード設定",
+  "@cardSettingsReset": {
+    "description": "カード設定リセットラベル"
+  },
+  "cardSettingsResetDesc": "サイズ: デフォルト、影: デフォルト",
+  "@cardSettingsResetDesc": {
+    "description": "カード設定リセット説明"
+  },
+  "itemSettingsReset": "アイテム設定",
+  "@itemSettingsReset": {
+    "description": "アイテム設定リセットラベル"
+  },
+  "itemSettingsResetDesc": "フォントサイズ: デフォルト、アイコンサイズ: デフォルト",
+  "@itemSettingsResetDesc": {
+    "description": "アイテム設定リセット説明"
+  },
+  "colorBlue": "ブルー",
+  "@colorBlue": {
+    "description": "青色の名称"
+  },
+  "colorRed": "レッド",
+  "@colorRed": {
+    "description": "赤色の名称"
+  },
+  "colorGreen": "グリーン",
+  "@colorGreen": {
+    "description": "緑色の名称"
+  },
+  "colorOrange": "オレンジ",
+  "@colorOrange": {
+    "description": "オレンジ色の名称"
+  },
+  "colorPurple": "パープル",
+  "@colorPurple": {
+    "description": "紫色の名称"
+  },
+  "colorPink": "ピンク",
+  "@colorPink": {
+    "description": "ピンク色の名称"
+  },
+  "colorCyan": "シアン",
+  "@colorCyan": {
+    "description": "シアン色の名称"
+  },
+  "colorGray": "グレー",
+  "@colorGray": {
+    "description": "グレー色の名称"
+  },
+  "colorEmerald": "エメラルド",
+  "@colorEmerald": {
+    "description": "エメラルド色の名称"
+  },
+  "colorYellow": "イエロー",
+  "@colorYellow": {
+    "description": "黄色の名称"
+  },
+  "colorBlack": "黒",
+  "@colorBlack": {
+    "description": "黒色の名称"
+  },
+  "colorWhite": "白",
+  "@colorWhite": {
+    "description": "白色の名称"
+  },
+  "light": "薄い",
+  "@light": {
+    "description": "薄い（色の濃淡）"
+  },
+  "standard": "標準",
+  "@standard": {
+    "description": "標準"
+  },
+  "dark": "濃い",
+  "@dark": {
+    "description": "濃い（色の濃淡）"
+  },
+  "contrastLow": "低",
+  "@contrastLow": {
+    "description": "低（コントラスト）"
+  },
+  "contrastHigh": "高",
+  "@contrastHigh": {
+    "description": "高（コントラスト）"
+  },
+  "contrast": "コントラスト",
+  "@contrast": {
+    "description": "コントラストラベル"
+  },
+  "fontSize": "フォントサイズ",
+  "@fontSize": {
+    "description": "フォントサイズラベル"
+  },
+  "fontFamily": "フォントファミリー",
+  "@fontFamily": {
+    "description": "フォントファミリーラベル"
+  },
+  "defaultValue": "デフォルト",
+  "@defaultValue": {
+    "description": "デフォルト"
+  },
+  "fontSizePreview": "プレビュー: このテキストのサイズが{fieldName}に適用されます",
+  "@fontSizePreview": {
+    "description": "フォントサイズプレビューテキスト",
+    "placeholders": {
+      "fieldName": {
+        "type": "String"
+      }
+    }
+  },
+  "fontFamilyPreview": "フォントプレビュー: このテキストのフォントが{fieldName}に適用されます",
+  "@fontFamilyPreview": {
+    "description": "フォントファミリープレビューテキスト",
+    "placeholders": {
+      "fieldName": {
+        "type": "String"
+      }
+    }
+  },
+  "buttonSettings": "ボタン設定",
+  "@buttonSettings": {
+    "description": "Button settings title"
+  },
+  "buttonSettingsDescription": "ボタンの見た目を調整します。角丸半径と影の強さを変更できます。",
+  "@buttonSettingsDescription": {
+    "description": "Button settings description"
+  },
+  "borderRadius": "角丸半径",
+  "@borderRadius": {
+    "description": "Border radius label"
+  },
+  "borderRadiusPx": "角丸半径: {value}px",
+  "@borderRadiusPx": {
+    "description": "Border radius with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "elevation": "影の強さ",
+  "@elevation": {
+    "description": "Elevation/shadow intensity label"
+  },
+  "elevationPx": "影の強さ: {value}px",
+  "@elevationPx": {
+    "description": "Elevation with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "elevationPercent": "影の強さ: {value}%",
+  "@elevationPercent": {
+    "description": "Elevation with percentage",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "inputFieldSettings": "入力フィールド設定",
+  "@inputFieldSettings": {
+    "description": "Input field settings title"
+  },
+  "inputFieldSettingsDescription": "テキスト入力欄の見た目を調整します。角丸半径と枠線の太さを変更できます。",
+  "@inputFieldSettingsDescription": {
+    "description": "Input field settings description"
+  },
+  "borderWidth": "枠線の太さ",
+  "@borderWidth": {
+    "description": "Border width label"
+  },
+  "borderWidthPx": "枠線の太さ: {value}px",
+  "@borderWidthPx": {
+    "description": "Border width with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "hoverEffect": "ホバー効果",
+  "@hoverEffect": {
+    "description": "Hover effect label"
+  },
+  "hoverEffectPercent": "ホバー効果: {value}%",
+  "@hoverEffectPercent": {
+    "description": "Hover effect with percentage",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "gradient": "グラデーション",
+  "@gradient": {
+    "description": "Gradient label"
+  },
+  "gradientPercent": "グラデーション: {value}%",
+  "@gradientPercent": {
+    "description": "Gradient with percentage",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "generalSettings": "全般設定",
+  "@generalSettings": {
+    "description": "General settings title"
+  },
+  "darkModeContrastBoost": "ダークモードコントラストブースト",
+  "@darkModeContrastBoost": {
+    "description": "Dark mode contrast boost label"
+  },
+  "autoLayoutEnabled": "自動レイアウトが有効です。画面サイズに応じて最適な列数が自動で決定されます。",
+  "@autoLayoutEnabled": {
+    "description": "Auto layout enabled message"
+  },
+  "largeScreen": "大画面（1920px以上）",
+  "@largeScreen": {
+    "description": "Large screen label"
+  },
+  "columnsDisplay": "{count}列表示",
+  "@columnsDisplay": {
+    "description": "Columns display",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "optimalForDesktop": "デスクトップモニターに最適",
+  "@optimalForDesktop": {
+    "description": "Optimal for desktop message"
+  },
+  "mediumScreen": "中画面（1200-1919px）",
+  "@mediumScreen": {
+    "description": "Medium screen label"
+  },
+  "optimalForLaptop": "ノートPCやタブレットに最適",
+  "@optimalForLaptop": {
+    "description": "Optimal for laptop message"
+  },
+  "smallScreen": "小画面（800-1199px）",
+  "@smallScreen": {
+    "description": "Small screen label"
+  },
+  "optimalForSmallScreen": "小さな画面に最適",
+  "@optimalForSmallScreen": {
+    "description": "Optimal for small screen message"
+  },
+  "minimalScreen": "最小画面（800px未満）",
+  "@minimalScreen": {
+    "description": "Minimal screen label"
+  },
+  "optimalForMobile": "モバイル表示に最適",
+  "@optimalForMobile": {
+    "description": "Optimal for mobile message"
+  },
+  "manualLayoutEnabled": "手動レイアウト設定が有効です。固定の列数で表示されます。",
+  "@manualLayoutEnabled": {
+    "description": "Manual layout enabled message"
+  },
+  "fixedColumns": "固定列数",
+  "@fixedColumns": {
+    "description": "Fixed columns label"
+  },
+  "sameColumnsAllScreens": "すべての画面サイズで同じ列数",
+  "@sameColumnsAllScreens": {
+    "description": "Same columns for all screens message"
+  },
+  "useCase": "使用場面",
+  "@useCase": {
+    "description": "Use case label"
+  },
+  "maintainSpecificDisplay": "特定の表示を維持したい場合",
+  "@maintainSpecificDisplay": {
+    "description": "Maintain specific display message"
+  },
+  "consistentLayoutNeeded": "一貫したレイアウトが必要な場合",
+  "@consistentLayoutNeeded": {
+    "description": "Consistent layout needed message"
+  },
+  "defaultColumnCount": "デフォルト列数: {count}",
+  "@defaultColumnCount": {
+    "description": "Default column count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "gridSpacing": "グリッド間隔: {value}px",
+  "@gridSpacing": {
+    "description": "Grid spacing",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "cardWidth": "カード幅: {value}px",
+  "@cardWidth": {
+    "description": "Card width",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "cardHeight": "カード高さ: {value}px",
+  "@cardHeight": {
+    "description": "Card height",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "itemMargin": "アイテム間マージン",
+  "@itemMargin": {
+    "description": "Item margin label"
+  },
+  "itemMarginPx": "アイテム間マージン: {value}px",
+  "@itemMarginPx": {
+    "description": "Item margin with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "itemMarginDescription": "リンクアイテム間の空白スペースを調整します。値を大きくすると、アイテム同士の間隔が広がり、見やすくなります。",
+  "@itemMarginDescription": {
+    "description": "Item margin description"
+  },
+  "itemPadding": "アイテム内パディング",
+  "@itemPadding": {
+    "description": "Item padding label"
+  },
+  "itemPaddingPx": "アイテム内パディング: {value}px",
+  "@itemPaddingPx": {
+    "description": "Item padding with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "itemPaddingDescription": "リンクアイテム内の文字やアイコンと枠線の間の空白を調整します。値を大きくすると、アイテム内がゆとりを持って見やすくなります。",
+  "@itemPaddingDescription": {
+    "description": "Item padding description"
+  },
+  "fontSizePx": "フォントサイズ: {value}px",
+  "@fontSizePx": {
+    "description": "Font size with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "fontSizeDescription": "リンクアイテムの文字サイズを調整します。小さくすると多くのアイテムを表示できますが、読みにくくなる場合があります。",
+  "@fontSizeDescription": {
+    "description": "Font size description"
+  },
+  "buttonSize": "ボタンサイズ",
+  "@buttonSize": {
+    "description": "Button size label"
+  },
+  "buttonSizePx": "ボタンサイズ: {value}px",
+  "@buttonSizePx": {
+    "description": "Button size with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "buttonSizeDescription": "編集・削除などのボタンのサイズを調整します。大きくすると操作しやすくなりますが、画面のスペースを多く使用します。",
+  "@buttonSizeDescription": {
+    "description": "Button size description"
+  },
+  "autoAdjustCardHeight": "カード高さ自動調整",
+  "@autoAdjustCardHeight": {
+    "description": "Auto adjust card height label"
+  },
+  "autoAdjustCardHeightDescription": "コンテンツ量に応じてカードの高さを自動調整（手動設定の高さを最小値として使用）",
+  "@autoAdjustCardHeightDescription": {
+    "description": "Auto adjust card height description"
+  },
+  "backupExport": "データのバックアップ / エクスポート",
+  "@backupExport": {
+    "description": "Backup and export section title"
+  },
+  "backupLocation": "保存先: ドキュメント/backups",
+  "@backupLocation": {
+    "description": "Backup location message"
+  },
+  "saveNow": "今すぐ保存",
+  "@saveNow": {
+    "description": "Save now button label"
+  },
+  "openBackupFolder": "保存先を開く",
+  "@openBackupFolder": {
+    "description": "Open backup folder button label"
+  },
+  "selectiveExportImport": "選択式エクスポート / インポート",
+  "@selectiveExportImport": {
+    "description": "Selective export/import title"
+  },
+  "selectiveExport": "選択式エクスポート",
+  "@selectiveExport": {
+    "description": "Selective export button label"
+  },
+  "selectiveImport": "選択式インポート",
+  "@selectiveImport": {
+    "description": "Selective import button label"
+  },
+  "autoBackup": "自動バックアップ",
+  "@autoBackup": {
+    "description": "Auto backup label"
+  },
+  "autoBackupDescription": "定期的にデータをバックアップ",
+  "@autoBackupDescription": {
+    "description": "Auto backup description"
+  },
+  "backupInterval": "バックアップ間隔: {days}日",
+  "@backupInterval": {
+    "description": "Backup interval",
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "backupIntervalDays": "{days}日",
+  "@backupIntervalDays": {
+    "description": "Backup interval in days",
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSettings": "通知設定",
+  "@notificationSettings": {
+    "description": "Notification settings title"
+  },
+  "notificationWarning": "注意: 通知はアプリが起動中の場合のみ表示されます。アプリを閉じている場合は通知が表示されません。",
+  "@notificationWarning": {
+    "description": "Notification warning message"
+  },
+  "showNotifications": "通知を表示",
+  "@showNotifications": {
+    "description": "Show notifications label"
+  },
+  "showNotificationsDescription": "タスクの期限やリマインダーが設定されている場合、デスクトップ通知を表示します。アプリが起動中の場合のみ通知が表示されます。",
+  "@showNotificationsDescription": {
+    "description": "Show notifications description"
+  },
+  "notificationSound": "通知音",
+  "@notificationSound": {
+    "description": "Notification sound label"
+  },
+  "notificationSoundDescription": "通知が表示される際に音を再生します。アプリが起動中の場合のみ音が再生されます。",
+  "@notificationSoundDescription": {
+    "description": "Notification sound description"
+  },
+  "testNotificationSound": "通知音をテスト",
+  "@testNotificationSound": {
+    "description": "Test notification sound button label"
+  },
+  "testNotificationSoundDescription": "このボタンで通知音をテストできます。アプリが起動中の場合のみ音が再生されます。",
+  "@testNotificationSoundDescription": {
+    "description": "Test notification sound description"
+  },
+  "reset": "リセット",
+  "@reset": {
+    "description": "Reset section title"
+  },
+  "resetToDefaults": "設定をデフォルトにリセット",
+  "@resetToDefaults": {
+    "description": "Reset to defaults button label"
+  },
+  "resetLayoutSettings": "レイアウト設定をリセット",
+  "@resetLayoutSettings": {
+    "description": "Reset layout settings button label"
+  },
+  "layoutSettingsReset": "レイアウト設定をリセットしました",
+  "@layoutSettingsReset": {
+    "description": "Layout settings reset success message"
+  },
+  "resetUISettings": "UI設定をリセット",
+  "@resetUISettings": {
+    "description": "Reset UI settings button label"
+  },
+  "resetUISettingsConfirm": "すべてのUIカスタマイズ設定をデフォルト値にリセットします。\n\nこの操作は取り消せません。\n本当に実行しますか？",
+  "@resetUISettingsConfirm": {
+    "description": "Reset UI settings confirmation message"
+  },
+  "executeReset": "リセット実行",
+  "@executeReset": {
+    "description": "Execute reset button label"
+  },
+  "resetDetails": "リセット機能の詳細",
+  "@resetDetails": {
+    "description": "Reset details button label"
+  },
+  "resetFunction": "リセット機能",
+  "@resetFunction": {
+    "description": "Reset function title"
+  },
+  "resetFunctionDescription": "• 設定リセット: テーマ、通知、連携設定など\n• レイアウトリセット: グリッドサイズ、カード設定など\n• UI設定リセット: カード、ボタン、入力フィールドのカスタマイズ設定\n• データは保持: リンク、タスク、メモは削除されません\n• 詳細は「リセット機能の詳細」ボタンで確認",
+  "@resetFunctionDescription": {
+    "description": "Reset function description"
+  },
+  "resetDetailsTitle": "リセット機能の詳細",
+  "@resetDetailsTitle": {
+    "description": "Reset details title"
+  },
+  "resetDetailsDescription": "リセット機能の詳細説明:",
+  "@resetDetailsDescription": {
+    "description": "Reset details description"
+  },
+  "resetToDefaultsStep": "設定をデフォルトにリセット",
+  "@resetToDefaultsStep": {
+    "description": "Reset to defaults step title"
+  },
+  "resetToDefaultsStepDescription": "以下の設定が初期値に戻ります:",
+  "@resetToDefaultsStepDescription": {
+    "description": "Reset to defaults step description"
+  },
+  "themeSettingsReset": "テーマ設定",
+  "@themeSettingsReset": {
+    "description": "Theme settings reset item"
+  },
+  "themeSettingsResetValue": "ダークモード: OFF、アクセントカラー: ブルー、濃淡: 100%、コントラスト: 100%",
+  "@themeSettingsResetValue": {
+    "description": "Theme settings reset value"
+  },
+  "notificationSettingsReset": "通知設定",
+  "@notificationSettingsReset": {
+    "description": "Notification settings reset item"
+  },
+  "notificationSettingsResetValue": "通知: ON、通知音: ON",
+  "@notificationSettingsResetValue": {
+    "description": "Notification settings reset value"
+  },
+  "integrationSettingsReset": "連携設定",
+  "@integrationSettingsReset": {
+    "description": "Integration settings reset item"
+  },
+  "integrationSettingsResetValue": "Google Calendar: OFF、Gmail連携: OFF、Outlook: OFF",
+  "@integrationSettingsResetValue": {
+    "description": "Integration settings reset value"
+  },
+  "backupSettingsReset": "バックアップ設定",
+  "@backupSettingsReset": {
+    "description": "Backup settings reset item"
+  },
+  "backupSettingsResetValue": "自動バックアップ: ON、間隔: 7日",
+  "@backupSettingsResetValue": {
+    "description": "Backup settings reset value"
+  },
+  "resetLayoutSettingsStep": "レイアウト設定をリセット",
+  "@resetLayoutSettingsStep": {
+    "description": "Reset layout settings step title"
+  },
+  "resetLayoutSettingsStepDescription": "以下のレイアウト設定が初期値に戻ります:",
+  "@resetLayoutSettingsStepDescription": {
+    "description": "Reset layout settings step description"
+  },
+  "autoSync": "自動同期",
+  "@autoSync": {
+    "description": "Auto sync label"
+  },
+  "autoSyncDescription": "定期的にGoogle Calendarと同期します",
+  "@autoSyncDescription": {
+    "description": "Auto sync description"
+  },
+  "syncInterval": "同期間隔: {minutes}分",
+  "@syncInterval": {
+    "description": "Sync interval",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "bidirectionalSync": "双方向同期",
+  "@bidirectionalSync": {
+    "description": "Bidirectional sync label"
+  },
+  "bidirectionalSyncDescription": "アプリのタスクをGoogle Calendarに送信します",
+  "@bidirectionalSyncDescription": {
+    "description": "Bidirectional sync description"
+  },
+  "showCompletedTasks": "完了タスクを表示",
+  "@showCompletedTasks": {
+    "description": "Show completed tasks label"
+  },
+  "showCompletedTasksDescription": "Google Calendarで完了したタスクを表示します",
+  "@showCompletedTasksDescription": {
+    "description": "Show completed tasks description"
+  },
+  "credentialsFileFound": "認証情報ファイルが見つかりました",
+  "@credentialsFileFound": {
+    "description": "Credentials file found message"
+  },
+  "credentialsFileNotFound": "認証情報ファイルが見つかりません",
+  "@credentialsFileNotFound": {
+    "description": "Credentials file not found message"
+  },
+  "outlookSettingsInfo": "Outlook設定情報",
+  "@outlookSettingsInfo": {
+    "description": "Outlook settings info title"
+  },
+  "autoLayoutAdjustment": "自動レイアウト調整",
+  "@autoLayoutAdjustment": {
+    "description": "Auto layout adjustment label"
+  },
+  "autoLayoutAdjustmentDescription": "画面サイズに応じて自動調整",
+  "@autoLayoutAdjustmentDescription": {
+    "description": "Auto layout adjustment description"
+  },
+  "autoLayoutEnabledLabel": "自動レイアウト有効",
+  "@autoLayoutEnabledLabel": {
+    "description": "Auto layout enabled label"
+  },
+  "manualLayoutSettings": "手動レイアウト設定",
+  "@manualLayoutSettings": {
+    "description": "Manual layout settings label"
+  },
+  "animationEffectSettings": "アニメーション・エフェクト設定",
+  "@animationEffectSettings": {
+    "description": "Animation and effect settings title"
+  },
+  "animationDuration": "アニメーション時間: {ms}ms",
+  "@animationDuration": {
+    "description": "Animation duration",
+    "placeholders": {
+      "ms": {
+        "type": "String"
+      }
+    }
+  },
+  "spacing": "スペーシング: {value}px",
+  "@spacing": {
+    "description": "Spacing",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "darkModeContrastBoostPercent": "ダークモードコントラストブースト: {value}%",
+  "@darkModeContrastBoostPercent": {
+    "description": "Dark mode contrast boost with percentage",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "itemSettings": "アイテム設定",
+  "@itemSettings": {
+    "description": "Item settings title"
+  },
+  "reset": "リセット",
+  "@reset": {
+    "description": "Reset button label"
+  },
+  "taskProjectSettingsReset": "プロジェクト一覧設定をリセットしました",
+  "@taskProjectSettingsReset": {
+    "description": "Task project settings reset success message"
+  },
+  "resetSettings": "設定をリセット",
+  "@resetSettings": {
+    "description": "Reset settings button label"
+  },
+  "backupFolderOpened": "バックアップフォルダを開きました",
+  "@backupFolderOpened": {
+    "description": "Backup folder opened message"
+  },
+  "googleCalendar": "Google Calendar",
+  "@googleCalendar": {
+    "description": "Google Calendar label"
+  },
+  "googleCalendarIntegration": "Google Calendar連携",
+  "@googleCalendarIntegration": {
+    "description": "Google Calendar integration title"
+  },
+  "googleCalendarIntegrationDescription": "Google Calendarのイベントをタスクとして同期します",
+  "@googleCalendarIntegrationDescription": {
+    "description": "Google Calendar integration description"
+  },
+  "gmailIntegration": "Gmail連携",
+  "@gmailIntegration": {
+    "description": "Gmail integration title"
+  },
+  "gmailIntegrationAbout": "Gmail連携について",
+  "@gmailIntegrationAbout": {
+    "description": "Gmail integration about title"
+  },
+  "gmailIntegrationDescription": "タスク編集モーダルからGmailのメール作成画面を起動できます。\nAPIやアクセストークンの設定は不要です。\nGoogleアカウントにログイン済みのブラウザがあれば、そのままGmailの新規作成タブが開きます。",
+  "@gmailIntegrationDescription": {
+    "description": "Gmail integration description"
+  },
+  "gmailUsage": "使い方：\n1. タスク編集モーダルを開く\n2. メール送信セクションでGmailを選択\n3. 宛先を入力して「メール送信」ボタンをクリック\n4. Gmailのメール作成画面が開くので、内容を確認して送信します\n（送信履歴はタスク側に記録されます）",
+  "@gmailUsage": {
+    "description": "Gmail usage instructions"
+  },
+  "outlookIntegration": "Outlook連携",
+  "@outlookIntegration": {
+    "description": "Outlook integration title"
+  },
+  "outlookIntegrationAbout": "Outlook連携について",
+  "@outlookIntegrationAbout": {
+    "description": "Outlook integration about title"
+  },
+  "outlookIntegrationDescription": "Outlook APIを使用して、メール送信機能を利用できます。",
+  "@outlookIntegrationDescription": {
+    "description": "Outlook integration description"
+  },
+  "powershellFileDetails": "PowerShellファイルの詳細",
+  "@powershellFileDetails": {
+    "description": "PowerShell file details title"
+  },
+  "executableDirectory": "実行ファイルと同じディレクトリ\\Apps",
+  "@executableDirectory": {
+    "description": "Executable directory path"
+  },
+  "outlookConnectionTest": "Outlook接続テスト",
+  "@outlookConnectionTest": {
+    "description": "Outlook connection test title"
+  },
+  "outlookConnectionTestDescription": "Outlookアプリケーションとの接続をテストします",
+  "@outlookConnectionTestDescription": {
+    "description": "Outlook connection test description"
+  },
+  "mailCompositionSupport": "メール作成支援",
+  "@mailCompositionSupport": {
+    "description": "Mail composition support title"
+  },
+  "mailCompositionSupportDescription": "タスクから返信メールを作成する際の支援機能",
+  "@mailCompositionSupportDescription": {
+    "description": "Mail composition support description"
+  },
+  "sentMailSearch": "送信メール検索",
+  "@sentMailSearch": {
+    "description": "Sent mail search title"
+  },
+  "sentMailSearchDescription": "送信済みメールの検索・確認機能",
+  "@sentMailSearchDescription": {
+    "description": "Sent mail search description"
+  },
+  "outlookCalendarEvents": "Outlookカレンダー予定取得",
+  "@outlookCalendarEvents": {
+    "description": "Outlook calendar events title"
+  },
+  "outlookCalendarEventsDescription": "Outlookカレンダーから予定を取得してタスクに割り当てる機能",
+  "@outlookCalendarEventsDescription": {
+    "description": "Outlook calendar events description"
+  },
+  "portableVersion": "ポータブル版",
+  "@portableVersion": {
+    "description": "Portable version label"
+  },
+  "installedVersion": "インストール版",
+  "@installedVersion": {
+    "description": "Installed version label"
+  },
+  "manualExecution": "手動実行",
+  "@manualExecution": {
+    "description": "Manual execution label"
+  },
+  "automaticExecution": "自動実行",
+  "@automaticExecution": {
+    "description": "Automatic execution label"
+  },
+  "importantNotes": "重要な注意事項",
+  "@importantNotes": {
+    "description": "Important notes title"
+  },
+  "importantNotesContent": "• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】以下のいずれかに配置してください：\n1. ポータブル版: {portablePath}\n2. インストール版: {installedPath}",
+  "@importantNotesContent": {
+    "description": "Important notes content",
+    "placeholders": {
+      "portablePath": {
+        "type": "String"
+      },
+      "installedPath": {
+        "type": "String"
+      }
+    }
+  },
+  "connectionTest": "接続テスト",
+  "@connectionTest": {
+    "description": "Connection test button label"
+  },
+  "outlookPersonalCalendarAutoImport": "Outlook個人予定の自動取込",
+  "@outlookPersonalCalendarAutoImport": {
+    "description": "Outlook personal calendar auto import title"
+  },
+  "outlookSettingsInfoContent": "• 必要な権限: Outlook送信\n• 対応機能: メール送信、予定自動取込\n• 使用方法: タスク管理からOutlookでメールを送信、または自動取込設定を有効化",
+  "@outlookSettingsInfoContent": {
+    "description": "Outlook settings info content"
+  },
+  "googleCalendarSetupGuide": "Google Calendar設定ガイド",
+  "@googleCalendarSetupGuide": {
+    "description": "Google Calendar setup guide title"
+  },
+  "googleCalendarSetupSteps": "Google Calendar APIを使用するための設定手順:",
+  "@googleCalendarSetupSteps": {
+    "description": "Google Calendar setup steps title"
+  },
+  "accessGoogleCloudConsole": "Google Cloud Consoleにアクセス",
+  "@accessGoogleCloudConsole": {
+    "description": "Access Google Cloud Console step"
+  },
+  "createOrSelectProject": "新しいプロジェクトを作成または既存プロジェクトを選択",
+  "@createOrSelectProject": {
+    "description": "Create or select project step"
+  },
+  "enableGoogleCalendarAPI": "Google Calendar APIを有効化",
+  "@enableGoogleCalendarAPI": {
+    "description": "Enable Google Calendar API step"
+  },
+  "enableGoogleCalendarAPIDescription": "「APIとサービス」→「ライブラリ」→「Google Calendar API」を検索して有効化",
+  "@enableGoogleCalendarAPIDescription": {
+    "description": "Enable Google Calendar API description"
+  },
+  "createOAuth2ClientID": "OAuth2クライアントIDを作成",
+  "@createOAuth2ClientID": {
+    "description": "Create OAuth2 client ID step"
+  },
+  "createOAuth2ClientIDDescription": "「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuth2クライアントID」→「デスクトップアプリケーション」",
+  "@createOAuth2ClientIDDescription": {
+    "description": "Create OAuth2 client ID description"
+  },
+  "downloadCredentialsFile": "認証情報ファイルをダウンロード",
+  "@downloadCredentialsFile": {
+    "description": "Download credentials file step"
+  },
+  "downloadCredentialsFileDescription": "作成したOAuth2クライアントIDの「ダウンロード」ボタンからJSONファイルをダウンロード",
+  "@downloadCredentialsFileDescription": {
+    "description": "Download credentials file description"
+  },
+  "placeFileInAppFolder": "ファイルをアプリフォルダに配置",
+  "@placeFileInAppFolder": {
+    "description": "Place file in app folder step"
+  },
+  "placeFileInAppFolderDescription": "ダウンロードしたJSONファイルを「oauth2_credentials.json」としてアプリフォルダに配置",
+  "@placeFileInAppFolderDescription": {
+    "description": "Place file in app folder description"
+  },
+  "executeOAuth2Authentication": "OAuth2認証を実行",
+  "@executeOAuth2Authentication": {
+    "description": "Execute OAuth2 authentication step"
+  },
+  "executeOAuth2AuthenticationDescription": "アプリの「OAuth2認証を開始」ボタンをクリックして認証を完了",
+  "@executeOAuth2AuthenticationDescription": {
+    "description": "Execute OAuth2 authentication description"
+  },
+  "generatedFiles": "生成されるファイル",
+  "@generatedFiles": {
+    "description": "Generated files title"
+  },
+  "exportOptions": "エクスポートオプション",
+  "@exportOptions": {
+    "description": "Export options title"
+  },
+  "selectDataToExport": "エクスポートするデータを選択してください:",
+  "@selectDataToExport": {
+    "description": "Select data to export message"
+  },
+  "linksOnly": "リンクのみ",
+  "@linksOnly": {
+    "description": "Links only option"
+  },
+  "linksOnlyDescription": "リンクデータのみをエクスポート",
+  "@linksOnlyDescription": {
+    "description": "Links only description"
+  },
+  "tasksOnly": "タスクのみ",
+  "@tasksOnly": {
+    "description": "Tasks only option"
+  },
+  "tasksOnlyDescription": "タスクデータのみをエクスポート",
+  "@tasksOnlyDescription": {
+    "description": "Tasks only description"
+  },
+  "both": "両方",
+  "@both": {
+    "description": "Both option"
+  },
+  "bothDescription": "リンクとタスクの両方をエクスポート",
+  "@bothDescription": {
+    "description": "Both description"
+  },
+  "export": "エクスポート",
+  "@export": {
+    "description": "Export button label"
+  },
+  "importOptions": "インポートオプション",
+  "@importOptions": {
+    "description": "Import options title"
+  },
+  "selectDataToImport": "インポートするデータを選択してください:",
+  "@selectDataToImport": {
+    "description": "Select data to import message"
+  },
+  "linksOnlyImportDescription": "リンクデータのみをインポート",
+  "@linksOnlyImportDescription": {
+    "description": "Links only import description"
+  },
+  "tasksOnlyImportDescription": "タスクデータのみをインポート",
+  "@tasksOnlyImportDescription": {
+    "description": "Tasks only import description"
+  },
+  "bothImportDescription": "リンクとタスクの両方をインポート",
+  "@bothImportDescription": {
+    "description": "Both import description"
+  },
+  "exportCompleted": "エクスポートが完了しました\n保存先: {filePath}",
+  "@exportCompleted": {
+    "description": "Export completed message",
+    "placeholders": {
+      "filePath": {
+        "type": "String"
+      }
+    }
+  },
+  "exportCompletedTitle": "エクスポート完了",
+  "@exportCompletedTitle": {
+    "description": "Export completed title"
+  },
+  "exportError": "エクスポートエラー",
+  "@exportError": {
+    "description": "Export error title"
+  },
+  "exportErrorMessage": "エクスポートエラー: {error}",
+  "@exportErrorMessage": {
+    "description": "Export error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotOpenFolder": "フォルダを開けませんでした: {error}",
+  "@couldNotOpenFolder": {
+    "description": "Could not open folder message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button label"
+  },
+  "selectFileToImport": "インポートするファイルを選択",
+  "@selectFileToImport": {
+    "description": "Select file to import dialog title"
+  },
+  "importCompleted": "インポートが完了しました\nリンク: {linksCount}件\nタスク: {tasksCount}件\nグループ: {groupsCount}件",
+  "@importCompleted": {
+    "description": "Import completed message",
+    "placeholders": {
+      "linksCount": {
+        "type": "int"
+      },
+      "tasksCount": {
+        "type": "int"
+      },
+      "groupsCount": {
+        "type": "int"
+      }
+    }
+  },
+  "importCompletedTitle": "インポート完了",
+  "@importCompletedTitle": {
+    "description": "Import completed title"
+  },
+  "importError": "インポートエラー",
+  "@importError": {
+    "description": "Import error title"
+  },
+  "importErrorMessage": "インポートエラー: {error}",
+  "@importErrorMessage": {
+    "description": "Import error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "oauth2AuthCompleted": "OAuth2認証完了後、アプリが自動的に「google_calendar_tokens.json」ファイルを生成します。",
+  "@oauth2AuthCompleted": {
+    "description": "OAuth2 authentication completed message"
+  },
+  "thisFileContains": "このファイルには以下の情報が含まれます：",
+  "@thisFileContains": {
+    "description": "This file contains message"
+  },
+  "syncStatus": "同期状態",
+  "@syncStatus": {
+    "description": "Sync status title"
+  },
+  "waiting": "待機中",
+  "@waiting": {
+    "description": "Waiting status"
+  },
+  "syncing": "同期中...",
+  "@syncing": {
+    "description": "Syncing status"
+  },
+  "syncCompleted": "同期完了",
+  "@syncCompleted": {
+    "description": "Sync completed status"
+  },
+  "syncError": "同期エラー",
+  "@syncError": {
+    "description": "Sync error status"
+  },
+  "lastSync": "最終同期: {time}",
+  "@lastSync": {
+    "description": "Last sync time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "processingItems": "{processed}/{total}件処理中...",
+  "@processingItems": {
+    "description": "Processing items message",
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "error": "エラー: {message}",
+  "@error": {
+    "description": "Error message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "errorCode": "エラーコード: {code}",
+  "@errorCode": {
+    "description": "Error code",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "partialSync": "部分同期",
+  "@partialSync": {
+    "description": "Partial sync title"
+  },
+  "partialSyncDescription": "選択したタスクや日付範囲のタスクのみを同期できます",
+  "@partialSyncDescription": {
+    "description": "Partial sync description"
+  },
+  "individualTaskSyncInfo": "個別タスクの同期は、タスク画面の各タスクの3点ドットメニューから「このタスクを同期」を選択してください。",
+  "@individualTaskSyncInfo": {
+    "description": "Individual task sync info"
+  },
+  "syncByDateRange": "日付範囲で同期",
+  "@syncByDateRange": {
+    "description": "Sync by date range button"
+  },
+  "cleanupDuplicateEvents": "重複イベントをクリーンアップ",
+  "@cleanupDuplicateEvents": {
+    "description": "Cleanup duplicate events button"
+  },
+  "deleteOrphanedEvents": "孤立イベントを削除",
+  "@deleteOrphanedEvents": {
+    "description": "Delete orphaned events button"
+  },
+  "orphanedEventsDeletion": "孤立イベント削除",
+  "@orphanedEventsDeletion": {
+    "description": "Orphaned events deletion title"
+  },
+  "orphanedEventsDeletionDescription": "Google Calendarに残っているが、アプリに存在しないタスクのイベントを削除します。\nアプリで削除されたタスクのイベントがGoogle Calendarに残っている場合に使用してください。\n\nこの操作は取り消せません。実行しますか？",
+  "@orphanedEventsDeletionDescription": {
+    "description": "Orphaned events deletion description"
+  },
+  "executeDeletion": "削除実行",
+  "@executeDeletion": {
+    "description": "Execute deletion button"
+  },
+  "detectingOrphanedEvents": "孤立イベントを検出中...",
+  "@detectingOrphanedEvents": {
+    "description": "Detecting orphaned events message"
+  },
+  "orphanedEventsDeletionCompleted": "孤立イベント削除完了: {count}件削除",
+  "@orphanedEventsDeletionCompleted": {
+    "description": "Orphaned events deletion completed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orphanedEventsDeleted": "孤立イベント{count}件を削除しました",
+  "@orphanedEventsDeleted": {
+    "description": "Orphaned events deleted",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noOrphanedEventsFound": "孤立イベントは見つかりませんでした",
+  "@noOrphanedEventsFound": {
+    "description": "No orphaned events found"
+  },
+  "orphanedEventsDeletionFailed": "孤立イベント削除に失敗しました",
+  "@orphanedEventsDeletionFailed": {
+    "description": "Orphaned events deletion failed"
+  },
+  "orphanedEventsDeletionError": "孤立イベント削除中にエラーが発生しました",
+  "@orphanedEventsDeletionError": {
+    "description": "Orphaned events deletion error"
+  },
+  "duplicateEventsCleanup": "重複イベントクリーンアップ",
+  "@duplicateEventsCleanup": {
+    "description": "Duplicate events cleanup title"
+  },
+  "duplicateEventsCleanupDescription": "Google Calendarの重複したイベントを検出・削除します。\n同じタイトルと日付のイベントが複数ある場合、古いものを削除します。\n\nこの操作は取り消せません。実行しますか？",
+  "@duplicateEventsCleanupDescription": {
+    "description": "Duplicate events cleanup description"
+  },
+  "executeCleanup": "クリーンアップ実行",
+  "@executeCleanup": {
+    "description": "Execute cleanup button"
+  },
+  "detectingDuplicateEvents": "重複イベントを検出中...",
+  "@detectingDuplicateEvents": {
+    "description": "Detecting duplicate events message"
+  },
+  "duplicateCleanupCompleted": "重複クリーンアップ完了: {found}グループ検出、{removed}件削除",
+  "@duplicateCleanupCompleted": {
+    "description": "Duplicate cleanup completed",
+    "placeholders": {
+      "found": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "duplicateEventsDeleted": "重複イベント{count}件を削除しました",
+  "@duplicateEventsDeleted": {
+    "description": "Duplicate events deleted",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noDuplicateEventsFound": "重複イベントは見つかりませんでした",
+  "@noDuplicateEventsFound": {
+    "description": "No duplicate events found"
+  },
+  "duplicateCleanupFailed": "重複クリーンアップに失敗しました",
+  "@duplicateCleanupFailed": {
+    "description": "Duplicate cleanup failed"
+  },
+  "duplicateCleanupError": "重複クリーンアップ中にエラーが発生しました",
+  "@duplicateCleanupError": {
+    "description": "Duplicate cleanup error"
+  },
+  "checkSetupMethod": "設定方法を確認",
+  "@checkSetupMethod": {
+    "description": "Check setup method button"
+  },
+  "oauth2AuthCompleted": "OAuth2認証が完了しました",
+  "@oauth2AuthCompleted": {
+    "description": "OAuth2 authentication completed"
+  },
+  "authStartFailed": "認証の開始に失敗しました",
+  "@authStartFailed": {
+    "description": "Authentication start failed"
+  },
+  "storageLocation": "格納場所",
+  "@storageLocation": {
+    "description": "Storage location label"
+  },
+  "executionMethod": "実行方法",
+  "@executionMethod": {
+    "description": "Execution method label"
+  },
+  "startOAuth2Authentication": "OAuth2認証を開始",
+  "@startOAuth2Authentication": {
+    "description": "Start OAuth2 authentication button"
+  },
+  "appToGoogleCalendarSync": "アプリ→Google Calendar同期",
+  "@appToGoogleCalendarSync": {
+    "description": "App to Google Calendar sync button"
+  },
+  "appToGoogleCalendarSyncCompleted": "アプリ→Google Calendar同期完了: 作成{created}件, 更新{updated}件, 削除{deleted}件",
+  "@appToGoogleCalendarSyncCompleted": {
+    "description": "App to Google Calendar sync completed message",
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "deleted": {
+        "type": "int"
+      }
+    }
+  },
+  "googleCalendarToAppSync": "Google Calendar→アプリ同期",
+  "@googleCalendarToAppSync": {
+    "description": "Google Calendar to app sync button"
+  },
+  "googleCalendarToAppSyncCompleted": "Google Calendar→アプリ同期完了: 追加{added}件, スキップ{skipped}件",
+  "@googleCalendarToAppSyncCompleted": {
+    "description": "Google Calendar to app sync completed message",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "syncErrorMessage": "同期エラー: {error}",
+  "@syncErrorMessage": {
+    "description": "Sync error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorColon": "エラー: {error}",
+  "@errorColon": {
+    "description": "Error message with colon",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }
 

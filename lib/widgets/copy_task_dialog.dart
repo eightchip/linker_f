@@ -6,6 +6,7 @@ import '../viewmodels/task_viewmodel.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/app_spacing.dart';
 import '../widgets/app_button_styles.dart';
+import '../l10n/app_localizations.dart';
 
 class CopyTaskDialog extends ConsumerStatefulWidget {
   final TaskItem task;
@@ -149,7 +150,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
         children: [
           Icon(Icons.copy, color: Colors.blue),
           const SizedBox(width: 8),
-          const Text('タスクをコピー'),
+          Text(AppLocalizations.of(context)!.copyTask),
         ],
       ),
       content: SingleChildScrollView(
@@ -157,11 +158,11 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('「${widget.task.title}」をコピーしますか？'),
+            Text(AppLocalizations.of(context)!.copyTaskConfirm(widget.task.title)),
             const SizedBox(height: AppSpacing.lg),
             
             // 期間選択
-            const Text('繰り返し期間:', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context)!.repeatPeriod, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSpacing.sm),
             DropdownButtonFormField<String>(
               value: _selectedPeriod,
@@ -169,11 +170,11 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              items: const [
-                DropdownMenuItem(value: 'monthly', child: Text('月次（1か月後）')),
-                DropdownMenuItem(value: 'quarterly', child: Text('四半期（3か月後）')),
-                DropdownMenuItem(value: 'yearly', child: Text('年次（1年後）')),
-                DropdownMenuItem(value: 'custom', child: Text('カスタム')),
+              items: [
+                DropdownMenuItem(value: 'monthly', child: Text(AppLocalizations.of(context)!.monthly)),
+                DropdownMenuItem(value: 'quarterly', child: Text(AppLocalizations.of(context)!.quarterly)),
+                DropdownMenuItem(value: 'yearly', child: Text(AppLocalizations.of(context)!.yearly)),
+                DropdownMenuItem(value: 'custom', child: Text(AppLocalizations.of(context)!.custom)),
               ],
               onChanged: _onPeriodChanged,
             ),
@@ -181,7 +182,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
             // コピー個数選択（月次・四半期の場合のみ表示）
             if (_selectedPeriod == 'monthly' || _selectedPeriod == 'quarterly') ...[
               const SizedBox(height: AppSpacing.lg),
-              const Text('コピー個数:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(AppLocalizations.of(context)!.copyCount, style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
@@ -191,7 +192,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
                       min: 1,
                       max: _selectedPeriod == 'monthly' ? 12 : 4,
                       divisions: _selectedPeriod == 'monthly' ? 11 : 3,
-                      label: '$_copyCount個',
+                      label: AppLocalizations.of(context)!.copyCountLabel(_copyCount),
                       onChanged: (value) {
                         setState(() {
                           _copyCount = value.round();
@@ -207,7 +208,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      '$_copyCount個',
+                      AppLocalizations.of(context)!.copyCountLabel(_copyCount),
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
@@ -216,8 +217,8 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
               ),
               Text(
                 _selectedPeriod == 'monthly' 
-                  ? '最大12個まで（1か月ずつ期限をずらしてコピー）'
-                  : '最大4個まで（3か月ずつ期限をずらしてコピー）',
+                  ? AppLocalizations.of(context)!.maxCopiesMonthly
+                  : AppLocalizations.of(context)!.maxCopiesQuarterly,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],
@@ -227,7 +228,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
             const SizedBox(height: AppSpacing.lg),
             
             // 期限日選択
-            const Text('期限日:', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context)!.dueDateLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSpacing.sm),
             InkWell(
               onTap: _selectDueDate,
@@ -244,7 +245,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
                     Text(
                       _selectedDueDate != null 
                         ? DateFormat('yyyy/MM/dd').format(_selectedDueDate!)
-                        : '期限日を選択',
+                        : AppLocalizations.of(context)!.selectDueDate,
                       style: TextStyle(
                         color: _selectedDueDate != null ? Colors.black : Colors.grey[600],
                       ),
@@ -256,7 +257,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
             const SizedBox(height: AppSpacing.lg),
             
             // リマインダー時間選択
-            const Text('リマインダー時間:', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context)!.reminderLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSpacing.sm),
             InkWell(
               onTap: _selectReminderTime,
@@ -273,7 +274,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
                     Text(
                       _selectedReminderTime != null 
                         ? DateFormat('yyyy/MM/dd HH:mm').format(_selectedReminderTime!)
-                        : 'リマインダー時間を選択（任意）',
+                        : AppLocalizations.of(context)!.selectReminderTime,
                       style: TextStyle(
                         color: _selectedReminderTime != null ? Colors.black : Colors.grey[600],
                       ),
@@ -285,36 +286,36 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
             const SizedBox(height: AppSpacing.lg),
             
             // コピーされる内容の表示
-            const Text('コピーされる内容:', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context)!.copiedContent, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSpacing.sm),
-            Text('• タイトル: ${widget.task.title} (コピー)'),
+            Text('• ${AppLocalizations.of(context)!.titleLabel} ${widget.task.title} (${AppLocalizations.of(context)!.copySuffix})'),
             if (widget.task.description != null && widget.task.description!.isNotEmpty)
-              Text('• 説明: ${widget.task.description}'),
+              Text('• ${AppLocalizations.of(context)!.descriptionLabel} ${widget.task.description}'),
             if (widget.task.assignedTo != null && widget.task.assignedTo!.isNotEmpty)
-              Text('• 依頼先・メモ: ${widget.task.assignedTo}'),
+              Text('• ${AppLocalizations.of(context)!.requestorMemoLabel} ${widget.task.assignedTo}'),
             
             // 複数コピーの場合の期限日表示
             if ((_selectedPeriod == 'monthly' || _selectedPeriod == 'quarterly') && _copyCount > 1) ...[
-              Text('• コピー個数: $_copyCount個'),
-              Text('• 期限日: ${_getMultipleDueDatesPreview()}'),
+              Text('• ${AppLocalizations.of(context)!.copyCountLabel2} ${AppLocalizations.of(context)!.copyCountLabel(_copyCount)}'),
+              Text('• ${AppLocalizations.of(context)!.dueDateLabel} ${_getMultipleDueDatesPreview()}'),
               if (widget.task.reminderTime != null)
-                Text('• リマインダー: ${_getMultipleReminderTimesPreview()}'),
+                Text('• ${AppLocalizations.of(context)!.reminderLabel} ${_getMultipleReminderTimesPreview()}'),
             ] else ...[
-              Text('• 期限日: ${_selectedDueDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDueDate!) : '未設定'}'),
-              Text('• リマインダー: ${_selectedReminderTime != null ? DateFormat('yyyy/MM/dd HH:mm').format(_selectedReminderTime!) : '未設定'}'),
+              Text('• ${AppLocalizations.of(context)!.dueDateLabel} ${_selectedDueDate != null ? DateFormat('yyyy/MM/dd').format(_selectedDueDate!) : AppLocalizations.of(context)!.notSet}'),
+              Text('• ${AppLocalizations.of(context)!.reminderLabel} ${_selectedReminderTime != null ? DateFormat('yyyy/MM/dd HH:mm').format(_selectedReminderTime!) : AppLocalizations.of(context)!.notSet}'),
             ],
             
-            Text('• 優先度: ${_getPriorityText(widget.task.priority)}'),
-            Text('• ステータス: 未着手'),
+            Text('• ${AppLocalizations.of(context)!.priorityLabel} ${_getPriorityText(widget.task.priority)}'),
+            Text('• ${AppLocalizations.of(context)!.statusLabel} ${AppLocalizations.of(context)!.notStarted}'),
             if (widget.task.tags.isNotEmpty)
-              Text('• タグ: ${widget.task.tags.join(', ')}'),
+              Text('• ${AppLocalizations.of(context)!.tagsLabel} ${widget.task.tags.join(', ')}'),
             if (widget.task.estimatedMinutes != null && widget.task.estimatedMinutes! > 0)
-              Text('• 推定時間: ${widget.task.estimatedMinutes}分'),
+              Text('• ${AppLocalizations.of(context)!.estimatedTimeLabel} ${widget.task.estimatedMinutes}${AppLocalizations.of(context)!.minutes}'),
             if (widget.task.hasSubTasks)
-              Text('• サブタスク: ${widget.task.totalSubTasksCount}個'),
+              Text('• ${AppLocalizations.of(context)!.subtasksLabel} ${AppLocalizations.of(context)!.copyCountLabel(widget.task.totalSubTasksCount)}'),
             const SizedBox(height: AppSpacing.sm),
-            const Text('※ ステータスは「未着手」にリセットされます'),
-            const Text('※ サブタスクもコピーされます'),
+            Text(AppLocalizations.of(context)!.statusResetNote),
+            Text(AppLocalizations.of(context)!.subtasksCopiedNote),
           ],
         ),
       ),
@@ -322,7 +323,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
           style: AppButtonStyles.text(context),
-          child: const Text('キャンセル'),
+          child: Text(AppLocalizations.of(context)!.cancel),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _copyTask,
@@ -333,28 +334,29 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Text('コピー'),
+            : Text(AppLocalizations.of(context)!.copy),
         ),
       ],
     );
   }
 
   String _getPriorityText(TaskPriority priority) {
+    final l10n = AppLocalizations.of(context)!;
     switch (priority) {
       case TaskPriority.low:
-        return '低';
+        return l10n.low;
       case TaskPriority.medium:
-        return '中';
+        return l10n.medium;
       case TaskPriority.high:
-        return '高';
+        return l10n.high;
       case TaskPriority.urgent:
-        return '緊急';
+        return l10n.urgent;
     }
   }
 
   /// 複数期限日のプレビューを取得
   String _getMultipleDueDatesPreview() {
-    if (widget.task.dueDate == null) return '未設定';
+    if (widget.task.dueDate == null) return AppLocalizations.of(context)!.notSet;
     
     final dates = <String>[];
     for (int i = 0; i < _copyCount && i < 3; i++) {
@@ -376,7 +378,7 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
 
   /// 複数リマインダー時間のプレビューを取得
   String _getMultipleReminderTimesPreview() {
-    if (widget.task.reminderTime == null) return '未設定';
+    if (widget.task.reminderTime == null) return AppLocalizations.of(context)!.notSet;
     
     final times = <String>[];
     for (int i = 0; i < _copyCount && i < 3; i++) {
@@ -465,27 +467,29 @@ class _CopyTaskDialogState extends ConsumerState<CopyTaskDialog> {
       Navigator.of(context).pop();
       
       // 結果メッセージを表示
+      final l10n = AppLocalizations.of(context)!;
       if (successCount == totalCount) {
         SnackBarService.showSuccess(
           context,
-          'タスクを${successCount}個コピーしました',
+          l10n.taskCopiedSuccess(successCount),
         );
       } else if (successCount > 0) {
         SnackBarService.showWarning(
           context,
-          'タスクを${successCount}個コピーしました（${totalCount - successCount}個失敗）',
+          l10n.taskCopiedPartial(successCount, totalCount - successCount),
         );
       } else {
         SnackBarService.showError(
           context,
-          'タスクのコピーに失敗しました',
+          l10n.taskCopyFailed,
         );
       }
     } catch (e) {
       print('タスクコピーエラー: $e');
+      final l10n = AppLocalizations.of(context)!;
       SnackBarService.showError(
         context,
-        'タスクのコピーに失敗しました: $e',
+        '${l10n.taskCopyFailed}: $e',
       );
     } finally {
       setState(() {

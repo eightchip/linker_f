@@ -79,8 +79,11 @@ class TagManager {
   static bool matchesTagFilter(LinkItem item, String? mainTagFilter, String? subTagFilter) {
     if (mainTagFilter == null && subTagFilter == null) return true;
     
-    if (mainTagFilter != null && item.mainTag != mainTagFilter) return false;
-    if (subTagFilter != null && item.subTag != subTagFilter) return false;
+    final mainTag = item.tags.isNotEmpty ? item.tags[0] : null;
+    final subTag = item.tags.length > 1 ? item.tags[1] : null;
+    
+    if (mainTagFilter != null && mainTag != mainTagFilter) return false;
+    if (subTagFilter != null && subTag != subTagFilter) return false;
     
     return true;
   }
@@ -95,11 +98,13 @@ class TagManager {
     final stats = <String, int>{};
     
     for (final item in items) {
-      if (item.mainTag != null) {
-        stats[item.mainTag!] = (stats[item.mainTag!] ?? 0) + 1;
+      if (item.tags.isNotEmpty) {
+        final mainTag = item.tags[0];
+        stats[mainTag] = (stats[mainTag] ?? 0) + 1;
       }
-      if (item.subTag != null) {
-        stats[item.subTag!] = (stats[item.subTag!] ?? 0) + 1;
+      if (item.tags.length > 1) {
+        final subTag = item.tags[1];
+        stats[subTag] = (stats[subTag] ?? 0) + 1;
       }
     }
     

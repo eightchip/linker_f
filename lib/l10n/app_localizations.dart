@@ -326,55 +326,55 @@ abstract class AppLocalizations {
   /// **'テーマ設定'**
   String get themeSettings;
 
-  /// フォント設定メニュー項目
+  /// フォント設定ラベル
   ///
   /// In ja, this message translates to:
   /// **'フォント設定'**
   String get fontSettings;
 
-  /// UIカスタマイズメニュー項目
+  /// UIカスタマイズラベル
   ///
   /// In ja, this message translates to:
   /// **'UIカスタマイズ'**
   String get uiCustomization;
 
-  /// グリッド設定メニュー項目
+  /// グリッド設定ラベル
   ///
   /// In ja, this message translates to:
   /// **'グリッド設定'**
   String get gridSettings;
 
-  /// カード設定メニュー項目
+  /// カード設定ラベル
   ///
   /// In ja, this message translates to:
   /// **'カード設定'**
   String get cardSettings;
 
-  /// アイテム設定メニュー項目
+  /// Item settings title
   ///
   /// In ja, this message translates to:
   /// **'アイテム設定'**
   String get itemSettings;
 
-  /// カードビュー設定メニュー項目
+  /// カードビュー設定ラベル
   ///
   /// In ja, this message translates to:
   /// **'カードビュー設定'**
   String get cardViewSettings;
 
-  /// 通知設定メニュー項目
+  /// Notification settings title
   ///
   /// In ja, this message translates to:
   /// **'通知設定'**
   String get notificationSettings;
 
-  /// Gmail連携メニュー項目
+  /// Gmail integration title
   ///
   /// In ja, this message translates to:
   /// **'Gmail連携'**
   String get gmailIntegration;
 
-  /// リセットメニュー項目
+  /// Reset button label
   ///
   /// In ja, this message translates to:
   /// **'リセット'**
@@ -392,7 +392,7 @@ abstract class AppLocalizations {
   /// **'リンク画面'**
   String get linkScreen;
 
-  /// リンク・タスク画面の説明
+  /// リンク・タスク画面ラベル
   ///
   /// In ja, this message translates to:
   /// **'リンク・タスク画面'**
@@ -422,13 +422,13 @@ abstract class AppLocalizations {
   /// **'ダークテーマを使用'**
   String get useDarkTheme;
 
-  /// キャンセルボタン
+  /// キャンセルラベル
   ///
   /// In ja, this message translates to:
   /// **'キャンセル'**
   String get cancel;
 
-  /// 設定をリセットボタン
+  /// Reset settings button label
   ///
   /// In ja, this message translates to:
   /// **'設定をリセット'**
@@ -1136,7 +1136,7 @@ abstract class AppLocalizations {
   /// **'リンクからタスクを追加'**
   String get addTaskFromLink;
 
-  /// コピーメニュー項目
+  /// コピーボタン
   ///
   /// In ja, this message translates to:
   /// **'コピー'**
@@ -1148,7 +1148,7 @@ abstract class AppLocalizations {
   /// **'このタスクを同期'**
   String get syncTask;
 
-  /// 削除メニュー項目
+  /// 削除ボタン
   ///
   /// In ja, this message translates to:
   /// **'削除'**
@@ -1211,7 +1211,7 @@ abstract class AppLocalizations {
   /// キャンセルステータス（短縮版）
   ///
   /// In ja, this message translates to:
-  /// **'止'**
+  /// **'X'**
   String get cancelledShort;
 
   /// 期限ラベル
@@ -1700,7 +1700,7 @@ abstract class AppLocalizations {
   /// **'{count}件のフィルタープリセットをインポートしました'**
   String filterPresetsImported(int count);
 
-  /// エクスポートボタン
+  /// Export button label
   ///
   /// In ja, this message translates to:
   /// **'エクスポート'**
@@ -1985,25 +1985,25 @@ abstract class AppLocalizations {
   /// 進行中ラベル（短縮版）
   ///
   /// In ja, this message translates to:
-  /// **'進'**
+  /// **'I'**
   String get inProgressShort;
 
   /// 完了ラベル（短縮版）
   ///
   /// In ja, this message translates to:
-  /// **'完'**
+  /// **'C'**
   String get completedShort;
 
   /// 未着手ラベル（短縮版）
   ///
   /// In ja, this message translates to:
-  /// **'未'**
+  /// **'N'**
   String get notStartedShort;
 
   /// 進行中ラベル（短縮版2）
   ///
   /// In ja, this message translates to:
-  /// **'中'**
+  /// **'I'**
   String get inProgressShort2;
 
   /// 説明文ラベル
@@ -2029,6 +2029,2392 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'正規表現検索モード'**
   String get regexSearchMode;
+
+  /// 予定タイトルラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'予定タイトル'**
+  String get scheduleTitle;
+
+  /// 開始日時ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'開始日時'**
+  String get startDateTime;
+
+  /// 終了日時ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'終了日時'**
+  String get endDateTime;
+
+  /// 場所ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'場所'**
+  String get location;
+
+  /// 日時選択プレースホルダー
+  ///
+  /// In ja, this message translates to:
+  /// **'日時を選択'**
+  String get selectDateTime;
+
+  /// 日時選択プレースホルダー（任意）
+  ///
+  /// In ja, this message translates to:
+  /// **'日時を選択（任意）'**
+  String get selectDateTimeOptional;
+
+  /// 予定追加ボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'予定を追加'**
+  String get addSchedule;
+
+  /// 予定更新ボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'予定を更新'**
+  String get updateSchedule;
+
+  /// 予定追加完了メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'予定を追加しました'**
+  String get scheduleAdded;
+
+  /// 開始日時必須エラーメッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'開始日時は必須です'**
+  String get startDateTimeRequired;
+
+  /// Outlookデスクトップラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook（デスクトップ）'**
+  String get outlookDesktop;
+
+  /// Gmail Webラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'Gmail（Web）'**
+  String get gmailWeb;
+
+  /// Outlookテストボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookをテスト'**
+  String get outlookTest;
+
+  /// Gmailテストボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'Gmailをテスト'**
+  String get gmailTest;
+
+  /// 送信履歴ボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'送信履歴'**
+  String get sendHistory;
+
+  /// メーラー起動ボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'メーラーを起動'**
+  String get launchMailer;
+
+  /// メール送信完了ボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'メール送信完了'**
+  String get mailSentComplete;
+
+  /// メーラー起動必須メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'まずメーラーを起動してください'**
+  String get launchMailerFirst;
+
+  /// タスクコピーダイアログタイトル
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクをコピー'**
+  String get copyTask;
+
+  /// タスクコピー確認メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」をコピーしますか？'**
+  String copyTaskConfirm(String title);
+
+  /// 繰り返し期間ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'繰り返し期間:'**
+  String get repeatPeriod;
+
+  /// 月次オプション
+  ///
+  /// In ja, this message translates to:
+  /// **'月次（1か月後）'**
+  String get monthly;
+
+  /// 四半期オプション
+  ///
+  /// In ja, this message translates to:
+  /// **'四半期（3か月後）'**
+  String get quarterly;
+
+  /// 年次オプション
+  ///
+  /// In ja, this message translates to:
+  /// **'年次（1年後）'**
+  String get yearly;
+
+  /// カスタムオプション
+  ///
+  /// In ja, this message translates to:
+  /// **'カスタム'**
+  String get custom;
+
+  /// コピー個数ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'コピー個数:'**
+  String get copyCount;
+
+  /// コピー個数表示
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}個'**
+  String copyCountLabel(int count);
+
+  /// 月次コピー最大数説明
+  ///
+  /// In ja, this message translates to:
+  /// **'最大12個まで（1か月ずつ期限をずらしてコピー）'**
+  String get maxCopiesMonthly;
+
+  /// 四半期コピー最大数説明
+  ///
+  /// In ja, this message translates to:
+  /// **'最大4個まで（3か月ずつ期限をずらしてコピー）'**
+  String get maxCopiesQuarterly;
+
+  /// リマインダー時間選択プレースホルダー
+  ///
+  /// In ja, this message translates to:
+  /// **'リマインダー時間を選択（任意）'**
+  String get selectReminderTime;
+
+  /// コピーされる内容ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'コピーされる内容:'**
+  String get copiedContent;
+
+  /// タイトルラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'タイトル:'**
+  String get titleLabel;
+
+  /// コピーサフィックス
+  ///
+  /// In ja, this message translates to:
+  /// **'コピー'**
+  String get copySuffix;
+
+  /// 説明ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'説明:'**
+  String get descriptionLabel;
+
+  /// 依頼先・メモラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'依頼先・メモ:'**
+  String get requestorMemoLabel;
+
+  /// コピー個数ラベル2
+  ///
+  /// In ja, this message translates to:
+  /// **'コピー個数:'**
+  String get copyCountLabel2;
+
+  /// 期限日ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'期限日:'**
+  String get dueDateLabel;
+
+  /// リマインダーラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'リマインダー:'**
+  String get reminderLabel;
+
+  /// 優先度ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'優先度:'**
+  String get priorityLabel;
+
+  /// ステータスラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'ステータス:'**
+  String get statusLabel;
+
+  /// タグラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'タグ:'**
+  String get tagsLabel;
+
+  /// 推定時間ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'推定時間:'**
+  String get estimatedTimeLabel;
+
+  /// 分単位
+  ///
+  /// In ja, this message translates to:
+  /// **'分'**
+  String get minutes;
+
+  /// サブタスクラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'サブタスク:'**
+  String get subtasksLabel;
+
+  /// ステータスリセット注意書き
+  ///
+  /// In ja, this message translates to:
+  /// **'※ ステータスは「未着手」にリセットされます'**
+  String get statusResetNote;
+
+  /// サブタスクコピー注意書き
+  ///
+  /// In ja, this message translates to:
+  /// **'※ サブタスクもコピーされます'**
+  String get subtasksCopiedNote;
+
+  /// タスクコピー成功メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクを{count}個コピーしました'**
+  String taskCopiedSuccess(int count);
+
+  /// タスクコピー部分成功メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクを{success}個コピーしました（{failed}個失敗）'**
+  String taskCopiedPartial(int success, int failed);
+
+  /// タスクコピー失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクのコピーに失敗しました'**
+  String get taskCopyFailed;
+
+  /// タスク削除ダイアログタイトル
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクを削除'**
+  String get deleteTask;
+
+  /// タスク削除確認メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」を削除しますか？'**
+  String deleteTaskConfirm(String title);
+
+  /// 削除オプションラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'削除オプション:'**
+  String get deleteOptions;
+
+  /// アプリのみ削除オプション
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリのみ削除'**
+  String get deleteAppOnly;
+
+  /// アプリとGoogle Calendarから削除オプション
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリとGoogle Calendarから削除'**
+  String get deleteAppAndCalendar;
+
+  /// アプリのみボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリのみ'**
+  String get appOnly;
+
+  /// 両方削除ボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'両方削除'**
+  String get deleteBoth;
+
+  /// タスク削除成功メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」を削除しました'**
+  String taskDeletedSuccess(String title);
+
+  /// 削除失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'削除に失敗しました'**
+  String get deleteFailed;
+
+  /// タスク削除成功メッセージ（両方）
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」をアプリとGoogle Calendarから削除しました'**
+  String taskDeletedFromBoth(String title);
+
+  /// 確認ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'確認'**
+  String get confirm;
+
+  /// 選択タスク削除確認メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'選択した{count}件のタスクを削除しますか？'**
+  String deleteSelectedTasks(int count);
+
+  /// バックアップ実行メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'バックアップを実行しました。{count}件のタスクを削除します...'**
+  String backupExecuted(int count);
+
+  /// バックアップ失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'バックアップに失敗しましたが、削除を続行します: {error}'**
+  String backupFailedContinue(String error);
+
+  /// 予定削除ダイアログタイトル
+  ///
+  /// In ja, this message translates to:
+  /// **'予定を削除'**
+  String get deleteSchedule;
+
+  /// 予定削除確認メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」を削除しますか？'**
+  String deleteScheduleConfirm(String title);
+
+  /// 警告ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'警告'**
+  String get warning;
+
+  /// 2つ以上のタスク選択要求メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'2つ以上のタスクを選択してください'**
+  String get selectAtLeastTwoTasks;
+
+  /// 結合元タスクなしメッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'結合元のタスクがありません'**
+  String get noSourceTasks;
+
+  /// タスク結合前バックアップメッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'バックアップを実行しました。タスク結合を実行します...'**
+  String get backupExecutedMerge;
+
+  /// タスク結合失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'タスク結合に失敗しました'**
+  String get taskMergeFailed;
+
+  /// リンク割り当て失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'リンク割り当てに失敗しました'**
+  String get linkAssignmentFailed;
+
+  /// ステータス変更失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'ステータス変更に失敗しました'**
+  String get statusChangeFailed;
+
+  /// 優先度変更失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'優先度変更に失敗しました'**
+  String get priorityChangeFailed;
+
+  /// 期限日変更失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'期限日変更に失敗しました'**
+  String get dueDateChangeFailed;
+
+  /// タグ変更失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'タグ変更に失敗しました'**
+  String get tagChangeFailed;
+
+  /// タスク同期成功メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」をGoogle Calendarに同期しました'**
+  String taskSyncedToCalendar(String title);
+
+  /// タスク同期失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」の同期に失敗しました: {error}'**
+  String taskSyncFailed(String title, String error);
+
+  /// タスク同期エラーメッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」の同期中にエラーが発生しました: {error}'**
+  String taskSyncError(String title, String error);
+
+  /// エクスポート失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポートに失敗しました'**
+  String get exportFailed;
+
+  /// 無効なファイル形式メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'無効なファイル形式です'**
+  String get invalidFileFormat;
+
+  /// インポート失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'インポートに失敗しました'**
+  String get importFailed;
+
+  /// 送信済み検索エラーメッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'送信済み検索エラー'**
+  String get sendHistorySearchError;
+
+  /// メーラー起動成功メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'メーラーを起動しました'**
+  String get mailerLaunched;
+
+  /// 返信先メールアドレス未検出メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'返信先メールアドレスが見つかりません'**
+  String get replyAddressNotFound;
+
+  /// メーラー起動失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'メーラーの起動に失敗しました'**
+  String get mailerLaunchFailed;
+
+  /// リンクオープン失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクを開けませんでした: {link}'**
+  String linkOpenFailed(String link);
+
+  /// UNCパスオープン失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'UNCパスを開けませんでした: {path}'**
+  String uncPathOpenFailed(String path);
+
+  /// URLオープン失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'URLを開けませんでした: {url}'**
+  String urlOpenFailed(String url);
+
+  /// ファイルオープン失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'ファイルを開けませんでした: {path}'**
+  String fileOpenFailed(String path);
+
+  /// カラープリセットラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'カラープリセット'**
+  String get colorPresets;
+
+  /// おすすめ配色適用説明
+  ///
+  /// In ja, this message translates to:
+  /// **'ワンタップでおすすめ配色を適用'**
+  String get applyRecommendedColors;
+
+  /// アクセントカラーラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'アクセントカラー'**
+  String get accentColor;
+
+  /// 色の濃淡ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'色の濃淡'**
+  String get colorIntensity;
+
+  /// コントラスト調整ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'コントラスト調整'**
+  String get contrastAdjustment;
+
+  /// テキスト色設定ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'テキスト色設定'**
+  String get textColorSettings;
+
+  /// カードビューフィールド設定説明
+  ///
+  /// In ja, this message translates to:
+  /// **'カードビューで表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます'**
+  String get cardViewFieldSettingsDescription;
+
+  /// リアルタイムプレビューラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'リアルタイムプレビュー'**
+  String get realtimePreview;
+
+  /// ライブラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'ライブ'**
+  String get live;
+
+  /// カード設定説明
+  ///
+  /// In ja, this message translates to:
+  /// **'カードの見た目と動作を調整します。角丸半径、影の強さ、パディングを変更できます。'**
+  String get cardSettingsDescription;
+
+  /// 角丸半径ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'角丸半径'**
+  String get cornerRadius;
+
+  /// 影の強さラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'影の強さ'**
+  String get shadowStrength;
+
+  /// パディングラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'パディング'**
+  String get padding;
+
+  /// サンプルカードラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'サンプルカード'**
+  String get sampleCard;
+
+  /// カードプレビュー説明
+  ///
+  /// In ja, this message translates to:
+  /// **'これはカードのプレビューです。設定を変更するとリアルタイムで反映されます。'**
+  String get cardPreviewDescription;
+
+  /// サンプルボタンラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'サンプルボタン'**
+  String get sampleButton;
+
+  /// アウトラインボタンラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'アウトラインボタン'**
+  String get outlineButton;
+
+  /// サンプル入力フィールドラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'サンプル入力フィールド'**
+  String get sampleInputField;
+
+  /// 現在の設定表示
+  ///
+  /// In ja, this message translates to:
+  /// **'角丸: {radius}px | 影: {shadow}% | パディング: {padding}px'**
+  String currentSettings(String radius, String shadow, String padding);
+
+  /// Button settings title
+  ///
+  /// In ja, this message translates to:
+  /// **'ボタン設定'**
+  String get buttonSettings;
+
+  /// カードビュー短縮表記
+  ///
+  /// In ja, this message translates to:
+  /// **'C'**
+  String get cardViewShort;
+
+  /// リストビュー短縮表記
+  ///
+  /// In ja, this message translates to:
+  /// **'L'**
+  String get listViewShort;
+
+  /// タスクリスト表示設定ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクリスト表示設定'**
+  String get taskListDisplaySettings;
+
+  /// タスクリストフィールド設定説明
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクリストとタスク編集画面で表示される各フィールドのテキスト色、フォントサイズ、フォントファミリーを個別に設定できます'**
+  String get taskListFieldSettingsDescription;
+
+  /// カードビュー設定リセットラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'カードビュー設定をリセット'**
+  String get resetCardViewSettings;
+
+  /// カードビュー設定リセット確認メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'カードビューの設定を初期値にリセットしますか？\nこの操作は取り消せません。'**
+  String get resetCardViewSettingsConfirm;
+
+  /// テキスト色ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'テキスト色'**
+  String get textColor;
+
+  /// 依頼先への説明ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'依頼先への説明'**
+  String get requestorDescription;
+
+  /// 全画面共通ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'全画面共通'**
+  String get allScreensCommon;
+
+  /// アプリ全体のフォントサイズラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリ全体のフォントサイズ: {percentage}%'**
+  String appWideFontSize(String percentage);
+
+  /// Auto layout adjustment label
+  ///
+  /// In ja, this message translates to:
+  /// **'自動レイアウト調整'**
+  String get autoLayoutAdjustment;
+
+  /// 画面サイズに応じて自動調整説明
+  ///
+  /// In ja, this message translates to:
+  /// **'画面サイズに応じて自動調整'**
+  String get autoAdjustToScreenSize;
+
+  /// フィールド設定ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'{fieldName}設定'**
+  String fieldSettings(String fieldName);
+
+  /// カラープリセット名：サンライズ
+  ///
+  /// In ja, this message translates to:
+  /// **'サンライズ'**
+  String get colorPresetSunrise;
+
+  /// カラープリセット説明：サンライズ
+  ///
+  /// In ja, this message translates to:
+  /// **'温かみのあるオレンジ系'**
+  String get colorPresetSunriseDesc;
+
+  /// カラープリセット名：フォレスト
+  ///
+  /// In ja, this message translates to:
+  /// **'フォレスト'**
+  String get colorPresetForest;
+
+  /// カラープリセット説明：フォレスト
+  ///
+  /// In ja, this message translates to:
+  /// **'落ち着いたグリーン系'**
+  String get colorPresetForestDesc;
+
+  /// カラープリセット名：ブルーブリーズ
+  ///
+  /// In ja, this message translates to:
+  /// **'ブルーブリーズ'**
+  String get colorPresetBreeze;
+
+  /// カラープリセット説明：ブルーブリーズ
+  ///
+  /// In ja, this message translates to:
+  /// **'爽やかなブルー系'**
+  String get colorPresetBreezeDesc;
+
+  /// カラープリセット名：ミッドナイト
+  ///
+  /// In ja, this message translates to:
+  /// **'ミッドナイト'**
+  String get colorPresetMidnight;
+
+  /// カラープリセット説明：ミッドナイト
+  ///
+  /// In ja, this message translates to:
+  /// **'夜間作業に合うダークテイスト'**
+  String get colorPresetMidnightDesc;
+
+  /// カラープリセット名：サクラ
+  ///
+  /// In ja, this message translates to:
+  /// **'サクラ'**
+  String get colorPresetSakura;
+
+  /// カラープリセット説明：サクラ
+  ///
+  /// In ja, this message translates to:
+  /// **'柔らかなピンク系'**
+  String get colorPresetSakuraDesc;
+
+  /// カラープリセット名：シトラス
+  ///
+  /// In ja, this message translates to:
+  /// **'シトラス'**
+  String get colorPresetCitrus;
+
+  /// カラープリセット説明：シトラス
+  ///
+  /// In ja, this message translates to:
+  /// **'フレッシュな黄緑系'**
+  String get colorPresetCitrusDesc;
+
+  /// カラープリセット名：スレート
+  ///
+  /// In ja, this message translates to:
+  /// **'スレート'**
+  String get colorPresetSlate;
+
+  /// カラープリセット説明：スレート
+  ///
+  /// In ja, this message translates to:
+  /// **'落ち着いたブルーグレー'**
+  String get colorPresetSlateDesc;
+
+  /// カラープリセット名：アンバー
+  ///
+  /// In ja, this message translates to:
+  /// **'アンバー'**
+  String get colorPresetAmber;
+
+  /// カラープリセット説明：アンバー
+  ///
+  /// In ja, this message translates to:
+  /// **'視認性の高いゴールド調'**
+  String get colorPresetAmberDesc;
+
+  /// カラープリセット名：グラファイト
+  ///
+  /// In ja, this message translates to:
+  /// **'グラファイト'**
+  String get colorPresetGraphite;
+
+  /// カラープリセット説明：グラファイト
+  ///
+  /// In ja, this message translates to:
+  /// **'モダンなモノトーン'**
+  String get colorPresetGraphiteDesc;
+
+  /// プリセット適用成功メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'{presetName}プリセットを適用しました'**
+  String presetApplied(String presetName);
+
+  /// プリセット適用失敗メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'プリセットの適用に失敗しました: {error}'**
+  String presetApplyFailed(String error);
+
+  /// 自動コントラスト最適化ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'自動コントラスト最適化'**
+  String get autoContrastOptimization;
+
+  /// 自動コントラスト最適化説明
+  ///
+  /// In ja, this message translates to:
+  /// **'ダークモードでテキストの視認性を自動調整'**
+  String get autoContrastOptimizationDesc;
+
+  /// アイコンサイズラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'アイコンサイズ'**
+  String get iconSize;
+
+  /// リンクアイテムアイコンサイズ説明
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクアイテムのアイコンサイズを調整します。大きくすると視認性が向上しますが、アイテム全体のサイズも大きくなります。'**
+  String get linkItemIconSizeDesc;
+
+  /// グリッド設定リセットラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'グリッド設定'**
+  String get gridSettingsReset;
+
+  /// グリッド設定リセット説明
+  ///
+  /// In ja, this message translates to:
+  /// **'カラム数: 4、間隔: デフォルト'**
+  String get gridSettingsResetDesc;
+
+  /// カード設定リセットラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'カード設定'**
+  String get cardSettingsReset;
+
+  /// カード設定リセット説明
+  ///
+  /// In ja, this message translates to:
+  /// **'サイズ: デフォルト、影: デフォルト'**
+  String get cardSettingsResetDesc;
+
+  /// アイテム設定リセットラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'アイテム設定'**
+  String get itemSettingsReset;
+
+  /// アイテム設定リセット説明
+  ///
+  /// In ja, this message translates to:
+  /// **'フォントサイズ: デフォルト、アイコンサイズ: デフォルト'**
+  String get itemSettingsResetDesc;
+
+  /// 青色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'ブルー'**
+  String get colorBlue;
+
+  /// 赤色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'レッド'**
+  String get colorRed;
+
+  /// 緑色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'グリーン'**
+  String get colorGreen;
+
+  /// オレンジ色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'オレンジ'**
+  String get colorOrange;
+
+  /// 紫色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'パープル'**
+  String get colorPurple;
+
+  /// ピンク色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'ピンク'**
+  String get colorPink;
+
+  /// シアン色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'シアン'**
+  String get colorCyan;
+
+  /// グレー色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'グレー'**
+  String get colorGray;
+
+  /// エメラルド色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'エメラルド'**
+  String get colorEmerald;
+
+  /// 黄色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'イエロー'**
+  String get colorYellow;
+
+  /// 黒色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'黒'**
+  String get colorBlack;
+
+  /// 白色の名称
+  ///
+  /// In ja, this message translates to:
+  /// **'白'**
+  String get colorWhite;
+
+  /// 薄い（色の濃淡）
+  ///
+  /// In ja, this message translates to:
+  /// **'薄い'**
+  String get light;
+
+  /// 標準
+  ///
+  /// In ja, this message translates to:
+  /// **'標準'**
+  String get standard;
+
+  /// 濃い（色の濃淡）
+  ///
+  /// In ja, this message translates to:
+  /// **'濃い'**
+  String get dark;
+
+  /// 低（コントラスト）
+  ///
+  /// In ja, this message translates to:
+  /// **'低'**
+  String get contrastLow;
+
+  /// 高（コントラスト）
+  ///
+  /// In ja, this message translates to:
+  /// **'高'**
+  String get contrastHigh;
+
+  /// コントラストラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'コントラスト'**
+  String get contrast;
+
+  /// フォントサイズラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'フォントサイズ'**
+  String get fontSize;
+
+  /// フォントファミリーラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'フォントファミリー'**
+  String get fontFamily;
+
+  /// デフォルト
+  ///
+  /// In ja, this message translates to:
+  /// **'デフォルト'**
+  String get defaultValue;
+
+  /// フォントサイズプレビューテキスト
+  ///
+  /// In ja, this message translates to:
+  /// **'プレビュー: このテキストのサイズが{fieldName}に適用されます'**
+  String fontSizePreview(String fieldName);
+
+  /// フォントファミリープレビューテキスト
+  ///
+  /// In ja, this message translates to:
+  /// **'フォントプレビュー: このテキストのフォントが{fieldName}に適用されます'**
+  String fontFamilyPreview(String fieldName);
+
+  /// Button settings description
+  ///
+  /// In ja, this message translates to:
+  /// **'ボタンの見た目を調整します。角丸半径と影の強さを変更できます。'**
+  String get buttonSettingsDescription;
+
+  /// Border radius label
+  ///
+  /// In ja, this message translates to:
+  /// **'角丸半径'**
+  String get borderRadius;
+
+  /// Border radius with value
+  ///
+  /// In ja, this message translates to:
+  /// **'角丸半径: {value}px'**
+  String borderRadiusPx(String value);
+
+  /// Elevation/shadow intensity label
+  ///
+  /// In ja, this message translates to:
+  /// **'影の強さ'**
+  String get elevation;
+
+  /// Elevation with value
+  ///
+  /// In ja, this message translates to:
+  /// **'影の強さ: {value}px'**
+  String elevationPx(String value);
+
+  /// Elevation with percentage
+  ///
+  /// In ja, this message translates to:
+  /// **'影の強さ: {value}%'**
+  String elevationPercent(String value);
+
+  /// Input field settings title
+  ///
+  /// In ja, this message translates to:
+  /// **'入力フィールド設定'**
+  String get inputFieldSettings;
+
+  /// Input field settings description
+  ///
+  /// In ja, this message translates to:
+  /// **'テキスト入力欄の見た目を調整します。角丸半径と枠線の太さを変更できます。'**
+  String get inputFieldSettingsDescription;
+
+  /// Border width label
+  ///
+  /// In ja, this message translates to:
+  /// **'枠線の太さ'**
+  String get borderWidth;
+
+  /// Border width with value
+  ///
+  /// In ja, this message translates to:
+  /// **'枠線の太さ: {value}px'**
+  String borderWidthPx(String value);
+
+  /// Hover effect label
+  ///
+  /// In ja, this message translates to:
+  /// **'ホバー効果'**
+  String get hoverEffect;
+
+  /// Hover effect with percentage
+  ///
+  /// In ja, this message translates to:
+  /// **'ホバー効果: {value}%'**
+  String hoverEffectPercent(String value);
+
+  /// Gradient label
+  ///
+  /// In ja, this message translates to:
+  /// **'グラデーション'**
+  String get gradient;
+
+  /// Gradient with percentage
+  ///
+  /// In ja, this message translates to:
+  /// **'グラデーション: {value}%'**
+  String gradientPercent(String value);
+
+  /// General settings title
+  ///
+  /// In ja, this message translates to:
+  /// **'全般設定'**
+  String get generalSettings;
+
+  /// Dark mode contrast boost label
+  ///
+  /// In ja, this message translates to:
+  /// **'ダークモードコントラストブースト'**
+  String get darkModeContrastBoost;
+
+  /// Auto layout enabled message
+  ///
+  /// In ja, this message translates to:
+  /// **'自動レイアウトが有効です。画面サイズに応じて最適な列数が自動で決定されます。'**
+  String get autoLayoutEnabled;
+
+  /// Large screen label
+  ///
+  /// In ja, this message translates to:
+  /// **'大画面（1920px以上）'**
+  String get largeScreen;
+
+  /// Columns display
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}列表示'**
+  String columnsDisplay(String count);
+
+  /// Optimal for desktop message
+  ///
+  /// In ja, this message translates to:
+  /// **'デスクトップモニターに最適'**
+  String get optimalForDesktop;
+
+  /// Medium screen label
+  ///
+  /// In ja, this message translates to:
+  /// **'中画面（1200-1919px）'**
+  String get mediumScreen;
+
+  /// Optimal for laptop message
+  ///
+  /// In ja, this message translates to:
+  /// **'ノートPCやタブレットに最適'**
+  String get optimalForLaptop;
+
+  /// Small screen label
+  ///
+  /// In ja, this message translates to:
+  /// **'小画面（800-1199px）'**
+  String get smallScreen;
+
+  /// Optimal for small screen message
+  ///
+  /// In ja, this message translates to:
+  /// **'小さな画面に最適'**
+  String get optimalForSmallScreen;
+
+  /// Minimal screen label
+  ///
+  /// In ja, this message translates to:
+  /// **'最小画面（800px未満）'**
+  String get minimalScreen;
+
+  /// Optimal for mobile message
+  ///
+  /// In ja, this message translates to:
+  /// **'モバイル表示に最適'**
+  String get optimalForMobile;
+
+  /// Manual layout enabled message
+  ///
+  /// In ja, this message translates to:
+  /// **'手動レイアウト設定が有効です。固定の列数で表示されます。'**
+  String get manualLayoutEnabled;
+
+  /// Fixed columns label
+  ///
+  /// In ja, this message translates to:
+  /// **'固定列数'**
+  String get fixedColumns;
+
+  /// Same columns for all screens message
+  ///
+  /// In ja, this message translates to:
+  /// **'すべての画面サイズで同じ列数'**
+  String get sameColumnsAllScreens;
+
+  /// Use case label
+  ///
+  /// In ja, this message translates to:
+  /// **'使用場面'**
+  String get useCase;
+
+  /// Maintain specific display message
+  ///
+  /// In ja, this message translates to:
+  /// **'特定の表示を維持したい場合'**
+  String get maintainSpecificDisplay;
+
+  /// Consistent layout needed message
+  ///
+  /// In ja, this message translates to:
+  /// **'一貫したレイアウトが必要な場合'**
+  String get consistentLayoutNeeded;
+
+  /// Default column count
+  ///
+  /// In ja, this message translates to:
+  /// **'デフォルト列数: {count}'**
+  String defaultColumnCount(String count);
+
+  /// Grid spacing
+  ///
+  /// In ja, this message translates to:
+  /// **'グリッド間隔: {value}px'**
+  String gridSpacing(String value);
+
+  /// Card width
+  ///
+  /// In ja, this message translates to:
+  /// **'カード幅: {value}px'**
+  String cardWidth(String value);
+
+  /// Card height
+  ///
+  /// In ja, this message translates to:
+  /// **'カード高さ: {value}px'**
+  String cardHeight(String value);
+
+  /// Item margin label
+  ///
+  /// In ja, this message translates to:
+  /// **'アイテム間マージン'**
+  String get itemMargin;
+
+  /// Item margin with value
+  ///
+  /// In ja, this message translates to:
+  /// **'アイテム間マージン: {value}px'**
+  String itemMarginPx(String value);
+
+  /// Item margin description
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクアイテム間の空白スペースを調整します。値を大きくすると、アイテム同士の間隔が広がり、見やすくなります。'**
+  String get itemMarginDescription;
+
+  /// Item padding label
+  ///
+  /// In ja, this message translates to:
+  /// **'アイテム内パディング'**
+  String get itemPadding;
+
+  /// Item padding with value
+  ///
+  /// In ja, this message translates to:
+  /// **'アイテム内パディング: {value}px'**
+  String itemPaddingPx(String value);
+
+  /// Item padding description
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクアイテム内の文字やアイコンと枠線の間の空白を調整します。値を大きくすると、アイテム内がゆとりを持って見やすくなります。'**
+  String get itemPaddingDescription;
+
+  /// Font size with value
+  ///
+  /// In ja, this message translates to:
+  /// **'フォントサイズ: {value}px'**
+  String fontSizePx(String value);
+
+  /// Font size description
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクアイテムの文字サイズを調整します。小さくすると多くのアイテムを表示できますが、読みにくくなる場合があります。'**
+  String get fontSizeDescription;
+
+  /// Button size label
+  ///
+  /// In ja, this message translates to:
+  /// **'ボタンサイズ'**
+  String get buttonSize;
+
+  /// Button size with value
+  ///
+  /// In ja, this message translates to:
+  /// **'ボタンサイズ: {value}px'**
+  String buttonSizePx(String value);
+
+  /// Button size description
+  ///
+  /// In ja, this message translates to:
+  /// **'編集・削除などのボタンのサイズを調整します。大きくすると操作しやすくなりますが、画面のスペースを多く使用します。'**
+  String get buttonSizeDescription;
+
+  /// Auto adjust card height label
+  ///
+  /// In ja, this message translates to:
+  /// **'カード高さ自動調整'**
+  String get autoAdjustCardHeight;
+
+  /// Auto adjust card height description
+  ///
+  /// In ja, this message translates to:
+  /// **'コンテンツ量に応じてカードの高さを自動調整（手動設定の高さを最小値として使用）'**
+  String get autoAdjustCardHeightDescription;
+
+  /// Backup and export section title
+  ///
+  /// In ja, this message translates to:
+  /// **'データのバックアップ / エクスポート'**
+  String get backupExport;
+
+  /// Backup location message
+  ///
+  /// In ja, this message translates to:
+  /// **'保存先: ドキュメント/backups'**
+  String get backupLocation;
+
+  /// Save now button label
+  ///
+  /// In ja, this message translates to:
+  /// **'今すぐ保存'**
+  String get saveNow;
+
+  /// Open backup folder button label
+  ///
+  /// In ja, this message translates to:
+  /// **'保存先を開く'**
+  String get openBackupFolder;
+
+  /// Selective export/import title
+  ///
+  /// In ja, this message translates to:
+  /// **'選択式エクスポート / インポート'**
+  String get selectiveExportImport;
+
+  /// Selective export button label
+  ///
+  /// In ja, this message translates to:
+  /// **'選択式エクスポート'**
+  String get selectiveExport;
+
+  /// Selective import button label
+  ///
+  /// In ja, this message translates to:
+  /// **'選択式インポート'**
+  String get selectiveImport;
+
+  /// Auto backup label
+  ///
+  /// In ja, this message translates to:
+  /// **'自動バックアップ'**
+  String get autoBackup;
+
+  /// Auto backup description
+  ///
+  /// In ja, this message translates to:
+  /// **'定期的にデータをバックアップ'**
+  String get autoBackupDescription;
+
+  /// Backup interval
+  ///
+  /// In ja, this message translates to:
+  /// **'バックアップ間隔: {days}日'**
+  String backupInterval(String days);
+
+  /// Backup interval in days
+  ///
+  /// In ja, this message translates to:
+  /// **'{days}日'**
+  String backupIntervalDays(String days);
+
+  /// Notification warning message
+  ///
+  /// In ja, this message translates to:
+  /// **'注意: 通知はアプリが起動中の場合のみ表示されます。アプリを閉じている場合は通知が表示されません。'**
+  String get notificationWarning;
+
+  /// Show notifications label
+  ///
+  /// In ja, this message translates to:
+  /// **'通知を表示'**
+  String get showNotifications;
+
+  /// Show notifications description
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクの期限やリマインダーが設定されている場合、デスクトップ通知を表示します。アプリが起動中の場合のみ通知が表示されます。'**
+  String get showNotificationsDescription;
+
+  /// Notification sound label
+  ///
+  /// In ja, this message translates to:
+  /// **'通知音'**
+  String get notificationSound;
+
+  /// Notification sound description
+  ///
+  /// In ja, this message translates to:
+  /// **'通知が表示される際に音を再生します。アプリが起動中の場合のみ音が再生されます。'**
+  String get notificationSoundDescription;
+
+  /// Test notification sound button label
+  ///
+  /// In ja, this message translates to:
+  /// **'通知音をテスト'**
+  String get testNotificationSound;
+
+  /// Test notification sound description
+  ///
+  /// In ja, this message translates to:
+  /// **'このボタンで通知音をテストできます。アプリが起動中の場合のみ音が再生されます。'**
+  String get testNotificationSoundDescription;
+
+  /// Reset to defaults button label
+  ///
+  /// In ja, this message translates to:
+  /// **'設定をデフォルトにリセット'**
+  String get resetToDefaults;
+
+  /// Reset layout settings button label
+  ///
+  /// In ja, this message translates to:
+  /// **'レイアウト設定をリセット'**
+  String get resetLayoutSettings;
+
+  /// Layout settings reset success message
+  ///
+  /// In ja, this message translates to:
+  /// **'レイアウト設定をリセットしました'**
+  String get layoutSettingsReset;
+
+  /// Reset UI settings button label
+  ///
+  /// In ja, this message translates to:
+  /// **'UI設定をリセット'**
+  String get resetUISettings;
+
+  /// Reset UI settings confirmation message
+  ///
+  /// In ja, this message translates to:
+  /// **'すべてのUIカスタマイズ設定をデフォルト値にリセットします。\n\nこの操作は取り消せません。\n本当に実行しますか？'**
+  String get resetUISettingsConfirm;
+
+  /// Execute reset button label
+  ///
+  /// In ja, this message translates to:
+  /// **'リセット実行'**
+  String get executeReset;
+
+  /// Reset details button label
+  ///
+  /// In ja, this message translates to:
+  /// **'リセット機能の詳細'**
+  String get resetDetails;
+
+  /// Reset function title
+  ///
+  /// In ja, this message translates to:
+  /// **'リセット機能'**
+  String get resetFunction;
+
+  /// Reset function description
+  ///
+  /// In ja, this message translates to:
+  /// **'• 設定リセット: テーマ、通知、連携設定など\n• レイアウトリセット: グリッドサイズ、カード設定など\n• UI設定リセット: カード、ボタン、入力フィールドのカスタマイズ設定\n• データは保持: リンク、タスク、メモは削除されません\n• 詳細は「リセット機能の詳細」ボタンで確認'**
+  String get resetFunctionDescription;
+
+  /// Reset details title
+  ///
+  /// In ja, this message translates to:
+  /// **'リセット機能の詳細'**
+  String get resetDetailsTitle;
+
+  /// Reset details description
+  ///
+  /// In ja, this message translates to:
+  /// **'リセット機能の詳細説明:'**
+  String get resetDetailsDescription;
+
+  /// Reset to defaults step title
+  ///
+  /// In ja, this message translates to:
+  /// **'設定をデフォルトにリセット'**
+  String get resetToDefaultsStep;
+
+  /// Reset to defaults step description
+  ///
+  /// In ja, this message translates to:
+  /// **'以下の設定が初期値に戻ります:'**
+  String get resetToDefaultsStepDescription;
+
+  /// Theme settings reset item
+  ///
+  /// In ja, this message translates to:
+  /// **'テーマ設定'**
+  String get themeSettingsReset;
+
+  /// Theme settings reset value
+  ///
+  /// In ja, this message translates to:
+  /// **'ダークモード: OFF、アクセントカラー: ブルー、濃淡: 100%、コントラスト: 100%'**
+  String get themeSettingsResetValue;
+
+  /// Notification settings reset item
+  ///
+  /// In ja, this message translates to:
+  /// **'通知設定'**
+  String get notificationSettingsReset;
+
+  /// Notification settings reset value
+  ///
+  /// In ja, this message translates to:
+  /// **'通知: ON、通知音: ON'**
+  String get notificationSettingsResetValue;
+
+  /// Integration settings reset item
+  ///
+  /// In ja, this message translates to:
+  /// **'連携設定'**
+  String get integrationSettingsReset;
+
+  /// Integration settings reset value
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar: OFF、Gmail連携: OFF、Outlook: OFF'**
+  String get integrationSettingsResetValue;
+
+  /// Backup settings reset item
+  ///
+  /// In ja, this message translates to:
+  /// **'バックアップ設定'**
+  String get backupSettingsReset;
+
+  /// Backup settings reset value
+  ///
+  /// In ja, this message translates to:
+  /// **'自動バックアップ: ON、間隔: 7日'**
+  String get backupSettingsResetValue;
+
+  /// Reset layout settings step title
+  ///
+  /// In ja, this message translates to:
+  /// **'レイアウト設定をリセット'**
+  String get resetLayoutSettingsStep;
+
+  /// Reset layout settings step description
+  ///
+  /// In ja, this message translates to:
+  /// **'以下のレイアウト設定が初期値に戻ります:'**
+  String get resetLayoutSettingsStepDescription;
+
+  /// Auto sync label
+  ///
+  /// In ja, this message translates to:
+  /// **'自動同期'**
+  String get autoSync;
+
+  /// Auto sync description
+  ///
+  /// In ja, this message translates to:
+  /// **'定期的にGoogle Calendarと同期します'**
+  String get autoSyncDescription;
+
+  /// Sync interval
+  ///
+  /// In ja, this message translates to:
+  /// **'同期間隔: {minutes}分'**
+  String syncInterval(String minutes);
+
+  /// Bidirectional sync label
+  ///
+  /// In ja, this message translates to:
+  /// **'双方向同期'**
+  String get bidirectionalSync;
+
+  /// Bidirectional sync description
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリのタスクをGoogle Calendarに送信します'**
+  String get bidirectionalSyncDescription;
+
+  /// Show completed tasks label
+  ///
+  /// In ja, this message translates to:
+  /// **'完了タスクを表示'**
+  String get showCompletedTasks;
+
+  /// Show completed tasks description
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarで完了したタスクを表示します'**
+  String get showCompletedTasksDescription;
+
+  /// Credentials file found message
+  ///
+  /// In ja, this message translates to:
+  /// **'認証情報ファイルが見つかりました'**
+  String get credentialsFileFound;
+
+  /// Credentials file not found message
+  ///
+  /// In ja, this message translates to:
+  /// **'認証情報ファイルが見つかりません'**
+  String get credentialsFileNotFound;
+
+  /// Outlook settings info title
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook設定情報'**
+  String get outlookSettingsInfo;
+
+  /// Auto layout adjustment description
+  ///
+  /// In ja, this message translates to:
+  /// **'画面サイズに応じて自動調整'**
+  String get autoLayoutAdjustmentDescription;
+
+  /// Auto layout enabled label
+  ///
+  /// In ja, this message translates to:
+  /// **'自動レイアウト有効'**
+  String get autoLayoutEnabledLabel;
+
+  /// Manual layout settings label
+  ///
+  /// In ja, this message translates to:
+  /// **'手動レイアウト設定'**
+  String get manualLayoutSettings;
+
+  /// Animation and effect settings title
+  ///
+  /// In ja, this message translates to:
+  /// **'アニメーション・エフェクト設定'**
+  String get animationEffectSettings;
+
+  /// Animation duration
+  ///
+  /// In ja, this message translates to:
+  /// **'アニメーション時間: {ms}ms'**
+  String animationDuration(String ms);
+
+  /// Spacing
+  ///
+  /// In ja, this message translates to:
+  /// **'スペーシング: {value}px'**
+  String spacing(String value);
+
+  /// Dark mode contrast boost with percentage
+  ///
+  /// In ja, this message translates to:
+  /// **'ダークモードコントラストブースト: {value}%'**
+  String darkModeContrastBoostPercent(String value);
+
+  /// Task project settings reset success message
+  ///
+  /// In ja, this message translates to:
+  /// **'プロジェクト一覧設定をリセットしました'**
+  String get taskProjectSettingsReset;
+
+  /// Backup folder opened message
+  ///
+  /// In ja, this message translates to:
+  /// **'バックアップフォルダを開きました'**
+  String get backupFolderOpened;
+
+  /// Google Calendar label
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar'**
+  String get googleCalendar;
+
+  /// Google Calendar integration title
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar連携'**
+  String get googleCalendarIntegration;
+
+  /// Google Calendar integration description
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarのイベントをタスクとして同期します'**
+  String get googleCalendarIntegrationDescription;
+
+  /// Gmail integration about title
+  ///
+  /// In ja, this message translates to:
+  /// **'Gmail連携について'**
+  String get gmailIntegrationAbout;
+
+  /// Gmail integration description
+  ///
+  /// In ja, this message translates to:
+  /// **'タスク編集モーダルからGmailのメール作成画面を起動できます。\nAPIやアクセストークンの設定は不要です。\nGoogleアカウントにログイン済みのブラウザがあれば、そのままGmailの新規作成タブが開きます。'**
+  String get gmailIntegrationDescription;
+
+  /// Gmail usage instructions
+  ///
+  /// In ja, this message translates to:
+  /// **'使い方：\n1. タスク編集モーダルを開く\n2. メール送信セクションでGmailを選択\n3. 宛先を入力して「メール送信」ボタンをクリック\n4. Gmailのメール作成画面が開くので、内容を確認して送信します\n（送信履歴はタスク側に記録されます）'**
+  String get gmailUsage;
+
+  /// Outlook integration title
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook連携'**
+  String get outlookIntegration;
+
+  /// Outlook integration about title
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook連携について'**
+  String get outlookIntegrationAbout;
+
+  /// Outlook integration description
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook APIを使用して、メール送信機能を利用できます。'**
+  String get outlookIntegrationDescription;
+
+  /// PowerShell file details title
+  ///
+  /// In ja, this message translates to:
+  /// **'PowerShellファイルの詳細'**
+  String get powershellFileDetails;
+
+  /// Executable directory path
+  ///
+  /// In ja, this message translates to:
+  /// **'実行ファイルと同じディレクトリ\\Apps'**
+  String get executableDirectory;
+
+  /// Outlook connection test title
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook接続テスト'**
+  String get outlookConnectionTest;
+
+  /// Outlook connection test description
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookアプリケーションとの接続をテストします'**
+  String get outlookConnectionTestDescription;
+
+  /// Mail composition support title
+  ///
+  /// In ja, this message translates to:
+  /// **'メール作成支援'**
+  String get mailCompositionSupport;
+
+  /// Mail composition support description
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクから返信メールを作成する際の支援機能'**
+  String get mailCompositionSupportDescription;
+
+  /// Sent mail search title
+  ///
+  /// In ja, this message translates to:
+  /// **'送信メール検索'**
+  String get sentMailSearch;
+
+  /// Sent mail search description
+  ///
+  /// In ja, this message translates to:
+  /// **'送信済みメールの検索・確認機能'**
+  String get sentMailSearchDescription;
+
+  /// Outlook calendar events title
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookカレンダー予定取得'**
+  String get outlookCalendarEvents;
+
+  /// Outlook calendar events description
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookカレンダーから予定を取得してタスクに割り当てる機能'**
+  String get outlookCalendarEventsDescription;
+
+  /// Portable version label
+  ///
+  /// In ja, this message translates to:
+  /// **'ポータブル版'**
+  String get portableVersion;
+
+  /// Installed version label
+  ///
+  /// In ja, this message translates to:
+  /// **'インストール版'**
+  String get installedVersion;
+
+  /// Manual execution label
+  ///
+  /// In ja, this message translates to:
+  /// **'手動実行'**
+  String get manualExecution;
+
+  /// Automatic execution label
+  ///
+  /// In ja, this message translates to:
+  /// **'自動実行'**
+  String get automaticExecution;
+
+  /// Important notes title
+  ///
+  /// In ja, this message translates to:
+  /// **'重要な注意事項'**
+  String get importantNotes;
+
+  /// Important notes content
+  ///
+  /// In ja, this message translates to:
+  /// **'• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】以下のいずれかに配置してください：\n1. ポータブル版: {portablePath}\n2. インストール版: {installedPath}'**
+  String importantNotesContent(String portablePath, String installedPath);
+
+  /// Connection test button label
+  ///
+  /// In ja, this message translates to:
+  /// **'接続テスト'**
+  String get connectionTest;
+
+  /// Outlook personal calendar auto import title
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook個人予定の自動取込'**
+  String get outlookPersonalCalendarAutoImport;
+
+  /// Outlook settings info content
+  ///
+  /// In ja, this message translates to:
+  /// **'• 必要な権限: Outlook送信\n• 対応機能: メール送信、予定自動取込\n• 使用方法: タスク管理からOutlookでメールを送信、または自動取込設定を有効化'**
+  String get outlookSettingsInfoContent;
+
+  /// Google Calendar setup guide title
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar設定ガイド'**
+  String get googleCalendarSetupGuide;
+
+  /// Google Calendar setup steps title
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar APIを使用するための設定手順:'**
+  String get googleCalendarSetupSteps;
+
+  /// Access Google Cloud Console step
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Cloud Consoleにアクセス'**
+  String get accessGoogleCloudConsole;
+
+  /// Create or select project step
+  ///
+  /// In ja, this message translates to:
+  /// **'新しいプロジェクトを作成または既存プロジェクトを選択'**
+  String get createOrSelectProject;
+
+  /// Enable Google Calendar API step
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar APIを有効化'**
+  String get enableGoogleCalendarAPI;
+
+  /// Enable Google Calendar API description
+  ///
+  /// In ja, this message translates to:
+  /// **'「APIとサービス」→「ライブラリ」→「Google Calendar API」を検索して有効化'**
+  String get enableGoogleCalendarAPIDescription;
+
+  /// Create OAuth2 client ID step
+  ///
+  /// In ja, this message translates to:
+  /// **'OAuth2クライアントIDを作成'**
+  String get createOAuth2ClientID;
+
+  /// Create OAuth2 client ID description
+  ///
+  /// In ja, this message translates to:
+  /// **'「APIとサービス」→「認証情報」→「認証情報を作成」→「OAuth2クライアントID」→「デスクトップアプリケーション」'**
+  String get createOAuth2ClientIDDescription;
+
+  /// Download credentials file step
+  ///
+  /// In ja, this message translates to:
+  /// **'認証情報ファイルをダウンロード'**
+  String get downloadCredentialsFile;
+
+  /// Download credentials file description
+  ///
+  /// In ja, this message translates to:
+  /// **'作成したOAuth2クライアントIDの「ダウンロード」ボタンからJSONファイルをダウンロード'**
+  String get downloadCredentialsFileDescription;
+
+  /// Place file in app folder step
+  ///
+  /// In ja, this message translates to:
+  /// **'ファイルをアプリフォルダに配置'**
+  String get placeFileInAppFolder;
+
+  /// Place file in app folder description
+  ///
+  /// In ja, this message translates to:
+  /// **'ダウンロードしたJSONファイルを「oauth2_credentials.json」としてアプリフォルダに配置'**
+  String get placeFileInAppFolderDescription;
+
+  /// Execute OAuth2 authentication step
+  ///
+  /// In ja, this message translates to:
+  /// **'OAuth2認証を実行'**
+  String get executeOAuth2Authentication;
+
+  /// Execute OAuth2 authentication description
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリの「OAuth2認証を開始」ボタンをクリックして認証を完了'**
+  String get executeOAuth2AuthenticationDescription;
+
+  /// Generated files title
+  ///
+  /// In ja, this message translates to:
+  /// **'生成されるファイル'**
+  String get generatedFiles;
+
+  /// Export options title
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポートオプション'**
+  String get exportOptions;
+
+  /// Select data to export message
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポートするデータを選択してください:'**
+  String get selectDataToExport;
+
+  /// Links only option
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクのみ'**
+  String get linksOnly;
+
+  /// Links only description
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクデータのみをエクスポート'**
+  String get linksOnlyDescription;
+
+  /// Tasks only option
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクのみ'**
+  String get tasksOnly;
+
+  /// Tasks only description
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクデータのみをエクスポート'**
+  String get tasksOnlyDescription;
+
+  /// Both option
+  ///
+  /// In ja, this message translates to:
+  /// **'両方'**
+  String get both;
+
+  /// Both description
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクとタスクの両方をエクスポート'**
+  String get bothDescription;
+
+  /// Import options title
+  ///
+  /// In ja, this message translates to:
+  /// **'インポートオプション'**
+  String get importOptions;
+
+  /// Select data to import message
+  ///
+  /// In ja, this message translates to:
+  /// **'インポートするデータを選択してください:'**
+  String get selectDataToImport;
+
+  /// Links only import description
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクデータのみをインポート'**
+  String get linksOnlyImportDescription;
+
+  /// Tasks only import description
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクデータのみをインポート'**
+  String get tasksOnlyImportDescription;
+
+  /// Both import description
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクとタスクの両方をインポート'**
+  String get bothImportDescription;
+
+  /// Export completed message
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポートが完了しました\n保存先: {filePath}'**
+  String exportCompleted(String filePath);
+
+  /// Export completed title
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポート完了'**
+  String get exportCompletedTitle;
+
+  /// Export error title
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポートエラー'**
+  String get exportError;
+
+  /// Export error message
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポートエラー: {error}'**
+  String exportErrorMessage(String error);
+
+  /// Could not open folder message
+  ///
+  /// In ja, this message translates to:
+  /// **'フォルダを開けませんでした: {error}'**
+  String couldNotOpenFolder(String error);
+
+  /// OK button label
+  ///
+  /// In ja, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// Select file to import dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'インポートするファイルを選択'**
+  String get selectFileToImport;
+
+  /// Import completed message
+  ///
+  /// In ja, this message translates to:
+  /// **'インポートが完了しました\nリンク: {linksCount}件\nタスク: {tasksCount}件\nグループ: {groupsCount}件'**
+  String importCompleted(int linksCount, int tasksCount, int groupsCount);
+
+  /// Import completed title
+  ///
+  /// In ja, this message translates to:
+  /// **'インポート完了'**
+  String get importCompletedTitle;
+
+  /// Import error title
+  ///
+  /// In ja, this message translates to:
+  /// **'インポートエラー'**
+  String get importError;
+
+  /// Import error message
+  ///
+  /// In ja, this message translates to:
+  /// **'インポートエラー: {error}'**
+  String importErrorMessage(String error);
+
+  /// OAuth2 authentication completed
+  ///
+  /// In ja, this message translates to:
+  /// **'OAuth2認証が完了しました'**
+  String get oauth2AuthCompleted;
+
+  /// This file contains message
+  ///
+  /// In ja, this message translates to:
+  /// **'このファイルには以下の情報が含まれます：'**
+  String get thisFileContains;
+
+  /// Sync status title
+  ///
+  /// In ja, this message translates to:
+  /// **'同期状態'**
+  String get syncStatus;
+
+  /// Waiting status
+  ///
+  /// In ja, this message translates to:
+  /// **'待機中'**
+  String get waiting;
+
+  /// Syncing status
+  ///
+  /// In ja, this message translates to:
+  /// **'同期中...'**
+  String get syncing;
+
+  /// Sync completed status
+  ///
+  /// In ja, this message translates to:
+  /// **'同期完了'**
+  String get syncCompleted;
+
+  /// Sync error status
+  ///
+  /// In ja, this message translates to:
+  /// **'同期エラー'**
+  String get syncError;
+
+  /// Last sync time
+  ///
+  /// In ja, this message translates to:
+  /// **'最終同期: {time}'**
+  String lastSync(String time);
+
+  /// Processing items message
+  ///
+  /// In ja, this message translates to:
+  /// **'{processed}/{total}件処理中...'**
+  String processingItems(int processed, int total);
+
+  /// Error message
+  ///
+  /// In ja, this message translates to:
+  /// **'エラー: {message}'**
+  String error(String message);
+
+  /// Error code
+  ///
+  /// In ja, this message translates to:
+  /// **'エラーコード: {code}'**
+  String errorCode(String code);
+
+  /// Partial sync title
+  ///
+  /// In ja, this message translates to:
+  /// **'部分同期'**
+  String get partialSync;
+
+  /// Partial sync description
+  ///
+  /// In ja, this message translates to:
+  /// **'選択したタスクや日付範囲のタスクのみを同期できます'**
+  String get partialSyncDescription;
+
+  /// Individual task sync info
+  ///
+  /// In ja, this message translates to:
+  /// **'個別タスクの同期は、タスク画面の各タスクの3点ドットメニューから「このタスクを同期」を選択してください。'**
+  String get individualTaskSyncInfo;
+
+  /// Sync by date range button
+  ///
+  /// In ja, this message translates to:
+  /// **'日付範囲で同期'**
+  String get syncByDateRange;
+
+  /// Cleanup duplicate events button
+  ///
+  /// In ja, this message translates to:
+  /// **'重複イベントをクリーンアップ'**
+  String get cleanupDuplicateEvents;
+
+  /// Delete orphaned events button
+  ///
+  /// In ja, this message translates to:
+  /// **'孤立イベントを削除'**
+  String get deleteOrphanedEvents;
+
+  /// Orphaned events deletion title
+  ///
+  /// In ja, this message translates to:
+  /// **'孤立イベント削除'**
+  String get orphanedEventsDeletion;
+
+  /// Orphaned events deletion description
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarに残っているが、アプリに存在しないタスクのイベントを削除します。\nアプリで削除されたタスクのイベントがGoogle Calendarに残っている場合に使用してください。\n\nこの操作は取り消せません。実行しますか？'**
+  String get orphanedEventsDeletionDescription;
+
+  /// Execute deletion button
+  ///
+  /// In ja, this message translates to:
+  /// **'削除実行'**
+  String get executeDeletion;
+
+  /// Detecting orphaned events message
+  ///
+  /// In ja, this message translates to:
+  /// **'孤立イベントを検出中...'**
+  String get detectingOrphanedEvents;
+
+  /// Orphaned events deletion completed
+  ///
+  /// In ja, this message translates to:
+  /// **'孤立イベント削除完了: {count}件削除'**
+  String orphanedEventsDeletionCompleted(int count);
+
+  /// Orphaned events deleted
+  ///
+  /// In ja, this message translates to:
+  /// **'孤立イベント{count}件を削除しました'**
+  String orphanedEventsDeleted(int count);
+
+  /// No orphaned events found
+  ///
+  /// In ja, this message translates to:
+  /// **'孤立イベントは見つかりませんでした'**
+  String get noOrphanedEventsFound;
+
+  /// Orphaned events deletion failed
+  ///
+  /// In ja, this message translates to:
+  /// **'孤立イベント削除に失敗しました'**
+  String get orphanedEventsDeletionFailed;
+
+  /// Orphaned events deletion error
+  ///
+  /// In ja, this message translates to:
+  /// **'孤立イベント削除中にエラーが発生しました'**
+  String get orphanedEventsDeletionError;
+
+  /// Duplicate events cleanup title
+  ///
+  /// In ja, this message translates to:
+  /// **'重複イベントクリーンアップ'**
+  String get duplicateEventsCleanup;
+
+  /// Duplicate events cleanup description
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarの重複したイベントを検出・削除します。\n同じタイトルと日付のイベントが複数ある場合、古いものを削除します。\n\nこの操作は取り消せません。実行しますか？'**
+  String get duplicateEventsCleanupDescription;
+
+  /// Execute cleanup button
+  ///
+  /// In ja, this message translates to:
+  /// **'クリーンアップ実行'**
+  String get executeCleanup;
+
+  /// Detecting duplicate events message
+  ///
+  /// In ja, this message translates to:
+  /// **'重複イベントを検出中...'**
+  String get detectingDuplicateEvents;
+
+  /// Duplicate cleanup completed
+  ///
+  /// In ja, this message translates to:
+  /// **'重複クリーンアップ完了: {found}グループ検出、{removed}件削除'**
+  String duplicateCleanupCompleted(int found, int removed);
+
+  /// Duplicate events deleted
+  ///
+  /// In ja, this message translates to:
+  /// **'重複イベント{count}件を削除しました'**
+  String duplicateEventsDeleted(int count);
+
+  /// No duplicate events found
+  ///
+  /// In ja, this message translates to:
+  /// **'重複イベントは見つかりませんでした'**
+  String get noDuplicateEventsFound;
+
+  /// Duplicate cleanup failed
+  ///
+  /// In ja, this message translates to:
+  /// **'重複クリーンアップに失敗しました'**
+  String get duplicateCleanupFailed;
+
+  /// Duplicate cleanup error
+  ///
+  /// In ja, this message translates to:
+  /// **'重複クリーンアップ中にエラーが発生しました'**
+  String get duplicateCleanupError;
+
+  /// Check setup method button
+  ///
+  /// In ja, this message translates to:
+  /// **'設定方法を確認'**
+  String get checkSetupMethod;
+
+  /// Authentication start failed
+  ///
+  /// In ja, this message translates to:
+  /// **'認証の開始に失敗しました'**
+  String get authStartFailed;
+
+  /// Storage location label
+  ///
+  /// In ja, this message translates to:
+  /// **'格納場所'**
+  String get storageLocation;
+
+  /// Execution method label
+  ///
+  /// In ja, this message translates to:
+  /// **'実行方法'**
+  String get executionMethod;
+
+  /// Start OAuth2 authentication button
+  ///
+  /// In ja, this message translates to:
+  /// **'OAuth2認証を開始'**
+  String get startOAuth2Authentication;
+
+  /// App to Google Calendar sync button
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリ→Google Calendar同期'**
+  String get appToGoogleCalendarSync;
+
+  /// App to Google Calendar sync completed message
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリ→Google Calendar同期完了: 作成{created}件, 更新{updated}件, 削除{deleted}件'**
+  String appToGoogleCalendarSyncCompleted(
+    int created,
+    int updated,
+    int deleted,
+  );
+
+  /// Google Calendar to app sync button
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar→アプリ同期'**
+  String get googleCalendarToAppSync;
+
+  /// Google Calendar to app sync completed message
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar→アプリ同期完了: 追加{added}件, スキップ{skipped}件'**
+  String googleCalendarToAppSyncCompleted(int added, int skipped);
+
+  /// Sync error message
+  ///
+  /// In ja, this message translates to:
+  /// **'同期エラー: {error}'**
+  String syncErrorMessage(String error);
+
+  /// Error message with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'エラー: {error}'**
+  String errorColon(String error);
 }
 
 class _AppLocalizationsDelegate

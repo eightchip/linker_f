@@ -602,7 +602,6 @@ class HomeScreen extends ConsumerStatefulWidget {
         const ShortcutHelpEntry('Ctrl + E', 'メモ一括編集を開く'),
         ShortcutHelpEntry('Ctrl + O', AppLocalizations.of(context)!.changeGroupOrder),
         const ShortcutHelpEntry('Ctrl + Shift + S', '設定を開く'),
-        const ShortcutHelpEntry('→', '3点メニューを表示'),
         const ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
         const ShortcutHelpEntry('Esc', '検索バーを閉じる'),
         const ShortcutHelpEntry('Tab', 'リンクタイプフィルターを切り替え'),
@@ -782,11 +781,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       else if (key == LogicalKeyboardKey.keyS && isControlPressed && isShiftPressed) {
         print('✅ Ctrl+Shift+S 検出: 設定画面を開く');
         _showSettingsScreen(context);
-      }
-      // ⑨右矢印キー: 3点ドットメニューを表示
-      else if (key == LogicalKeyboardKey.arrowRight) {
-        print('✅ 右矢印キー 検出: 3点ドットメニューを表示');
-        _showPopupMenu(context);
       }
       
       

@@ -779,9 +779,25 @@
   "@cancelled": {
     "description": "Cancelled status"
   },
-  "cancelledShort": "C",
+  "cancelledShort": "X",
   "@cancelledShort": {
     "description": "Cancelled status (short)"
+  },
+  "notStartedShort": "N",
+  "@notStartedShort": {
+    "description": "Not started status (short)"
+  },
+  "inProgressShort": "I",
+  "@inProgressShort": {
+    "description": "In progress status (short)"
+  },
+  "inProgressShort2": "I",
+  "@inProgressShort2": {
+    "description": "In progress status (short 2)"
+  },
+  "completedShort": "C",
+  "@completedShort": {
+    "description": "Completed status (short)"
   },
   "dueDate": "Due Date",
   "@dueDate": {
@@ -1290,6 +1306,2061 @@
   "task": "Task",
   "@task": {
     "description": "Task label"
+  },
+  "scheduleTitle": "Schedule Title",
+  "@scheduleTitle": {
+    "description": "Schedule title label"
+  },
+  "startDateTime": "Start Date/Time",
+  "@startDateTime": {
+    "description": "Start date/time label"
+  },
+  "endDateTime": "End Date/Time",
+  "@endDateTime": {
+    "description": "End date/time label"
+  },
+  "location": "Location",
+  "@location": {
+    "description": "Location label"
+  },
+  "selectDateTime": "Select Date/Time",
+  "@selectDateTime": {
+    "description": "Select date/time placeholder"
+  },
+  "selectDateTimeOptional": "Select Date/Time (Optional)",
+  "@selectDateTimeOptional": {
+    "description": "Select date/time placeholder (optional)"
+  },
+  "addSchedule": "Add Schedule",
+  "@addSchedule": {
+    "description": "Add schedule button"
+  },
+  "updateSchedule": "Update Schedule",
+  "@updateSchedule": {
+    "description": "Update schedule button"
+  },
+  "scheduleAdded": "Schedule added",
+  "@scheduleAdded": {
+    "description": "Schedule added message"
+  },
+  "startDateTimeRequired": "Start date/time is required",
+  "@startDateTimeRequired": {
+    "description": "Start date/time required error message"
+  },
+  "outlookDesktop": "Outlook (Desktop)",
+  "@outlookDesktop": {
+    "description": "Outlook desktop label"
+  },
+  "gmailWeb": "Gmail (Web)",
+  "@gmailWeb": {
+    "description": "Gmail web label"
+  },
+  "outlookTest": "Test Outlook",
+  "@outlookTest": {
+    "description": "Test Outlook button"
+  },
+  "gmailTest": "Test Gmail",
+  "@gmailTest": {
+    "description": "Test Gmail button"
+  },
+  "sendHistory": "Send History",
+  "@sendHistory": {
+    "description": "Send history button"
+  },
+  "launchMailer": "Launch Mailer",
+  "@launchMailer": {
+    "description": "Launch mailer button"
+  },
+  "mailSentComplete": "Mail Sent",
+  "@mailSentComplete": {
+    "description": "Mail sent complete button"
+  },
+  "launchMailerFirst": "Please launch mailer first",
+  "@launchMailerFirst": {
+    "description": "Launch mailer first message"
+  },
+  "copyTask": "Copy Task",
+  "@copyTask": {
+    "description": "Copy task dialog title"
+  },
+  "copyTaskConfirm": "Do you want to copy \"{title}\"?",
+  "@copyTaskConfirm": {
+    "description": "Copy task confirmation message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatPeriod": "Repeat Period:",
+  "@repeatPeriod": {
+    "description": "Repeat period label"
+  },
+  "monthly": "Monthly (1 month later)",
+  "@monthly": {
+    "description": "Monthly option"
+  },
+  "quarterly": "Quarterly (3 months later)",
+  "@quarterly": {
+    "description": "Quarterly option"
+  },
+  "yearly": "Yearly (1 year later)",
+  "@yearly": {
+    "description": "Yearly option"
+  },
+  "custom": "Custom",
+  "@custom": {
+    "description": "Custom option"
+  },
+  "copyCount": "Number of Copies:",
+  "@copyCount": {
+    "description": "Copy count label"
+  },
+  "copyCountLabel": "{count} items",
+  "@copyCountLabel": {
+    "description": "Copy count display",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "maxCopiesMonthly": "Up to 12 items (copy with due dates shifted by 1 month each)",
+  "@maxCopiesMonthly": {
+    "description": "Monthly copy max count description"
+  },
+  "maxCopiesQuarterly": "Up to 4 items (copy with due dates shifted by 3 months each)",
+  "@maxCopiesQuarterly": {
+    "description": "Quarterly copy max count description"
+  },
+  "selectDueDate": "Select Due Date",
+  "@selectDueDate": {
+    "description": "Select due date placeholder"
+  },
+  "selectReminderTime": "Select Reminder Time (Optional)",
+  "@selectReminderTime": {
+    "description": "Select reminder time placeholder"
+  },
+  "copiedContent": "Content to be copied:",
+  "@copiedContent": {
+    "description": "Copied content label"
+  },
+  "titleLabel": "Title:",
+  "@titleLabel": {
+    "description": "Title label"
+  },
+  "copySuffix": "Copy",
+  "@copySuffix": {
+    "description": "Copy suffix"
+  },
+  "descriptionLabel": "Description:",
+  "@descriptionLabel": {
+    "description": "Description label"
+  },
+  "requestorMemoLabel": "Requestor/Memo:",
+  "@requestorMemoLabel": {
+    "description": "Requestor/Memo label"
+  },
+  "copyCountLabel2": "Number of Copies:",
+  "@copyCountLabel2": {
+    "description": "Copy count label 2"
+  },
+  "dueDateLabel": "Due Date:",
+  "@dueDateLabel": {
+    "description": "Due date label"
+  },
+  "reminderLabel": "Reminder:",
+  "@reminderLabel": {
+    "description": "Reminder label"
+  },
+  "priorityLabel": "Priority:",
+  "@priorityLabel": {
+    "description": "Priority label"
+  },
+  "statusLabel": "Status:",
+  "@statusLabel": {
+    "description": "Status label"
+  },
+  "tagsLabel": "Tags:",
+  "@tagsLabel": {
+    "description": "Tags label"
+  },
+  "estimatedTimeLabel": "Estimated Time:",
+  "@estimatedTimeLabel": {
+    "description": "Estimated time label"
+  },
+  "minutes": "minutes",
+  "@minutes": {
+    "description": "Minutes unit"
+  },
+  "subtasksLabel": "Subtasks:",
+  "@subtasksLabel": {
+    "description": "Subtasks label"
+  },
+  "statusResetNote": "※ Status will be reset to \"Not Started\"",
+  "@statusResetNote": {
+    "description": "Status reset note"
+  },
+  "subtasksCopiedNote": "※ Subtasks will also be copied",
+  "@subtasksCopiedNote": {
+    "description": "Subtasks copied note"
+  },
+  "copy": "Copy",
+  "@copy": {
+    "description": "Copy button"
+  },
+  "taskCopiedSuccess": "Copied {count} task(s)",
+  "@taskCopiedSuccess": {
+    "description": "Task copy success message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskCopiedPartial": "Copied {success} task(s) ({failed} failed)",
+  "@taskCopiedPartial": {
+    "description": "Task copy partial success message",
+    "placeholders": {
+      "success": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "taskCopyFailed": "Failed to copy task",
+  "@taskCopyFailed": {
+    "description": "Task copy failed message"
+  },
+  "deleteTask": "Delete Task",
+  "@deleteTask": {
+    "description": "Delete task dialog title"
+  },
+  "deleteTaskConfirm": "Do you want to delete \"{title}\"?",
+  "@deleteTaskConfirm": {
+    "description": "Delete task confirmation message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteOptions": "Deletion Options:",
+  "@deleteOptions": {
+    "description": "Delete options label"
+  },
+  "deleteAppOnly": "Delete from app only",
+  "@deleteAppOnly": {
+    "description": "Delete app only option"
+  },
+  "deleteAppAndCalendar": "Delete from app and Google Calendar",
+  "@deleteAppAndCalendar": {
+    "description": "Delete app and calendar option"
+  },
+  "appOnly": "App only",
+  "@appOnly": {
+    "description": "App only button"
+  },
+  "deleteBoth": "Delete both",
+  "@deleteBoth": {
+    "description": "Delete both button"
+  },
+  "taskDeletedSuccess": "Deleted \"{title}\"",
+  "@taskDeletedSuccess": {
+    "description": "Task deleted success message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFailed": "Delete failed",
+  "@deleteFailed": {
+    "description": "Delete failed message"
+  },
+  "taskDeletedFromBoth": "Deleted \"{title}\" from app and Google Calendar",
+  "@taskDeletedFromBoth": {
+    "description": "Task deleted success message (both)",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notSet": "Not Set",
+  "@notSet": {
+    "description": "Not set label"
+  },
+  "low": "Low",
+  "@low": {
+    "description": "Priority: Low"
+  },
+  "medium": "Medium",
+  "@medium": {
+    "description": "Priority: Medium"
+  },
+  "high": "High",
+  "@high": {
+    "description": "Priority: High"
+  },
+  "urgent": "Urgent",
+  "@urgent": {
+    "description": "Priority: Urgent"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button"
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm label"
+  },
+  "deleteSelectedTasks": "Do you want to delete {count} selected task(s)?",
+  "@deleteSelectedTasks": {
+    "description": "Delete selected tasks confirmation message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupExecuted": "Backup executed. Deleting {count} task(s)...",
+  "@backupExecuted": {
+    "description": "Backup executed message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupFailedContinue": "Backup failed but continuing with deletion: {error}",
+  "@backupFailedContinue": {
+    "description": "Backup failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteSchedule": "Delete Schedule",
+  "@deleteSchedule": {
+    "description": "Delete schedule dialog title"
+  },
+  "deleteScheduleConfirm": "Do you want to delete \"{title}\"?",
+  "@deleteScheduleConfirm": {
+    "description": "Delete schedule confirmation message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "warning": "Warning",
+  "@warning": {
+    "description": "Warning label"
+  },
+  "selectAtLeastTwoTasks": "Please select at least 2 tasks",
+  "@selectAtLeastTwoTasks": {
+    "description": "Select at least two tasks message"
+  },
+  "noSourceTasks": "No source tasks to merge",
+  "@noSourceTasks": {
+    "description": "No source tasks message"
+  },
+  "backupExecutedMerge": "Backup executed. Merging tasks...",
+  "@backupExecutedMerge": {
+    "description": "Task merge backup message"
+  },
+  "taskMergeFailed": "Failed to merge tasks",
+  "@taskMergeFailed": {
+    "description": "Task merge failed message"
+  },
+  "linkAssignmentFailed": "Failed to assign link",
+  "@linkAssignmentFailed": {
+    "description": "Link assignment failed message"
+  },
+  "statusChangeFailed": "Failed to change status",
+  "@statusChangeFailed": {
+    "description": "Status change failed message"
+  },
+  "priorityChangeFailed": "Failed to change priority",
+  "@priorityChangeFailed": {
+    "description": "Priority change failed message"
+  },
+  "dueDateChangeFailed": "Failed to change due date",
+  "@dueDateChangeFailed": {
+    "description": "Due date change failed message"
+  },
+  "tagChangeFailed": "Failed to change tags",
+  "@tagChangeFailed": {
+    "description": "Tag change failed message"
+  },
+  "taskSyncedToCalendar": "Synced \"{title}\" to Google Calendar",
+  "@taskSyncedToCalendar": {
+    "description": "Task sync success message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskSyncFailed": "Failed to sync \"{title}\": {error}",
+  "@taskSyncFailed": {
+    "description": "Task sync failed message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "taskSyncError": "Error occurred while syncing \"{title}\": {error}",
+  "@taskSyncError": {
+    "description": "Task sync error message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFailed": "Export failed",
+  "@exportFailed": {
+    "description": "Export failed message"
+  },
+  "invalidFileFormat": "Invalid file format",
+  "@invalidFileFormat": {
+    "description": "Invalid file format message"
+  },
+  "importFailed": "Import failed",
+  "@importFailed": {
+    "description": "Import failed message"
+  },
+  "sendHistorySearchError": "Send history search error",
+  "@sendHistorySearchError": {
+    "description": "Send history search error message"
+  },
+  "mailerLaunched": "Mailer launched",
+  "@mailerLaunched": {
+    "description": "Mailer launch success message"
+  },
+  "replyAddressNotFound": "Reply address not found",
+  "@replyAddressNotFound": {
+    "description": "Reply address not found message"
+  },
+  "mailerLaunchFailed": "Failed to launch mailer",
+  "@mailerLaunchFailed": {
+    "description": "Mailer launch failed message"
+  },
+  "linkOpenFailed": "Failed to open link: {link}",
+  "@linkOpenFailed": {
+    "description": "Link open failed message",
+    "placeholders": {
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "uncPathOpenFailed": "Failed to open UNC path: {path}",
+  "@uncPathOpenFailed": {
+    "description": "UNC path open failed message",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "urlOpenFailed": "Failed to open URL: {url}",
+  "@urlOpenFailed": {
+    "description": "URL open failed message",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "fileOpenFailed": "Failed to open file: {path}",
+  "@fileOpenFailed": {
+    "description": "File open failed message",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "colorPresets": "Color Presets",
+  "@colorPresets": {
+    "description": "Color presets label"
+  },
+  "applyRecommendedColors": "Apply recommended color scheme with one tap",
+  "@applyRecommendedColors": {
+    "description": "Apply recommended colors description"
+  },
+  "accentColor": "Accent Color",
+  "@accentColor": {
+    "description": "Accent color label"
+  },
+  "colorIntensity": "Color Intensity",
+  "@colorIntensity": {
+    "description": "Color intensity label"
+  },
+  "contrastAdjustment": "Contrast Adjustment",
+  "@contrastAdjustment": {
+    "description": "Contrast adjustment label"
+  },
+  "textColorSettings": "Text Color Settings",
+  "@textColorSettings": {
+    "description": "Text color settings label"
+  },
+  "fontSettings": "Font Settings",
+  "@fontSettings": {
+    "description": "Font settings label"
+  },
+  "cardViewFieldSettingsDescription": "You can individually set the text color, font size, and font family for each field displayed in the card view",
+  "@cardViewFieldSettingsDescription": {
+    "description": "Card view field settings description"
+  },
+  "uiCustomization": "UI Customization",
+  "@uiCustomization": {
+    "description": "UI customization label"
+  },
+  "realtimePreview": "Real-time Preview",
+  "@realtimePreview": {
+    "description": "Real-time preview label"
+  },
+  "live": "Live",
+  "@live": {
+    "description": "Live label"
+  },
+  "cardSettings": "Card Settings",
+  "@cardSettings": {
+    "description": "Card settings label"
+  },
+  "linkAndTaskScreens": "Link & Task Screens",
+  "@linkAndTaskScreens": {
+    "description": "Link and task screens label"
+  },
+  "cardSettingsDescription": "Adjust the card's appearance and behavior. You can change the corner radius, shadow strength, and padding.",
+  "@cardSettingsDescription": {
+    "description": "Card settings description"
+  },
+  "cornerRadius": "Corner Radius",
+  "@cornerRadius": {
+    "description": "Corner radius label"
+  },
+  "shadowStrength": "Shadow Strength",
+  "@shadowStrength": {
+    "description": "Shadow strength label"
+  },
+  "padding": "Padding",
+  "@padding": {
+    "description": "Padding label"
+  },
+  "sampleCard": "Sample Card",
+  "@sampleCard": {
+    "description": "Sample card label"
+  },
+  "cardPreviewDescription": "This is a card preview. Changes to settings will be reflected in real-time.",
+  "@cardPreviewDescription": {
+    "description": "Card preview description"
+  },
+  "sampleButton": "Sample Button",
+  "@sampleButton": {
+    "description": "Sample button label"
+  },
+  "outlineButton": "Outline Button",
+  "@outlineButton": {
+    "description": "Outline button label"
+  },
+  "sampleInputField": "Sample Input Field",
+  "@sampleInputField": {
+    "description": "Sample input field label"
+  },
+  "currentSettings": "Corner Radius: {radius}px | Shadow: {shadow}% | Padding: {padding}px",
+  "@currentSettings": {
+    "description": "Current settings display",
+    "placeholders": {
+      "radius": {
+        "type": "String"
+      },
+      "shadow": {
+        "type": "String"
+      },
+      "padding": {
+        "type": "String"
+      }
+    }
+  },
+  "buttonSettings": "Button Settings",
+  "@buttonSettings": {
+    "description": "Button settings label"
+  },
+  "cardViewShort": "C",
+  "@cardViewShort": {
+    "description": "Card view short notation"
+  },
+  "listViewShort": "L",
+  "@listViewShort": {
+    "description": "List view short notation"
+  },
+  "taskListDisplaySettings": "Task List Display Settings",
+  "@taskListDisplaySettings": {
+    "description": "Task list display settings label"
+  },
+  "taskListFieldSettingsDescription": "You can individually set the text color, font size, and font family for each field displayed in the task list and task edit screens",
+  "@taskListFieldSettingsDescription": {
+    "description": "Task list field settings description"
+  },
+  "resetCardViewSettings": "Reset Card View Settings",
+  "@resetCardViewSettings": {
+    "description": "Reset card view settings label"
+  },
+  "resetCardViewSettingsConfirm": "Do you want to reset the card view settings to default values?\nThis action cannot be undone.",
+  "@resetCardViewSettingsConfirm": {
+    "description": "Reset card view settings confirmation message"
+  },
+  "textColor": "Text Color",
+  "@textColor": {
+    "description": "Text color label"
+  },
+  "requestorDescription": "Requestor Description",
+  "@requestorDescription": {
+    "description": "Requestor description label"
+  },
+  "allScreensCommon": "All Screens",
+  "@allScreensCommon": {
+    "description": "All screens common label"
+  },
+  "appWideFontSize": "App-wide Font Size: {percentage}%",
+  "@appWideFontSize": {
+    "description": "App-wide font size label",
+    "placeholders": {
+      "percentage": {
+        "type": "String"
+      }
+    }
+  },
+  "gridSettings": "Grid Settings",
+  "@gridSettings": {
+    "description": "Grid settings label"
+  },
+  "autoAdjustToScreenSize": "Auto-adjust to screen size",
+  "@autoAdjustToScreenSize": {
+    "description": "Auto adjust to screen size description"
+  },
+  "cardViewSettings": "Card View Settings",
+  "@cardViewSettings": {
+    "description": "Card view settings label"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel label"
+  },
+  "fieldSettings": "{fieldName} Settings",
+  "@fieldSettings": {
+    "description": "Field settings label",
+    "placeholders": {
+      "fieldName": {
+        "type": "String"
+      }
+    }
+  },
+  "colorPresetSunrise": "Sunrise",
+  "@colorPresetSunrise": {
+    "description": "Color preset name: Sunrise"
+  },
+  "colorPresetSunriseDesc": "Warm orange tones",
+  "@colorPresetSunriseDesc": {
+    "description": "Color preset description: Sunrise"
+  },
+  "colorPresetForest": "Forest",
+  "@colorPresetForest": {
+    "description": "Color preset name: Forest"
+  },
+  "colorPresetForestDesc": "Calm green tones",
+  "@colorPresetForestDesc": {
+    "description": "Color preset description: Forest"
+  },
+  "colorPresetBreeze": "Blue Breeze",
+  "@colorPresetBreeze": {
+    "description": "Color preset name: Blue Breeze"
+  },
+  "colorPresetBreezeDesc": "Refreshing blue tones",
+  "@colorPresetBreezeDesc": {
+    "description": "Color preset description: Blue Breeze"
+  },
+  "colorPresetMidnight": "Midnight",
+  "@colorPresetMidnight": {
+    "description": "Color preset name: Midnight"
+  },
+  "colorPresetMidnightDesc": "Dark theme suitable for night work",
+  "@colorPresetMidnightDesc": {
+    "description": "Color preset description: Midnight"
+  },
+  "colorPresetSakura": "Sakura",
+  "@colorPresetSakura": {
+    "description": "Color preset name: Sakura"
+  },
+  "colorPresetSakuraDesc": "Soft pink tones",
+  "@colorPresetSakuraDesc": {
+    "description": "Color preset description: Sakura"
+  },
+  "colorPresetCitrus": "Citrus",
+  "@colorPresetCitrus": {
+    "description": "Color preset name: Citrus"
+  },
+  "colorPresetCitrusDesc": "Fresh yellow-green tones",
+  "@colorPresetCitrusDesc": {
+    "description": "Color preset description: Citrus"
+  },
+  "colorPresetSlate": "Slate",
+  "@colorPresetSlate": {
+    "description": "Color preset name: Slate"
+  },
+  "colorPresetSlateDesc": "Calm blue-grey",
+  "@colorPresetSlateDesc": {
+    "description": "Color preset description: Slate"
+  },
+  "colorPresetAmber": "Amber",
+  "@colorPresetAmber": {
+    "description": "Color preset name: Amber"
+  },
+  "colorPresetAmberDesc": "High visibility gold tone",
+  "@colorPresetAmberDesc": {
+    "description": "Color preset description: Amber"
+  },
+  "colorPresetGraphite": "Graphite",
+  "@colorPresetGraphite": {
+    "description": "Color preset name: Graphite"
+  },
+  "colorPresetGraphiteDesc": "Modern monotone",
+  "@colorPresetGraphiteDesc": {
+    "description": "Color preset description: Graphite"
+  },
+  "presetApplied": "Applied \"{presetName}\" preset",
+  "@presetApplied": {
+    "description": "Preset applied success message",
+    "placeholders": {
+      "presetName": {
+        "type": "String"
+      }
+    }
+  },
+  "presetApplyFailed": "Failed to apply preset: {error}",
+  "@presetApplyFailed": {
+    "description": "Preset apply failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "autoContrastOptimization": "Auto Contrast Optimization",
+  "@autoContrastOptimization": {
+    "description": "Auto contrast optimization label"
+  },
+  "autoContrastOptimizationDesc": "Automatically adjust text visibility in dark mode",
+  "@autoContrastOptimizationDesc": {
+    "description": "Auto contrast optimization description"
+  },
+  "iconSize": "Icon Size",
+  "@iconSize": {
+    "description": "Icon size label"
+  },
+  "linkItemIconSizeDesc": "Adjust the icon size of link items. Increasing the size improves visibility but also increases the overall item size.",
+  "@linkItemIconSizeDesc": {
+    "description": "Link item icon size description"
+  },
+  "gridSettingsReset": "Grid Settings",
+  "@gridSettingsReset": {
+    "description": "Grid settings reset label"
+  },
+  "gridSettingsResetDesc": "Columns: 4, Spacing: Default",
+  "@gridSettingsResetDesc": {
+    "description": "Grid settings reset description"
+  },
+  "cardSettingsReset": "Card Settings",
+  "@cardSettingsReset": {
+    "description": "Card settings reset label"
+  },
+  "cardSettingsResetDesc": "Size: Default, Shadow: Default",
+  "@cardSettingsResetDesc": {
+    "description": "Card settings reset description"
+  },
+  "itemSettingsReset": "Item Settings",
+  "@itemSettingsReset": {
+    "description": "Item settings reset label"
+  },
+  "itemSettingsResetDesc": "Font Size: Default, Icon Size: Default",
+  "@itemSettingsResetDesc": {
+    "description": "Item settings reset description"
+  },
+  "colorBlue": "Blue",
+  "@colorBlue": {
+    "description": "Blue color name"
+  },
+  "colorRed": "Red",
+  "@colorRed": {
+    "description": "Red color name"
+  },
+  "colorGreen": "Green",
+  "@colorGreen": {
+    "description": "Green color name"
+  },
+  "colorOrange": "Orange",
+  "@colorOrange": {
+    "description": "Orange color name"
+  },
+  "colorPurple": "Purple",
+  "@colorPurple": {
+    "description": "Purple color name"
+  },
+  "colorPink": "Pink",
+  "@colorPink": {
+    "description": "Pink color name"
+  },
+  "colorCyan": "Cyan",
+  "@colorCyan": {
+    "description": "Cyan color name"
+  },
+  "colorGray": "Gray",
+  "@colorGray": {
+    "description": "Gray color name"
+  },
+  "colorEmerald": "Emerald",
+  "@colorEmerald": {
+    "description": "Emerald color name"
+  },
+  "colorYellow": "Yellow",
+  "@colorYellow": {
+    "description": "Yellow color name"
+  },
+  "colorBlack": "Black",
+  "@colorBlack": {
+    "description": "Black color name"
+  },
+  "colorWhite": "White",
+  "@colorWhite": {
+    "description": "White color name"
+  },
+  "light": "Light",
+  "@light": {
+    "description": "Light (color intensity)"
+  },
+  "standard": "Standard",
+  "@standard": {
+    "description": "Standard"
+  },
+  "dark": "Dark",
+  "@dark": {
+    "description": "Dark (color intensity)"
+  },
+  "contrastLow": "Low",
+  "@contrastLow": {
+    "description": "Low (contrast)"
+  },
+  "contrastHigh": "High",
+  "@contrastHigh": {
+    "description": "High (contrast)"
+  },
+  "contrast": "Contrast",
+  "@contrast": {
+    "description": "Contrast label"
+  },
+  "fontSize": "Font Size",
+  "@fontSize": {
+    "description": "Font size label"
+  },
+  "fontFamily": "Font Family",
+  "@fontFamily": {
+    "description": "Font family label"
+  },
+  "defaultValue": "Default",
+  "@defaultValue": {
+    "description": "Default"
+  },
+  "fontSizePreview": "Preview: The size of this text will be applied to {fieldName}",
+  "@fontSizePreview": {
+    "description": "Font size preview text",
+    "placeholders": {
+      "fieldName": {
+        "type": "String"
+      }
+    }
+  },
+  "fontFamilyPreview": "Font Preview: The font of this text will be applied to {fieldName}",
+  "@fontFamilyPreview": {
+    "description": "Font family preview text",
+    "placeholders": {
+      "fieldName": {
+        "type": "String"
+      }
+    }
+  },
+  "total": "Total",
+  "@total": {
+    "description": "Total tasks label"
+  },
+  "totalTasks": "Total",
+  "@totalTasks": {
+    "description": "Total tasks label (full version)"
+  },
+  "buttonSettings": "Button Settings",
+  "@buttonSettings": {
+    "description": "Button settings title"
+  },
+  "buttonSettingsDescription": "Adjust the appearance of buttons. You can change the border radius and shadow intensity.",
+  "@buttonSettingsDescription": {
+    "description": "Button settings description"
+  },
+  "borderRadius": "Border Radius",
+  "@borderRadius": {
+    "description": "Border radius label"
+  },
+  "borderRadiusPx": "Border Radius: {value}px",
+  "@borderRadiusPx": {
+    "description": "Border radius with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "elevation": "Shadow Intensity",
+  "@elevation": {
+    "description": "Elevation/shadow intensity label"
+  },
+  "elevationPx": "Shadow Intensity: {value}px",
+  "@elevationPx": {
+    "description": "Elevation with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "elevationPercent": "Shadow Intensity: {value}%",
+  "@elevationPercent": {
+    "description": "Elevation with percentage",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "inputFieldSettings": "Input Field Settings",
+  "@inputFieldSettings": {
+    "description": "Input field settings title"
+  },
+  "inputFieldSettingsDescription": "Adjust the appearance of text input fields. You can change the border radius and border width.",
+  "@inputFieldSettingsDescription": {
+    "description": "Input field settings description"
+  },
+  "borderWidth": "Border Width",
+  "@borderWidth": {
+    "description": "Border width label"
+  },
+  "borderWidthPx": "Border Width: {value}px",
+  "@borderWidthPx": {
+    "description": "Border width with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "hoverEffect": "Hover Effect",
+  "@hoverEffect": {
+    "description": "Hover effect label"
+  },
+  "hoverEffectPercent": "Hover Effect: {value}%",
+  "@hoverEffectPercent": {
+    "description": "Hover effect with percentage",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "gradient": "Gradient",
+  "@gradient": {
+    "description": "Gradient label"
+  },
+  "gradientPercent": "Gradient: {value}%",
+  "@gradientPercent": {
+    "description": "Gradient with percentage",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "generalSettings": "General Settings",
+  "@generalSettings": {
+    "description": "General settings title"
+  },
+  "darkModeContrastBoost": "Dark Mode Contrast Boost",
+  "@darkModeContrastBoost": {
+    "description": "Dark mode contrast boost label"
+  },
+  "autoLayoutEnabled": "Auto layout is enabled. The optimal number of columns is automatically determined based on screen size.",
+  "@autoLayoutEnabled": {
+    "description": "Auto layout enabled message"
+  },
+  "largeScreen": "Large Screen (1920px or more)",
+  "@largeScreen": {
+    "description": "Large screen label"
+  },
+  "columnsDisplay": "{count} columns",
+  "@columnsDisplay": {
+    "description": "Columns display",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "optimalForDesktop": "Optimal for desktop monitors",
+  "@optimalForDesktop": {
+    "description": "Optimal for desktop message"
+  },
+  "mediumScreen": "Medium Screen (1200-1919px)",
+  "@mediumScreen": {
+    "description": "Medium screen label"
+  },
+  "optimalForLaptop": "Optimal for laptops and tablets",
+  "@optimalForLaptop": {
+    "description": "Optimal for laptop message"
+  },
+  "smallScreen": "Small Screen (800-1199px)",
+  "@smallScreen": {
+    "description": "Small screen label"
+  },
+  "optimalForSmallScreen": "Optimal for small screens",
+  "@optimalForSmallScreen": {
+    "description": "Optimal for small screen message"
+  },
+  "minimalScreen": "Minimal Screen (less than 800px)",
+  "@minimalScreen": {
+    "description": "Minimal screen label"
+  },
+  "optimalForMobile": "Optimal for mobile display",
+  "@optimalForMobile": {
+    "description": "Optimal for mobile message"
+  },
+  "manualLayoutEnabled": "Manual layout settings are enabled. Display will use a fixed number of columns.",
+  "@manualLayoutEnabled": {
+    "description": "Manual layout enabled message"
+  },
+  "fixedColumns": "Fixed Columns",
+  "@fixedColumns": {
+    "description": "Fixed columns label"
+  },
+  "sameColumnsAllScreens": "Same number of columns for all screen sizes",
+  "@sameColumnsAllScreens": {
+    "description": "Same columns for all screens message"
+  },
+  "useCase": "Use Case",
+  "@useCase": {
+    "description": "Use case label"
+  },
+  "maintainSpecificDisplay": "When you want to maintain a specific display",
+  "@maintainSpecificDisplay": {
+    "description": "Maintain specific display message"
+  },
+  "consistentLayoutNeeded": "When a consistent layout is needed",
+  "@consistentLayoutNeeded": {
+    "description": "Consistent layout needed message"
+  },
+  "defaultColumnCount": "Default Column Count: {count}",
+  "@defaultColumnCount": {
+    "description": "Default column count",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "gridSpacing": "Grid Spacing: {value}px",
+  "@gridSpacing": {
+    "description": "Grid spacing",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "cardWidth": "Card Width: {value}px",
+  "@cardWidth": {
+    "description": "Card width",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "cardHeight": "Card Height: {value}px",
+  "@cardHeight": {
+    "description": "Card height",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "itemMargin": "Item Margin",
+  "@itemMargin": {
+    "description": "Item margin label"
+  },
+  "itemMarginPx": "Item Margin: {value}px",
+  "@itemMarginPx": {
+    "description": "Item margin with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "itemMarginDescription": "Adjust the blank space between link items. Increasing the value widens the spacing between items, making them easier to see.",
+  "@itemMarginDescription": {
+    "description": "Item margin description"
+  },
+  "itemPadding": "Item Padding",
+  "@itemPadding": {
+    "description": "Item padding label"
+  },
+  "itemPaddingPx": "Item Padding: {value}px",
+  "@itemPaddingPx": {
+    "description": "Item padding with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "itemPaddingDescription": "Adjust the blank space between text/icons and the border inside link items. Increasing the value makes the item content more spacious and easier to read.",
+  "@itemPaddingDescription": {
+    "description": "Item padding description"
+  },
+  "fontSizePx": "Font Size: {value}px",
+  "@fontSizePx": {
+    "description": "Font size with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "fontSizeDescription": "Adjust the text size of link items. Making it smaller allows more items to be displayed, but may make them harder to read.",
+  "@fontSizeDescription": {
+    "description": "Font size description"
+  },
+  "buttonSize": "Button Size",
+  "@buttonSize": {
+    "description": "Button size label"
+  },
+  "buttonSizePx": "Button Size: {value}px",
+  "@buttonSizePx": {
+    "description": "Button size with value",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "buttonSizeDescription": "Adjust the size of buttons such as edit and delete. Making them larger makes them easier to operate, but uses more screen space.",
+  "@buttonSizeDescription": {
+    "description": "Button size description"
+  },
+  "autoAdjustCardHeight": "Auto Adjust Card Height",
+  "@autoAdjustCardHeight": {
+    "description": "Auto adjust card height label"
+  },
+  "autoAdjustCardHeightDescription": "Automatically adjust card height based on content amount (uses manually set height as minimum)",
+  "@autoAdjustCardHeightDescription": {
+    "description": "Auto adjust card height description"
+  },
+  "backupExport": "Data Backup / Export",
+  "@backupExport": {
+    "description": "Backup and export section title"
+  },
+  "backupLocation": "Save Location: Documents/backups",
+  "@backupLocation": {
+    "description": "Backup location message"
+  },
+  "saveNow": "Save Now",
+  "@saveNow": {
+    "description": "Save now button label"
+  },
+  "openBackupFolder": "Open Backup Folder",
+  "@openBackupFolder": {
+    "description": "Open backup folder button label"
+  },
+  "import": "Import",
+  "@import": {
+    "description": "Import button label"
+  },
+  "selectiveExportImport": "Selective Export / Import",
+  "@selectiveExportImport": {
+    "description": "Selective export/import title"
+  },
+  "selectiveExport": "Selective Export",
+  "@selectiveExport": {
+    "description": "Selective export button label"
+  },
+  "selectiveImport": "Selective Import",
+  "@selectiveImport": {
+    "description": "Selective import button label"
+  },
+  "autoBackup": "Auto Backup",
+  "@autoBackup": {
+    "description": "Auto backup label"
+  },
+  "autoBackupDescription": "Backup data periodically",
+  "@autoBackupDescription": {
+    "description": "Auto backup description"
+  },
+  "backupInterval": "Backup Interval: {days} days",
+  "@backupInterval": {
+    "description": "Backup interval",
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "backupIntervalDays": "{days} days",
+  "@backupIntervalDays": {
+    "description": "Backup interval in days",
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationSettings": "Notification Settings",
+  "@notificationSettings": {
+    "description": "Notification settings title"
+  },
+  "notificationWarning": "Note: Notifications are only displayed when the app is running. Notifications will not be displayed when the app is closed.",
+  "@notificationWarning": {
+    "description": "Notification warning message"
+  },
+  "showNotifications": "Show Notifications",
+  "@showNotifications": {
+    "description": "Show notifications label"
+  },
+  "showNotificationsDescription": "Display desktop notifications when task deadlines or reminders are set. Notifications are only displayed when the app is running.",
+  "@showNotificationsDescription": {
+    "description": "Show notifications description"
+  },
+  "notificationSound": "Notification Sound",
+  "@notificationSound": {
+    "description": "Notification sound label"
+  },
+  "notificationSoundDescription": "Play a sound when notifications are displayed. Sound is only played when the app is running.",
+  "@notificationSoundDescription": {
+    "description": "Notification sound description"
+  },
+  "testNotificationSound": "Test Notification Sound",
+  "@testNotificationSound": {
+    "description": "Test notification sound button label"
+  },
+  "testNotificationSoundDescription": "You can test the notification sound with this button. Sound is only played when the app is running.",
+  "@testNotificationSoundDescription": {
+    "description": "Test notification sound description"
+  },
+  "reset": "Reset",
+  "@reset": {
+    "description": "Reset section title"
+  },
+  "resetToDefaults": "Reset to Defaults",
+  "@resetToDefaults": {
+    "description": "Reset to defaults button label"
+  },
+  "resetLayoutSettings": "Reset Layout Settings",
+  "@resetLayoutSettings": {
+    "description": "Reset layout settings button label"
+  },
+  "layoutSettingsReset": "Layout settings have been reset",
+  "@layoutSettingsReset": {
+    "description": "Layout settings reset success message"
+  },
+  "resetUISettings": "Reset UI Settings",
+  "@resetUISettings": {
+    "description": "Reset UI settings button label"
+  },
+  "resetUISettingsConfirm": "Reset all UI customization settings to default values.\n\nThis operation cannot be undone.\nAre you sure you want to proceed?",
+  "@resetUISettingsConfirm": {
+    "description": "Reset UI settings confirmation message"
+  },
+  "executeReset": "Execute Reset",
+  "@executeReset": {
+    "description": "Execute reset button label"
+  },
+  "resetDetails": "Reset Details",
+  "@resetDetails": {
+    "description": "Reset details button label"
+  },
+  "resetFunction": "Reset Function",
+  "@resetFunction": {
+    "description": "Reset function title"
+  },
+  "resetFunctionDescription": "• Settings Reset: Theme, notifications, integration settings, etc.\n• Layout Reset: Grid size, card settings, etc.\n• UI Settings Reset: Card, button, input field customization settings\n• Data is Preserved: Links, tasks, and memos are not deleted\n• Details can be confirmed with the \"Reset Details\" button",
+  "@resetFunctionDescription": {
+    "description": "Reset function description"
+  },
+  "resetDetailsTitle": "Reset Details",
+  "@resetDetailsTitle": {
+    "description": "Reset details title"
+  },
+  "resetDetailsDescription": "Reset function detailed explanation:",
+  "@resetDetailsDescription": {
+    "description": "Reset details description"
+  },
+  "resetToDefaultsStep": "Reset to Defaults",
+  "@resetToDefaultsStep": {
+    "description": "Reset to defaults step title"
+  },
+  "resetToDefaultsStepDescription": "The following settings will be reset to initial values:",
+  "@resetToDefaultsStepDescription": {
+    "description": "Reset to defaults step description"
+  },
+  "themeSettingsReset": "Theme Settings",
+  "@themeSettingsReset": {
+    "description": "Theme settings reset item"
+  },
+  "themeSettingsResetValue": "Dark Mode: OFF, Accent Color: Blue, Intensity: 100%, Contrast: 100%",
+  "@themeSettingsResetValue": {
+    "description": "Theme settings reset value"
+  },
+  "notificationSettingsReset": "Notification Settings",
+  "@notificationSettingsReset": {
+    "description": "Notification settings reset item"
+  },
+  "notificationSettingsResetValue": "Notifications: ON, Notification Sound: ON",
+  "@notificationSettingsResetValue": {
+    "description": "Notification settings reset value"
+  },
+  "integrationSettingsReset": "Integration Settings",
+  "@integrationSettingsReset": {
+    "description": "Integration settings reset item"
+  },
+  "integrationSettingsResetValue": "Google Calendar: OFF, Gmail Integration: OFF, Outlook: OFF",
+  "@integrationSettingsResetValue": {
+    "description": "Integration settings reset value"
+  },
+  "backupSettingsReset": "Backup Settings",
+  "@backupSettingsReset": {
+    "description": "Backup settings reset item"
+  },
+  "backupSettingsResetValue": "Auto Backup: ON, Interval: 7 days",
+  "@backupSettingsResetValue": {
+    "description": "Backup settings reset value"
+  },
+  "resetLayoutSettingsStep": "Reset Layout Settings",
+  "@resetLayoutSettingsStep": {
+    "description": "Reset layout settings step title"
+  },
+  "resetLayoutSettingsStepDescription": "The following layout settings will be reset to initial values:",
+  "@resetLayoutSettingsStepDescription": {
+    "description": "Reset layout settings step description"
+  },
+  "autoSync": "Auto Sync",
+  "@autoSync": {
+    "description": "Auto sync label"
+  },
+  "autoSyncDescription": "Sync with Google Calendar periodically",
+  "@autoSyncDescription": {
+    "description": "Auto sync description"
+  },
+  "syncInterval": "Sync Interval: {minutes} minutes",
+  "@syncInterval": {
+    "description": "Sync interval",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "bidirectionalSync": "Bidirectional Sync",
+  "@bidirectionalSync": {
+    "description": "Bidirectional sync label"
+  },
+  "bidirectionalSyncDescription": "Send app tasks to Google Calendar",
+  "@bidirectionalSyncDescription": {
+    "description": "Bidirectional sync description"
+  },
+  "showCompletedTasks": "Show Completed Tasks",
+  "@showCompletedTasks": {
+    "description": "Show completed tasks label"
+  },
+  "showCompletedTasksDescription": "Display completed tasks from Google Calendar",
+  "@showCompletedTasksDescription": {
+    "description": "Show completed tasks description"
+  },
+  "credentialsFileFound": "Credentials file found",
+  "@credentialsFileFound": {
+    "description": "Credentials file found message"
+  },
+  "credentialsFileNotFound": "Credentials file not found",
+  "@credentialsFileNotFound": {
+    "description": "Credentials file not found message"
+  },
+  "outlookSettingsInfo": "Outlook Settings Info",
+  "@outlookSettingsInfo": {
+    "description": "Outlook settings info title"
+  },
+  "autoLayoutAdjustment": "Auto Layout Adjustment",
+  "@autoLayoutAdjustment": {
+    "description": "Auto layout adjustment label"
+  },
+  "autoLayoutAdjustmentDescription": "Automatically adjust based on screen size",
+  "@autoLayoutAdjustmentDescription": {
+    "description": "Auto layout adjustment description"
+  },
+  "autoLayoutEnabledLabel": "Auto Layout Enabled",
+  "@autoLayoutEnabledLabel": {
+    "description": "Auto layout enabled label"
+  },
+  "manualLayoutSettings": "Manual Layout Settings",
+  "@manualLayoutSettings": {
+    "description": "Manual layout settings label"
+  },
+  "animationEffectSettings": "Animation & Effect Settings",
+  "@animationEffectSettings": {
+    "description": "Animation and effect settings title"
+  },
+  "animationDuration": "Animation Duration: {ms}ms",
+  "@animationDuration": {
+    "description": "Animation duration",
+    "placeholders": {
+      "ms": {
+        "type": "String"
+      }
+    }
+  },
+  "spacing": "Spacing: {value}px",
+  "@spacing": {
+    "description": "Spacing",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "darkModeContrastBoostPercent": "Dark Mode Contrast Boost: {value}%",
+  "@darkModeContrastBoostPercent": {
+    "description": "Dark mode contrast boost with percentage",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "itemSettings": "Item Settings",
+  "@itemSettings": {
+    "description": "Item settings title"
+  },
+  "reset": "Reset",
+  "@reset": {
+    "description": "Reset button label"
+  },
+  "taskProjectSettingsReset": "Task project settings have been reset",
+  "@taskProjectSettingsReset": {
+    "description": "Task project settings reset success message"
+  },
+  "resetSettings": "Reset Settings",
+  "@resetSettings": {
+    "description": "Reset settings button label"
+  },
+  "backupFolderOpened": "Backup folder opened",
+  "@backupFolderOpened": {
+    "description": "Backup folder opened message"
+  },
+  "googleCalendar": "Google Calendar",
+  "@googleCalendar": {
+    "description": "Google Calendar label"
+  },
+  "googleCalendarIntegration": "Google Calendar Integration",
+  "@googleCalendarIntegration": {
+    "description": "Google Calendar integration title"
+  },
+  "googleCalendarIntegrationDescription": "Sync Google Calendar events as tasks",
+  "@googleCalendarIntegrationDescription": {
+    "description": "Google Calendar integration description"
+  },
+  "gmailIntegration": "Gmail Integration",
+  "@gmailIntegration": {
+    "description": "Gmail integration title"
+  },
+  "gmailIntegrationAbout": "About Gmail Integration",
+  "@gmailIntegrationAbout": {
+    "description": "Gmail integration about title"
+  },
+  "gmailIntegrationDescription": "You can launch Gmail's compose screen from the task edit modal.\nNo API or access token configuration is required.\nIf you have a browser logged into your Google account, a new Gmail compose tab will open directly.",
+  "@gmailIntegrationDescription": {
+    "description": "Gmail integration description"
+  },
+  "gmailUsage": "Usage:\n1. Open the task edit modal\n2. Select Gmail in the email sending section\n3. Enter the recipient and click the \"Send Email\" button\n4. Gmail's compose screen will open, so check the content and send\n(Sending history is recorded on the task side)",
+  "@gmailUsage": {
+    "description": "Gmail usage instructions"
+  },
+  "outlookIntegration": "Outlook Integration",
+  "@outlookIntegration": {
+    "description": "Outlook integration title"
+  },
+  "outlookIntegrationAbout": "About Outlook Integration",
+  "@outlookIntegrationAbout": {
+    "description": "Outlook integration about title"
+  },
+  "outlookIntegrationDescription": "You can use email sending functionality using the Outlook API.",
+  "@outlookIntegrationDescription": {
+    "description": "Outlook integration description"
+  },
+  "powershellFileDetails": "PowerShell File Details",
+  "@powershellFileDetails": {
+    "description": "PowerShell file details title"
+  },
+  "executableDirectory": "Same directory as executable\\Apps",
+  "@executableDirectory": {
+    "description": "Executable directory path"
+  },
+  "outlookConnectionTest": "Outlook Connection Test",
+  "@outlookConnectionTest": {
+    "description": "Outlook connection test title"
+  },
+  "outlookConnectionTestDescription": "Test connection with Outlook application",
+  "@outlookConnectionTestDescription": {
+    "description": "Outlook connection test description"
+  },
+  "mailCompositionSupport": "Mail Composition Support",
+  "@mailCompositionSupport": {
+    "description": "Mail composition support title"
+  },
+  "mailCompositionSupportDescription": "Support function for creating reply emails from tasks",
+  "@mailCompositionSupportDescription": {
+    "description": "Mail composition support description"
+  },
+  "sentMailSearch": "Sent Mail Search",
+  "@sentMailSearch": {
+    "description": "Sent mail search title"
+  },
+  "sentMailSearchDescription": "Function to search and confirm sent emails",
+  "@sentMailSearchDescription": {
+    "description": "Sent mail search description"
+  },
+  "outlookCalendarEvents": "Outlook Calendar Events",
+  "@outlookCalendarEvents": {
+    "description": "Outlook calendar events title"
+  },
+  "outlookCalendarEventsDescription": "Function to retrieve events from Outlook calendar and assign them to tasks",
+  "@outlookCalendarEventsDescription": {
+    "description": "Outlook calendar events description"
+  },
+  "portableVersion": "Portable Version",
+  "@portableVersion": {
+    "description": "Portable version label"
+  },
+  "installedVersion": "Installed Version",
+  "@installedVersion": {
+    "description": "Installed version label"
+  },
+  "manualExecution": "Manual Execution",
+  "@manualExecution": {
+    "description": "Manual execution label"
+  },
+  "automaticExecution": "Automatic Execution",
+  "@automaticExecution": {
+    "description": "Automatic execution label"
+  },
+  "importantNotes": "Important Notes",
+  "@importantNotes": {
+    "description": "Important notes title"
+  },
+  "importantNotesContent": "• Administrator privileges are not required (can be executed at user level)\n• File names must match exactly\n• Manual permission is required if execution policy is restricted\n• May not work due to company PC security policies\n\n【Installation Location】Please place in one of the following:\n1. Portable Version: {portablePath}\n2. Installed Version: {installedPath}",
+  "@importantNotesContent": {
+    "description": "Important notes content",
+    "placeholders": {
+      "portablePath": {
+        "type": "String"
+      },
+      "installedPath": {
+        "type": "String"
+      }
+    }
+  },
+  "connectionTest": "Connection Test",
+  "@connectionTest": {
+    "description": "Connection test button label"
+  },
+  "outlookPersonalCalendarAutoImport": "Outlook Personal Calendar Auto Import",
+  "@outlookPersonalCalendarAutoImport": {
+    "description": "Outlook personal calendar auto import title"
+  },
+  "outlookSettingsInfoContent": "• Required Permissions: Outlook Send\n• Supported Features: Email sending, automatic schedule import\n• Usage: Send emails from Outlook in task management, or enable auto import settings",
+  "@outlookSettingsInfoContent": {
+    "description": "Outlook settings info content"
+  },
+  "googleCalendarSetupGuide": "Google Calendar Setup Guide",
+  "@googleCalendarSetupGuide": {
+    "description": "Google Calendar setup guide title"
+  },
+  "googleCalendarSetupSteps": "Setup steps for using Google Calendar API:",
+  "@googleCalendarSetupSteps": {
+    "description": "Google Calendar setup steps title"
+  },
+  "accessGoogleCloudConsole": "Access Google Cloud Console",
+  "@accessGoogleCloudConsole": {
+    "description": "Access Google Cloud Console step"
+  },
+  "createOrSelectProject": "Create a new project or select an existing project",
+  "@createOrSelectProject": {
+    "description": "Create or select project step"
+  },
+  "enableGoogleCalendarAPI": "Enable Google Calendar API",
+  "@enableGoogleCalendarAPI": {
+    "description": "Enable Google Calendar API step"
+  },
+  "enableGoogleCalendarAPIDescription": "Search for \"Google Calendar API\" in \"APIs & Services\" → \"Library\" and enable it",
+  "@enableGoogleCalendarAPIDescription": {
+    "description": "Enable Google Calendar API description"
+  },
+  "createOAuth2ClientID": "Create OAuth2 Client ID",
+  "@createOAuth2ClientID": {
+    "description": "Create OAuth2 client ID step"
+  },
+  "createOAuth2ClientIDDescription": "\"APIs & Services\" → \"Credentials\" → \"Create Credentials\" → \"OAuth2 Client ID\" → \"Desktop Application\"",
+  "@createOAuth2ClientIDDescription": {
+    "description": "Create OAuth2 client ID description"
+  },
+  "downloadCredentialsFile": "Download Credentials File",
+  "@downloadCredentialsFile": {
+    "description": "Download credentials file step"
+  },
+  "downloadCredentialsFileDescription": "Download the JSON file from the \"Download\" button of the created OAuth2 Client ID",
+  "@downloadCredentialsFileDescription": {
+    "description": "Download credentials file description"
+  },
+  "placeFileInAppFolder": "Place File in App Folder",
+  "@placeFileInAppFolder": {
+    "description": "Place file in app folder step"
+  },
+  "placeFileInAppFolderDescription": "Place the downloaded JSON file in the app folder as \"oauth2_credentials.json\"",
+  "@placeFileInAppFolderDescription": {
+    "description": "Place file in app folder description"
+  },
+  "executeOAuth2Authentication": "Execute OAuth2 Authentication",
+  "@executeOAuth2Authentication": {
+    "description": "Execute OAuth2 authentication step"
+  },
+  "executeOAuth2AuthenticationDescription": "Click the \"Start OAuth2 Authentication\" button in the app to complete authentication",
+  "@executeOAuth2AuthenticationDescription": {
+    "description": "Execute OAuth2 authentication description"
+  },
+  "generatedFiles": "Generated Files",
+  "@generatedFiles": {
+    "description": "Generated files title"
+  },
+  "exportOptions": "Export Options",
+  "@exportOptions": {
+    "description": "Export options title"
+  },
+  "selectDataToExport": "Please select the data to export:",
+  "@selectDataToExport": {
+    "description": "Select data to export message"
+  },
+  "linksOnly": "Links Only",
+  "@linksOnly": {
+    "description": "Links only option"
+  },
+  "linksOnlyDescription": "Export link data only",
+  "@linksOnlyDescription": {
+    "description": "Links only description"
+  },
+  "tasksOnly": "Tasks Only",
+  "@tasksOnly": {
+    "description": "Tasks only option"
+  },
+  "tasksOnlyDescription": "Export task data only",
+  "@tasksOnlyDescription": {
+    "description": "Tasks only description"
+  },
+  "both": "Both",
+  "@both": {
+    "description": "Both option"
+  },
+  "bothDescription": "Export both links and tasks",
+  "@bothDescription": {
+    "description": "Both description"
+  },
+  "export": "Export",
+  "@export": {
+    "description": "Export button label"
+  },
+  "importOptions": "Import Options",
+  "@importOptions": {
+    "description": "Import options title"
+  },
+  "selectDataToImport": "Please select the data to import:",
+  "@selectDataToImport": {
+    "description": "Select data to import message"
+  },
+  "linksOnlyImportDescription": "Import link data only",
+  "@linksOnlyImportDescription": {
+    "description": "Links only import description"
+  },
+  "tasksOnlyImportDescription": "Import task data only",
+  "@tasksOnlyImportDescription": {
+    "description": "Tasks only import description"
+  },
+  "bothImportDescription": "Import both links and tasks",
+  "@bothImportDescription": {
+    "description": "Both import description"
+  },
+  "exportCompleted": "Export completed\nSave location: {filePath}",
+  "@exportCompleted": {
+    "description": "Export completed message",
+    "placeholders": {
+      "filePath": {
+        "type": "String"
+      }
+    }
+  },
+  "exportCompletedTitle": "Export Completed",
+  "@exportCompletedTitle": {
+    "description": "Export completed title"
+  },
+  "exportError": "Export Error",
+  "@exportError": {
+    "description": "Export error title"
+  },
+  "exportErrorMessage": "Export error: {error}",
+  "@exportErrorMessage": {
+    "description": "Export error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "couldNotOpenFolder": "Could not open folder: {error}",
+  "@couldNotOpenFolder": {
+    "description": "Could not open folder message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button label"
+  },
+  "oauth2AuthCompleted": "After OAuth2 authentication is completed, the app will automatically generate a \"google_calendar_tokens.json\" file.",
+  "@oauth2AuthCompleted": {
+    "description": "OAuth2 authentication completed message"
+  },
+  "thisFileContains": "This file contains the following information:",
+  "@thisFileContains": {
+    "description": "This file contains message"
+  },
+  "syncStatus": "Sync Status",
+  "@syncStatus": {
+    "description": "Sync status title"
+  },
+  "waiting": "Waiting",
+  "@waiting": {
+    "description": "Waiting status"
+  },
+  "syncing": "Syncing...",
+  "@syncing": {
+    "description": "Syncing status"
+  },
+  "syncCompleted": "Sync Completed",
+  "@syncCompleted": {
+    "description": "Sync completed status"
+  },
+  "syncError": "Sync Error",
+  "@syncError": {
+    "description": "Sync error status"
+  },
+  "lastSync": "Last Sync: {time}",
+  "@lastSync": {
+    "description": "Last sync time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "processingItems": "Processing {processed}/{total} items...",
+  "@processingItems": {
+    "description": "Processing items message",
+    "placeholders": {
+      "processed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "error": "Error: {message}",
+  "@error": {
+    "description": "Error message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "errorCode": "Error Code: {code}",
+  "@errorCode": {
+    "description": "Error code",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "partialSync": "Partial Sync",
+  "@partialSync": {
+    "description": "Partial sync title"
+  },
+  "partialSyncDescription": "You can sync only selected tasks or tasks within a date range",
+  "@partialSyncDescription": {
+    "description": "Partial sync description"
+  },
+  "individualTaskSyncInfo": "To sync individual tasks, select \"Sync this task\" from the 3-dot menu of each task on the task screen.",
+  "@individualTaskSyncInfo": {
+    "description": "Individual task sync info"
+  },
+  "syncByDateRange": "Sync by Date Range",
+  "@syncByDateRange": {
+    "description": "Sync by date range button"
+  },
+  "cleanupDuplicateEvents": "Clean Up Duplicate Events",
+  "@cleanupDuplicateEvents": {
+    "description": "Cleanup duplicate events button"
+  },
+  "deleteOrphanedEvents": "Delete Orphaned Events",
+  "@deleteOrphanedEvents": {
+    "description": "Delete orphaned events button"
+  },
+  "orphanedEventsDeletion": "Delete Orphaned Events",
+  "@orphanedEventsDeletion": {
+    "description": "Orphaned events deletion title"
+  },
+  "orphanedEventsDeletionDescription": "Delete events in Google Calendar that do not exist in the app.\nUse this when events for tasks deleted in the app remain in Google Calendar.\n\nThis operation cannot be undone. Do you want to proceed?",
+  "@orphanedEventsDeletionDescription": {
+    "description": "Orphaned events deletion description"
+  },
+  "executeDeletion": "Execute Deletion",
+  "@executeDeletion": {
+    "description": "Execute deletion button"
+  },
+  "detectingOrphanedEvents": "Detecting orphaned events...",
+  "@detectingOrphanedEvents": {
+    "description": "Detecting orphaned events message"
+  },
+  "orphanedEventsDeletionCompleted": "Orphaned events deletion completed: {count} deleted",
+  "@orphanedEventsDeletionCompleted": {
+    "description": "Orphaned events deletion completed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orphanedEventsDeleted": "Deleted {count} orphaned events",
+  "@orphanedEventsDeleted": {
+    "description": "Orphaned events deleted",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noOrphanedEventsFound": "No orphaned events found",
+  "@noOrphanedEventsFound": {
+    "description": "No orphaned events found"
+  },
+  "orphanedEventsDeletionFailed": "Orphaned events deletion failed",
+  "@orphanedEventsDeletionFailed": {
+    "description": "Orphaned events deletion failed"
+  },
+  "orphanedEventsDeletionError": "An error occurred while deleting orphaned events",
+  "@orphanedEventsDeletionError": {
+    "description": "Orphaned events deletion error"
+  },
+  "duplicateEventsCleanup": "Duplicate Events Cleanup",
+  "@duplicateEventsCleanup": {
+    "description": "Duplicate events cleanup title"
+  },
+  "duplicateEventsCleanupDescription": "Detect and delete duplicate events in Google Calendar.\nIf there are multiple events with the same title and date, the older ones will be deleted.\n\nThis operation cannot be undone. Do you want to proceed?",
+  "@duplicateEventsCleanupDescription": {
+    "description": "Duplicate events cleanup description"
+  },
+  "executeCleanup": "Execute Cleanup",
+  "@executeCleanup": {
+    "description": "Execute cleanup button"
+  },
+  "detectingDuplicateEvents": "Detecting duplicate events...",
+  "@detectingDuplicateEvents": {
+    "description": "Detecting duplicate events message"
+  },
+  "duplicateCleanupCompleted": "Duplicate cleanup completed: {found} groups detected, {removed} deleted",
+  "@duplicateCleanupCompleted": {
+    "description": "Duplicate cleanup completed",
+    "placeholders": {
+      "found": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "duplicateEventsDeleted": "Deleted {count} duplicate events",
+  "@duplicateEventsDeleted": {
+    "description": "Duplicate events deleted",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noDuplicateEventsFound": "No duplicate events found",
+  "@noDuplicateEventsFound": {
+    "description": "No duplicate events found"
+  },
+  "duplicateCleanupFailed": "Duplicate cleanup failed",
+  "@duplicateCleanupFailed": {
+    "description": "Duplicate cleanup failed"
+  },
+  "duplicateCleanupError": "An error occurred during duplicate cleanup",
+  "@duplicateCleanupError": {
+    "description": "Duplicate cleanup error"
+  },
+  "checkSetupMethod": "Check Setup Method",
+  "@checkSetupMethod": {
+    "description": "Check setup method button"
+  },
+  "oauth2AuthCompleted": "OAuth2 authentication completed",
+  "@oauth2AuthCompleted": {
+    "description": "OAuth2 authentication completed"
+  },
+  "authStartFailed": "Failed to start authentication",
+  "@authStartFailed": {
+    "description": "Authentication start failed"
+  },
+  "storageLocation": "Storage Location",
+  "@storageLocation": {
+    "description": "Storage location label"
+  },
+  "executionMethod": "Execution Method",
+  "@executionMethod": {
+    "description": "Execution method label"
+  },
+  "startOAuth2Authentication": "Start OAuth2 Authentication",
+  "@startOAuth2Authentication": {
+    "description": "Start OAuth2 authentication button"
+  },
+  "appToGoogleCalendarSync": "App → Google Calendar Sync",
+  "@appToGoogleCalendarSync": {
+    "description": "App to Google Calendar sync button"
+  },
+  "appToGoogleCalendarSyncCompleted": "App → Google Calendar sync completed: {created} created, {updated} updated, {deleted} deleted",
+  "@appToGoogleCalendarSyncCompleted": {
+    "description": "App to Google Calendar sync completed message",
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      },
+      "deleted": {
+        "type": "int"
+      }
+    }
+  },
+  "googleCalendarToAppSync": "Google Calendar → App Sync",
+  "@googleCalendarToAppSync": {
+    "description": "Google Calendar to app sync button"
+  },
+  "googleCalendarToAppSyncCompleted": "Google Calendar → App sync completed: {added} added, {skipped} skipped",
+  "@googleCalendarToAppSyncCompleted": {
+    "description": "Google Calendar to app sync completed message",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "syncErrorMessage": "Sync error: {error}",
+  "@syncErrorMessage": {
+    "description": "Sync error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errorColon": "Error: {error}",
+  "@errorColon": {
+    "description": "Error message with colon",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "selectFileToImport": "Select File to Import",
+  "@selectFileToImport": {
+    "description": "Select file to import dialog title"
+  },
+  "importCompleted": "Import completed\nLinks: {linksCount}\nTasks: {tasksCount}\nGroups: {groupsCount}",
+  "@importCompleted": {
+    "description": "Import completed message",
+    "placeholders": {
+      "linksCount": {
+        "type": "int"
+      },
+      "tasksCount": {
+        "type": "int"
+      },
+      "groupsCount": {
+        "type": "int"
+      }
+    }
+  },
+  "importCompletedTitle": "Import Completed",
+  "@importCompletedTitle": {
+    "description": "Import completed title"
+  },
+  "importError": "Import Error",
+  "@importError": {
+    "description": "Import error title"
+  },
+  "importErrorMessage": "Import error: {error}",
+  "@importErrorMessage": {
+    "description": "Import error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }
 
