@@ -604,16 +604,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       final targetTask = await showDialog<TaskItem>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('タスクを結合'),
+          title: Text(AppLocalizations.of(context)!.mergeTask),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '結合先のタスクを選択してください：',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Text(
+                  AppLocalizations.of(context)!.selectTargetTask,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 Flexible(
@@ -691,7 +691,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         if (mounted) {
           SnackBarService.showWarning(
             context,
-            'バックアップに失敗しましたが、結合を続行します: $e',
+            AppLocalizations.of(context)!.backupFailedContinue('$e'),
           );
         }
       }
@@ -699,12 +699,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       // 確認ダイアログ
       final confirmed = await UnifiedDialogHelper.showDeleteConfirmDialog(
         context,
-        title: 'タスクを結合',
-        message: '「${targetTask.title}」に${sourceTaskIds.length}件のタスクを結合しますか？\n\n'
-            '結合元タスクの予定、サブタスク、メモ、リンク、タグが統合されます。\n'
-            '結合元タスクは完了状態になります。',
-        confirmText: '結合',
-        cancelText: 'キャンセル',
+        title: AppLocalizations.of(context)!.mergeTaskConfirm,
+        message: AppLocalizations.of(context)!.mergeTaskConfirmMessage(
+          targetTask.title,
+          sourceTaskIds.length,
+          AppLocalizations.of(context)!.mergeTaskConfirmDescription,
+        ),
+        confirmText: AppLocalizations.of(context)!.merge,
+        cancelText: AppLocalizations.of(context)!.cancel,
       );
 
       if (confirmed != true) return;
@@ -726,7 +728,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       if (mounted) {
         SnackBarService.showSuccess(
           context,
-          '${sourceTaskIds.length + 1}件のタスクを結合しました',
+          AppLocalizations.of(context)!.tasksMerged(sourceTaskIds.length + 1),
         );
       }
     } catch (e) {
@@ -760,8 +762,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               children: [
                 // 操作モード選択
                 RadioListTile<String>(
-                  title: const Text('追加'),
-                  subtitle: const Text('既存のリンクに追加します'),
+                  title: Text(AppLocalizations.of(context)!.add),
+                  subtitle: Text(AppLocalizations.of(context)!.addDescription),
                   value: 'add',
                   groupValue: operationMode,
                   onChanged: (value) {
@@ -771,8 +773,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   },
                 ),
                 RadioListTile<String>(
-                  title: const Text('削除'),
-                  subtitle: const Text('指定したリンクを削除します'),
+                  title: Text(AppLocalizations.of(context)!.remove),
+                  subtitle: Text(AppLocalizations.of(context)!.removeDescription),
                   value: 'remove',
                   groupValue: operationMode,
                   onChanged: (value) {
@@ -782,8 +784,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   },
                 ),
                 RadioListTile<String>(
-                  title: const Text('置換'),
-                  subtitle: const Text('既存のリンクを全て置き換えます'),
+                  title: Text(AppLocalizations.of(context)!.replace),
+                  subtitle: Text(AppLocalizations.of(context)!.replaceDescription),
                   value: 'replace',
                   groupValue: operationMode,
                   onChanged: (value) {
@@ -795,9 +797,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 const Divider(),
                 // リンク選択
                 if (allLinks.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('利用可能なリンクがありません'),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(AppLocalizations.of(context)!.noLinksAvailable),
                   )
                 else
                   SizedBox(
@@ -841,7 +843,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                       await _bulkChangeLink(selectedLinkId!, operation: operationMode);
                     }
                   : null,
-              child: const Text('適用'),
+              child: Text(AppLocalizations.of(context)!.apply),
             ),
           ],
         ),
@@ -936,28 +938,28 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             _buildBulkStatusMenuItem(
               context,
               TaskStatus.pending,
-              '未着手',
+              AppLocalizations.of(context)!.notStarted,
               Colors.green,
               Icons.pending,
             ),
             _buildBulkStatusMenuItem(
               context,
               TaskStatus.inProgress,
-              '進行中',
+              AppLocalizations.of(context)!.inProgress,
               Colors.blue,
               Icons.play_circle_outline,
             ),
             _buildBulkStatusMenuItem(
               context,
               TaskStatus.completed,
-              '完了',
+              AppLocalizations.of(context)!.completed,
               Colors.grey,
               Icons.check_circle,
             ),
             _buildBulkStatusMenuItem(
               context,
               TaskStatus.cancelled,
-              '取消',
+              AppLocalizations.of(context)!.cancelled,
               Colors.red,
               Icons.cancel,
             ),
@@ -1139,16 +1141,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('期限日を一括変更'),
+          title: Text(AppLocalizations.of(context)!.dueDateBulkChange),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: const Text('期限日を選択'),
+                title: Text(AppLocalizations.of(context)!.selectDueDate),
                 subtitle: Text(
                   selectedDate != null
                       ? DateFormat('yyyy/MM/dd').format(selectedDate!)
-                      : '未選択',
+                      : AppLocalizations.of(context)!.notSelected,
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.calendar_today),
@@ -1188,7 +1190,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 Navigator.of(context).pop();
                 await _bulkChangeDueDate(selectedDate);
               },
-              child: const Text('適用'),
+              child: Text(AppLocalizations.of(context)!.apply),
             ),
           ],
         ),
@@ -1236,14 +1238,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('タグを一括操作'),
+          title: Text(AppLocalizations.of(context)!.bulkTagOperation),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // 操作モード選択
               RadioListTile<String>(
-                title: const Text('追加'),
-                subtitle: const Text('既存のタグに追加します'),
+                title: Text(AppLocalizations.of(context)!.add),
+                subtitle: Text(AppLocalizations.of(context)!.addTagDescription),
                 value: 'add',
                 groupValue: operationMode,
                 onChanged: (value) {
@@ -1253,8 +1255,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 },
               ),
               RadioListTile<String>(
-                title: const Text('削除'),
-                subtitle: const Text('指定したタグを削除します'),
+                title: Text(AppLocalizations.of(context)!.remove),
+                subtitle: Text(AppLocalizations.of(context)!.removeTagDescription),
                 value: 'remove',
                 groupValue: operationMode,
                 onChanged: (value) {
@@ -1299,7 +1301,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 Navigator.of(context).pop();
                 await _bulkChangeTags(tags, operation: operationMode);
               },
-              child: const Text('適用'),
+              child: Text(AppLocalizations.of(context)!.apply),
             ),
           ],
         ),
@@ -1777,13 +1779,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               : IconButton(
                   onPressed: () => _navigateToHome(context),
                   icon: const Icon(Icons.arrow_back),
-                  tooltip: AppLocalizations.of(context)!.homeScreen,
+                  tooltip: AppLocalizations.of(context)!.returnToLinkManagementScreen,
                 ),
             actions: [
               if (_isSelectionMode) ...[
               IconButton(
                 icon: const Icon(Icons.help_outline),
-                tooltip: 'ショートカットキー (F1)',
+                tooltip: '${AppLocalizations.of(context)!.shortcutKeys} (F1)',
                 onPressed: () => _showShortcutHelp(context),
                 color: Theme.of(context).colorScheme.primary,
               ),
@@ -1838,43 +1840,43 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'priority',
                 child: Row(
                   children: [
-                    Icon(Icons.flag, size: 20),
-                    SizedBox(width: 8),
-                    Text('優先度変更'),
+                    const Icon(Icons.flag, size: 20),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.changePriorityMenu),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'dueDate',
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_today, size: 20),
-                    SizedBox(width: 8),
-                    Text('期限日変更'),
+                    const Icon(Icons.calendar_today, size: 20),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.changeDueDateMenu),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'tags',
                 child: Row(
                   children: [
-                    Icon(Icons.label, size: 20),
-                    SizedBox(width: 8),
-                    Text('タグを操作'),
+                    const Icon(Icons.label, size: 20),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.manageTagsMenu),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'link',
                 child: Row(
                   children: [
-                    Icon(Icons.link, size: 20),
-                    SizedBox(width: 8),
-                    Text('リンクを割り当て'),
+                    const Icon(Icons.link, size: 20),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.assignLinkMenu),
                   ],
                 ),
               ),
@@ -1890,7 +1892,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'タスクを結合',
+                      AppLocalizations.of(context)!.combineTasksMenu,
                       style: TextStyle(
                         color: _selectedTaskIds.length >= 2 ? null : Colors.grey,
                       ),
@@ -1916,7 +1918,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             IconButton(
               icon: const Icon(Icons.help_outline),
               color: Theme.of(context).colorScheme.primary,
-              tooltip: 'ショートカットキー (F1)',
+              tooltip: '${AppLocalizations.of(context)!.shortcutKeys} (F1)',
               onPressed: () => _showShortcutHelp(context),
             ),
             // 3点ドットメニューに統合
@@ -5286,6 +5288,63 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       }
     }
   }
+  /// CSV列IDからローカライズされたラベルを取得
+  String _getCsvColumnLabel(String columnId) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (columnId) {
+      case 'id':
+        return l10n.csvColumnId;
+      case 'title':
+        return l10n.csvColumnTitle;
+      case 'description':
+        return l10n.csvColumnDescription;
+      case 'dueDate':
+        return l10n.csvColumnDueDate;
+      case 'reminderTime':
+        return l10n.csvColumnReminderTime;
+      case 'priority':
+        return l10n.csvColumnPriority;
+      case 'status':
+        return l10n.csvColumnStatus;
+      case 'tags':
+        return l10n.csvColumnTags;
+      case 'relatedLinkId':
+        return l10n.csvColumnRelatedLinkId;
+      case 'createdAt':
+        return l10n.csvColumnCreatedAt;
+      case 'completedAt':
+        return l10n.csvColumnCompletedAt;
+      case 'startedAt':
+        return l10n.csvColumnStartedAt;
+      case 'completedAtManual':
+        return l10n.csvColumnCompletedAtManual;
+      case 'estimatedMinutes':
+        return l10n.csvColumnEstimatedMinutes;
+      case 'notes':
+        return l10n.csvColumnNotes;
+      case 'isRecurring':
+        return l10n.csvColumnIsRecurring;
+      case 'recurringPattern':
+        return l10n.csvColumnRecurringPattern;
+      case 'isRecurringReminder':
+        return l10n.csvColumnIsRecurringReminder;
+      case 'recurringReminderPattern':
+        return l10n.csvColumnRecurringReminderPattern;
+      case 'nextReminderTime':
+        return l10n.csvColumnNextReminderTime;
+      case 'reminderCount':
+        return l10n.csvColumnReminderCount;
+      case 'hasSubTasks':
+        return l10n.csvColumnHasSubTasks;
+      case 'completedSubTasksCount':
+        return l10n.csvColumnCompletedSubTasksCount;
+      case 'totalSubTasksCount':
+        return l10n.csvColumnTotalSubTasksCount;
+      default:
+        return columnId;
+    }
+  }
+
   /// CSV出力の列選択ダイアログを表示
   Future<Set<String>?> _showColumnSelectionDialog(List<Map<String, String>> columns) async {
     // デフォルトで全列を選択
@@ -5295,7 +5354,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('CSV出力する列を選択'),
+          title: Text(AppLocalizations.of(context)!.selectColumnsToExport),
           content: SizedBox(
             width: 400,
             child: Column(
@@ -5312,7 +5371,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                           selectedColumnIds.addAll(columns.map((c) => c['id']!));
                         });
                       },
-                      child: const Text('すべて選択'),
+                      child: Text(AppLocalizations.of(context)!.selectAll),
                     ),
                     TextButton(
                       onPressed: () {
@@ -5320,7 +5379,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                           selectedColumnIds.clear();
                         });
                       },
-                      child: const Text('すべて解除'),
+                      child: Text(AppLocalizations.of(context)!.deselectAll),
                     ),
                   ],
                 ),
@@ -5333,7 +5392,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     itemBuilder: (context, index) {
                       final column = columns[index];
                       final columnId = column['id']!;
-                      final columnLabel = column['label']!;
+                      final columnLabel = _getCsvColumnLabel(columnId);
                       final isSelected = selectedColumnIds.contains(columnId);
                       
                       return CheckboxListTile(
@@ -5358,7 +5417,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: selectedColumnIds.isEmpty
@@ -5366,7 +5425,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   : () {
                       Navigator.pop(context, Set<String>.from(selectedColumnIds));
                     },
-              child: const Text('出力'),
+              child: Text(AppLocalizations.of(context)!.export),
             ),
           ],
         ),
@@ -5613,7 +5672,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Icon(Icons.help_outline, color: Colors.indigo, size: 20),
               const SizedBox(width: 8),
-              const Text('ヘルプセンター'),
+              Text(AppLocalizations.of(context)!.helpCenter),
             ],
           ),
         ),
@@ -6487,7 +6546,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Expanded(
                 child: CheckboxListTile(
-                  title: Text(AppLocalizations.of(context)!.descriptionText, style: const TextStyle(fontSize: 14)),
+                  title: Text(AppLocalizations.of(context)!.description, style: const TextStyle(fontSize: 14)),
                   value: _searchInDescription,
                   onChanged: (value) {
                     setState(() {
@@ -6513,7 +6572,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               Expanded(
                 child: CheckboxListTile(
-                  title: Text(AppLocalizations.of(context)!.requester, style: const TextStyle(fontSize: 14)),
+                  title: Text(AppLocalizations.of(context)!.assignee, style: const TextStyle(fontSize: 14)),
                   value: _searchInRequester,
                   onChanged: (value) {
                     setState(() {
@@ -6536,7 +6595,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                _useRegex ? AppLocalizations.of(context)!.regexSearchMode : AppLocalizations.of(context)!.normalSearchMode,
+                _useRegex ? AppLocalizations.of(context)!.regexSearchMode : AppLocalizations.of(context)!.normalSearchOption,
                 style: TextStyle(
                   fontSize: 12,
                   color: Theme.of(context).colorScheme.primary,
@@ -6605,11 +6664,26 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   /// 正規表現の例を表示
   Widget _buildRegexExamples() {
     final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
+    final isJapanese = locale.languageCode == 'ja';
+    
     final examples = [
-      {'pattern': r'^プロジェクト', 'description': l10n.regexExample1},
-      {'pattern': r'完了$', 'description': l10n.regexExample2},
-      {'pattern': r'^プロジェクト.*完了$', 'description': l10n.regexExample3},
-      {'pattern': r'緊急|重要', 'description': l10n.regexExample4},
+      {
+        'pattern': isJapanese ? r'^プロジェクト' : r'^project',
+        'description': l10n.regexExample1
+      },
+      {
+        'pattern': isJapanese ? r'完了$' : r'completed$',
+        'description': l10n.regexExample2
+      },
+      {
+        'pattern': isJapanese ? r'^プロジェクト.*完了$' : r'^project.*completed$',
+        'description': l10n.regexExample3
+      },
+      {
+        'pattern': isJapanese ? r'緊急|重要' : r'urgent|important',
+        'description': l10n.regexExample4
+      },
       {'pattern': r'\d{4}-\d{2}-\d{2}', 'description': l10n.regexExample5},
       {'pattern': r'[A-Z]{2,}', 'description': l10n.regexExample6},
       {'pattern': r'^.{1,10}$', 'description': l10n.regexExample7},
@@ -6873,7 +6947,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('グループ化'),
+        title: Text(AppLocalizations.of(context)!.grouping),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -6893,7 +6967,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.calendar_month),
-                title: const Text('期限日でグループ化'),
+                title: Text(AppLocalizations.of(context)!.groupByDueDate),
                 trailing: _groupByOption == GroupByOption.dueDate
                     ? const Icon(Icons.check, color: Colors.green)
                     : null,
@@ -6906,7 +6980,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.label),
-                title: const Text('タグでグループ化'),
+                title: Text(AppLocalizations.of(context)!.groupByTag),
                 trailing: _groupByOption == GroupByOption.tags
                     ? const Icon(Icons.check, color: Colors.green)
                     : null,
@@ -6919,7 +6993,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.link),
-                title: const Text('プロジェクト（リンク）でグループ化'),
+                title: Text(AppLocalizations.of(context)!.groupByProjectLink),
                 trailing: _groupByOption == GroupByOption.linkId
                     ? const Icon(Icons.check, color: Colors.green)
                     : null,
@@ -6945,7 +7019,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.flag),
-                title: const Text('優先度でグループ化'),
+                title: Text(AppLocalizations.of(context)!.groupByPriority),
                 trailing: _groupByOption == GroupByOption.priority
                     ? const Icon(Icons.check, color: Colors.green)
                     : null,
@@ -6962,7 +7036,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('閉じる'),
+            child: Text(AppLocalizations.of(context)!.close),
           ),
         ],
       ),
@@ -7617,19 +7691,21 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               side: BorderSide(color: borderColor, width: 2),
             ),
             color: cardBg,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: minCardHeight ?? layoutSettings.cardHeight,
-                maxWidth: cardWidth ?? double.infinity,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                  // ヘッダー: ピン留めボタン + 期限日バッジ + チェックボックス
-                  Row(
+            child: Stack(
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: minCardHeight ?? layoutSettings.cardHeight,
+                    maxWidth: cardWidth ?? double.infinity,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                      // ヘッダー: ピン留めボタン + 期限日バッジ + チェックボックス
+                      Row(
                     children: [
                       // ピン留めボタン
                       IconButton(
@@ -7878,8 +7954,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     ],
                   ),
                   ],
+                ),//child column 
+                  ),
                 ),
+              // メールバッジを右上に配置
+              Positioned(
+                top: 8,
+                right: 8,
+                child: _buildMailBadges(task.id),
               ),
+              ],
             ),
           ),
         ),

@@ -60,6 +60,13 @@ class MailService {
     String? memo,
     List<String>? links,
     required String token,
+    String taskInfoHeader = '📋 タスク情報',
+    String taskLabel = 'タスク:',
+    String dueDateLabel = '期限:',
+    String statusLabel = 'ステータス:',
+    String memoLabel = 'メモ:',
+    String relatedMaterialsLabel = '関連資料:',
+    String sentIdLabel = '送信ID:',
   }) {
     String linkItem(String raw) {
       final isUnc = raw.startsWith(r'\\');
@@ -69,11 +76,11 @@ class MailService {
 
     final linksHtml = (links ?? []).isEmpty
         ? ''
-        : '<div style="margin: 15px 0;"><strong>関連資料:</strong><ul style="margin: 5px 0;">${(links!).map(linkItem).join()}</ul></div>';
+        : '<div style="margin: 15px 0;"><strong>$relatedMaterialsLabel</strong><ul style="margin: 5px 0;">${(links!).map(linkItem).join()}</ul></div>';
 
     final memoHtml = (memo ?? '').isEmpty
         ? ''
-        : '<div style="margin: 15px 0;"><strong>メモ:</strong><br>${(memo!).replaceAll('\n', '<br>')}</div>';
+        : '<div style="margin: 15px 0;"><strong>$memoLabel</strong><br>${(memo!).replaceAll('\n', '<br>')}</div>';
 
     return '''
     <html>
@@ -81,13 +88,13 @@ class MailService {
       <div style="background-color: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         
         <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
-          <h2 style="color: #007bff; margin: 0; font-size: 18px;">📋 タスク情報</h2>
+          <h2 style="color: #007bff; margin: 0; font-size: 18px;">$taskInfoHeader</h2>
         </div>
         
         <div style="margin-bottom: 20px;">
-          <div style="margin-bottom: 10px;"><strong>タスク:</strong> $title</div>
-          ${due == null || due.isEmpty ? '' : '<div style="margin-bottom: 10px;"><strong>期限:</strong> $due</div>'}
-          ${status == null || status.isEmpty ? '' : '<div style="margin-bottom: 10px;"><strong>ステータス:</strong> $status</div>'}
+          <div style="margin-bottom: 10px;"><strong>$taskLabel</strong> $title</div>
+          ${due == null || due.isEmpty ? '' : '<div style="margin-bottom: 10px;"><strong>$dueDateLabel</strong> $due</div>'}
+          ${status == null || status.isEmpty ? '' : '<div style="margin-bottom: 10px;"><strong>$statusLabel</strong> $status</div>'}
         </div>
         
         $memoHtml
@@ -96,7 +103,7 @@ class MailService {
         <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef; font-size: 12px; color: #6c757d;">
           <div style="display: inline-block; background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">
           </div>
-          <div>送信ID: $token</div>
+          <div>$sentIdLabel $token</div>
         </div>
         
       </div>
@@ -312,9 +319,9 @@ class MailService {
   }
 
   /// 本文コンテンツをフォーマット
-  String _formatBodyContent(String body) {
+  String _formatBodyContent(String body, {String noMessageText = 'メッセージがありません。'}) {
     if (body.trim().isEmpty) {
-      return '<p style="color: #6c757d; font-style: italic;">メッセージがありません。</p>';
+      return '<p style="color: #6c757d; font-style: italic;">$noMessageText</p>';
     }
     
     // 改行を適切に処理し、HTMLエスケープ
@@ -335,22 +342,31 @@ class MailService {
   }
 
   /// 強化されたメール本文を作成
-  String _createEnhancedBody(String originalBody, String token) {
+  String _createEnhancedBody(
+    String originalBody, 
+    String token, {
+    String noMessageText = 'メッセージがありません。',
+    String mailInfoHeader = '【メール情報】',
+    String sentDateTimeLabel = '送信日時:',
+    String sentIdLabel = '送信ID:',
+    String sentFromAppText = 'このメールは Link Navigator アプリから送信されました。',
+    String? formattedTime,
+  }) {
     final currentTime = DateTime.now();
-    final formattedTime = '${currentTime.year}年${currentTime.month}月${currentTime.day}日 ${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+    final time = formattedTime ?? '${currentTime.year}年${currentTime.month}月${currentTime.day}日 ${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
     
     final enhancedBody = '''
-${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。'}
+${originalBody.isNotEmpty ? originalBody : noMessageText}
 
 ────────────────────────────────────────────────────────
 
-【メール情報】
-送信日時: $formattedTime
-送信ID: $token
+$mailInfoHeader
+$sentDateTimeLabel $time
+$sentIdLabel $token
 
 ────────────────────────────────────────────────────────
 
-このメールは Link Navigator アプリから送信されました。
+$sentFromAppText
 ''';
     
     return enhancedBody;

@@ -2204,7 +2204,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('ショートカットキー'),
+        title: Text(AppLocalizations.of(context)!.shortcutKeys),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

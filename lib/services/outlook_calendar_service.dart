@@ -33,6 +33,8 @@ class OutlookCalendarService {
       }
       
       // COMオブジェクトの作成テスト
+      // 注意: Quit()を呼ばずに、ReleaseComObjectのみで解放することで、
+      // Outlookが既に起動している場合にクラッシュを防ぐ
       final result = await Process.run(
         'powershell.exe',
         [
@@ -40,7 +42,7 @@ class OutlookCalendarService {
           '-ExecutionPolicy',
           'Bypass',
           '-Command',
-          r'try { $ol = New-Object -ComObject Outlook.Application; if ($null -eq $ol) { Write-Output "false" } else { $ol.Quit(); [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ol) | Out-Null; [System.GC]::Collect(); Write-Output "true" } } catch { Write-Output "false" }',
+          r'try { $ol = New-Object -ComObject Outlook.Application; if ($null -eq $ol) { Write-Output "false" } else { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ol) | Out-Null; [System.GC]::Collect(); [System.GC]::WaitForPendingFinalizers(); Write-Output "true" } } catch { Write-Output "false" }',
         ],
         runInShell: false,
       ).timeout(

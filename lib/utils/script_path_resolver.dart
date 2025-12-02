@@ -68,20 +68,32 @@ class ScriptPathResolver {
     return path != null;
   }
   
-  /// スクリプトが見つからない場合のエラーメッセージを生成
+  /// スクリプトが見つからない場合のパス情報を取得
   /// [scriptName] スクリプトファイル名
-  /// 戻り値: エラーメッセージ
-  static String getErrorMessage(String scriptName) {
+  /// 戻り値: パス情報を含むマップ（portablePath, installedPath）
+  static Map<String, String> getScriptPaths(String scriptName) {
     final executablePath = Platform.resolvedExecutable;
     final executableDir = File(executablePath).parent.path;
     final appdataPath = Platform.environment['APPDATA'] ?? 
       'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
     
+    return {
+      'portablePath': '$executableDir\\Apps\\$scriptName',
+      'installedPath': '$appdataPath\\Apps\\$scriptName',
+    };
+  }
+
+  /// スクリプトが見つからない場合のエラーメッセージを生成（非推奨: ローカライゼーション対応のためgetScriptPathsを使用）
+  /// [scriptName] スクリプトファイル名
+  /// 戻り値: エラーメッセージ
+  @Deprecated('Use getScriptPaths and localize in UI layer')
+  static String getErrorMessage(String scriptName) {
+    final paths = getScriptPaths(scriptName);
     return '''PowerShellスクリプトが見つかりません: $scriptName
 
 以下のいずれかの場所に配置してください:
-1. ポータブル版: $executableDir\\Apps\\$scriptName
-2. インストール版: $appdataPath\\Apps\\$scriptName
+1. ポータブル版: ${paths['portablePath']}
+2. インストール版: ${paths['installedPath']}
 
 インストーラーを使用するか、手動で配置してください。''';
   }

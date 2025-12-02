@@ -495,6 +495,18 @@
   "@changeStatus": {
     "description": "Change status tooltip"
   },
+  "normalSearchMode": "Normal Search Mode",
+  "@normalSearchMode": {
+    "description": "Normal search mode (deprecated, use normalSearchOption)"
+  },
+  "normalSearchOption": "Normal Search Mode",
+  "@normalSearchOption": {
+    "description": "Normal search mode label"
+  },
+  "regexSearchMode": "Regular Expression Search Mode",
+  "@regexSearchMode": {
+    "description": "Regular expression search mode label"
+  },
   "changePriority": "Change Priority",
   "@changePriority": {
     "description": "Change priority tooltip"
@@ -514,6 +526,59 @@
   "saveLoadFilters": "Save / Load Filters",
   "@saveLoadFilters": {
     "description": "Save/load filters tooltip"
+  },
+  "howToUseRegex": "How to use Regular Expressions",
+  "@howToUseRegex": {
+    "description": "How to use regular expressions title"
+  },
+  "commonPatterns": "Common patterns:",
+  "@commonPatterns": {
+    "description": "Common patterns label"
+  },
+  "copyPattern": "Copy Pattern",
+  "@copyPattern": {
+    "description": "Copy pattern tooltip"
+  },
+  "patternCopied": "Copied \"{pattern}\"",
+  "@patternCopied": {
+    "description": "Pattern copied message",
+    "placeholders": {
+      "pattern": {
+        "type": "String"
+      }
+    }
+  },
+  "regexInvalidWarning": "If the regular expression is invalid, it will automatically switch to normal search",
+  "@regexInvalidWarning": {
+    "description": "Warning message when regex is invalid"
+  },
+  "regexExample1": "Tasks starting with \"project\"",
+  "@regexExample1": {
+    "description": "Regular expression example 1 description"
+  },
+  "regexExample2": "Tasks ending with \"completed\"",
+  "@regexExample2": {
+    "description": "Regular expression example 2 description"
+  },
+  "regexExample3": "Tasks starting with \"project\" and ending with \"completed\"",
+  "@regexExample3": {
+    "description": "Regular expression example 3 description"
+  },
+  "regexExample4": "Tasks containing \"urgent\" or \"important\"",
+  "@regexExample4": {
+    "description": "Regular expression example 4 description"
+  },
+  "regexExample5": "Tasks containing date format (YYYY-MM-DD)",
+  "@regexExample5": {
+    "description": "Regular expression example 5 description"
+  },
+  "regexExample6": "Tasks containing 2 or more uppercase letters",
+  "@regexExample6": {
+    "description": "Regular expression example 6 description"
+  },
+  "regexExample7": "Task titles of 1 to 10 characters",
+  "@regexExample7": {
+    "description": "Regular expression example 7 description"
   },
   "bulkOperations": "Bulk Operations",
   "@bulkOperations": {
@@ -945,6 +1010,10 @@
   },
   "descriptionForRequestor": "Description for Requestor",
   "@descriptionForRequestor": {
+    "description": "Description for Requestor (deprecated, use descriptionForAssignee)"
+  },
+  "descriptionForAssignee": "Description for Assignee",
+  "@descriptionForAssignee": {
     "description": "Description for requestor label"
   },
   "tags": "Tags",
@@ -1931,6 +2000,10 @@
   },
   "requestorDescription": "Requestor Description",
   "@requestorDescription": {
+    "description": "Requestor description (deprecated, use assigneeDescription)"
+  },
+  "assigneeDescription": "Assignee Description",
+  "@assigneeDescription": {
     "description": "Requestor description label"
   },
   "allScreensCommon": "All Screens",
@@ -3326,6 +3399,539 @@
       }
     }
   },
+  "screenshotLoadFailed": "Failed to load screenshot.\nPlease place the image in the assets/help folder.\n({path})",
+  "@screenshotLoadFailed": {
+    "description": "Screenshot load failed message",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "bulkLinkAssignment": "Bulk Link Assignment",
+  "@bulkLinkAssignment": {
+    "description": "Bulk link assignment dialog title"
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Add option"
+  },
+  "addDescription": "Add to existing links",
+  "@addDescription": {
+    "description": "Add description"
+  },
+  "remove": "Remove",
+  "@remove": {
+    "description": "Remove option"
+  },
+  "removeDescription": "Remove specified links",
+  "@removeDescription": {
+    "description": "Remove description"
+  },
+  "replace": "Replace",
+  "@replace": {
+    "description": "Replace option"
+  },
+  "replaceDescription": "Replace all existing links",
+  "@replaceDescription": {
+    "description": "Replace description"
+  },
+  "noLinksAvailable": "No links available",
+  "@noLinksAvailable": {
+    "description": "No links available message"
+  },
+  "tasksMerged": "Merged {count} tasks",
+  "@tasksMerged": {
+    "description": "Tasks merged message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mergeTask": "Merge Tasks",
+  "@mergeTask": {
+    "description": "Merge task dialog title"
+  },
+  "selectTargetTask": "Please select the target task:",
+  "@selectTargetTask": {
+    "description": "Select target task message"
+  },
+  "mergeTaskConfirm": "Merge Tasks",
+  "@mergeTaskConfirm": {
+    "description": "Merge task confirm dialog title"
+  },
+  "mergeTaskConfirmDescription": "Schedules, subtasks, memos, links, and tags from the source task will be merged.\nThe source task will be marked as completed.",
+  "@mergeTaskConfirmDescription": {
+    "description": "Merge task confirm description"
+  },
+  "mergeTaskConfirmMessage": "Merge {count} tasks into \"{title}\"?\n\n{description}",
+  "@mergeTaskConfirmMessage": {
+    "description": "Merge task confirm message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "dropToAdd": "Drop here to add",
+  "@dropToAdd": {
+    "description": "Drop to add message"
+  },
+  "noLinksDragToAdd": "No links\nDrag here to add",
+  "@noLinksDragToAdd": {
+    "description": "No links drag to add message"
+  },
+  "noSearchResults": "No search results",
+  "@noSearchResults": {
+    "description": "No search results message"
+  },
+  "noLinksYet": "No links yet",
+  "@noLinksYet": {
+    "description": "No links yet message"
+  },
+  "cancelled": "Cancelled",
+  "@cancelled": {
+    "description": "Cancelled status"
+  },
+  "merge": "Merge",
+  "@merge": {
+    "description": "Merge button label"
+  },
+  "apply": "Apply",
+  "@apply": {
+    "description": "Apply button label"
+  },
+  "dueDateBulkChange": "Bulk Change Due Date",
+  "@dueDateBulkChange": {
+    "description": "Due date bulk change dialog title"
+  },
+  "selectDueDate": "Select Due Date",
+  "@selectDueDate": {
+    "description": "Select due date label"
+  },
+  "notSelected": "Not Selected",
+  "@notSelected": {
+    "description": "Not selected label"
+  },
+  "bulkTagOperation": "Bulk Tag Operation",
+  "@bulkTagOperation": {
+    "description": "Bulk tag operation dialog title"
+  },
+  "addTagDescription": "Add to existing tags",
+  "@addTagDescription": {
+    "description": "Add tag description"
+  },
+  "removeTagDescription": "Remove specified tags",
+  "@removeTagDescription": {
+    "description": "Remove tag description"
+  },
+  "someFilesNotRegistered": "Some files/folders could not be accessed and were not registered",
+  "@someFilesNotRegistered": {
+    "description": "Some files not registered message"
+  },
+  "editMemo": "Edit Memo",
+  "@editMemo": {
+    "description": "Edit memo dialog title"
+  },
+  "enterMemo": "Enter memo...",
+  "@enterMemo": {
+    "description": "Enter memo hint"
+  },
+  "emptyMemoDeletes": "Leave empty to delete the memo",
+  "@emptyMemoDeletes": {
+    "description": "Empty memo deletes helper text"
+  },
+  "currentMemo": "Current Memo: {memo}",
+  "@currentMemo": {
+    "description": "Current memo label",
+    "placeholders": {
+      "memo": {
+        "type": "String"
+      }
+    }
+  },
+  "none": "None",
+  "@none": {
+    "description": "None label"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button label"
+  },
+  "backupFailedContinue": "Backup failed, but continuing with merge: {error}",
+  "@backupFailedContinue": {
+    "description": "Backup failed but continue merge message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "contentList": "Content List",
+  "@contentList": {
+    "description": "Content list title"
+  },
+  "clickChapterToJump": "Click on the chapter you are interested in to jump!",
+  "@clickChapterToJump": {
+    "description": "Click chapter to jump message"
+  },
+  "searchByKeyword": "Search by keyword",
+  "@searchByKeyword": {
+    "description": "Search by keyword placeholder"
+  },
+  "manualLoadFailed": "Failed to load manual: {error}",
+  "@manualLoadFailed": {
+    "description": "Manual load failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "screenshotNotRegistered": "Screenshot \"{id}\" is not registered.",
+  "@screenshotNotRegistered": {
+    "description": "Screenshot not registered message",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "videoNotRegistered": "Video \"{id}\" is not registered. Please check the assets/help/videos folder.",
+  "@videoNotRegistered": {
+    "description": "Video not registered message",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "linkOpenFailed": "Failed to open link: {href}",
+  "@linkOpenFailed": {
+    "description": "Link open failed message",
+    "placeholders": {
+      "href": {
+        "type": "String"
+      }
+    }
+  },
+  "manualNotLoaded": "Manual is not loaded",
+  "@manualNotLoaded": {
+    "description": "Manual not loaded message"
+  },
+  "reload": "Reload",
+  "@reload": {
+    "description": "Reload button label"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button label"
+  },
+  "unknownError": "Unknown error",
+  "@unknownError": {
+    "description": "Unknown error message"
+  },
+  "helpContentNotFound": "Help content not found.",
+  "@helpContentNotFound": {
+    "description": "Help content not found message"
+  },
+  "linkNavigatorManual": "Link Navigator Manual",
+  "@linkNavigatorManual": {
+    "description": "Link Navigator manual title"
+  },
+  "helpCenterGuide": "A guide to help you master the app quickly. Select items of interest from the left navigation.",
+  "@helpCenterGuide": {
+    "description": "Help center guide description"
+  },
+  "htmlExport": "Export HTML / Print",
+  "@htmlExport": {
+    "description": "HTML export tooltip"
+  },
+  "htmlExportFailed": "Failed to export HTML: {error}",
+  "@htmlExportFailed": {
+    "description": "HTML export failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "filesAdded": "Added {count} file(s)",
+  "@filesAdded": {
+    "description": "Files added message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "foldersAdded": "Added {count} folder(s)",
+  "@foldersAdded": {
+    "description": "Folders added message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linksAdded": "Added {count} link(s)",
+  "@linksAdded": {
+    "description": "Links added message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editLink": "Edit Link",
+  "@editLink": {
+    "description": "Edit link dialog title"
+  },
+  "label": "Label",
+  "@label": {
+    "description": "Label field"
+  },
+  "linkLabelHint": "Enter link label...",
+  "@linkLabelHint": {
+    "description": "Link label hint"
+  },
+  "pathUrl": "Path/URL",
+  "@pathUrl": {
+    "description": "Path/URL field"
+  },
+  "pathUrlHint": "Enter file path or URL...",
+  "@pathUrlHint": {
+    "description": "Path/URL hint"
+  },
+  "tags": "Tags",
+  "@tags": {
+    "description": "Tags field"
+  },
+  "tagsHint": "Enter tags separated by commas (e.g., work, important, project)",
+  "@tagsHint": {
+    "description": "Tags hint"
+  },
+  "faviconUrlHint": "Example: https://www.resonabank.co.jp/",
+  "@faviconUrlHint": {
+    "description": "Favicon URL hint"
+  },
+  "faviconFallbackDomain": "Favicon Fallback Domain",
+  "@faviconFallbackDomain": {
+    "description": "Favicon fallback domain label"
+  },
+  "faviconFallbackHelper": "Set the domain to use when favicon retrieval fails",
+  "@faviconFallbackHelper": {
+    "description": "Favicon fallback helper text"
+  },
+  "type": "Type",
+  "@type": {
+    "description": "Type field"
+  },
+  "icon": "Icon: ",
+  "@icon": {
+    "description": "Icon label"
+  },
+  "noNameSet": "No Name Set",
+  "@noNameSet": {
+    "description": "No name set"
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button"
+  },
+  "get": "Get",
+  "@get": {
+    "description": "Get button"
+  },
+  "getSchedulesConfirm": "Do you want to retrieve schedules?",
+  "@getSchedulesConfirm": {
+    "description": "Get schedules confirmation message"
+  },
+  "schedulesRetrieved": "Retrieved: {total} items\nAdded: {added} items\nSkipped: {skipped} items",
+  "@schedulesRetrieved": {
+    "description": "Schedules retrieved message",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "schedulesRetrievedNoAdd": "Retrieved: {total} items\nAdded: 0 items\nSkipped: {skipped} items (already imported)",
+  "@schedulesRetrievedNoAdd": {
+    "description": "Schedules retrieved with no additions message",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "schedulesRetrievedNoSchedule": "Retrieved: {total} items\nNo schedules to import",
+  "@schedulesRetrievedNoSchedule": {
+    "description": "Schedules retrieved with no schedules message",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookScheduleRetrieval": "Outlook Schedule Retrieval",
+  "@outlookScheduleRetrieval": {
+    "description": "Outlook schedule retrieval dialog title"
+  },
+  "outlookAutoImportCompleted": "Outlook Auto Import Completed",
+  "@outlookAutoImportCompleted": {
+    "description": "Outlook auto import completed title"
+  },
+  "uiDensity": "UI Density: {percent}%",
+  "@uiDensity": {
+    "description": "UI density label with percentage",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "changePriorityMenu": "Change Priority",
+  "@changePriorityMenu": {
+    "description": "Change priority menu item"
+  },
+  "changeDueDateMenu": "Change Due Date",
+  "@changeDueDateMenu": {
+    "description": "Change due date menu item"
+  },
+  "manageTagsMenu": "Manage Tags",
+  "@manageTagsMenu": {
+    "description": "Manage tags menu item"
+  },
+  "assignLinkMenu": "Assign Link",
+  "@assignLinkMenu": {
+    "description": "Assign link menu item"
+  },
+  "combineTasksMenu": "Combine Tasks",
+  "@combineTasksMenu": {
+    "description": "Combine tasks menu item"
+  },
+  "dragAndDrop": "Drag & Drop",
+  "@dragAndDrop": {
+    "description": "Drag and drop highlight tag"
+  },
+  "googleIntegration": "Google Integration",
+  "@googleIntegration": {
+    "description": "Google integration highlight tag"
+  },
+  "notificationsAlerts": "Notifications & Alerts",
+  "@notificationsAlerts": {
+    "description": "Notifications and alerts highlight tag"
+  },
+  "colorTheme": "Color Theme",
+  "@colorTheme": {
+    "description": "Color theme highlight tag"
+  },
+  "shortcuts": "Shortcuts",
+  "@shortcuts": {
+    "description": "Shortcuts highlight tag"
+  },
+  "selectColumnsToExport": "Select Columns to Export to CSV",
+  "@selectColumnsToExport": {
+    "description": "CSV export column selection dialog title"
+  },
+  "selectAll": "Select All",
+  "@selectAll": {
+    "description": "Select all button"
+  },
+  "deselectAll": "Deselect All",
+  "@deselectAll": {
+    "description": "Deselect all button"
+  },
+  "export": "Export",
+  "@export": {
+    "description": "Export button"
+  },
+  "grouping": "Grouping",
+  "@grouping": {
+    "description": "Grouping dialog title"
+  },
+  "groupByDueDate": "Group by Due Date",
+  "@groupByDueDate": {
+    "description": "Group by due date option"
+  },
+  "groupByTag": "Group by Tag",
+  "@groupByTag": {
+    "description": "Group by tag option"
+  },
+  "groupByProjectLink": "Group by Project (Link)",
+  "@groupByProjectLink": {
+    "description": "Group by project (link) option"
+  },
+  "groupByPriority": "Group by Priority",
+  "@groupByPriority": {
+    "description": "Group by priority option"
+  },
+  "requester": "Requester",
+  "@requester": {
+    "description": "Requester field label"
+  },
+  "assignee": "Assignee",
+  "@assignee": {
+    "description": "Assignee field label"
+  },
+  "returnToLinkManagementScreen": "Return to Link Management Screen",
+  "@returnToLinkManagementScreen": {
+    "description": "Return to link management screen tooltip"
+  },
+  "templateDeleteConfirm": "Delete Template",
+  "@templateDeleteConfirm": {
+    "description": "Template delete confirmation dialog title"
+  },
+  "templateDeleteMessage": "Do you want to delete \"{name}\"?",
+  "@templateDeleteMessage": {
+    "description": "Template delete confirmation message",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "templateNameRequired": "Please enter a template name",
+  "@templateNameRequired": {
+    "description": "Template name required message"
+  },
+  "titleRequired": "Please enter a title",
+  "@titleRequired": {
+    "description": "Title required message"
+  },
+  "templateSaved": "Template saved",
+  "@templateSaved": {
+    "description": "Template saved message"
+  },
+  "update": "Update",
+  "@update": {
+    "description": "Update button"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button"
+  },
   "selectFileToImport": "Select File to Import",
   "@selectFileToImport": {
     "description": "Select file to import dialog title"
@@ -3361,6 +3967,569 @@
         "type": "String"
       }
     }
+  },
+  "csvColumnId": "ID",
+  "@csvColumnId": {
+    "description": "CSV column: ID"
+  },
+  "csvColumnTitle": "Title",
+  "@csvColumnTitle": {
+    "description": "CSV column: Title"
+  },
+  "csvColumnDescription": "Description",
+  "@csvColumnDescription": {
+    "description": "CSV column: Description"
+  },
+  "csvColumnDueDate": "Due Date",
+  "@csvColumnDueDate": {
+    "description": "CSV column: Due Date"
+  },
+  "csvColumnReminderTime": "Reminder Time",
+  "@csvColumnReminderTime": {
+    "description": "CSV column: Reminder Time"
+  },
+  "csvColumnPriority": "Priority",
+  "@csvColumnPriority": {
+    "description": "CSV column: Priority"
+  },
+  "csvColumnStatus": "Status",
+  "@csvColumnStatus": {
+    "description": "CSV column: Status"
+  },
+  "csvColumnTags": "Tags",
+  "@csvColumnTags": {
+    "description": "CSV column: Tags"
+  },
+  "csvColumnRelatedLinkId": "Related Link ID",
+  "@csvColumnRelatedLinkId": {
+    "description": "CSV column: Related Link ID"
+  },
+  "csvColumnCreatedAt": "Created Date",
+  "@csvColumnCreatedAt": {
+    "description": "CSV column: Created Date"
+  },
+  "csvColumnCompletedAt": "Completed Date",
+  "@csvColumnCompletedAt": {
+    "description": "CSV column: Completed Date"
+  },
+  "csvColumnStartedAt": "Started Date",
+  "@csvColumnStartedAt": {
+    "description": "CSV column: Started Date"
+  },
+  "csvColumnCompletedAtManual": "Completed Date (Manual Entry)",
+  "@csvColumnCompletedAtManual": {
+    "description": "CSV column: Completed Date (Manual Entry)"
+  },
+  "csvColumnEstimatedMinutes": "Estimated Minutes",
+  "@csvColumnEstimatedMinutes": {
+    "description": "CSV column: Estimated Minutes"
+  },
+  "csvColumnNotes": "Notes",
+  "@csvColumnNotes": {
+    "description": "CSV column: Notes"
+  },
+  "csvColumnIsRecurring": "Recurring Task",
+  "@csvColumnIsRecurring": {
+    "description": "CSV column: Recurring Task"
+  },
+  "csvColumnRecurringPattern": "Recurring Pattern",
+  "@csvColumnRecurringPattern": {
+    "description": "CSV column: Recurring Pattern"
+  },
+  "csvColumnIsRecurringReminder": "Recurring Reminder",
+  "@csvColumnIsRecurringReminder": {
+    "description": "CSV column: Recurring Reminder"
+  },
+  "csvColumnRecurringReminderPattern": "Recurring Reminder Pattern",
+  "@csvColumnRecurringReminderPattern": {
+    "description": "CSV column: Recurring Reminder Pattern"
+  },
+  "csvColumnNextReminderTime": "Next Reminder Time",
+  "@csvColumnNextReminderTime": {
+    "description": "CSV column: Next Reminder Time"
+  },
+  "csvColumnReminderCount": "Reminder Count",
+  "@csvColumnReminderCount": {
+    "description": "CSV column: Reminder Count"
+  },
+  "csvColumnHasSubTasks": "Has Subtasks",
+  "@csvColumnHasSubTasks": {
+    "description": "CSV column: Has Subtasks"
+  },
+  "csvColumnCompletedSubTasksCount": "Completed Subtasks Count",
+  "@csvColumnCompletedSubTasksCount": {
+    "description": "CSV column: Completed Subtasks Count"
+  },
+  "csvColumnTotalSubTasksCount": "Total Subtasks Count",
+  "@csvColumnTotalSubTasksCount": {
+    "description": "CSV column: Total Subtasks Count"
+  },
+  "mailSending": "Mail Sending",
+  "@mailSending": {
+    "description": "Mail sending section title"
+  },
+  "copyRequestorMemoToBody": "Copy \"Requestor and Memo\" to body",
+  "@copyRequestorMemoToBody": {
+    "description": "Copy requestor and memo to body checkbox"
+  },
+  "includeSubtasksInBody": "Include subtasks in body",
+  "@includeSubtasksInBody": {
+    "description": "Include subtasks in body checkbox"
+  },
+  "sendingApp": "Sending App:",
+  "@sendingApp": {
+    "description": "Sending app label"
+  },
+  "recipientSelection": "Recipient Selection",
+  "@recipientSelection": {
+    "description": "Recipient selection section title"
+  },
+  "addContact": "Add Contact",
+  "@addContact": {
+    "description": "Add contact button"
+  },
+  "selectFromSendHistory": "Select from Send History",
+  "@selectFromSendHistory": {
+    "description": "Select from send history button"
+  },
+  "frequentlyUsedContacts": "Frequently Used Contacts:",
+  "@frequentlyUsedContacts": {
+    "description": "Frequently used contacts label"
+  },
+  "emptyMailerCanLaunch": "Mailer will launch even if empty",
+  "@emptyMailerCanLaunch": {
+    "description": "Empty mailer can launch hint"
+  },
+  "emptyCanSpecifyAddress": "※If empty, you can specify the address directly in the mailer",
+  "@emptyCanSpecifyAddress": {
+    "description": "Empty can specify address helper text"
+  },
+  "mailerLaunchInstruction": "※First, please open the mailer with the \"Launch Mailer\" button",
+  "@mailerLaunchInstruction": {
+    "description": "Mailer launch instruction"
+  },
+  "mailerSendInstruction": "※After sending the email in the mailer, please press the \"Mail Sent Complete\" button",
+  "@mailerSendInstruction": {
+    "description": "Mailer send instruction"
+  },
+  "taskRelatedMail": "Task Related Mail",
+  "@taskRelatedMail": {
+    "description": "Task related mail default subject"
+  },
+  "mailComposeOpened": "Opened {app} mail compose screen.\nAfter sending the email, please press the \"Mail Sent Complete\" button.",
+  "@mailComposeOpened": {
+    "description": "Mail compose opened message",
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  },
+  "mailerLaunchError": "Mailer launch error: {error}",
+  "@mailerLaunchError": {
+    "description": "Mailer launch error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseLaunchMailerFirst": "Please press the \"Launch Mailer\" button first",
+  "@pleaseLaunchMailerFirst": {
+    "description": "Please launch mailer first error"
+  },
+  "mailSentRecorded": "Mail sent recorded",
+  "@mailSentRecorded": {
+    "description": "Mail sent recorded message"
+  },
+  "mailSentRecordError": "Mail sent record error: {error}",
+  "@mailSentRecordError": {
+    "description": "Mail sent record error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookConnectionTestSuccess": "Outlook connection test successful",
+  "@outlookConnectionTestSuccess": {
+    "description": "Outlook connection test success"
+  },
+  "outlookConnectionTestFailed": "Outlook connection test failed: Outlook is not available",
+  "@outlookConnectionTestFailed": {
+    "description": "Outlook connection test failed"
+  },
+  "outlookConnectionTestError": "Outlook connection test error: {error}",
+  "@outlookConnectionTestError": {
+    "description": "Outlook connection test error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "powershellScriptNotFound": "PowerShell script not found: {scriptName}\n\nPlease place it in one of the following locations:\n1. Portable version: {portablePath}\n2. Installed version: {installedPath}",
+  "@powershellScriptNotFound": {
+    "description": "PowerShell script not found error",
+    "placeholders": {
+      "scriptName": {
+        "type": "String"
+      },
+      "portablePath": {
+        "type": "String"
+      },
+      "installedPath": {
+        "type": "String"
+      }
+    }
+  },
+  "name": "Name",
+  "@name": {
+    "description": "Name label"
+  },
+  "nameRequired": "Please enter a name",
+  "@nameRequired": {
+    "description": "Name required error"
+  },
+  "gmailLaunchFailed": "Failed to launch Gmail",
+  "@gmailLaunchFailed": {
+    "description": "Gmail launch failed error"
+  },
+  "outlookNotInstalled": "Outlook is not installed or not properly configured.\nPlease use Outlook on a company PC.\nDetails: {details}",
+  "@outlookNotInstalled": {
+    "description": "Outlook not installed error",
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookLaunchFailed": "Failed to launch Outlook: {error}",
+  "@outlookLaunchFailed": {
+    "description": "Outlook launch failed error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookSearchFailed": "Outlook search failed: {error}",
+  "@outlookSearchFailed": {
+    "description": "Outlook search failed error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "unsupportedMailApp": "Unsupported mail app: {app}",
+  "@unsupportedMailApp": {
+    "description": "Unsupported mail app error",
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  },
+  "powershellTimeout": "PowerShell execution timed out ({seconds} seconds)",
+  "@powershellTimeout": {
+    "description": "PowerShell timeout error",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "powershellScriptError": "PowerShell script execution error: {error}",
+  "@powershellScriptError": {
+    "description": "PowerShell script execution error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "powershellExecutionFailed": "PowerShell execution failed (all {retries} attempts)",
+  "@powershellExecutionFailed": {
+    "description": "PowerShell execution failed error",
+    "placeholders": {
+      "retries": {
+        "type": "int"
+      }
+    }
+  },
+  "unexpectedJsonFormat": "Unexpected JSON format",
+  "@unexpectedJsonFormat": {
+    "description": "Unexpected JSON format error"
+  },
+  "startDateParseError": "Start date parse error: {date}",
+  "@startDateParseError": {
+    "description": "Start date parse error",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "oauth2CredentialsNotFound": "OAuth2 credentials file not found. Please check the setup method.",
+  "@oauth2CredentialsNotFound": {
+    "description": "OAuth2 credentials not found error"
+  },
+  "invalidCredentialsFormat": "Invalid credentials file format. Please use OAuth2 desktop app credentials.",
+  "@invalidCredentialsFormat": {
+    "description": "Invalid credentials format error"
+  },
+  "clientIdNotSet": "client_id is not set in the credentials file.",
+  "@clientIdNotSet": {
+    "description": "Client ID not set error"
+  },
+  "authUrlOpenFailed": "Failed to open authentication URL",
+  "@authUrlOpenFailed": {
+    "description": "Auth URL open failed error"
+  },
+  "noValidAccessToken": "No valid access token. Please execute OAuth2 authentication.",
+  "@noValidAccessToken": {
+    "description": "No valid access token error"
+  },
+  "googleCalendarEventFetchFailed": "Failed to fetch Google Calendar events: {statusCode}",
+  "@googleCalendarEventFetchFailed": {
+    "description": "Google Calendar event fetch failed error",
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "eventDeleteFailed": "Failed to delete event: {statusCode}",
+  "@eventDeleteFailed": {
+    "description": "Event delete failed error",
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "backupValidationFailed": "Backup file validation failed",
+  "@backupValidationFailed": {
+    "description": "Backup validation failed error"
+  },
+  "backupBeforeOperationFailed": "Backup before operation failed: {error}",
+  "@backupBeforeOperationFailed": {
+    "description": "Backup before operation failed error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidBackupDataFormat": "Invalid backup data format",
+  "@invalidBackupDataFormat": {
+    "description": "Invalid backup data format error"
+  },
+  "invalidBackupFile": "Invalid backup file",
+  "@invalidBackupFile": {
+    "description": "Invalid backup file error"
+  },
+  "emailAlreadyRegistered": "This email address is already registered: {email}",
+  "@emailAlreadyRegistered": {
+    "description": "Email already registered error",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "contactNotFound": "Contact not found: {id}",
+  "@contactNotFound": {
+    "description": "Contact not found error",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookEventFetchFailed": "Failed to fetch events from Outlook. Please try again later.\nError: {error}",
+  "@outlookEventFetchFailed": {
+    "description": "Outlook event fetch failed error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookEventFetchFailedInfo": "Failed to fetch events from Outlook. Please try again later.",
+  "@outlookEventFetchFailedInfo": {
+    "description": "Outlook event fetch failed info message"
+  },
+  "tokenExtractionFailed": "Failed to extract token",
+  "@tokenExtractionFailed": {
+    "description": "Token extraction failed error"
+  },
+  "taskNotSelected": "Task is not selected",
+  "@taskNotSelected": {
+    "description": "Task not selected error"
+  },
+  "noSendHistoryForTask": "This task has no send history",
+  "@noSendHistoryForTask": {
+    "description": "No send history for task message"
+  },
+  "sendHistoryReused": "Send history reused",
+  "@sendHistoryReused": {
+    "description": "Send history reused message"
+  },
+  "gmailConnectionTest": "Gmail Connection Test",
+  "@gmailConnectionTest": {
+    "description": "Gmail connection test label"
+  },
+  "gmailConnectionTestBody": "This is a Gmail connection test.",
+  "@gmailConnectionTestBody": {
+    "description": "Gmail connection test body"
+  },
+  "gmailConnectionTestSuccess": "Gmail connection test successful: Gmail opened",
+  "@gmailConnectionTestSuccess": {
+    "description": "Gmail connection test success message"
+  },
+  "gmailConnectionTestError": "Gmail connection test error: {error}",
+  "@gmailConnectionTestError": {
+    "description": "Gmail connection test error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "testMailSent": "Test mail sent",
+  "@testMailSent": {
+    "description": "Test mail sent message"
+  },
+  "testMailSendError": "Test mail send error: {error}",
+  "@testMailSendError": {
+    "description": "Test mail send error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noSendHistory": "No send history",
+  "@noSendHistory": {
+    "description": "No send history message"
+  },
+  "sendHistoryAutoRegister": "When you send an email, the recipient will be automatically registered as a contact",
+  "@sendHistoryAutoRegister": {
+    "description": "Send history auto register message"
+  },
+  "noSendHistory": "No send history",
+  "@noSendHistory": {
+    "description": "No send history message"
+  },
+  "sendHistoryAutoRegister": "When you send an email, the recipient will be automatically registered as a contact",
+  "@sendHistoryAutoRegister": {
+    "description": "Send history auto register message"
+  },
+  "latestMail": "🆕 Latest mail",
+  "@latestMail": {
+    "description": "Latest mail prefix"
+  },
+  "oldestMail": "⭐ First mail",
+  "@oldestMail": {
+    "description": "Oldest mail prefix"
+  },
+  "sentColon": "Sent:",
+  "@sentColon": {
+    "description": "Sent label with colon"
+  },
+  "subjectColon": "Subject:",
+  "@subjectColon": {
+    "description": "Subject label with colon"
+  },
+  "toColon": "To:",
+  "@toColon": {
+    "description": "To label with colon"
+  },
+  "bodyColon": "Body:",
+  "@bodyColon": {
+    "description": "Body label with colon"
+  },
+  "taskLabel": "Task:",
+  "@taskLabel": {
+    "description": "Task label with colon"
+  },
+  "descriptionLabel": "Description:",
+  "@descriptionLabel": {
+    "description": "Description label with colon"
+  },
+  "dueDateLabel": "Due Date:",
+  "@dueDateLabel": {
+    "description": "Due date label with colon"
+  },
+  "statusLabel": "Status:",
+  "@statusLabel": {
+    "description": "Status label with colon"
+  },
+  "relatedTaskInfo": "[Related Task Information]",
+  "@relatedTaskInfo": {
+    "description": "Related task information header"
+  },
+  "mailInfo": "[Mail Information]",
+  "@mailInfo": {
+    "description": "Mail information header"
+  },
+  "sentDateTime": "Sent Date/Time:",
+  "@sentDateTime": {
+    "description": "Sent date time label with colon"
+  },
+  "sentId": "Sent ID:",
+  "@sentId": {
+    "description": "Sent ID label with colon"
+  },
+  "noMessage": "No message.",
+  "@noMessage": {
+    "description": "No message text"
+  },
+  "noTaskInfo": "No task information.",
+  "@noTaskInfo": {
+    "description": "No task information text"
+  },
+  "linksLabel": "Links:",
+  "@linksLabel": {
+    "description": "Links label with colon"
+  },
+  "relatedMaterials": "[Related Materials]",
+  "@relatedMaterials": {
+    "description": "Related materials header"
+  },
+  "subtaskProgress": "Subtask Progress:",
+  "@subtaskProgress": {
+    "description": "Subtask progress label with colon"
+  },
+  "completedLabel": "Completed:",
+  "@completedLabel": {
+    "description": "Completed label with colon"
+  },
+  "thisMailSentFromApp": "This email was sent from the Link Navigator app.",
+  "@thisMailSentFromApp": {
+    "description": "Mail sent from app message"
+  },
+  "taskInfoHeader": "📋 Task Information",
+  "@taskInfoHeader": {
+    "description": "Task information header"
+  },
+  "memoLabel": "Memo:",
+  "@memoLabel": {
+    "description": "Memo label with colon"
+  },
+  "relatedMaterialsLabel": "Related Materials:",
+  "@relatedMaterialsLabel": {
+    "description": "Related materials label with colon"
+  },
+  "gmailLinkNote": "📝 Note: Network share and local file links cannot be clicked directly in Gmail.\nPlease copy the link and paste it into File Explorer or your browser's address bar to access it.",
+  "@gmailLinkNote": {
+    "description": "Gmail link note"
+  },
+  "outlookLinkNote": "📝 Note: In Outlook, network share and local file links are also clickable.\nYou can click the link to access it directly.",
+  "@outlookLinkNote": {
+    "description": "Outlook link note"
   }
 }
 

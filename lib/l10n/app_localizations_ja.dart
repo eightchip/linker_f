@@ -264,7 +264,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get noSearchResults => '検索結果がありません';
+  String get noSearchResults => '検索結果なし';
 
   @override
   String get noMemoLinks => 'メモが登録されているリンクがありません';
@@ -396,13 +396,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get bulkOperations => '一括操作';
 
   @override
-  String get memoLabel => 'メモ';
+  String get memoLabel => 'メモ:';
 
   @override
-  String get selectAll => '全選択';
+  String get selectAll => 'すべて選択';
 
   @override
-  String get deselectAll => '全解除';
+  String get deselectAll => 'すべて解除';
 
   @override
   String get cardView => 'カードビュー';
@@ -574,7 +574,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get urgentShort => '緊';
 
   @override
-  String get cancelled => 'キャンセル';
+  String get cancelled => '取消';
 
   @override
   String get cancelledShort => 'X';
@@ -673,6 +673,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get descriptionForRequestor => '依頼先への説明';
+
+  @override
+  String get descriptionForAssignee => '担当者への説明';
 
   @override
   String get tags => 'タグ';
@@ -841,7 +844,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get export => 'エクスポート';
+  String get export => '出力';
 
   @override
   String get import => 'インポート';
@@ -1003,10 +1006,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get descriptionText => '説明文';
 
   @override
-  String get requester => '依頼先';
+  String get requester => '依頼者';
 
   @override
   String get normalSearchMode => '通常検索モード';
+
+  @override
+  String get normalSearchOption => '通常検索モード';
 
   @override
   String get regexSearchMode => '正規表現検索モード';
@@ -1124,7 +1130,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get copyCountLabel2 => 'コピー個数:';
 
   @override
-  String get dueDateLabel => '期限日:';
+  String get dueDateLabel => '期限:';
 
   @override
   String get reminderLabel => 'リマインダー:';
@@ -1217,7 +1223,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String backupFailedContinue(String error) {
-    return 'バックアップに失敗しましたが、削除を続行します: $error';
+    return 'バックアップに失敗しましたが、結合を続行します: $error';
   }
 
   @override
@@ -1295,8 +1301,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get mailerLaunchFailed => 'メーラーの起動に失敗しました';
 
   @override
-  String linkOpenFailed(String link) {
-    return 'リンクを開けませんでした: $link';
+  String linkOpenFailed(String href) {
+    return 'リンクを開けませんでした: $href';
   }
 
   @override
@@ -1403,6 +1409,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get requestorDescription => '依頼先への説明';
+
+  @override
+  String get assigneeDescription => '担当者への説明';
 
   @override
   String get allScreensCommon => '全画面共通';
@@ -2366,4 +2375,675 @@ class AppLocalizationsJa extends AppLocalizations {
   String errorColon(String error) {
     return 'エラー: $error';
   }
+
+  @override
+  String screenshotLoadFailed(String path) {
+    return 'スクリーンショットを読み込めませんでした。\nassets/help フォルダに画像を配置してください。\n($path)';
+  }
+
+  @override
+  String get bulkLinkAssignment => 'リンクを一括割り当て';
+
+  @override
+  String get addDescription => '既存のリンクに追加します';
+
+  @override
+  String get remove => '削除';
+
+  @override
+  String get removeDescription => '指定したリンクを削除します';
+
+  @override
+  String get replace => '置換';
+
+  @override
+  String get replaceDescription => '既存のリンクを全て置き換えます';
+
+  @override
+  String get noLinksAvailable => '利用可能なリンクがありません';
+
+  @override
+  String tasksMerged(int count) {
+    return '$count件のタスクを結合しました';
+  }
+
+  @override
+  String get mergeTask => 'タスクを結合';
+
+  @override
+  String get selectTargetTask => '結合先のタスクを選択してください：';
+
+  @override
+  String get mergeTaskConfirm => 'タスクを結合';
+
+  @override
+  String get mergeTaskConfirmDescription =>
+      '結合元タスクの予定、サブタスク、メモ、リンク、タグが統合されます。\n結合元タスクは完了状態になります。';
+
+  @override
+  String mergeTaskConfirmMessage(String title, int count, String description) {
+    return '「$title」に$count件のタスクを結合しますか？\n\n$description';
+  }
+
+  @override
+  String get dropToAdd => 'ここにドロップして追加';
+
+  @override
+  String get noLinksDragToAdd => 'リンクなし\nここにドラッグで追加';
+
+  @override
+  String get noLinksYet => 'リンクがありません';
+
+  @override
+  String get merge => '結合';
+
+  @override
+  String get apply => '適用';
+
+  @override
+  String get dueDateBulkChange => '期限日を一括変更';
+
+  @override
+  String get notSelected => '未選択';
+
+  @override
+  String get bulkTagOperation => 'タグを一括操作';
+
+  @override
+  String get addTagDescription => '既存のタグに追加します';
+
+  @override
+  String get removeTagDescription => '指定したタグを削除します';
+
+  @override
+  String get someFilesNotRegistered => '一部のファイル/フォルダはアクセスできなかったため登録されませんでした';
+
+  @override
+  String get editMemo => 'メモ編集';
+
+  @override
+  String get enterMemo => 'メモを入力...';
+
+  @override
+  String get emptyMemoDeletes => '空の場合はメモを削除します';
+
+  @override
+  String currentMemo(String memo) {
+    return '現在のメモ: $memo';
+  }
+
+  @override
+  String get contentList => 'コンテンツ一覧';
+
+  @override
+  String get clickChapterToJump => '気になる章をクリックしてジャンプ！';
+
+  @override
+  String get searchByKeyword => 'キーワードで検索';
+
+  @override
+  String manualLoadFailed(String error) {
+    return 'マニュアルの読み込みに失敗しました: $error';
+  }
+
+  @override
+  String screenshotNotRegistered(String id) {
+    return 'スクリーンショット「$id」は登録されていません。';
+  }
+
+  @override
+  String videoNotRegistered(String id) {
+    return '動画「$id」は登録されていません。assets/help/videos フォルダを確認してください。';
+  }
+
+  @override
+  String get manualNotLoaded => 'マニュアルが読み込まれていません';
+
+  @override
+  String get reload => '再読み込み';
+
+  @override
+  String get retry => '再試行';
+
+  @override
+  String get unknownError => '未知のエラー';
+
+  @override
+  String get helpContentNotFound => 'ヘルプコンテンツが見つかりませんでした。';
+
+  @override
+  String get linkNavigatorManual => 'Link Navigator 取扱説明書';
+
+  @override
+  String get helpCenterGuide => 'アプリをすぐに使いこなすためのガイドです。気になる項目を左のナビから選択してください。';
+
+  @override
+  String get htmlExport => 'HTML出力・印刷';
+
+  @override
+  String htmlExportFailed(String error) {
+    return 'HTML出力に失敗しました: $error';
+  }
+
+  @override
+  String filesAdded(int count) {
+    return 'ファイルを$count個追加しました';
+  }
+
+  @override
+  String foldersAdded(int count) {
+    return 'フォルダを$count個追加しました';
+  }
+
+  @override
+  String linksAdded(int count) {
+    return 'リンクを$count個追加しました';
+  }
+
+  @override
+  String itemsAdded(String files, String folders, String links) {
+    return '$files、$folders、$links';
+  }
+
+  @override
+  String get label => 'ラベル';
+
+  @override
+  String get linkLabelHint => 'リンクラベルを入力...';
+
+  @override
+  String get pathUrl => 'パス/URL';
+
+  @override
+  String get pathUrlHint => 'ファイルパスまたはURLを入力...';
+
+  @override
+  String get tagsHint => 'カンマ区切りでタグを入力（例: 仕事, 重要, プロジェクト）';
+
+  @override
+  String get faviconUrlHint => '例: https://www.resonabank.co.jp/';
+
+  @override
+  String get icon => 'アイコン: ';
+
+  @override
+  String get noNameSet => '名称未設定';
+
+  @override
+  String get get => '取得';
+
+  @override
+  String get getSchedulesConfirm => 'スケジュールを取得しますか？';
+
+  @override
+  String schedulesRetrieved(int total, int added, int skipped) {
+    return '取得: $total件\n追加: $added件\nスキップ: $skipped件';
+  }
+
+  @override
+  String schedulesRetrievedNoAdd(int total, int skipped) {
+    return '取得: $total件\n追加: 0件\nスキップ: $skipped件（既に取り込まれています）';
+  }
+
+  @override
+  String schedulesRetrievedNoSchedule(int total) {
+    return '取得: $total件\n取り込む予定はありませんでした';
+  }
+
+  @override
+  String get outlookScheduleRetrieval => 'Outlookスケジュール取得';
+
+  @override
+  String get faviconFallbackDomain => 'Faviconフォールバックドメイン';
+
+  @override
+  String get faviconFallbackHelper => 'favicon取得失敗時に使用するドメインを設定';
+
+  @override
+  String get outlookAutoImportCompleted => 'Outlook自動取り込み完了';
+
+  @override
+  String uiDensity(String percent) {
+    return 'UI密度: $percent%';
+  }
+
+  @override
+  String get changePriorityMenu => '優先度変更';
+
+  @override
+  String get changeDueDateMenu => '期限日変更';
+
+  @override
+  String get manageTagsMenu => 'タグを操作';
+
+  @override
+  String get assignLinkMenu => 'リンクを割り当て';
+
+  @override
+  String get combineTasksMenu => 'タスクを結合';
+
+  @override
+  String get dragAndDrop => 'ドラッグ＆ドロップ';
+
+  @override
+  String get googleIntegration => 'Google連携';
+
+  @override
+  String get notificationsAlerts => '通知・アラート';
+
+  @override
+  String get colorTheme => 'カラーテーマ';
+
+  @override
+  String get shortcuts => 'ショートカット';
+
+  @override
+  String get selectColumnsToExport => 'CSV出力する列を選択';
+
+  @override
+  String get groupByDueDate => '期限日でグループ化';
+
+  @override
+  String get groupByTag => 'タグでグループ化';
+
+  @override
+  String get groupByProjectLink => 'プロジェクト（リンク）でグループ化';
+
+  @override
+  String get groupByPriority => '優先度でグループ化';
+
+  @override
+  String get assignee => '担当者';
+
+  @override
+  String get returnToLinkManagementScreen => 'リンク管理画面に戻る';
+
+  @override
+  String get templateDeleteConfirm => 'テンプレートを削除';
+
+  @override
+  String templateDeleteMessage(String name) {
+    return '「$name」を削除しますか？';
+  }
+
+  @override
+  String get templateNameRequired => 'テンプレート名を入力してください';
+
+  @override
+  String get titleRequired => 'タイトルを入力してください';
+
+  @override
+  String get templateSaved => 'テンプレートを保存しました';
+
+  @override
+  String get csvColumnId => 'ID';
+
+  @override
+  String get csvColumnTitle => 'タイトル';
+
+  @override
+  String get csvColumnDescription => '説明';
+
+  @override
+  String get csvColumnDueDate => '期限';
+
+  @override
+  String get csvColumnReminderTime => 'リマインダー時刻';
+
+  @override
+  String get csvColumnPriority => '優先度';
+
+  @override
+  String get csvColumnStatus => 'ステータス';
+
+  @override
+  String get csvColumnTags => 'タグ';
+
+  @override
+  String get csvColumnRelatedLinkId => '関連リンクID';
+
+  @override
+  String get csvColumnCreatedAt => '作成日';
+
+  @override
+  String get csvColumnCompletedAt => '完了日';
+
+  @override
+  String get csvColumnStartedAt => '着手日';
+
+  @override
+  String get csvColumnCompletedAtManual => '完了日（手動入力）';
+
+  @override
+  String get csvColumnEstimatedMinutes => '推定時間(分)';
+
+  @override
+  String get csvColumnNotes => 'メモ';
+
+  @override
+  String get csvColumnIsRecurring => '繰り返しタスク';
+
+  @override
+  String get csvColumnRecurringPattern => '繰り返しパターン';
+
+  @override
+  String get csvColumnIsRecurringReminder => '繰り返しリマインダー';
+
+  @override
+  String get csvColumnRecurringReminderPattern => '繰り返しリマインダーパターン';
+
+  @override
+  String get csvColumnNextReminderTime => '次のリマインダー時刻';
+
+  @override
+  String get csvColumnReminderCount => 'リマインダー回数';
+
+  @override
+  String get csvColumnHasSubTasks => 'サブタスク有無';
+
+  @override
+  String get csvColumnCompletedSubTasksCount => '完了サブタスク数';
+
+  @override
+  String get csvColumnTotalSubTasksCount => '総サブタスク数';
+
+  @override
+  String get mailSending => 'メール送信';
+
+  @override
+  String get copyRequestorMemoToBody => '本文に「依頼先やメモ」をコピー';
+
+  @override
+  String get includeSubtasksInBody => '本文にサブタスクを含める';
+
+  @override
+  String get sendingApp => '送信アプリ:';
+
+  @override
+  String get recipientSelection => '送信先選択';
+
+  @override
+  String get addContact => '連絡先を追加';
+
+  @override
+  String get selectFromSendHistory => '送信履歴から選択';
+
+  @override
+  String get frequentlyUsedContacts => 'よく使われる連絡先:';
+
+  @override
+  String get emptyMailerCanLaunch => '空でもメーラーが起動します';
+
+  @override
+  String get emptyCanSpecifyAddress => '※空の場合はメーラーで直接アドレスを指定できます';
+
+  @override
+  String get mailerLaunchInstruction => '※まず「メーラーを起動」ボタンでメーラーを開いてください';
+
+  @override
+  String get mailerSendInstruction => '※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください';
+
+  @override
+  String get taskRelatedMail => 'タスク関連メール';
+
+  @override
+  String mailComposeOpened(String app) {
+    return '$appのメール作成画面を開きました。\nメールを送信した後、「メール送信完了」ボタンを押してください。';
+  }
+
+  @override
+  String mailerLaunchError(String error) {
+    return 'メーラー起動エラー: $error';
+  }
+
+  @override
+  String get pleaseLaunchMailerFirst => '先に「メーラーを起動」ボタンを押してください';
+
+  @override
+  String get mailSentRecorded => 'メール送信完了を記録しました';
+
+  @override
+  String mailSentRecordError(String error) {
+    return 'メール送信完了記録エラー: $error';
+  }
+
+  @override
+  String get outlookConnectionTestSuccess => 'Outlook接続テスト成功';
+
+  @override
+  String get outlookConnectionTestFailed => 'Outlook接続テスト失敗: Outlookが利用できません';
+
+  @override
+  String outlookConnectionTestError(String error) {
+    return 'Outlook接続テストエラー: $error';
+  }
+
+  @override
+  String powershellScriptNotFound(
+    String scriptName,
+    String portablePath,
+    String installedPath,
+  ) {
+    return 'PowerShellスクリプトが見つかりません: $scriptName\n\n以下のいずれかの場所に配置してください:\n1. ポータブル版: $portablePath\n2. インストール版: $installedPath';
+  }
+
+  @override
+  String get name => '名前';
+
+  @override
+  String get nameRequired => '名前を入力してください';
+
+  @override
+  String get gmailLaunchFailed => 'Gmailを起動できませんでした';
+
+  @override
+  String outlookNotInstalled(String details) {
+    return 'Outlookがインストールされていないか、正しく設定されていません。\n会社PCでOutlookを使用してください。\n詳細: $details';
+  }
+
+  @override
+  String outlookLaunchFailed(String error) {
+    return 'Outlook起動に失敗しました: $error';
+  }
+
+  @override
+  String outlookSearchFailed(String error) {
+    return 'Outlook検索に失敗しました: $error';
+  }
+
+  @override
+  String unsupportedMailApp(String app) {
+    return 'サポートされていないメールアプリ: $app';
+  }
+
+  @override
+  String powershellTimeout(int seconds) {
+    return 'PowerShell実行がタイムアウトしました（$seconds秒）';
+  }
+
+  @override
+  String powershellScriptError(String error) {
+    return 'PowerShellスクリプト実行エラー: $error';
+  }
+
+  @override
+  String powershellExecutionFailed(int retries) {
+    return 'PowerShell実行が失敗しました（全$retries回の試行）';
+  }
+
+  @override
+  String get unexpectedJsonFormat => '予期しないJSON形式です';
+
+  @override
+  String startDateParseError(String date) {
+    return '開始日時のパースエラー: $date';
+  }
+
+  @override
+  String get oauth2CredentialsNotFound =>
+      'OAuth2認証情報ファイルが見つかりません。設定方法を確認してください。';
+
+  @override
+  String get invalidCredentialsFormat =>
+      '認証情報ファイルの形式が正しくありません。OAuth2デスクトップアプリ用の認証情報を使用してください。';
+
+  @override
+  String get clientIdNotSet => '認証情報ファイルに client_id が設定されていません。';
+
+  @override
+  String get authUrlOpenFailed => '認証URLを開けませんでした';
+
+  @override
+  String get noValidAccessToken => '有効なアクセストークンがありません。OAuth2認証を実行してください。';
+
+  @override
+  String googleCalendarEventFetchFailed(int statusCode) {
+    return 'Google Calendar イベント取得に失敗しました: $statusCode';
+  }
+
+  @override
+  String eventDeleteFailed(int statusCode) {
+    return 'イベント削除に失敗しました: $statusCode';
+  }
+
+  @override
+  String get backupValidationFailed => 'バックアップファイルの検証に失敗しました';
+
+  @override
+  String backupBeforeOperationFailed(String error) {
+    return '操作前のバックアップに失敗しました: $error';
+  }
+
+  @override
+  String get invalidBackupDataFormat => 'バックアップデータの形式が正しくありません';
+
+  @override
+  String get invalidBackupFile => '無効なバックアップファイルです';
+
+  @override
+  String emailAlreadyRegistered(String email) {
+    return 'このメールアドレスは既に登録されています: $email';
+  }
+
+  @override
+  String contactNotFound(String id) {
+    return '連絡先が見つかりません: $id';
+  }
+
+  @override
+  String outlookEventFetchFailed(String error) {
+    return 'Outlookから予定を取得できませんでした。後でもう一度お試しください。\nエラー: $error';
+  }
+
+  @override
+  String get outlookEventFetchFailedInfo =>
+      'Outlookから予定を取得できませんでした。後でもう一度お試しください。';
+
+  @override
+  String get tokenExtractionFailed => 'トークンの抽出に失敗しました';
+
+  @override
+  String get taskNotSelected => 'タスクが選択されていません';
+
+  @override
+  String get noSendHistoryForTask => 'このタスクの送信履歴はありません';
+
+  @override
+  String get sendHistoryReused => '送信履歴を再利用しました';
+
+  @override
+  String get gmailConnectionTest => 'Gmail接続テスト';
+
+  @override
+  String get gmailConnectionTestBody => 'これはGmail接続テストです。';
+
+  @override
+  String get gmailConnectionTestSuccess => 'Gmail接続テスト成功: Gmailが開きました';
+
+  @override
+  String gmailConnectionTestError(String error) {
+    return 'Gmail接続テストエラー: $error';
+  }
+
+  @override
+  String get testMailSent => 'テストメール送信完了';
+
+  @override
+  String testMailSendError(String error) {
+    return 'テストメール送信エラー: $error';
+  }
+
+  @override
+  String get noSendHistory => '送信履歴がありません';
+
+  @override
+  String get sendHistoryAutoRegister => 'メールを送信すると、宛先が自動で連絡先に登録されます';
+
+  @override
+  String get latestMail => '🆕 最新のメール';
+
+  @override
+  String get oldestMail => '⭐ 最初のメール';
+
+  @override
+  String get sentColon => '送信:';
+
+  @override
+  String get subjectColon => '件名:';
+
+  @override
+  String get toColon => 'To:';
+
+  @override
+  String get bodyColon => '本文:';
+
+  @override
+  String get taskLabel => 'タスク:';
+
+  @override
+  String get relatedTaskInfo => '【関連タスク情報】';
+
+  @override
+  String get mailInfo => '【メール情報】';
+
+  @override
+  String get sentDateTime => '送信日時:';
+
+  @override
+  String get sentId => '送信ID:';
+
+  @override
+  String get noMessage => 'メッセージがありません。';
+
+  @override
+  String get noTaskInfo => 'タスク情報がありません。';
+
+  @override
+  String get linksLabel => 'リンク:';
+
+  @override
+  String get relatedMaterials => '【関連資料】';
+
+  @override
+  String get subtaskProgress => 'サブタスク進捗:';
+
+  @override
+  String get completedLabel => '完了:';
+
+  @override
+  String get thisMailSentFromApp => 'このメールは Link Navigator アプリから送信されました。';
+
+  @override
+  String get taskInfoHeader => '📋 タスク情報';
+
+  @override
+  String get relatedMaterialsLabel => '関連資料:';
+
+  @override
+  String get gmailLinkNote =>
+      '📝 注意: ネットワーク共有やローカルファイルのリンクは、Gmailでは直接クリックできません。\nリンクをコピーして、ファイルエクスプローラーやブラウザのアドレスバーに貼り付けてアクセスしてください。';
+
+  @override
+  String get outlookLinkNote =>
+      '📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\nリンクをクリックして直接アクセスできます。';
 }

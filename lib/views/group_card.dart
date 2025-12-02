@@ -779,30 +779,18 @@ class _GroupCardState extends ConsumerState<GroupCard> {
       List<String> messages = [];
       
       if (fileCount > 0) {
-        if (fileCount == 1) {
-          messages.add('ファイルを追加しました');
-        } else {
-          messages.add('$fileCount個のファイルを追加しました');
-        }
+        messages.add(AppLocalizations.of(context)!.filesAdded(fileCount));
       }
       
       if (folderCount > 0) {
-        if (folderCount == 1) {
-          messages.add('フォルダを1個追加しました');
-        } else {
-          messages.add('$folderCount個のフォルダを追加しました');
-        }
+        messages.add(AppLocalizations.of(context)!.foldersAdded(folderCount));
       }
       
       if (urlCount > 0) {
-        if (urlCount == 1) {
-          messages.add('リンクを追加しました');
-        } else {
-          messages.add('$urlCount個のリンクを追加しました');
-        }
+        messages.add(AppLocalizations.of(context)!.linksAdded(urlCount));
       }
       
-      final message = messages.join('、');
+      final message = messages.join(', ');
       widget.onShowMessage(
         message,
         icon: Icons.check_circle,
@@ -812,7 +800,7 @@ class _GroupCardState extends ConsumerState<GroupCard> {
     
     if (failed.isNotEmpty) {
       widget.onShowMessage(
-        '一部のファイル/フォルダはアクセスできなかったため登録されませんでした',
+        AppLocalizations.of(context)!.someFilesNotRegistered,
         icon: Icons.error,
         color: Colors.red[700],
       );
@@ -968,7 +956,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                 // グループタイトル
                 Expanded(
                   child: HighlightedText(
-                    text: group.title ?? '名称未設定',
+                    text: group.title ?? AppLocalizations.of(context)!.noNameSet,
                     highlight: widget.searchQuery,
                     style: TextStyle(
                       fontSize: 14 * scale, // よりコンパクトに
@@ -1085,7 +1073,9 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          candidateData.isNotEmpty ? 'ここにドロップして追加' : 'リンクなし\nここにドラッグで追加',
+                          candidateData.isNotEmpty 
+                            ? AppLocalizations.of(context)!.dropToAdd 
+                            : AppLocalizations.of(context)!.noLinksDragToAdd,
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey, fontSize: 13 * scale),
           ),
@@ -1135,8 +1125,8 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
               SizedBox(height: 11 * scale),
               Text(
                 widget.searchQuery != null && widget.searchQuery!.isNotEmpty 
-                  ? '検索結果なし'
-                  : 'No links yet',
+                  ? AppLocalizations.of(context)!.noSearchResults
+                  : AppLocalizations.of(context)!.noLinksYet,
                 style: TextStyle(color: Colors.grey, fontSize: 19 * scale, fontWeight: FontWeight.w500),
               ),
             ],
@@ -1391,21 +1381,21 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                               final result = await showDialog<String>(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: const Text('メモ編集'),
+                                  title: Text(AppLocalizations.of(context)!.editMemo),
                                   content: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       TextField(
                                         controller: controller,
                                         maxLines: 5,
-                                        decoration: const InputDecoration(
-                                          hintText: 'メモを入力...',
-                                          helperText: '空の場合はメモを削除します',
+                                        decoration: InputDecoration(
+                                          hintText: AppLocalizations.of(context)!.enterMemo,
+                                          helperText: AppLocalizations.of(context)!.emptyMemoDeletes,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        '現在のメモ: ${item.memo?.isNotEmpty == true ? item.memo : "なし"}',
+                                        AppLocalizations.of(context)!.currentMemo(item.memo?.isNotEmpty == true ? item.memo! : AppLocalizations.of(context)!.none),
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey.shade600,
@@ -1417,7 +1407,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
-                                      child: const Text('キャンセル'),
+                                      child: Text(AppLocalizations.of(context)!.cancel),
                                     ),
                                     if (item.memo?.isNotEmpty == true)
                                       TextButton(
@@ -1425,11 +1415,11 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                                         style: TextButton.styleFrom(
                                           foregroundColor: Colors.red,
                                         ),
-                                        child: const Text('削除'),
+                                        child: Text(AppLocalizations.of(context)!.delete),
                                       ),
                                     ElevatedButton(
                                       onPressed: () => Navigator.pop(context, controller.text.trim()),
-                                      child: const Text('保存'),
+                                      child: Text(AppLocalizations.of(context)!.save),
                                     ),
                                   ],
                                 ),
@@ -1561,31 +1551,31 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('リンクを編集'),
+          title: Text(AppLocalizations.of(context)!.editLink),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: labelController,
-                decoration: const InputDecoration(
-                  labelText: 'ラベル',
-                  hintText: 'リンクラベルを入力...',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.label,
+                  hintText: AppLocalizations.of(context)!.linkLabelHint,
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: pathController,
-                decoration: const InputDecoration(
-                  labelText: 'パス/URL',
-                  hintText: 'ファイルパスまたはURLを入力...',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.pathUrl,
+                  hintText: AppLocalizations.of(context)!.pathUrlHint,
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: tagsController,
-                decoration: const InputDecoration(
-                  labelText: 'タグ',
-                  hintText: 'カンマ区切りでタグを入力（例: 仕事, 重要, プロジェクト）',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.tags,
+                  hintText: AppLocalizations.of(context)!.tagsHint,
                 ),
               ),
               const SizedBox(height: 16),
@@ -1593,18 +1583,18 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
               if (selectedType == LinkType.url) ...[
                 TextField(
                   controller: fallbackDomainController,
-                  decoration: const InputDecoration(
-                    labelText: 'Faviconフォールバックドメイン',
-                    hintText: '例: https://www.resonabank.co.jp/',
-                    helperText: 'favicon取得失敗時に使用するドメインを設定',
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.faviconFallbackDomain,
+                    hintText: AppLocalizations.of(context)!.faviconUrlHint,
+                    helperText: AppLocalizations.of(context)!.faviconFallbackHelper,
                   ),
                 ),
                 const SizedBox(height: 16),
               ],
               DropdownButtonFormField<LinkType>(
                 value: selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'タイプ',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.type,
                 ),
                 items: LinkType.values.map((type) {
                   return DropdownMenuItem(
@@ -1622,7 +1612,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    const Text('アイコン: '),
+                    Text(AppLocalizations.of(context)!.icon),
                     Expanded(child: IconSelector(
                       selectedIcon: selectedIcon,
                       selectedIconColor: selectedIconColor,
@@ -1646,7 +1636,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -1701,7 +1691,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                   Navigator.pop(context);
                 }
               },
-              child: const Text('保存'),
+              child: Text(AppLocalizations.of(context)!.save),
             ),
           ],
         ),
@@ -1950,10 +1940,10 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
                   children: [
                     Icon(Icons.note_alt_outlined, color: Colors.orange.shade600, size: 20),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'メモ',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        AppLocalizations.of(context)!.memoLabel,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                       ),
                     ),
                     GestureDetector(

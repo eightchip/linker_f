@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
 import '../services/snackbar_service.dart';
+import '../l10n/app_localizations.dart';
 
 class HelpCenterScreen extends StatefulWidget {
   const HelpCenterScreen({super.key});
@@ -71,8 +72,32 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 
   Future<void> _loadManual() async {
     try {
-      final manual = await rootBundle.loadString('Link_Navigator_取扱説明書.md');
-      final parsed = _parseManual(manual);
+      // 言語に応じてマニュアルファイルを切り替え
+      final locale = Localizations.localeOf(context);
+      String manualPath = locale.languageCode == 'ja' 
+          ? 'Link_Navigator_取扱説明書.md'
+          : 'Link_Navigator_Manual.md';
+      
+      String manual;
+      try {
+        // まず言語に応じたファイルを読み込もうとする
+        manual = await rootBundle.loadString(manualPath);
+      } catch (e) {
+        // 英語版が存在しない場合は日本語版にフォールバック
+        if (locale.languageCode != 'ja') {
+          try {
+            manualPath = 'Link_Navigator_取扱説明書.md';
+            manual = await rootBundle.loadString(manualPath);
+          } catch (e2) {
+            // 日本語版も存在しない場合はエラーをスロー
+            rethrow;
+          }
+        } else {
+          rethrow;
+        }
+      }
+      
+      final parsed = _parseManual(manual, context);
       setState(() {
         _rawManual = manual;
         _sections = parsed;
@@ -81,13 +106,13 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'マニュアルの読み込みに失敗しました: $e';
+        _error = AppLocalizations.of(context)!.manualLoadFailed(e.toString());
         _isLoading = false;
       });
     }
   }
 
-  List<_ManualSection> _parseManual(String manual) {
+  List<_ManualSection> _parseManual(String manual, BuildContext context) {
     final lines = manual.split('\n');
     final sections = <_ManualSection>[];
     final buffer = StringBuffer();
@@ -151,7 +176,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       sections.add(
         _ManualSection(
           id: 'manual-root',
-          title: 'マニュアル',
+          title: AppLocalizations.of(context)!.linkNavigatorManual,
           level: 1,
           markdown: manual,
         ),
@@ -180,7 +205,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       if (mounted) {
         SnackBarService.showWarning(
           context,
-          'スクリーンショット「$screenshotId」は登録されていません。',
+          AppLocalizations.of(context)!.screenshotNotRegistered(screenshotId),
         );
       }
       return;
@@ -232,7 +257,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       if (!mounted) return;
       SnackBarService.showWarning(
         context,
-        'スクリーンショットを読み込めませんでした。\nassets/help フォルダに画像を配置してください。\n($assetPath)',
+        AppLocalizations.of(context)!.screenshotLoadFailed(assetPath),
       );
     }
   }
@@ -243,7 +268,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       if (mounted) {
         SnackBarService.showWarning(
           context,
-          '動画「$videoId」は登録されていません。assets/help/videos フォルダを確認してください。',
+          AppLocalizations.of(context)!.videoNotRegistered(videoId),
         );
       }
       return;
@@ -419,7 +444,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     final uri = Uri.tryParse(href);
     if (uri == null) {
       if (mounted) {
-        SnackBarService.showWarning(context, 'リンクを開けませんでした: $href');
+        SnackBarService.showWarning(context, AppLocalizations.of(context)!.linkOpenFailed(href));
       }
       return;
     }
@@ -427,19 +452,19 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     try {
       final launched = await launchUrl(uri);
       if (!launched && mounted) {
-        SnackBarService.showWarning(context, 'リンクを開けませんでした: $href');
+        SnackBarService.showWarning(context, AppLocalizations.of(context)!.linkOpenFailed(href));
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showWarning(context, 'リンクを開けませんでした: $href');
+        SnackBarService.showWarning(context, AppLocalizations.of(context)!.linkOpenFailed(href));
       }
     }
   }
 
-  Future<void> _exportManualAsHtml() async {
+  Future<void> _exportManualAsHtml(BuildContext context) async {
     try {
       if (_rawManual.isEmpty) {
-        throw Exception('マニュアルが読み込まれていません');
+        throw Exception(AppLocalizations.of(context)!.manualNotLoaded);
       }
 
       final htmlBody = md.markdownToHtml(
@@ -454,7 +479,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <title>Link Navigator ヘルプセンター</title>
+  <title>Link Navigator ${AppLocalizations.of(context)!.helpCenter}</title>
   <style>
     :root {
       color-scheme: light;
@@ -612,7 +637,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
       if (!mounted) return;
       SnackBarService.showError(
         context,
-        'HTML出力に失敗しました: $e',
+        AppLocalizations.of(context)!.htmlExportFailed('$e'),
       );
     }
   }
@@ -637,11 +662,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     required ColorScheme colorScheme,
   }) {
     final highlightTags = [
-      'ドラッグ＆ドロップ',
-      'Google連携',
-      '通知・アラート',
-      'カラーテーマ',
-      'ショートカット',
+      AppLocalizations.of(context)!.dragAndDrop,
+      AppLocalizations.of(context)!.googleIntegration,
+      AppLocalizations.of(context)!.notificationsAlerts,
+      AppLocalizations.of(context)!.colorTheme,
+      AppLocalizations.of(context)!.shortcuts,
     ];
 
     final cardColor = Color.alphaBlend(
@@ -688,7 +713,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Link Navigator 取扱説明書',
+                      AppLocalizations.of(context)!.linkNavigatorManual,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: colorScheme.onSurface,
                         fontWeight: FontWeight.w700,
@@ -696,7 +721,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'アプリをすぐに使いこなすためのガイドです。気になる項目を左のナビから選択してください。',
+                      AppLocalizations.of(context)!.helpCenterGuide,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: colorScheme.onSurface.withOpacity(0.78),
                         height: 1.7,
@@ -973,7 +998,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'コンテンツ一覧',
+                          AppLocalizations.of(context)!.contentList,
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: colorScheme.onSurface,
                             fontWeight: FontWeight.w700,
@@ -981,7 +1006,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '気になる章をクリックしてジャンプ！',
+                          AppLocalizations.of(context)!.clickChapterToJump,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurface.withOpacity(0.65),
                           ),
@@ -995,7 +1020,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                        controller: _searchController,
                        decoration: InputDecoration(
                          prefixIcon: Icon(Icons.search, color: secondaryColor),
-                         labelText: 'キーワードで検索',
+                         labelText: AppLocalizations.of(context)!.searchByKeyword,
                          filled: true,
                          fillColor: colorScheme.surface,
                          border: OutlineInputBorder(
@@ -1169,7 +1194,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              'ヘルプセンター',
+              AppLocalizations.of(context)!.helpCenter,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: accentColor,
@@ -1181,11 +1206,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           IconButton(
             icon: Icon(Icons.print_outlined, color: accentColor),
             tooltip: 'HTML出力・印刷',
-            onPressed: _isLoading ? null : _exportManualAsHtml,
+            onPressed: _isLoading ? null : () => _exportManualAsHtml(context),
           ),
           IconButton(
             icon: Icon(Icons.refresh, color: secondaryColor),
-            tooltip: '再読み込み',
+            tooltip: AppLocalizations.of(context)!.reload,
             onPressed: _isLoading ? null : _loadManual,
           ),
         ],
@@ -1224,7 +1249,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            _error ?? '未知のエラー',
+            _error ?? AppLocalizations.of(context)!.unknownError,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
@@ -1232,7 +1257,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           ElevatedButton.icon(
             onPressed: _loadManual,
             icon: const Icon(Icons.refresh),
-            label: const Text('再試行'),
+            label: Text(AppLocalizations.of(context)!.retry),
           ),
         ],
       ),
@@ -1246,9 +1271,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
         children: [
           const Icon(Icons.info_outline, size: 48),
           const SizedBox(height: 16),
-          const Text('ヘルプコンテンツが見つかりませんでした。'),
+          Text(AppLocalizations.of(context)!.helpContentNotFound),
           const SizedBox(height: 16),
-          ElevatedButton(onPressed: _loadManual, child: const Text('再読み込み')),
+          ElevatedButton(onPressed: _loadManual, child: Text(AppLocalizations.of(context)!.reload)),
         ],
       ),
     );

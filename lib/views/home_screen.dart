@@ -907,7 +907,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Icon(Icons.help_outline, color: Colors.indigo, size: 20),
               SizedBox(width: 8),
-              const Text('ヘルプセンター'),
+              Text(AppLocalizations.of(context)!.helpCenter),
             ],
           ),
         ),

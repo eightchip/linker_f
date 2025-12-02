@@ -340,9 +340,9 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                                 Expanded(
                                   child: TextField(
                                     controller: _requesterController,
-                                    decoration: const InputDecoration(
-                                      labelText: '依頼者',
-                                      border: OutlineInputBorder(),
+                                    decoration: InputDecoration(
+                                      labelText: AppLocalizations.of(context)!.requester,
+                                      border: const OutlineInputBorder(),
                                     ),
                                   ),
                                 ),
@@ -350,9 +350,9 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                                 Expanded(
                                   child: TextField(
                                     controller: _assigneeController,
-                                    decoration: const InputDecoration(
-                                      labelText: '担当者',
-                                      border: OutlineInputBorder(),
+                                    decoration: InputDecoration(
+                                      labelText: AppLocalizations.of(context)!.assignee,
+                                      border: const OutlineInputBorder(),
                                     ),
                                   ),
                                 ),
@@ -363,9 +363,9 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                             // 優先度
                             DropdownButtonFormField<TaskPriority>(
                               value: _priority,
-                              decoration: const InputDecoration(
-                                labelText: '優先度',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: AppLocalizations.of(context)!.priority,
+                                border: const OutlineInputBorder(),
                               ),
                               items: TaskPriority.values.map((priority) {
                                 return DropdownMenuItem(
@@ -454,7 +454,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
                               backgroundColor: Colors.orange,
                               foregroundColor: Colors.white,
                             ),
-                            child: Text(_editingIndex != null ? '更新' : '保存'),
+                            child: Text(_editingIndex != null ? AppLocalizations.of(context)!.update : AppLocalizations.of(context)!.save),
                           ),
                           const SizedBox(width: 16),
                         ],
@@ -526,12 +526,12 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('テンプレートを削除'),
-        content: Text('「${_templates[index].name}」を削除しますか？'),
+        title: Text(AppLocalizations.of(context)!.templateDeleteConfirm),
+        content: Text(AppLocalizations.of(context)!.templateDeleteMessage(_templates[index].name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -546,7 +546,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
               _saveTemplates();
               Navigator.of(context).pop();
             },
-            child: const Text('削除'),
+            child: Text(AppLocalizations.of(context)!.delete),
           ),
         ],
       ),
@@ -558,7 +558,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
     if (_nameController.text.trim().isEmpty) {
       SnackBarService.showWarning(
         context,
-        'テンプレート名を入力してください',
+        AppLocalizations.of(context)!.templateNameRequired,
       );
       return;
     }
@@ -566,7 +566,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
     if (_titleController.text.trim().isEmpty) {
       SnackBarService.showWarning(
         context,
-        'タイトルを入力してください',
+        AppLocalizations.of(context)!.titleRequired,
       );
       return;
     }
@@ -600,7 +600,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
 
     SnackBarService.showSuccess(
       context,
-      'テンプレートを保存しました',
+      AppLocalizations.of(context)!.templateSaved,
     );
   }
 
@@ -648,7 +648,7 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
     if (_titleController.text.trim().isEmpty) {
       SnackBarService.showWarning(
         context,
-        'タイトルを入力してください',
+        AppLocalizations.of(context)!.titleRequired,
       );
       return;
     }
@@ -710,13 +710,13 @@ class _TaskTemplateDialogState extends ConsumerState<TaskTemplateDialog> {
   String _getPriorityText(TaskPriority priority) {
     switch (priority) {
       case TaskPriority.low:
-        return '低';
+        return AppLocalizations.of(context)!.low;
       case TaskPriority.medium:
-        return '中';
+        return AppLocalizations.of(context)!.medium;
       case TaskPriority.high:
-        return '高';
+        return AppLocalizations.of(context)!.high;
       case TaskPriority.urgent:
-        return '緊急';
+        return AppLocalizations.of(context)!.urgent;
     }
   }
 }

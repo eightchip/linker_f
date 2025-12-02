@@ -921,6 +921,10 @@
   },
   "descriptionForRequestor": "依頼先への説明",
   "@descriptionForRequestor": {
+    "description": "Description for Requestor (deprecated, use descriptionForAssignee)"
+  },
+  "descriptionForAssignee": "担当者への説明",
+  "@descriptionForAssignee": {
     "description": "依頼先への説明ラベル"
   },
   "tags": "タグ",
@@ -1420,7 +1424,11 @@
   },
   "descriptionText": "説明文",
   "@descriptionText": {
-    "description": "説明文ラベル"
+    "description": "Description text (deprecated, use description)"
+  },
+  "description": "説明",
+  "@description": {
+    "description": "Description"
   },
   "requester": "依頼先",
   "@requester": {
@@ -1428,6 +1436,10 @@
   },
   "normalSearchMode": "通常検索モード",
   "@normalSearchMode": {
+    "description": "Normal search mode (deprecated, use normalSearchOption)"
+  },
+  "normalSearchOption": "通常検索モード",
+  "@normalSearchOption": {
     "description": "通常検索モードラベル"
   },
   "regexSearchMode": "正規表現検索モード",
@@ -2070,6 +2082,10 @@
   },
   "requestorDescription": "依頼先への説明",
   "@requestorDescription": {
+    "description": "Requestor description (deprecated, use assigneeDescription)"
+  },
+  "assigneeDescription": "担当者への説明",
+  "@assigneeDescription": {
     "description": "依頼先への説明ラベル"
   },
   "allScreensCommon": "全画面共通",
@@ -3492,6 +3508,1109 @@
         "type": "String"
       }
     }
+  },
+  "screenshotLoadFailed": "スクリーンショットを読み込めませんでした。\nassets/help フォルダに画像を配置してください。\n({path})",
+  "@screenshotLoadFailed": {
+    "description": "Screenshot load failed message",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "bulkLinkAssignment": "リンクを一括割り当て",
+  "@bulkLinkAssignment": {
+    "description": "Bulk link assignment dialog title"
+  },
+  "add": "追加",
+  "@add": {
+    "description": "Add option"
+  },
+  "addDescription": "既存のリンクに追加します",
+  "@addDescription": {
+    "description": "Add description"
+  },
+  "remove": "削除",
+  "@remove": {
+    "description": "Remove option"
+  },
+  "removeDescription": "指定したリンクを削除します",
+  "@removeDescription": {
+    "description": "Remove description"
+  },
+  "replace": "置換",
+  "@replace": {
+    "description": "Replace option"
+  },
+  "replaceDescription": "既存のリンクを全て置き換えます",
+  "@replaceDescription": {
+    "description": "Replace description"
+  },
+  "noLinksAvailable": "利用可能なリンクがありません",
+  "@noLinksAvailable": {
+    "description": "No links available message"
+  },
+  "tasksMerged": "{count}件のタスクを結合しました",
+  "@tasksMerged": {
+    "description": "Tasks merged message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mergeTask": "タスクを結合",
+  "@mergeTask": {
+    "description": "Merge task dialog title"
+  },
+  "selectTargetTask": "結合先のタスクを選択してください：",
+  "@selectTargetTask": {
+    "description": "Select target task message"
+  },
+  "mergeTaskConfirm": "タスクを結合",
+  "@mergeTaskConfirm": {
+    "description": "Merge task confirm dialog title"
+  },
+  "mergeTaskConfirmDescription": "結合元タスクの予定、サブタスク、メモ、リンク、タグが統合されます。\n結合元タスクは完了状態になります。",
+  "@mergeTaskConfirmDescription": {
+    "description": "Merge task confirm description"
+  },
+  "mergeTaskConfirmMessage": "「{title}」に{count}件のタスクを結合しますか？\n\n{description}",
+  "@mergeTaskConfirmMessage": {
+    "description": "Merge task confirm message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "dropToAdd": "ここにドロップして追加",
+  "@dropToAdd": {
+    "description": "Drop to add message"
+  },
+  "noLinksDragToAdd": "リンクなし\nここにドラッグで追加",
+  "@noLinksDragToAdd": {
+    "description": "No links drag to add message"
+  },
+  "noSearchResults": "検索結果なし",
+  "@noSearchResults": {
+    "description": "No search results message"
+  },
+  "noLinksYet": "リンクがありません",
+  "@noLinksYet": {
+    "description": "No links yet message"
+  },
+  "cancelled": "取消",
+  "@cancelled": {
+    "description": "Cancelled status"
+  },
+  "merge": "結合",
+  "@merge": {
+    "description": "Merge button label"
+  },
+  "apply": "適用",
+  "@apply": {
+    "description": "Apply button label"
+  },
+  "dueDateBulkChange": "期限日を一括変更",
+  "@dueDateBulkChange": {
+    "description": "Due date bulk change dialog title"
+  },
+  "selectDueDate": "期限日を選択",
+  "@selectDueDate": {
+    "description": "Select due date label"
+  },
+  "notSelected": "未選択",
+  "@notSelected": {
+    "description": "Not selected label"
+  },
+  "bulkTagOperation": "タグを一括操作",
+  "@bulkTagOperation": {
+    "description": "Bulk tag operation dialog title"
+  },
+  "addTagDescription": "既存のタグに追加します",
+  "@addTagDescription": {
+    "description": "Add tag description"
+  },
+  "removeTagDescription": "指定したタグを削除します",
+  "@removeTagDescription": {
+    "description": "Remove tag description"
+  },
+  "someFilesNotRegistered": "一部のファイル/フォルダはアクセスできなかったため登録されませんでした",
+  "@someFilesNotRegistered": {
+    "description": "Some files not registered message"
+  },
+  "editMemo": "メモ編集",
+  "@editMemo": {
+    "description": "Edit memo dialog title"
+  },
+  "enterMemo": "メモを入力...",
+  "@enterMemo": {
+    "description": "Enter memo hint"
+  },
+  "emptyMemoDeletes": "空の場合はメモを削除します",
+  "@emptyMemoDeletes": {
+    "description": "Empty memo deletes helper text"
+  },
+  "currentMemo": "現在のメモ: {memo}",
+  "@currentMemo": {
+    "description": "Current memo label",
+    "placeholders": {
+      "memo": {
+        "type": "String"
+      }
+    }
+  },
+  "none": "なし",
+  "@none": {
+    "description": "None label"
+  },
+  "save": "保存",
+  "@save": {
+    "description": "Save button label"
+  },
+  "backupFailedContinue": "バックアップに失敗しましたが、結合を続行します: {error}",
+  "@backupFailedContinue": {
+    "description": "Backup failed but continue merge message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "contentList": "コンテンツ一覧",
+  "@contentList": {
+    "description": "Content list title"
+  },
+  "clickChapterToJump": "気になる章をクリックしてジャンプ！",
+  "@clickChapterToJump": {
+    "description": "Click chapter to jump message"
+  },
+  "searchByKeyword": "キーワードで検索",
+  "@searchByKeyword": {
+    "description": "Search by keyword placeholder"
+  },
+  "manualLoadFailed": "マニュアルの読み込みに失敗しました: {error}",
+  "@manualLoadFailed": {
+    "description": "Manual load failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "screenshotNotRegistered": "スクリーンショット「{id}」は登録されていません。",
+  "@screenshotNotRegistered": {
+    "description": "Screenshot not registered message",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "videoNotRegistered": "動画「{id}」は登録されていません。assets/help/videos フォルダを確認してください。",
+  "@videoNotRegistered": {
+    "description": "Video not registered message",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "linkOpenFailed": "リンクを開けませんでした: {href}",
+  "@linkOpenFailed": {
+    "description": "Link open failed message",
+    "placeholders": {
+      "href": {
+        "type": "String"
+      }
+    }
+  },
+  "manualNotLoaded": "マニュアルが読み込まれていません",
+  "@manualNotLoaded": {
+    "description": "Manual not loaded message"
+  },
+  "reload": "再読み込み",
+  "@reload": {
+    "description": "Reload button label"
+  },
+  "retry": "再試行",
+  "@retry": {
+    "description": "Retry button label"
+  },
+  "unknownError": "未知のエラー",
+  "@unknownError": {
+    "description": "Unknown error message"
+  },
+  "helpContentNotFound": "ヘルプコンテンツが見つかりませんでした。",
+  "@helpContentNotFound": {
+    "description": "Help content not found message"
+  },
+  "linkNavigatorManual": "Link Navigator 取扱説明書",
+  "@linkNavigatorManual": {
+    "description": "Link Navigator manual title"
+  },
+  "helpCenterGuide": "アプリをすぐに使いこなすためのガイドです。気になる項目を左のナビから選択してください。",
+  "@helpCenterGuide": {
+    "description": "Help center guide description"
+  },
+  "htmlExport": "HTML出力・印刷",
+  "@htmlExport": {
+    "description": "HTML export tooltip"
+  },
+  "htmlExportFailed": "HTML出力に失敗しました: {error}",
+  "@htmlExportFailed": {
+    "description": "HTML export failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "filesAdded": "ファイルを{count}個追加しました",
+  "@filesAdded": {
+    "description": "Files added message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "foldersAdded": "フォルダを{count}個追加しました",
+  "@foldersAdded": {
+    "description": "Folders added message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linksAdded": "リンクを{count}個追加しました",
+  "@linksAdded": {
+    "description": "Links added message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "itemsAdded": "{files}、{folders}、{links}",
+  "@itemsAdded": {
+    "description": "Items added combined message",
+    "placeholders": {
+      "files": {
+        "type": "String"
+      },
+      "folders": {
+        "type": "String"
+      },
+      "links": {
+        "type": "String"
+      }
+    }
+  },
+  "editLink": "リンクを編集",
+  "@editLink": {
+    "description": "Edit link dialog title"
+  },
+  "label": "ラベル",
+  "@label": {
+    "description": "Label field"
+  },
+  "linkLabelHint": "リンクラベルを入力...",
+  "@linkLabelHint": {
+    "description": "Link label hint"
+  },
+  "pathUrl": "パス/URL",
+  "@pathUrl": {
+    "description": "Path/URL field"
+  },
+  "pathUrlHint": "ファイルパスまたはURLを入力...",
+  "@pathUrlHint": {
+    "description": "Path/URL hint"
+  },
+  "tags": "タグ",
+  "@tags": {
+    "description": "Tags field"
+  },
+  "tagsHint": "カンマ区切りでタグを入力（例: 仕事, 重要, プロジェクト）",
+  "@tagsHint": {
+    "description": "Tags hint"
+  },
+  "faviconUrlHint": "例: https://www.resonabank.co.jp/",
+  "@faviconUrlHint": {
+    "description": "Favicon URL hint"
+  },
+  "type": "タイプ",
+  "@type": {
+    "description": "Type field"
+  },
+  "icon": "アイコン: ",
+  "@icon": {
+    "description": "Icon label"
+  },
+  "noNameSet": "名称未設定",
+  "@noNameSet": {
+    "description": "No name set"
+  },
+  "confirm": "確認",
+  "@confirm": {
+    "description": "Confirm button"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button"
+  },
+  "get": "取得",
+  "@get": {
+    "description": "Get button"
+  },
+  "getSchedulesConfirm": "スケジュールを取得しますか？",
+  "@getSchedulesConfirm": {
+    "description": "Get schedules confirmation message"
+  },
+  "schedulesRetrieved": "取得: {total}件\n追加: {added}件\nスキップ: {skipped}件",
+  "@schedulesRetrieved": {
+    "description": "Schedules retrieved message",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "schedulesRetrievedNoAdd": "取得: {total}件\n追加: 0件\nスキップ: {skipped}件（既に取り込まれています）",
+  "@schedulesRetrievedNoAdd": {
+    "description": "Schedules retrieved with no additions message",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "schedulesRetrievedNoSchedule": "取得: {total}件\n取り込む予定はありませんでした",
+  "@schedulesRetrievedNoSchedule": {
+    "description": "Schedules retrieved with no schedules message",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookScheduleRetrieval": "Outlookスケジュール取得",
+  "@outlookScheduleRetrieval": {
+    "description": "Outlook schedule retrieval dialog title"
+  },
+  "faviconFallbackDomain": "Faviconフォールバックドメイン",
+  "@faviconFallbackDomain": {
+    "description": "Favicon fallback domain label"
+  },
+  "faviconFallbackHelper": "favicon取得失敗時に使用するドメインを設定",
+  "@faviconFallbackHelper": {
+    "description": "Favicon fallback helper text"
+  },
+  "outlookAutoImportCompleted": "Outlook自動取り込み完了",
+  "@outlookAutoImportCompleted": {
+    "description": "Outlook auto import completed title"
+  },
+  "uiDensity": "UI密度: {percent}%",
+  "@uiDensity": {
+    "description": "UI density label with percentage",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "changePriorityMenu": "優先度変更",
+  "@changePriorityMenu": {
+    "description": "Change priority menu item"
+  },
+  "changeDueDateMenu": "期限日変更",
+  "@changeDueDateMenu": {
+    "description": "Change due date menu item"
+  },
+  "manageTagsMenu": "タグを操作",
+  "@manageTagsMenu": {
+    "description": "Manage tags menu item"
+  },
+  "assignLinkMenu": "リンクを割り当て",
+  "@assignLinkMenu": {
+    "description": "Assign link menu item"
+  },
+  "combineTasksMenu": "タスクを結合",
+  "@combineTasksMenu": {
+    "description": "Combine tasks menu item"
+  },
+  "dragAndDrop": "ドラッグ＆ドロップ",
+  "@dragAndDrop": {
+    "description": "Drag and drop highlight tag"
+  },
+  "googleIntegration": "Google連携",
+  "@googleIntegration": {
+    "description": "Google integration highlight tag"
+  },
+  "notificationsAlerts": "通知・アラート",
+  "@notificationsAlerts": {
+    "description": "Notifications and alerts highlight tag"
+  },
+  "colorTheme": "カラーテーマ",
+  "@colorTheme": {
+    "description": "Color theme highlight tag"
+  },
+  "shortcuts": "ショートカット",
+  "@shortcuts": {
+    "description": "Shortcuts highlight tag"
+  },
+  "selectColumnsToExport": "CSV出力する列を選択",
+  "@selectColumnsToExport": {
+    "description": "CSV export column selection dialog title"
+  },
+  "selectAll": "すべて選択",
+  "@selectAll": {
+    "description": "Select all button"
+  },
+  "deselectAll": "すべて解除",
+  "@deselectAll": {
+    "description": "Deselect all button"
+  },
+  "export": "出力",
+  "@export": {
+    "description": "Export button"
+  },
+  "grouping": "グループ化",
+  "@grouping": {
+    "description": "Grouping dialog title"
+  },
+  "groupByDueDate": "期限日でグループ化",
+  "@groupByDueDate": {
+    "description": "Group by due date option"
+  },
+  "groupByTag": "タグでグループ化",
+  "@groupByTag": {
+    "description": "Group by tag option"
+  },
+  "groupByProjectLink": "プロジェクト（リンク）でグループ化",
+  "@groupByProjectLink": {
+    "description": "Group by project (link) option"
+  },
+  "groupByPriority": "優先度でグループ化",
+  "@groupByPriority": {
+    "description": "Group by priority option"
+  },
+  "requester": "依頼者",
+  "@requester": {
+    "description": "Requester field label"
+  },
+  "assignee": "担当者",
+  "@assignee": {
+    "description": "Assignee field label"
+  },
+  "returnToLinkManagementScreen": "リンク管理画面に戻る",
+  "@returnToLinkManagementScreen": {
+    "description": "Return to link management screen tooltip"
+  },
+  "templateDeleteConfirm": "テンプレートを削除",
+  "@templateDeleteConfirm": {
+    "description": "Template delete confirmation dialog title"
+  },
+  "templateDeleteMessage": "「{name}」を削除しますか？",
+  "@templateDeleteMessage": {
+    "description": "Template delete confirmation message",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "templateNameRequired": "テンプレート名を入力してください",
+  "@templateNameRequired": {
+    "description": "Template name required message"
+  },
+  "titleRequired": "タイトルを入力してください",
+  "@titleRequired": {
+    "description": "Title required message"
+  },
+  "templateSaved": "テンプレートを保存しました",
+  "@templateSaved": {
+    "description": "Template saved message"
+  },
+  "update": "更新",
+  "@update": {
+    "description": "Update button"
+  },
+  "save": "保存",
+  "@save": {
+    "description": "Save button"
+  },
+  "csvColumnId": "ID",
+  "@csvColumnId": {
+    "description": "CSV column: ID"
+  },
+  "csvColumnTitle": "タイトル",
+  "@csvColumnTitle": {
+    "description": "CSV column: Title"
+  },
+  "csvColumnDescription": "説明",
+  "@csvColumnDescription": {
+    "description": "CSV column: Description"
+  },
+  "csvColumnDueDate": "期限",
+  "@csvColumnDueDate": {
+    "description": "CSV column: Due Date"
+  },
+  "csvColumnReminderTime": "リマインダー時刻",
+  "@csvColumnReminderTime": {
+    "description": "CSV column: Reminder Time"
+  },
+  "csvColumnPriority": "優先度",
+  "@csvColumnPriority": {
+    "description": "CSV column: Priority"
+  },
+  "csvColumnStatus": "ステータス",
+  "@csvColumnStatus": {
+    "description": "CSV column: Status"
+  },
+  "csvColumnTags": "タグ",
+  "@csvColumnTags": {
+    "description": "CSV column: Tags"
+  },
+  "csvColumnRelatedLinkId": "関連リンクID",
+  "@csvColumnRelatedLinkId": {
+    "description": "CSV column: Related Link ID"
+  },
+  "csvColumnCreatedAt": "作成日",
+  "@csvColumnCreatedAt": {
+    "description": "CSV column: Created Date"
+  },
+  "csvColumnCompletedAt": "完了日",
+  "@csvColumnCompletedAt": {
+    "description": "CSV column: Completed Date"
+  },
+  "csvColumnStartedAt": "着手日",
+  "@csvColumnStartedAt": {
+    "description": "CSV column: Started Date"
+  },
+  "csvColumnCompletedAtManual": "完了日（手動入力）",
+  "@csvColumnCompletedAtManual": {
+    "description": "CSV column: Completed Date (Manual Entry)"
+  },
+  "csvColumnEstimatedMinutes": "推定時間(分)",
+  "@csvColumnEstimatedMinutes": {
+    "description": "CSV column: Estimated Minutes"
+  },
+  "csvColumnNotes": "メモ",
+  "@csvColumnNotes": {
+    "description": "CSV column: Notes"
+  },
+  "csvColumnIsRecurring": "繰り返しタスク",
+  "@csvColumnIsRecurring": {
+    "description": "CSV column: Recurring Task"
+  },
+  "csvColumnRecurringPattern": "繰り返しパターン",
+  "@csvColumnRecurringPattern": {
+    "description": "CSV column: Recurring Pattern"
+  },
+  "csvColumnIsRecurringReminder": "繰り返しリマインダー",
+  "@csvColumnIsRecurringReminder": {
+    "description": "CSV column: Recurring Reminder"
+  },
+  "csvColumnRecurringReminderPattern": "繰り返しリマインダーパターン",
+  "@csvColumnRecurringReminderPattern": {
+    "description": "CSV column: Recurring Reminder Pattern"
+  },
+  "csvColumnNextReminderTime": "次のリマインダー時刻",
+  "@csvColumnNextReminderTime": {
+    "description": "CSV column: Next Reminder Time"
+  },
+  "csvColumnReminderCount": "リマインダー回数",
+  "@csvColumnReminderCount": {
+    "description": "CSV column: Reminder Count"
+  },
+  "csvColumnHasSubTasks": "サブタスク有無",
+  "@csvColumnHasSubTasks": {
+    "description": "CSV column: Has Subtasks"
+  },
+  "csvColumnCompletedSubTasksCount": "完了サブタスク数",
+  "@csvColumnCompletedSubTasksCount": {
+    "description": "CSV column: Completed Subtasks Count"
+  },
+  "csvColumnTotalSubTasksCount": "総サブタスク数",
+  "@csvColumnTotalSubTasksCount": {
+    "description": "CSV column: Total Subtasks Count"
+  },
+  "mailSending": "メール送信",
+  "@mailSending": {
+    "description": "Mail sending section title"
+  },
+  "copyRequestorMemoToBody": "本文に「依頼先やメモ」をコピー",
+  "@copyRequestorMemoToBody": {
+    "description": "Copy requestor and memo to body checkbox"
+  },
+  "includeSubtasksInBody": "本文にサブタスクを含める",
+  "@includeSubtasksInBody": {
+    "description": "Include subtasks in body checkbox"
+  },
+  "sendingApp": "送信アプリ:",
+  "@sendingApp": {
+    "description": "Sending app label"
+  },
+  "recipientSelection": "送信先選択",
+  "@recipientSelection": {
+    "description": "Recipient selection section title"
+  },
+  "addContact": "連絡先を追加",
+  "@addContact": {
+    "description": "Add contact button"
+  },
+  "selectFromSendHistory": "送信履歴から選択",
+  "@selectFromSendHistory": {
+    "description": "Select from send history button"
+  },
+  "frequentlyUsedContacts": "よく使われる連絡先:",
+  "@frequentlyUsedContacts": {
+    "description": "Frequently used contacts label"
+  },
+  "emptyMailerCanLaunch": "空でもメーラーが起動します",
+  "@emptyMailerCanLaunch": {
+    "description": "Empty mailer can launch hint"
+  },
+  "emptyCanSpecifyAddress": "※空の場合はメーラーで直接アドレスを指定できます",
+  "@emptyCanSpecifyAddress": {
+    "description": "Empty can specify address helper text"
+  },
+  "mailerLaunchInstruction": "※まず「メーラーを起動」ボタンでメーラーを開いてください",
+  "@mailerLaunchInstruction": {
+    "description": "Mailer launch instruction"
+  },
+  "mailerSendInstruction": "※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください",
+  "@mailerSendInstruction": {
+    "description": "Mailer send instruction"
+  },
+  "taskRelatedMail": "タスク関連メール",
+  "@taskRelatedMail": {
+    "description": "Task related mail default subject"
+  },
+  "mailComposeOpened": "{app}のメール作成画面を開きました。\nメールを送信した後、「メール送信完了」ボタンを押してください。",
+  "@mailComposeOpened": {
+    "description": "Mail compose opened message",
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  },
+  "mailerLaunchError": "メーラー起動エラー: {error}",
+  "@mailerLaunchError": {
+    "description": "Mailer launch error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseLaunchMailerFirst": "先に「メーラーを起動」ボタンを押してください",
+  "@pleaseLaunchMailerFirst": {
+    "description": "Please launch mailer first error"
+  },
+  "mailSentRecorded": "メール送信完了を記録しました",
+  "@mailSentRecorded": {
+    "description": "Mail sent recorded message"
+  },
+  "mailSentRecordError": "メール送信完了記録エラー: {error}",
+  "@mailSentRecordError": {
+    "description": "Mail sent record error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookConnectionTestSuccess": "Outlook接続テスト成功",
+  "@outlookConnectionTestSuccess": {
+    "description": "Outlook connection test success"
+  },
+  "outlookConnectionTestFailed": "Outlook接続テスト失敗: Outlookが利用できません",
+  "@outlookConnectionTestFailed": {
+    "description": "Outlook connection test failed"
+  },
+  "outlookConnectionTestError": "Outlook接続テストエラー: {error}",
+  "@outlookConnectionTestError": {
+    "description": "Outlook connection test error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "powershellScriptNotFound": "PowerShellスクリプトが見つかりません: {scriptName}\n\n以下のいずれかの場所に配置してください:\n1. ポータブル版: {portablePath}\n2. インストール版: {installedPath}",
+  "@powershellScriptNotFound": {
+    "description": "PowerShell script not found error",
+    "placeholders": {
+      "scriptName": {
+        "type": "String"
+      },
+      "portablePath": {
+        "type": "String"
+      },
+      "installedPath": {
+        "type": "String"
+      }
+    }
+  },
+  "name": "名前",
+  "@name": {
+    "description": "Name label"
+  },
+  "nameRequired": "名前を入力してください",
+  "@nameRequired": {
+    "description": "Name required error"
+  },
+  "gmailLaunchFailed": "Gmailを起動できませんでした",
+  "@gmailLaunchFailed": {
+    "description": "Gmail launch failed error"
+  },
+  "outlookNotInstalled": "Outlookがインストールされていないか、正しく設定されていません。\n会社PCでOutlookを使用してください。\n詳細: {details}",
+  "@outlookNotInstalled": {
+    "description": "Outlook not installed error",
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookLaunchFailed": "Outlook起動に失敗しました: {error}",
+  "@outlookLaunchFailed": {
+    "description": "Outlook launch failed error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookSearchFailed": "Outlook検索に失敗しました: {error}",
+  "@outlookSearchFailed": {
+    "description": "Outlook search failed error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "unsupportedMailApp": "サポートされていないメールアプリ: {app}",
+  "@unsupportedMailApp": {
+    "description": "Unsupported mail app error",
+    "placeholders": {
+      "app": {
+        "type": "String"
+      }
+    }
+  },
+  "powershellTimeout": "PowerShell実行がタイムアウトしました（{seconds}秒）",
+  "@powershellTimeout": {
+    "description": "PowerShell timeout error",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "powershellScriptError": "PowerShellスクリプト実行エラー: {error}",
+  "@powershellScriptError": {
+    "description": "PowerShell script execution error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "powershellExecutionFailed": "PowerShell実行が失敗しました（全{retries}回の試行）",
+  "@powershellExecutionFailed": {
+    "description": "PowerShell execution failed error",
+    "placeholders": {
+      "retries": {
+        "type": "int"
+      }
+    }
+  },
+  "unexpectedJsonFormat": "予期しないJSON形式です",
+  "@unexpectedJsonFormat": {
+    "description": "Unexpected JSON format error"
+  },
+  "startDateParseError": "開始日時のパースエラー: {date}",
+  "@startDateParseError": {
+    "description": "Start date parse error",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "oauth2CredentialsNotFound": "OAuth2認証情報ファイルが見つかりません。設定方法を確認してください。",
+  "@oauth2CredentialsNotFound": {
+    "description": "OAuth2 credentials not found error"
+  },
+  "invalidCredentialsFormat": "認証情報ファイルの形式が正しくありません。OAuth2デスクトップアプリ用の認証情報を使用してください。",
+  "@invalidCredentialsFormat": {
+    "description": "Invalid credentials format error"
+  },
+  "clientIdNotSet": "認証情報ファイルに client_id が設定されていません。",
+  "@clientIdNotSet": {
+    "description": "Client ID not set error"
+  },
+  "authUrlOpenFailed": "認証URLを開けませんでした",
+  "@authUrlOpenFailed": {
+    "description": "Auth URL open failed error"
+  },
+  "noValidAccessToken": "有効なアクセストークンがありません。OAuth2認証を実行してください。",
+  "@noValidAccessToken": {
+    "description": "No valid access token error"
+  },
+  "googleCalendarEventFetchFailed": "Google Calendar イベント取得に失敗しました: {statusCode}",
+  "@googleCalendarEventFetchFailed": {
+    "description": "Google Calendar event fetch failed error",
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "eventDeleteFailed": "イベント削除に失敗しました: {statusCode}",
+  "@eventDeleteFailed": {
+    "description": "Event delete failed error",
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "backupValidationFailed": "バックアップファイルの検証に失敗しました",
+  "@backupValidationFailed": {
+    "description": "Backup validation failed error"
+  },
+  "backupBeforeOperationFailed": "操作前のバックアップに失敗しました: {error}",
+  "@backupBeforeOperationFailed": {
+    "description": "Backup before operation failed error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidBackupDataFormat": "バックアップデータの形式が正しくありません",
+  "@invalidBackupDataFormat": {
+    "description": "Invalid backup data format error"
+  },
+  "invalidBackupFile": "無効なバックアップファイルです",
+  "@invalidBackupFile": {
+    "description": "Invalid backup file error"
+  },
+  "emailAlreadyRegistered": "このメールアドレスは既に登録されています: {email}",
+  "@emailAlreadyRegistered": {
+    "description": "Email already registered error",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "contactNotFound": "連絡先が見つかりません: {id}",
+  "@contactNotFound": {
+    "description": "Contact not found error",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookEventFetchFailed": "Outlookから予定を取得できませんでした。後でもう一度お試しください。\nエラー: {error}",
+  "@outlookEventFetchFailed": {
+    "description": "Outlook event fetch failed error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "outlookEventFetchFailedInfo": "Outlookから予定を取得できませんでした。後でもう一度お試しください。",
+  "@outlookEventFetchFailedInfo": {
+    "description": "Outlook event fetch failed info message"
+  },
+  "tokenExtractionFailed": "トークンの抽出に失敗しました",
+  "@tokenExtractionFailed": {
+    "description": "Token extraction failed error"
+  },
+  "taskNotSelected": "タスクが選択されていません",
+  "@taskNotSelected": {
+    "description": "Task not selected error"
+  },
+  "noSendHistoryForTask": "このタスクの送信履歴はありません",
+  "@noSendHistoryForTask": {
+    "description": "No send history for task message"
+  },
+  "sendHistoryReused": "送信履歴を再利用しました",
+  "@sendHistoryReused": {
+    "description": "Send history reused message"
+  },
+  "gmailConnectionTest": "Gmail接続テスト",
+  "@gmailConnectionTest": {
+    "description": "Gmail connection test label"
+  },
+  "gmailConnectionTestBody": "これはGmail接続テストです。",
+  "@gmailConnectionTestBody": {
+    "description": "Gmail connection test body"
+  },
+  "gmailConnectionTestSuccess": "Gmail接続テスト成功: Gmailが開きました",
+  "@gmailConnectionTestSuccess": {
+    "description": "Gmail connection test success message"
+  },
+  "gmailConnectionTestError": "Gmail接続テストエラー: {error}",
+  "@gmailConnectionTestError": {
+    "description": "Gmail connection test error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "testMailSent": "テストメール送信完了",
+  "@testMailSent": {
+    "description": "Test mail sent message"
+  },
+  "testMailSendError": "テストメール送信エラー: {error}",
+  "@testMailSendError": {
+    "description": "Test mail send error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noSendHistory": "送信履歴がありません",
+  "@noSendHistory": {
+    "description": "No send history message"
+  },
+  "sendHistoryAutoRegister": "メールを送信すると、宛先が自動で連絡先に登録されます",
+  "@sendHistoryAutoRegister": {
+    "description": "Send history auto register message"
+  },
+  "latestMail": "🆕 最新のメール",
+  "@latestMail": {
+    "description": "Latest mail prefix"
+  },
+  "oldestMail": "⭐ 最初のメール",
+  "@oldestMail": {
+    "description": "Oldest mail prefix"
+  },
+  "sentColon": "送信:",
+  "@sentColon": {
+    "description": "Sent label with colon"
+  },
+  "subjectColon": "件名:",
+  "@subjectColon": {
+    "description": "Subject label with colon"
+  },
+  "toColon": "To:",
+  "@toColon": {
+    "description": "To label with colon"
+  },
+  "bodyColon": "本文:",
+  "@bodyColon": {
+    "description": "Body label with colon"
+  },
+  "taskLabel": "タスク:",
+  "@taskLabel": {
+    "description": "Task label with colon"
+  },
+  "descriptionLabel": "説明:",
+  "@descriptionLabel": {
+    "description": "Description label with colon"
+  },
+  "dueDateLabel": "期限:",
+  "@dueDateLabel": {
+    "description": "Due date label with colon"
+  },
+  "statusLabel": "ステータス:",
+  "@statusLabel": {
+    "description": "Status label with colon"
+  },
+  "relatedTaskInfo": "【関連タスク情報】",
+  "@relatedTaskInfo": {
+    "description": "Related task information header"
+  },
+  "mailInfo": "【メール情報】",
+  "@mailInfo": {
+    "description": "Mail information header"
+  },
+  "sentDateTime": "送信日時:",
+  "@sentDateTime": {
+    "description": "Sent date time label with colon"
+  },
+  "sentId": "送信ID:",
+  "@sentId": {
+    "description": "Sent ID label with colon"
+  },
+  "noMessage": "メッセージがありません。",
+  "@noMessage": {
+    "description": "No message text"
+  },
+  "noTaskInfo": "タスク情報がありません。",
+  "@noTaskInfo": {
+    "description": "No task information text"
+  },
+  "linksLabel": "リンク:",
+  "@linksLabel": {
+    "description": "Links label with colon"
+  },
+  "relatedMaterials": "【関連資料】",
+  "@relatedMaterials": {
+    "description": "Related materials header"
+  },
+  "subtaskProgress": "サブタスク進捗:",
+  "@subtaskProgress": {
+    "description": "Subtask progress label with colon"
+  },
+  "completedLabel": "完了:",
+  "@completedLabel": {
+    "description": "Completed label with colon"
+  },
+  "thisMailSentFromApp": "このメールは Link Navigator アプリから送信されました。",
+  "@thisMailSentFromApp": {
+    "description": "Mail sent from app message"
+  },
+  "taskInfoHeader": "📋 タスク情報",
+  "@taskInfoHeader": {
+    "description": "Task information header"
+  },
+  "memoLabel": "メモ:",
+  "@memoLabel": {
+    "description": "Memo label with colon"
+  },
+  "relatedMaterialsLabel": "関連資料:",
+  "@relatedMaterialsLabel": {
+    "description": "Related materials label with colon"
+  },
+  "gmailLinkNote": "📝 注意: ネットワーク共有やローカルファイルのリンクは、Gmailでは直接クリックできません。\nリンクをコピーして、ファイルエクスプローラーやブラウザのアドレスバーに貼り付けてアクセスしてください。",
+  "@gmailLinkNote": {
+    "description": "Gmail link note"
+  },
+  "outlookLinkNote": "📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\nリンクをクリックして直接アクセスできます。",
+  "@outlookLinkNote": {
+    "description": "Outlook link note"
   }
 }
 

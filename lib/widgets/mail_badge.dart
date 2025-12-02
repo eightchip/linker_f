@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/sent_mail_log.dart';
+import '../l10n/app_localizations.dart';
 
 class MailBadge extends StatelessWidget {
   final SentMailLog log;
@@ -18,7 +19,7 @@ class MailBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: _buildTooltipMessage(),
+      message: _buildTooltipMessageWithContext(context),
       child: GestureDetector(
         onTap: onTap,
         child: Stack(
@@ -142,7 +143,9 @@ class MailBadge extends StatelessWidget {
     }
   }
 
-  String _buildTooltipMessage() {
+
+  String _buildTooltipMessageWithContext(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dateFormat = '${log.composedAt.month}/${log.composedAt.day} ${log.composedAt.hour.toString().padLeft(2, '0')}:${log.composedAt.minute.toString().padLeft(2, '0')}';
     final bodyPreview = log.body.length > 120 
         ? '${log.body.substring(0, 120)}...'
@@ -150,16 +153,16 @@ class MailBadge extends StatelessWidget {
     
     String prefix = '';
     if (isLatest) {
-      prefix = '🆕 最新のメール\n';
+      prefix = '${l10n.latestMail}\n';
     } else if (isOldest) {
-      prefix = '⭐ 最初のメール\n';
+      prefix = '${l10n.oldestMail}\n';
     }
     
     return '$prefix'
-           '送信: $dateFormat\n'
-           '件名: ${log.subject}\n'
-           'To: ${log.to}\n'
-           '本文: $bodyPreview';
+           '${l10n.sentColon} $dateFormat\n'
+           '${l10n.subjectColon} ${log.subject}\n'
+           '${l10n.toColon} ${log.to}\n'
+           '${l10n.bodyColon} $bodyPreview';
   }
 }
 

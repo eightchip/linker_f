@@ -8,6 +8,7 @@ import '../viewmodels/task_viewmodel.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import '../utils/error_handler.dart';
 import '../widgets/unified_dialog.dart';
+import '../l10n/app_localizations.dart';
 
 /// Outlook自動取込サービス
 /// 個人Outlookカレンダーから予定を自動的に取り込む
@@ -34,7 +35,30 @@ class OutlookAutoSyncService {
         return;
       }
 
+      // 確認ダイアログを表示（showDialogがtrueでcontextが利用可能な場合）
+      // 注意: COMオブジェクトを作成する前に確認ダイアログを表示することで、
+      // キャンセル時にOutlookがクラッシュするのを防ぐ
+      if (showDialog && context != null) {
+        final confirmed = await UnifiedDialogHelper.showConfirmDialog(
+          context,
+          title: AppLocalizations.of(context)!.outlookScheduleRetrieval,
+          message: AppLocalizations.of(context)!.getSchedulesConfirm,
+          confirmText: AppLocalizations.of(context)!.get,
+          cancelText: AppLocalizations.of(context)!.cancel,
+          icon: Icons.calendar_today,
+          iconColor: Colors.blue,
+        );
+        
+        if (confirmed != true) {
+          if (kDebugMode) {
+            print('ユーザーがスケジュール取得をキャンセルしました');
+          }
+          return;
+        }
+      }
+
       // Outlookが利用可能かチェック（プロセス監視付き）
+      // 注意: 確認ダイアログの後に実行することで、キャンセル時にはCOMオブジェクトを作成しない
       if (kDebugMode) {
         print('Outlook可用性チェック開始...');
       }
@@ -50,26 +74,6 @@ class OutlookAutoSyncService {
       }
       if (kDebugMode) {
         print('Outlook可用性確認完了');
-      }
-
-      // 確認ダイアログを表示（showDialogがtrueでcontextが利用可能な場合）
-      if (showDialog && context != null) {
-        final confirmed = await UnifiedDialogHelper.showConfirmDialog(
-          context,
-          title: 'Outlookスケジュール取得',
-          message: 'スケジュールを取得しますか？',
-          confirmText: '取得',
-          cancelText: 'キャンセル',
-          icon: Icons.calendar_today,
-          iconColor: Colors.blue,
-        );
-        
-        if (confirmed != true) {
-          if (kDebugMode) {
-            print('ユーザーがスケジュール取得をキャンセルしました');
-          }
-          return;
-        }
       }
 
       // 専用タスクを取得または作成
@@ -185,24 +189,24 @@ class OutlookAutoSyncService {
           if (addedCount > 0) {
             await UnifiedDialogHelper.showInfoDialog(
               context,
-              title: 'Outlook自動取り込み完了',
-              message: '取得: ${events.length}件\n追加: $addedCount件\nスキップ: $skippedCount件',
+              title: AppLocalizations.of(context)!.outlookAutoImportCompleted,
+              message: AppLocalizations.of(context)!.schedulesRetrieved(events.length, addedCount, skippedCount),
               icon: Icons.check_circle,
               iconColor: Colors.green,
             );
           } else if (skippedCount > 0) {
             await UnifiedDialogHelper.showInfoDialog(
               context,
-              title: 'Outlook自動取り込み完了',
-              message: '取得: ${events.length}件\n追加: 0件\nスキップ: $skippedCount件（既に取り込まれています）',
+              title: AppLocalizations.of(context)!.outlookAutoImportCompleted,
+              message: AppLocalizations.of(context)!.schedulesRetrievedNoAdd(events.length, skippedCount),
               icon: Icons.info_outline,
               iconColor: Colors.blue,
             );
           } else {
             await UnifiedDialogHelper.showInfoDialog(
               context,
-              title: 'Outlook自動取り込み完了',
-              message: '取得: ${events.length}件\n取り込む予定はありませんでした',
+              title: AppLocalizations.of(context)!.outlookAutoImportCompleted,
+              message: AppLocalizations.of(context)!.schedulesRetrievedNoSchedule(events.length),
               icon: Icons.info_outline,
               iconColor: Colors.blue,
             );

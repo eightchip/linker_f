@@ -464,7 +464,7 @@ abstract class AppLocalizations {
   /// **'UI設定をリセットしました'**
   String get uiSettingsResetSuccess;
 
-  /// 保存ボタン
+  /// Save button
   ///
   /// In ja, this message translates to:
   /// **'保存'**
@@ -590,10 +590,10 @@ abstract class AppLocalizations {
   /// **'{count}件の結果'**
   String resultsCount(int count);
 
-  /// 検索結果なしメッセージ
+  /// No search results message
   ///
   /// In ja, this message translates to:
-  /// **'検索結果がありません'**
+  /// **'検索結果なし'**
   String get noSearchResults;
 
   /// メモなしリンクメッセージ
@@ -614,7 +614,7 @@ abstract class AppLocalizations {
   /// **'検索（ファイル名・フォルダ名・URL・タグ）'**
   String get searchPlaceholder;
 
-  /// タイプフィルターのラベル
+  /// Type field
   ///
   /// In ja, this message translates to:
   /// **'タイプ'**
@@ -692,7 +692,7 @@ abstract class AppLocalizations {
   /// **'スケジュール一覧'**
   String get scheduleList;
 
-  /// グループ化メニュー項目
+  /// Grouping dialog title
   ///
   /// In ja, this message translates to:
   /// **'グループ化'**
@@ -854,22 +854,22 @@ abstract class AppLocalizations {
   /// **'一括操作'**
   String get bulkOperations;
 
-  /// メモラベル
+  /// Memo label with colon
   ///
   /// In ja, this message translates to:
-  /// **'メモ'**
+  /// **'メモ:'**
   String get memoLabel;
 
-  /// 全選択ツールチップ
+  /// Select all button
   ///
   /// In ja, this message translates to:
-  /// **'全選択'**
+  /// **'すべて選択'**
   String get selectAll;
 
-  /// 全解除ツールチップ
+  /// Deselect all button
   ///
   /// In ja, this message translates to:
-  /// **'全解除'**
+  /// **'すべて解除'**
   String get deselectAll;
 
   /// カードビューツールチップ
@@ -974,7 +974,7 @@ abstract class AppLocalizations {
   /// **'作成日順'**
   String get createdOrder;
 
-  /// なしオプション
+  /// None label
   ///
   /// In ja, this message translates to:
   /// **'なし'**
@@ -1118,7 +1118,7 @@ abstract class AppLocalizations {
   /// **'リンクを追加'**
   String get addLink;
 
-  /// リンクを編集ツールチップ
+  /// Edit link dialog title
   ///
   /// In ja, this message translates to:
   /// **'リンクを編集'**
@@ -1202,10 +1202,10 @@ abstract class AppLocalizations {
   /// **'緊'**
   String get urgentShort;
 
-  /// キャンセルステータス
+  /// Cancelled status
   ///
   /// In ja, this message translates to:
-  /// **'キャンセル'**
+  /// **'取消'**
   String get cancelled;
 
   /// キャンセルステータス（短縮版）
@@ -1382,13 +1382,19 @@ abstract class AppLocalizations {
   /// **'本文'**
   String get body;
 
-  /// 依頼先への説明ラベル
+  /// Description for Requestor (deprecated, use descriptionForAssignee)
   ///
   /// In ja, this message translates to:
   /// **'依頼先への説明'**
   String get descriptionForRequestor;
 
-  /// タグラベル
+  /// 依頼先への説明ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'担当者への説明'**
+  String get descriptionForAssignee;
+
+  /// Tags field
   ///
   /// In ja, this message translates to:
   /// **'タグ'**
@@ -1454,7 +1460,7 @@ abstract class AppLocalizations {
   /// **'メール機能を折りたたむ'**
   String get collapseMailFunction;
 
-  /// 更新ボタン
+  /// Update button
   ///
   /// In ja, this message translates to:
   /// **'更新'**
@@ -1478,13 +1484,13 @@ abstract class AppLocalizations {
   /// **'推定時間 (分)'**
   String get estimatedTime;
 
-  /// 説明ラベル
+  /// Description
   ///
   /// In ja, this message translates to:
   /// **'説明'**
   String get description;
 
-  /// 追加ボタン
+  /// Add option
   ///
   /// In ja, this message translates to:
   /// **'追加'**
@@ -1532,7 +1538,7 @@ abstract class AppLocalizations {
   /// **'作成'**
   String get create;
 
-  /// 期限日選択プレースホルダー
+  /// Select due date label
   ///
   /// In ja, this message translates to:
   /// **'期限日を選択'**
@@ -1700,10 +1706,10 @@ abstract class AppLocalizations {
   /// **'{count}件のフィルタープリセットをインポートしました'**
   String filterPresetsImported(int count);
 
-  /// Export button label
+  /// Export button
   ///
   /// In ja, this message translates to:
-  /// **'エクスポート'**
+  /// **'出力'**
   String get export;
 
   /// インポートボタン
@@ -2006,23 +2012,29 @@ abstract class AppLocalizations {
   /// **'I'**
   String get inProgressShort2;
 
-  /// 説明文ラベル
+  /// Description text (deprecated, use description)
   ///
   /// In ja, this message translates to:
   /// **'説明文'**
   String get descriptionText;
 
-  /// 依頼先ラベル
+  /// Requester field label
   ///
   /// In ja, this message translates to:
-  /// **'依頼先'**
+  /// **'依頼者'**
   String get requester;
+
+  /// Normal search mode (deprecated, use normalSearchOption)
+  ///
+  /// In ja, this message translates to:
+  /// **'通常検索モード'**
+  String get normalSearchMode;
 
   /// 通常検索モードラベル
   ///
   /// In ja, this message translates to:
   /// **'通常検索モード'**
-  String get normalSearchMode;
+  String get normalSearchOption;
 
   /// 正規表現検索モードラベル
   ///
@@ -2228,7 +2240,7 @@ abstract class AppLocalizations {
   /// **'コピー'**
   String get copySuffix;
 
-  /// 説明ラベル
+  /// Description label with colon
   ///
   /// In ja, this message translates to:
   /// **'説明:'**
@@ -2246,10 +2258,10 @@ abstract class AppLocalizations {
   /// **'コピー個数:'**
   String get copyCountLabel2;
 
-  /// 期限日ラベル
+  /// Due date label with colon
   ///
   /// In ja, this message translates to:
-  /// **'期限日:'**
+  /// **'期限:'**
   String get dueDateLabel;
 
   /// リマインダーラベル
@@ -2264,7 +2276,7 @@ abstract class AppLocalizations {
   /// **'優先度:'**
   String get priorityLabel;
 
-  /// ステータスラベル
+  /// Status label with colon
   ///
   /// In ja, this message translates to:
   /// **'ステータス:'**
@@ -2384,7 +2396,7 @@ abstract class AppLocalizations {
   /// **'「{title}」をアプリとGoogle Calendarから削除しました'**
   String taskDeletedFromBoth(String title);
 
-  /// 確認ラベル
+  /// Confirm button
   ///
   /// In ja, this message translates to:
   /// **'確認'**
@@ -2402,10 +2414,10 @@ abstract class AppLocalizations {
   /// **'バックアップを実行しました。{count}件のタスクを削除します...'**
   String backupExecuted(int count);
 
-  /// バックアップ失敗メッセージ
+  /// Backup failed but continue merge message
   ///
   /// In ja, this message translates to:
-  /// **'バックアップに失敗しましたが、削除を続行します: {error}'**
+  /// **'バックアップに失敗しましたが、結合を続行します: {error}'**
   String backupFailedContinue(String error);
 
   /// 予定削除ダイアログタイトル
@@ -2540,11 +2552,11 @@ abstract class AppLocalizations {
   /// **'メーラーの起動に失敗しました'**
   String get mailerLaunchFailed;
 
-  /// リンクオープン失敗メッセージ
+  /// Link open failed message
   ///
   /// In ja, this message translates to:
-  /// **'リンクを開けませんでした: {link}'**
-  String linkOpenFailed(String link);
+  /// **'リンクを開けませんでした: {href}'**
+  String linkOpenFailed(String href);
 
   /// UNCパスオープン失敗メッセージ
   ///
@@ -2726,11 +2738,17 @@ abstract class AppLocalizations {
   /// **'テキスト色'**
   String get textColor;
 
-  /// 依頼先への説明ラベル
+  /// Requestor description (deprecated, use assigneeDescription)
   ///
   /// In ja, this message translates to:
   /// **'依頼先への説明'**
   String get requestorDescription;
+
+  /// 依頼先への説明ラベル
+  ///
+  /// In ja, this message translates to:
+  /// **'担当者への説明'**
+  String get assigneeDescription;
 
   /// 全画面共通ラベル
   ///
@@ -4100,7 +4118,7 @@ abstract class AppLocalizations {
   /// **'フォルダを開けませんでした: {error}'**
   String couldNotOpenFolder(String error);
 
-  /// OK button label
+  /// OK button
   ///
   /// In ja, this message translates to:
   /// **'OK'**
@@ -4415,6 +4433,1180 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'エラー: {error}'**
   String errorColon(String error);
+
+  /// Screenshot load failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'スクリーンショットを読み込めませんでした。\nassets/help フォルダに画像を配置してください。\n({path})'**
+  String screenshotLoadFailed(String path);
+
+  /// Bulk link assignment dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクを一括割り当て'**
+  String get bulkLinkAssignment;
+
+  /// Add description
+  ///
+  /// In ja, this message translates to:
+  /// **'既存のリンクに追加します'**
+  String get addDescription;
+
+  /// Remove option
+  ///
+  /// In ja, this message translates to:
+  /// **'削除'**
+  String get remove;
+
+  /// Remove description
+  ///
+  /// In ja, this message translates to:
+  /// **'指定したリンクを削除します'**
+  String get removeDescription;
+
+  /// Replace option
+  ///
+  /// In ja, this message translates to:
+  /// **'置換'**
+  String get replace;
+
+  /// Replace description
+  ///
+  /// In ja, this message translates to:
+  /// **'既存のリンクを全て置き換えます'**
+  String get replaceDescription;
+
+  /// No links available message
+  ///
+  /// In ja, this message translates to:
+  /// **'利用可能なリンクがありません'**
+  String get noLinksAvailable;
+
+  /// Tasks merged message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクを結合しました'**
+  String tasksMerged(int count);
+
+  /// Merge task dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクを結合'**
+  String get mergeTask;
+
+  /// Select target task message
+  ///
+  /// In ja, this message translates to:
+  /// **'結合先のタスクを選択してください：'**
+  String get selectTargetTask;
+
+  /// Merge task confirm dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクを結合'**
+  String get mergeTaskConfirm;
+
+  /// Merge task confirm description
+  ///
+  /// In ja, this message translates to:
+  /// **'結合元タスクの予定、サブタスク、メモ、リンク、タグが統合されます。\n結合元タスクは完了状態になります。'**
+  String get mergeTaskConfirmDescription;
+
+  /// Merge task confirm message
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」に{count}件のタスクを結合しますか？\n\n{description}'**
+  String mergeTaskConfirmMessage(String title, int count, String description);
+
+  /// Drop to add message
+  ///
+  /// In ja, this message translates to:
+  /// **'ここにドロップして追加'**
+  String get dropToAdd;
+
+  /// No links drag to add message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクなし\nここにドラッグで追加'**
+  String get noLinksDragToAdd;
+
+  /// No links yet message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクがありません'**
+  String get noLinksYet;
+
+  /// Merge button label
+  ///
+  /// In ja, this message translates to:
+  /// **'結合'**
+  String get merge;
+
+  /// Apply button label
+  ///
+  /// In ja, this message translates to:
+  /// **'適用'**
+  String get apply;
+
+  /// Due date bulk change dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'期限日を一括変更'**
+  String get dueDateBulkChange;
+
+  /// Not selected label
+  ///
+  /// In ja, this message translates to:
+  /// **'未選択'**
+  String get notSelected;
+
+  /// Bulk tag operation dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'タグを一括操作'**
+  String get bulkTagOperation;
+
+  /// Add tag description
+  ///
+  /// In ja, this message translates to:
+  /// **'既存のタグに追加します'**
+  String get addTagDescription;
+
+  /// Remove tag description
+  ///
+  /// In ja, this message translates to:
+  /// **'指定したタグを削除します'**
+  String get removeTagDescription;
+
+  /// Some files not registered message
+  ///
+  /// In ja, this message translates to:
+  /// **'一部のファイル/フォルダはアクセスできなかったため登録されませんでした'**
+  String get someFilesNotRegistered;
+
+  /// Edit memo dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'メモ編集'**
+  String get editMemo;
+
+  /// Enter memo hint
+  ///
+  /// In ja, this message translates to:
+  /// **'メモを入力...'**
+  String get enterMemo;
+
+  /// Empty memo deletes helper text
+  ///
+  /// In ja, this message translates to:
+  /// **'空の場合はメモを削除します'**
+  String get emptyMemoDeletes;
+
+  /// Current memo label
+  ///
+  /// In ja, this message translates to:
+  /// **'現在のメモ: {memo}'**
+  String currentMemo(String memo);
+
+  /// Content list title
+  ///
+  /// In ja, this message translates to:
+  /// **'コンテンツ一覧'**
+  String get contentList;
+
+  /// Click chapter to jump message
+  ///
+  /// In ja, this message translates to:
+  /// **'気になる章をクリックしてジャンプ！'**
+  String get clickChapterToJump;
+
+  /// Search by keyword placeholder
+  ///
+  /// In ja, this message translates to:
+  /// **'キーワードで検索'**
+  String get searchByKeyword;
+
+  /// Manual load failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'マニュアルの読み込みに失敗しました: {error}'**
+  String manualLoadFailed(String error);
+
+  /// Screenshot not registered message
+  ///
+  /// In ja, this message translates to:
+  /// **'スクリーンショット「{id}」は登録されていません。'**
+  String screenshotNotRegistered(String id);
+
+  /// Video not registered message
+  ///
+  /// In ja, this message translates to:
+  /// **'動画「{id}」は登録されていません。assets/help/videos フォルダを確認してください。'**
+  String videoNotRegistered(String id);
+
+  /// Manual not loaded message
+  ///
+  /// In ja, this message translates to:
+  /// **'マニュアルが読み込まれていません'**
+  String get manualNotLoaded;
+
+  /// Reload button label
+  ///
+  /// In ja, this message translates to:
+  /// **'再読み込み'**
+  String get reload;
+
+  /// Retry button label
+  ///
+  /// In ja, this message translates to:
+  /// **'再試行'**
+  String get retry;
+
+  /// Unknown error message
+  ///
+  /// In ja, this message translates to:
+  /// **'未知のエラー'**
+  String get unknownError;
+
+  /// Help content not found message
+  ///
+  /// In ja, this message translates to:
+  /// **'ヘルプコンテンツが見つかりませんでした。'**
+  String get helpContentNotFound;
+
+  /// Link Navigator manual title
+  ///
+  /// In ja, this message translates to:
+  /// **'Link Navigator 取扱説明書'**
+  String get linkNavigatorManual;
+
+  /// Help center guide description
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリをすぐに使いこなすためのガイドです。気になる項目を左のナビから選択してください。'**
+  String get helpCenterGuide;
+
+  /// HTML export tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'HTML出力・印刷'**
+  String get htmlExport;
+
+  /// HTML export failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'HTML出力に失敗しました: {error}'**
+  String htmlExportFailed(String error);
+
+  /// Files added message
+  ///
+  /// In ja, this message translates to:
+  /// **'ファイルを{count}個追加しました'**
+  String filesAdded(int count);
+
+  /// Folders added message
+  ///
+  /// In ja, this message translates to:
+  /// **'フォルダを{count}個追加しました'**
+  String foldersAdded(int count);
+
+  /// Links added message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクを{count}個追加しました'**
+  String linksAdded(int count);
+
+  /// Items added combined message
+  ///
+  /// In ja, this message translates to:
+  /// **'{files}、{folders}、{links}'**
+  String itemsAdded(String files, String folders, String links);
+
+  /// Label field
+  ///
+  /// In ja, this message translates to:
+  /// **'ラベル'**
+  String get label;
+
+  /// Link label hint
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクラベルを入力...'**
+  String get linkLabelHint;
+
+  /// Path/URL field
+  ///
+  /// In ja, this message translates to:
+  /// **'パス/URL'**
+  String get pathUrl;
+
+  /// Path/URL hint
+  ///
+  /// In ja, this message translates to:
+  /// **'ファイルパスまたはURLを入力...'**
+  String get pathUrlHint;
+
+  /// Tags hint
+  ///
+  /// In ja, this message translates to:
+  /// **'カンマ区切りでタグを入力（例: 仕事, 重要, プロジェクト）'**
+  String get tagsHint;
+
+  /// Favicon URL hint
+  ///
+  /// In ja, this message translates to:
+  /// **'例: https://www.resonabank.co.jp/'**
+  String get faviconUrlHint;
+
+  /// Icon label
+  ///
+  /// In ja, this message translates to:
+  /// **'アイコン: '**
+  String get icon;
+
+  /// No name set
+  ///
+  /// In ja, this message translates to:
+  /// **'名称未設定'**
+  String get noNameSet;
+
+  /// Get button
+  ///
+  /// In ja, this message translates to:
+  /// **'取得'**
+  String get get;
+
+  /// Get schedules confirmation message
+  ///
+  /// In ja, this message translates to:
+  /// **'スケジュールを取得しますか？'**
+  String get getSchedulesConfirm;
+
+  /// Schedules retrieved message
+  ///
+  /// In ja, this message translates to:
+  /// **'取得: {total}件\n追加: {added}件\nスキップ: {skipped}件'**
+  String schedulesRetrieved(int total, int added, int skipped);
+
+  /// Schedules retrieved with no additions message
+  ///
+  /// In ja, this message translates to:
+  /// **'取得: {total}件\n追加: 0件\nスキップ: {skipped}件（既に取り込まれています）'**
+  String schedulesRetrievedNoAdd(int total, int skipped);
+
+  /// Schedules retrieved with no schedules message
+  ///
+  /// In ja, this message translates to:
+  /// **'取得: {total}件\n取り込む予定はありませんでした'**
+  String schedulesRetrievedNoSchedule(int total);
+
+  /// Outlook schedule retrieval dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookスケジュール取得'**
+  String get outlookScheduleRetrieval;
+
+  /// Favicon fallback domain label
+  ///
+  /// In ja, this message translates to:
+  /// **'Faviconフォールバックドメイン'**
+  String get faviconFallbackDomain;
+
+  /// Favicon fallback helper text
+  ///
+  /// In ja, this message translates to:
+  /// **'favicon取得失敗時に使用するドメインを設定'**
+  String get faviconFallbackHelper;
+
+  /// Outlook auto import completed title
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook自動取り込み完了'**
+  String get outlookAutoImportCompleted;
+
+  /// UI density label with percentage
+  ///
+  /// In ja, this message translates to:
+  /// **'UI密度: {percent}%'**
+  String uiDensity(String percent);
+
+  /// Change priority menu item
+  ///
+  /// In ja, this message translates to:
+  /// **'優先度変更'**
+  String get changePriorityMenu;
+
+  /// Change due date menu item
+  ///
+  /// In ja, this message translates to:
+  /// **'期限日変更'**
+  String get changeDueDateMenu;
+
+  /// Manage tags menu item
+  ///
+  /// In ja, this message translates to:
+  /// **'タグを操作'**
+  String get manageTagsMenu;
+
+  /// Assign link menu item
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクを割り当て'**
+  String get assignLinkMenu;
+
+  /// Combine tasks menu item
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクを結合'**
+  String get combineTasksMenu;
+
+  /// Drag and drop highlight tag
+  ///
+  /// In ja, this message translates to:
+  /// **'ドラッグ＆ドロップ'**
+  String get dragAndDrop;
+
+  /// Google integration highlight tag
+  ///
+  /// In ja, this message translates to:
+  /// **'Google連携'**
+  String get googleIntegration;
+
+  /// Notifications and alerts highlight tag
+  ///
+  /// In ja, this message translates to:
+  /// **'通知・アラート'**
+  String get notificationsAlerts;
+
+  /// Color theme highlight tag
+  ///
+  /// In ja, this message translates to:
+  /// **'カラーテーマ'**
+  String get colorTheme;
+
+  /// Shortcuts highlight tag
+  ///
+  /// In ja, this message translates to:
+  /// **'ショートカット'**
+  String get shortcuts;
+
+  /// CSV export column selection dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'CSV出力する列を選択'**
+  String get selectColumnsToExport;
+
+  /// Group by due date option
+  ///
+  /// In ja, this message translates to:
+  /// **'期限日でグループ化'**
+  String get groupByDueDate;
+
+  /// Group by tag option
+  ///
+  /// In ja, this message translates to:
+  /// **'タグでグループ化'**
+  String get groupByTag;
+
+  /// Group by project (link) option
+  ///
+  /// In ja, this message translates to:
+  /// **'プロジェクト（リンク）でグループ化'**
+  String get groupByProjectLink;
+
+  /// Group by priority option
+  ///
+  /// In ja, this message translates to:
+  /// **'優先度でグループ化'**
+  String get groupByPriority;
+
+  /// Assignee field label
+  ///
+  /// In ja, this message translates to:
+  /// **'担当者'**
+  String get assignee;
+
+  /// Return to link management screen tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'リンク管理画面に戻る'**
+  String get returnToLinkManagementScreen;
+
+  /// Template delete confirmation dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'テンプレートを削除'**
+  String get templateDeleteConfirm;
+
+  /// Template delete confirmation message
+  ///
+  /// In ja, this message translates to:
+  /// **'「{name}」を削除しますか？'**
+  String templateDeleteMessage(String name);
+
+  /// Template name required message
+  ///
+  /// In ja, this message translates to:
+  /// **'テンプレート名を入力してください'**
+  String get templateNameRequired;
+
+  /// Title required message
+  ///
+  /// In ja, this message translates to:
+  /// **'タイトルを入力してください'**
+  String get titleRequired;
+
+  /// Template saved message
+  ///
+  /// In ja, this message translates to:
+  /// **'テンプレートを保存しました'**
+  String get templateSaved;
+
+  /// CSV column: ID
+  ///
+  /// In ja, this message translates to:
+  /// **'ID'**
+  String get csvColumnId;
+
+  /// CSV column: Title
+  ///
+  /// In ja, this message translates to:
+  /// **'タイトル'**
+  String get csvColumnTitle;
+
+  /// CSV column: Description
+  ///
+  /// In ja, this message translates to:
+  /// **'説明'**
+  String get csvColumnDescription;
+
+  /// CSV column: Due Date
+  ///
+  /// In ja, this message translates to:
+  /// **'期限'**
+  String get csvColumnDueDate;
+
+  /// CSV column: Reminder Time
+  ///
+  /// In ja, this message translates to:
+  /// **'リマインダー時刻'**
+  String get csvColumnReminderTime;
+
+  /// CSV column: Priority
+  ///
+  /// In ja, this message translates to:
+  /// **'優先度'**
+  String get csvColumnPriority;
+
+  /// CSV column: Status
+  ///
+  /// In ja, this message translates to:
+  /// **'ステータス'**
+  String get csvColumnStatus;
+
+  /// CSV column: Tags
+  ///
+  /// In ja, this message translates to:
+  /// **'タグ'**
+  String get csvColumnTags;
+
+  /// CSV column: Related Link ID
+  ///
+  /// In ja, this message translates to:
+  /// **'関連リンクID'**
+  String get csvColumnRelatedLinkId;
+
+  /// CSV column: Created Date
+  ///
+  /// In ja, this message translates to:
+  /// **'作成日'**
+  String get csvColumnCreatedAt;
+
+  /// CSV column: Completed Date
+  ///
+  /// In ja, this message translates to:
+  /// **'完了日'**
+  String get csvColumnCompletedAt;
+
+  /// CSV column: Started Date
+  ///
+  /// In ja, this message translates to:
+  /// **'着手日'**
+  String get csvColumnStartedAt;
+
+  /// CSV column: Completed Date (Manual Entry)
+  ///
+  /// In ja, this message translates to:
+  /// **'完了日（手動入力）'**
+  String get csvColumnCompletedAtManual;
+
+  /// CSV column: Estimated Minutes
+  ///
+  /// In ja, this message translates to:
+  /// **'推定時間(分)'**
+  String get csvColumnEstimatedMinutes;
+
+  /// CSV column: Notes
+  ///
+  /// In ja, this message translates to:
+  /// **'メモ'**
+  String get csvColumnNotes;
+
+  /// CSV column: Recurring Task
+  ///
+  /// In ja, this message translates to:
+  /// **'繰り返しタスク'**
+  String get csvColumnIsRecurring;
+
+  /// CSV column: Recurring Pattern
+  ///
+  /// In ja, this message translates to:
+  /// **'繰り返しパターン'**
+  String get csvColumnRecurringPattern;
+
+  /// CSV column: Recurring Reminder
+  ///
+  /// In ja, this message translates to:
+  /// **'繰り返しリマインダー'**
+  String get csvColumnIsRecurringReminder;
+
+  /// CSV column: Recurring Reminder Pattern
+  ///
+  /// In ja, this message translates to:
+  /// **'繰り返しリマインダーパターン'**
+  String get csvColumnRecurringReminderPattern;
+
+  /// CSV column: Next Reminder Time
+  ///
+  /// In ja, this message translates to:
+  /// **'次のリマインダー時刻'**
+  String get csvColumnNextReminderTime;
+
+  /// CSV column: Reminder Count
+  ///
+  /// In ja, this message translates to:
+  /// **'リマインダー回数'**
+  String get csvColumnReminderCount;
+
+  /// CSV column: Has Subtasks
+  ///
+  /// In ja, this message translates to:
+  /// **'サブタスク有無'**
+  String get csvColumnHasSubTasks;
+
+  /// CSV column: Completed Subtasks Count
+  ///
+  /// In ja, this message translates to:
+  /// **'完了サブタスク数'**
+  String get csvColumnCompletedSubTasksCount;
+
+  /// CSV column: Total Subtasks Count
+  ///
+  /// In ja, this message translates to:
+  /// **'総サブタスク数'**
+  String get csvColumnTotalSubTasksCount;
+
+  /// Mail sending section title
+  ///
+  /// In ja, this message translates to:
+  /// **'メール送信'**
+  String get mailSending;
+
+  /// Copy requestor and memo to body checkbox
+  ///
+  /// In ja, this message translates to:
+  /// **'本文に「依頼先やメモ」をコピー'**
+  String get copyRequestorMemoToBody;
+
+  /// Include subtasks in body checkbox
+  ///
+  /// In ja, this message translates to:
+  /// **'本文にサブタスクを含める'**
+  String get includeSubtasksInBody;
+
+  /// Sending app label
+  ///
+  /// In ja, this message translates to:
+  /// **'送信アプリ:'**
+  String get sendingApp;
+
+  /// Recipient selection section title
+  ///
+  /// In ja, this message translates to:
+  /// **'送信先選択'**
+  String get recipientSelection;
+
+  /// Add contact button
+  ///
+  /// In ja, this message translates to:
+  /// **'連絡先を追加'**
+  String get addContact;
+
+  /// Select from send history button
+  ///
+  /// In ja, this message translates to:
+  /// **'送信履歴から選択'**
+  String get selectFromSendHistory;
+
+  /// Frequently used contacts label
+  ///
+  /// In ja, this message translates to:
+  /// **'よく使われる連絡先:'**
+  String get frequentlyUsedContacts;
+
+  /// Empty mailer can launch hint
+  ///
+  /// In ja, this message translates to:
+  /// **'空でもメーラーが起動します'**
+  String get emptyMailerCanLaunch;
+
+  /// Empty can specify address helper text
+  ///
+  /// In ja, this message translates to:
+  /// **'※空の場合はメーラーで直接アドレスを指定できます'**
+  String get emptyCanSpecifyAddress;
+
+  /// Mailer launch instruction
+  ///
+  /// In ja, this message translates to:
+  /// **'※まず「メーラーを起動」ボタンでメーラーを開いてください'**
+  String get mailerLaunchInstruction;
+
+  /// Mailer send instruction
+  ///
+  /// In ja, this message translates to:
+  /// **'※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください'**
+  String get mailerSendInstruction;
+
+  /// Task related mail default subject
+  ///
+  /// In ja, this message translates to:
+  /// **'タスク関連メール'**
+  String get taskRelatedMail;
+
+  /// Mail compose opened message
+  ///
+  /// In ja, this message translates to:
+  /// **'{app}のメール作成画面を開きました。\nメールを送信した後、「メール送信完了」ボタンを押してください。'**
+  String mailComposeOpened(String app);
+
+  /// Mailer launch error message
+  ///
+  /// In ja, this message translates to:
+  /// **'メーラー起動エラー: {error}'**
+  String mailerLaunchError(String error);
+
+  /// Please launch mailer first error
+  ///
+  /// In ja, this message translates to:
+  /// **'先に「メーラーを起動」ボタンを押してください'**
+  String get pleaseLaunchMailerFirst;
+
+  /// Mail sent recorded message
+  ///
+  /// In ja, this message translates to:
+  /// **'メール送信完了を記録しました'**
+  String get mailSentRecorded;
+
+  /// Mail sent record error message
+  ///
+  /// In ja, this message translates to:
+  /// **'メール送信完了記録エラー: {error}'**
+  String mailSentRecordError(String error);
+
+  /// Outlook connection test success
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook接続テスト成功'**
+  String get outlookConnectionTestSuccess;
+
+  /// Outlook connection test failed
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook接続テスト失敗: Outlookが利用できません'**
+  String get outlookConnectionTestFailed;
+
+  /// Outlook connection test error
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook接続テストエラー: {error}'**
+  String outlookConnectionTestError(String error);
+
+  /// PowerShell script not found error
+  ///
+  /// In ja, this message translates to:
+  /// **'PowerShellスクリプトが見つかりません: {scriptName}\n\n以下のいずれかの場所に配置してください:\n1. ポータブル版: {portablePath}\n2. インストール版: {installedPath}'**
+  String powershellScriptNotFound(
+    String scriptName,
+    String portablePath,
+    String installedPath,
+  );
+
+  /// Name label
+  ///
+  /// In ja, this message translates to:
+  /// **'名前'**
+  String get name;
+
+  /// Name required error
+  ///
+  /// In ja, this message translates to:
+  /// **'名前を入力してください'**
+  String get nameRequired;
+
+  /// Gmail launch failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'Gmailを起動できませんでした'**
+  String get gmailLaunchFailed;
+
+  /// Outlook not installed error
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookがインストールされていないか、正しく設定されていません。\n会社PCでOutlookを使用してください。\n詳細: {details}'**
+  String outlookNotInstalled(String details);
+
+  /// Outlook launch failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook起動に失敗しました: {error}'**
+  String outlookLaunchFailed(String error);
+
+  /// Outlook search failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook検索に失敗しました: {error}'**
+  String outlookSearchFailed(String error);
+
+  /// Unsupported mail app error
+  ///
+  /// In ja, this message translates to:
+  /// **'サポートされていないメールアプリ: {app}'**
+  String unsupportedMailApp(String app);
+
+  /// PowerShell timeout error
+  ///
+  /// In ja, this message translates to:
+  /// **'PowerShell実行がタイムアウトしました（{seconds}秒）'**
+  String powershellTimeout(int seconds);
+
+  /// PowerShell script execution error
+  ///
+  /// In ja, this message translates to:
+  /// **'PowerShellスクリプト実行エラー: {error}'**
+  String powershellScriptError(String error);
+
+  /// PowerShell execution failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'PowerShell実行が失敗しました（全{retries}回の試行）'**
+  String powershellExecutionFailed(int retries);
+
+  /// Unexpected JSON format error
+  ///
+  /// In ja, this message translates to:
+  /// **'予期しないJSON形式です'**
+  String get unexpectedJsonFormat;
+
+  /// Start date parse error
+  ///
+  /// In ja, this message translates to:
+  /// **'開始日時のパースエラー: {date}'**
+  String startDateParseError(String date);
+
+  /// OAuth2 credentials not found error
+  ///
+  /// In ja, this message translates to:
+  /// **'OAuth2認証情報ファイルが見つかりません。設定方法を確認してください。'**
+  String get oauth2CredentialsNotFound;
+
+  /// Invalid credentials format error
+  ///
+  /// In ja, this message translates to:
+  /// **'認証情報ファイルの形式が正しくありません。OAuth2デスクトップアプリ用の認証情報を使用してください。'**
+  String get invalidCredentialsFormat;
+
+  /// Client ID not set error
+  ///
+  /// In ja, this message translates to:
+  /// **'認証情報ファイルに client_id が設定されていません。'**
+  String get clientIdNotSet;
+
+  /// Auth URL open failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'認証URLを開けませんでした'**
+  String get authUrlOpenFailed;
+
+  /// No valid access token error
+  ///
+  /// In ja, this message translates to:
+  /// **'有効なアクセストークンがありません。OAuth2認証を実行してください。'**
+  String get noValidAccessToken;
+
+  /// Google Calendar event fetch failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar イベント取得に失敗しました: {statusCode}'**
+  String googleCalendarEventFetchFailed(int statusCode);
+
+  /// Event delete failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'イベント削除に失敗しました: {statusCode}'**
+  String eventDeleteFailed(int statusCode);
+
+  /// Backup validation failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'バックアップファイルの検証に失敗しました'**
+  String get backupValidationFailed;
+
+  /// Backup before operation failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'操作前のバックアップに失敗しました: {error}'**
+  String backupBeforeOperationFailed(String error);
+
+  /// Invalid backup data format error
+  ///
+  /// In ja, this message translates to:
+  /// **'バックアップデータの形式が正しくありません'**
+  String get invalidBackupDataFormat;
+
+  /// Invalid backup file error
+  ///
+  /// In ja, this message translates to:
+  /// **'無効なバックアップファイルです'**
+  String get invalidBackupFile;
+
+  /// Email already registered error
+  ///
+  /// In ja, this message translates to:
+  /// **'このメールアドレスは既に登録されています: {email}'**
+  String emailAlreadyRegistered(String email);
+
+  /// Contact not found error
+  ///
+  /// In ja, this message translates to:
+  /// **'連絡先が見つかりません: {id}'**
+  String contactNotFound(String id);
+
+  /// Outlook event fetch failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookから予定を取得できませんでした。後でもう一度お試しください。\nエラー: {error}'**
+  String outlookEventFetchFailed(String error);
+
+  /// Outlook event fetch failed info message
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookから予定を取得できませんでした。後でもう一度お試しください。'**
+  String get outlookEventFetchFailedInfo;
+
+  /// Token extraction failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'トークンの抽出に失敗しました'**
+  String get tokenExtractionFailed;
+
+  /// Task not selected error
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクが選択されていません'**
+  String get taskNotSelected;
+
+  /// No send history for task message
+  ///
+  /// In ja, this message translates to:
+  /// **'このタスクの送信履歴はありません'**
+  String get noSendHistoryForTask;
+
+  /// Send history reused message
+  ///
+  /// In ja, this message translates to:
+  /// **'送信履歴を再利用しました'**
+  String get sendHistoryReused;
+
+  /// Gmail connection test label
+  ///
+  /// In ja, this message translates to:
+  /// **'Gmail接続テスト'**
+  String get gmailConnectionTest;
+
+  /// Gmail connection test body
+  ///
+  /// In ja, this message translates to:
+  /// **'これはGmail接続テストです。'**
+  String get gmailConnectionTestBody;
+
+  /// Gmail connection test success message
+  ///
+  /// In ja, this message translates to:
+  /// **'Gmail接続テスト成功: Gmailが開きました'**
+  String get gmailConnectionTestSuccess;
+
+  /// Gmail connection test error
+  ///
+  /// In ja, this message translates to:
+  /// **'Gmail接続テストエラー: {error}'**
+  String gmailConnectionTestError(String error);
+
+  /// Test mail sent message
+  ///
+  /// In ja, this message translates to:
+  /// **'テストメール送信完了'**
+  String get testMailSent;
+
+  /// Test mail send error
+  ///
+  /// In ja, this message translates to:
+  /// **'テストメール送信エラー: {error}'**
+  String testMailSendError(String error);
+
+  /// No send history message
+  ///
+  /// In ja, this message translates to:
+  /// **'送信履歴がありません'**
+  String get noSendHistory;
+
+  /// Send history auto register message
+  ///
+  /// In ja, this message translates to:
+  /// **'メールを送信すると、宛先が自動で連絡先に登録されます'**
+  String get sendHistoryAutoRegister;
+
+  /// Latest mail prefix
+  ///
+  /// In ja, this message translates to:
+  /// **'🆕 最新のメール'**
+  String get latestMail;
+
+  /// Oldest mail prefix
+  ///
+  /// In ja, this message translates to:
+  /// **'⭐ 最初のメール'**
+  String get oldestMail;
+
+  /// Sent label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'送信:'**
+  String get sentColon;
+
+  /// Subject label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'件名:'**
+  String get subjectColon;
+
+  /// To label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'To:'**
+  String get toColon;
+
+  /// Body label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'本文:'**
+  String get bodyColon;
+
+  /// Task label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'タスク:'**
+  String get taskLabel;
+
+  /// Related task information header
+  ///
+  /// In ja, this message translates to:
+  /// **'【関連タスク情報】'**
+  String get relatedTaskInfo;
+
+  /// Mail information header
+  ///
+  /// In ja, this message translates to:
+  /// **'【メール情報】'**
+  String get mailInfo;
+
+  /// Sent date time label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'送信日時:'**
+  String get sentDateTime;
+
+  /// Sent ID label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'送信ID:'**
+  String get sentId;
+
+  /// No message text
+  ///
+  /// In ja, this message translates to:
+  /// **'メッセージがありません。'**
+  String get noMessage;
+
+  /// No task information text
+  ///
+  /// In ja, this message translates to:
+  /// **'タスク情報がありません。'**
+  String get noTaskInfo;
+
+  /// Links label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'リンク:'**
+  String get linksLabel;
+
+  /// Related materials header
+  ///
+  /// In ja, this message translates to:
+  /// **'【関連資料】'**
+  String get relatedMaterials;
+
+  /// Subtask progress label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'サブタスク進捗:'**
+  String get subtaskProgress;
+
+  /// Completed label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'完了:'**
+  String get completedLabel;
+
+  /// Mail sent from app message
+  ///
+  /// In ja, this message translates to:
+  /// **'このメールは Link Navigator アプリから送信されました。'**
+  String get thisMailSentFromApp;
+
+  /// Task information header
+  ///
+  /// In ja, this message translates to:
+  /// **'📋 タスク情報'**
+  String get taskInfoHeader;
+
+  /// Related materials label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'関連資料:'**
+  String get relatedMaterialsLabel;
+
+  /// Gmail link note
+  ///
+  /// In ja, this message translates to:
+  /// **'📝 注意: ネットワーク共有やローカルファイルのリンクは、Gmailでは直接クリックできません。\nリンクをコピーして、ファイルエクスプローラーやブラウザのアドレスバーに貼り付けてアクセスしてください。'**
+  String get gmailLinkNote;
+
+  /// Outlook link note
+  ///
+  /// In ja, this message translates to:
+  /// **'📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\nリンクをクリックして直接アクセスできます。'**
+  String get outlookLinkNote;
 }
 
 class _AppLocalizationsDelegate

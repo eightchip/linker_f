@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_button_styles.dart';
+import '../l10n/app_localizations.dart';
 
 /// 統一されたダイアログコンポーネント
 class UnifiedDialog extends StatelessWidget {
@@ -115,8 +116,8 @@ class UnifiedDialogHelper {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmText = '確認',
-    String cancelText = 'キャンセル',
+    String? confirmText,
+    String? cancelText,
     IconData? icon,
     Color? iconColor,
     ButtonStyle? confirmButtonStyle,
@@ -132,13 +133,13 @@ class UnifiedDialogHelper {
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             style: AppButtonStyles.text(context),
-            child: Text(cancelText),
+            child: Text(cancelText ?? AppLocalizations.of(context)!.cancel),
           ),
           const SizedBox(width: 8),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: confirmButtonStyle ?? AppButtonStyles.primary(context),
-            child: Text(confirmText),
+            child: Text(confirmText ?? AppLocalizations.of(context)!.confirm),
           ),
         ],
       ),
@@ -150,15 +151,15 @@ class UnifiedDialogHelper {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmText = '削除',
-    String cancelText = 'キャンセル',
+    String? confirmText,
+    String? cancelText,
   }) {
     return showConfirmDialog(
       context,
       title: title,
       message: message,
-      confirmText: confirmText,
-      cancelText: cancelText,
+      confirmText: confirmText ?? AppLocalizations.of(context)!.confirm,
+      cancelText: cancelText ?? AppLocalizations.of(context)!.cancel,
       icon: Icons.delete_outline,
       iconColor: Colors.red,
       confirmButtonStyle: AppButtonStyles.danger(context),
@@ -170,15 +171,15 @@ class UnifiedDialogHelper {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmText = '確認',
-    String cancelText = 'キャンセル',
+    String? confirmText,
+    String? cancelText,
   }) {
     return showConfirmDialog(
       context,
       title: title,
       message: message,
-      confirmText: confirmText,
-      cancelText: cancelText,
+      confirmText: confirmText ?? AppLocalizations.of(context)!.confirm,
+      cancelText: cancelText ?? AppLocalizations.of(context)!.cancel,
       icon: Icons.warning_outlined,
       iconColor: Colors.orange,
       confirmButtonStyle: AppButtonStyles.warning(context),
@@ -190,7 +191,7 @@ class UnifiedDialogHelper {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmText = 'OK',
+    String? confirmText,
     IconData? icon,
     Color? iconColor,
   }) {
@@ -205,7 +206,7 @@ class UnifiedDialogHelper {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
             style: AppButtonStyles.primary(context),
-            child: Text(confirmText),
+            child: Text(confirmText ?? AppLocalizations.of(context)!.ok),
           ),
         ],
       ),

@@ -197,7 +197,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             return KeyEventResult.ignored;
           },
           child: Scaffold(
-      appBar: AppBar(
+            appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.scheduleScreen),
         actions: [
           Tooltip(
@@ -248,7 +248,9 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           if (_selectedDates.isNotEmpty || sortedDates.isNotEmpty)
             IconButton(
               icon: Icon(_selectedDates.length == sortedDates.length ? Icons.deselect : Icons.select_all),
-              tooltip: _selectedDates.length == sortedDates.length ? '全解除' : '全選択',
+              tooltip: _selectedDates.length == sortedDates.length 
+                ? AppLocalizations.of(context)!.deselectAll 
+                : AppLocalizations.of(context)!.selectAll,
               onPressed: () {
                 setState(() {
                   if (_selectedDates.length == sortedDates.length) {
@@ -261,24 +263,22 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                 });
               },
             ),
-          // 過去表示チェックボックス
-          Row(
-            children: [
-              Checkbox(
-                value: _showPast,
-                onChanged: (value) {
-                  setState(() {
-                    _showPast = value ?? false;
-                    _dateFilter = _showPast ? 'past' : 'future';
-                    // フィルター変更時は選択をクリア
-                    _selectedDates.clear();
-                  });
-                },
-              ),
-              Text(AppLocalizations.of(context)!.showPast, style: const TextStyle(fontSize: 14)),
-              const SizedBox(width: 8),
-            ],
+          // 過去表示チェックボックス（ツールチップのみ）
+          Tooltip(
+            message: AppLocalizations.of(context)!.showPast,
+            child: Checkbox(
+              value: _showPast,
+              onChanged: (value) {
+                setState(() {
+                  _showPast = value ?? false;
+                  _dateFilter = _showPast ? 'past' : 'future';
+                  // フィルター変更時は選択をクリア
+                  _selectedDates.clear();
+                });
+              },
+            ),
           ),
+          const SizedBox(width: 8),
           // エクセルにコピーボタン（形式選択メニュー付き、選択された日付の予定のみ）
           PopupMenuButton<String>(
             icon: const Icon(Icons.content_copy),
@@ -336,8 +336,8 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             },
           ),
         ],
-      ),
-      body: Column(
+            ),
+            body: Column(
         children: [
           // 検索バーとタスクフィルター
           Container(
@@ -449,12 +449,12 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           ),
           ],
         ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddScheduleDialog,
-        tooltip: '予定を追加',
-        child: const Icon(Icons.add),
-      ),
-    ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: _showAddScheduleDialog,
+              tooltip: '予定を追加',
+              child: const Icon(Icons.add),
+            ),
+          ),
         ),
       ),
     );

@@ -1302,7 +1302,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildFieldSettings(
           context, 
           ref, 
-          AppLocalizations.of(context)!.requestorDescription, 
+          AppLocalizations.of(context)!.assigneeDescription, 
           descriptionTextColorProvider, 
           descriptionFontSizeProvider, 
           descriptionFontFamilyProvider,
@@ -1371,7 +1371,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildCardViewFieldSettings(
           context,
           ref,
-          AppLocalizations.of(context)!.requestorDescription,
+          AppLocalizations.of(context)!.assigneeDescription,
           settings.descriptionTextColor,
           settings.descriptionFontSize,
           settings.descriptionFontFamily,
@@ -2265,7 +2265,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 
                 // UI密度
                 _buildSliderSetting(
-                  'UI密度: ${(uiState.uiDensity * 100).toStringAsFixed(0)}%',
+                  AppLocalizations.of(context)!.uiDensity((uiState.uiDensity * 100).toStringAsFixed(0)),
                   uiState.uiDensity,
                   0.5,
                   2.0,

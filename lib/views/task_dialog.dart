@@ -26,6 +26,7 @@ import 'package:hive/hive.dart';
 import '../models/schedule_item.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import 'outlook_calendar_import_dialog_v2.dart';
+import '../utils/script_path_resolver.dart';
 
 // Ctrl+Enterで保存するためのIntent
 class _SaveTaskIntent extends Intent {
@@ -963,7 +964,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             fontFamily: ref.watch(descriptionFontFamilyProvider).isEmpty ? null : ref.watch(descriptionFontFamilyProvider),
           ),
           decoration: InputDecoration(
-            labelText: AppLocalizations.of(context)!.descriptionForRequestor,
+            labelText: AppLocalizations.of(context)!.descriptionForAssignee,
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
@@ -2869,12 +2870,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
             children: [
           Row(
-            children: const [
-              Icon(Icons.email, color: Colors.blue),
-              SizedBox(width: 8),
+            children: [
+              const Icon(Icons.email, color: Colors.blue),
+              const SizedBox(width: 8),
               Text(
-                'メール送信',
-                style: TextStyle(
+                AppLocalizations.of(context)!.mailSending,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -2891,7 +2892,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     _copyMemoToBody = value ?? true;
                   });
                 },
-                title: const Text('本文に「依頼先やメモ」をコピー'),
+                title: Text(AppLocalizations.of(context)!.copyRequestorMemoToBody),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
               ),
@@ -2902,7 +2903,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     _includeSubtasksInMail = value ?? true;
                   });
                 },
-                title: const Text('本文にサブタスクを含める'),
+                title: Text(AppLocalizations.of(context)!.includeSubtasksInBody),
                 contentPadding: EdgeInsets.zero,
                 dense: true,
               ),
@@ -2934,8 +2935,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 borderSide: BorderSide(color: Colors.grey.shade400, width: 1.5),
               ),
               prefixIcon: Icon(Icons.person, color: Colors.grey.shade600),
-              hintText: '空でもメーラーが起動します',
-              helperText: '※空の場合はメーラーで直接アドレスを指定できます',
+              hintText: AppLocalizations.of(context)!.emptyMailerCanLaunch,
+              helperText: AppLocalizations.of(context)!.emptyCanSpecifyAddress,
               labelStyle: TextStyle(
                 color: Colors.grey.shade700,
                 fontWeight: FontWeight.w600,
@@ -2947,7 +2948,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('送信アプリ:'),
+              Text(AppLocalizations.of(context)!.sendingApp),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -3081,8 +3082,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ),
               Text(
                 _pendingMailTo != null 
-                  ? '※メーラーでメールを送信した後、「メール送信完了」ボタンを押してください'
-                  : '※まず「メーラーを起動」ボタンでメーラーを開いてください',
+                  ? AppLocalizations.of(context)!.mailerSendInstruction
+                  : AppLocalizations.of(context)!.mailerLaunchInstruction,
                 style: TextStyle(
                   fontSize: 11,
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -3107,7 +3108,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       
       // 件名が空の場合はデフォルトの件名を設定
       if (subject.isEmpty) {
-        subject = 'タスク関連メール';
+        subject = AppLocalizations.of(context)!.taskRelatedMail;
       }
 
       final mailService = MailService();
@@ -3154,11 +3155,66 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       // UIを更新してボタンの状態を変更
       setState(() {});
 
-      SnackBarService.showSuccess(context, '${_selectedMailApp == 'gmail' ? 'Gmail' : 'Outlook'}のメール作成画面を開きました。\nメールを送信した後、「メール送信完了」ボタンを押してください。');
+      SnackBarService.showSuccess(context, AppLocalizations.of(context)!.mailComposeOpened(_selectedMailApp == 'gmail' ? 'Gmail' : 'Outlook'));
       
     } catch (e) {
-      SnackBarService.showError(context, 'メーラー起動エラー: $e');
+      final errorMessage = _localizeErrorMessage(context, e);
+      SnackBarService.showError(context, errorMessage);
     }
+  }
+
+  /// エラーメッセージをローカライゼーション
+  String _localizeErrorMessage(BuildContext context, dynamic error) {
+    final l10n = AppLocalizations.of(context)!;
+    final errorStr = error.toString();
+    
+    // PowerShellスクリプトが見つからないエラー
+    if (errorStr.contains('PowerShellスクリプトが見つかりません') || 
+        errorStr.contains('PowerShell script not found')) {
+      final scriptMatch = RegExp(r'(compose_mail|find_sent|get_calendar_events)\.ps1').firstMatch(errorStr);
+      if (scriptMatch != null) {
+        final scriptName = scriptMatch.group(0)!;
+        final paths = ScriptPathResolver.getScriptPaths(scriptName);
+        return l10n.powershellScriptNotFound(scriptName, paths['portablePath']!, paths['installedPath']!);
+      }
+    }
+    
+    // Gmail起動エラー
+    if (errorStr.contains('Gmailを起動できませんでした') || errorStr.contains('Failed to launch Gmail')) {
+      return l10n.gmailLaunchFailed;
+    }
+    
+    // Outlook関連エラー
+    if (errorStr.contains('Outlookがインストールされていない') || 
+        errorStr.contains('Outlook is not installed')) {
+      final detailsMatch = RegExp(r'詳細: (.+)').firstMatch(errorStr);
+      final details = detailsMatch?.group(1) ?? '';
+      return l10n.outlookNotInstalled(details);
+    }
+    
+    if (errorStr.contains('Outlook起動に失敗しました') || errorStr.contains('Failed to launch Outlook')) {
+      final errorMatch = RegExp(r': (.+)').firstMatch(errorStr);
+      final error = errorMatch?.group(1) ?? errorStr;
+      return l10n.outlookLaunchFailed(error);
+    }
+    
+    if (errorStr.contains('Outlook検索に失敗しました') || errorStr.contains('Outlook search failed')) {
+      final errorMatch = RegExp(r': (.+)').firstMatch(errorStr);
+      final error = errorMatch?.group(1) ?? errorStr;
+      return l10n.outlookSearchFailed(error);
+    }
+    
+    // サポートされていないメールアプリ
+    if (errorStr.contains('サポートされていないメールアプリ') || errorStr.contains('Unsupported mail app')) {
+      final appMatch = RegExp(r': (.+)').firstMatch(errorStr);
+      final app = appMatch?.group(1) ?? '';
+      return l10n.unsupportedMailApp(app);
+    }
+    
+    // サポートされていないメールアプリ（既に処理済み）
+    
+    // その他のエラーはそのまま表示
+    return l10n.mailerLaunchError(errorStr);
   }
 
   /// メール送信完了をマーク
@@ -3166,7 +3222,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     try {
       // 送信情報が保存されていない場合はエラー
       if (_pendingMailTo == null || _pendingMailApp == null) {
-        SnackBarService.showError(context, '先に「メーラーを起動」ボタンを押してください');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.pleaseLaunchMailerFirst);
         return;
       }
 
@@ -3194,7 +3250,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       }
       
       if (token == null) {
-        SnackBarService.showError(context, 'トークンの抽出に失敗しました');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.tokenExtractionFailed);
         return;
       }
 
@@ -3251,7 +3307,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       // UIを更新してボタンの状態をリセット
       setState(() {});
 
-      SnackBarService.showSuccess(context, 'メール送信完了を記録しました');
+      SnackBarService.showSuccess(context, AppLocalizations.of(context)!.mailSentRecorded);
       
       // メール送信後のコールバックを実行
       widget.onMailSent?.call();
@@ -3281,7 +3337,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         });
       }
     } catch (e) {
-      SnackBarService.showError(context, 'メール送信完了記録エラー: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.mailSentRecordError(e.toString()));
     }
   }
 
@@ -3294,9 +3350,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           children: [
             const Icon(Icons.contacts, color: Colors.green, size: 20),
             const SizedBox(width: 8),
-            const Text(
-              '送信先選択',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.recipientSelection,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
@@ -3305,7 +3361,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             TextButton.icon(
               onPressed: _showContactSelectionDialog,
               icon: const Icon(Icons.add, size: 16),
-              label: const Text('連絡先を追加'),
+              label: Text(AppLocalizations.of(context)!.addContact),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               ),
@@ -3339,7 +3395,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         // よく使われる連絡先
         if (_availableContacts.isNotEmpty) ...[
           Text(
-            'よく使われる連絡先:',
+            AppLocalizations.of(context)!.frequentlyUsedContacts,
             style: TextStyle(
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -3394,7 +3450,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
           child: OutlinedButton.icon(
             onPressed: _showHistorySelectionDialog,
             icon: const Icon(Icons.history, size: 16),
-            label: const Text('送信履歴から選択'),
+            label: Text(AppLocalizations.of(context)!.selectFromSendHistory),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 8),
             ),
@@ -3487,8 +3543,13 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
 
   /// 強化されたメール本文を作成
   String _createEnhancedMailBody(String originalBody, String token) {
+    final l10n = AppLocalizations.of(context)!;
     final currentTime = DateTime.now();
-    final formattedTime = '${currentTime.year}年${currentTime.month}月${currentTime.day}日 ${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+    final locale = Localizations.localeOf(context);
+    final dateFormat = locale.languageCode == 'ja' 
+        ? DateFormat('yyyy年MM月dd日 HH:mm')
+        : DateFormat('yyyy/MM/dd HH:mm');
+    final formattedTime = dateFormat.format(currentTime);
     
     // タスク情報を取得
     final taskTitle = widget.task?.title ?? _titleController.text.trim();
@@ -3498,10 +3559,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     
     String taskInfo = '';
     if (taskTitle.isNotEmpty) {
-      taskInfo += 'タスク: $taskTitle\n';
+      taskInfo += '${l10n.taskLabel} $taskTitle\n';
     }
     if (taskDescription.isNotEmpty) {
-      taskInfo += '説明: $taskDescription\n';
+      taskInfo += '${l10n.descriptionLabel} $taskDescription\n';
     }
     
     // サブタスク情報を追加（チェックONの時のみ）
@@ -3520,22 +3581,26 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         ..sort((a, b) => a.order.compareTo(b.order));
       
       if (subtasks.isNotEmpty) {
-        subtaskInfo += '\nサブタスク進捗: ${widget.task!.completedSubTasksCount}/${widget.task!.totalSubTasksCount}\n';
+        final minutesLabel = locale.languageCode == 'ja' ? '分' : ' min';
+        subtaskInfo += '\n${l10n.subtaskProgress} ${widget.task!.completedSubTasksCount}/${widget.task!.totalSubTasksCount}\n';
       for (final s in subtasks) {
         final mark = s.isCompleted ? '✅' : '⬜️';
-        final est = s.estimatedMinutes != null ? ' (${s.estimatedMinutes}分)' : '';
-        final done = s.completedAt != null ? '｜完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}' : '';
+        final est = s.estimatedMinutes != null ? ' (${s.estimatedMinutes}$minutesLabel)' : '';
+        final done = s.completedAt != null ? '｜${l10n.completedLabel} ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}' : '';
         subtaskInfo += '- $mark ${s.title}$est$done\n';
       }
       }
     }
     if (taskDueDate != null) {
-      final dueDateStr = '${taskDueDate.year}年${taskDueDate.month}月${taskDueDate.day}日';
-      taskInfo += '期限: $dueDateStr\n';
+      final dueDateFormat = locale.languageCode == 'ja' 
+          ? DateFormat('yyyy年MM月dd日')
+          : DateFormat('yyyy/MM/dd');
+      final dueDateStr = dueDateFormat.format(taskDueDate);
+      taskInfo += '${l10n.dueDateLabel} $dueDateStr\n';
     }
     if (taskStatus != null) {
       final statusText = _getStatusText(taskStatus);
-      taskInfo += 'ステータス: $statusText\n';
+      taskInfo += '${l10n.statusLabel} $statusText\n';
     }
     
     // 関連リンク情報を取得
@@ -3543,7 +3608,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     if (widget.task != null) {
       final relatedLinks = _getRelatedLinks(widget.task!);
       if (relatedLinks.isNotEmpty) {
-        linksInfo += 'リンク:\n';
+        linksInfo += '${l10n.linksLabel}\n';
         for (final link in relatedLinks) {
           // Gmail用のリンク表示を改善
           if (link.path.startsWith('http')) {
@@ -3563,26 +3628,24 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         
         // メールアプリに応じた注意書きを追加
         if (_selectedMailApp == 'gmail') {
-          linksInfo += '\n📝 注意: ネットワーク共有やローカルファイルのリンクは、Gmailでは直接クリックできません。\n';
-          linksInfo += 'リンクをコピーして、ファイルエクスプローラーやブラウザのアドレスバーに貼り付けてアクセスしてください。\n';
+          linksInfo += '\n${l10n.gmailLinkNote}\n';
         } else if (_selectedMailApp == 'outlook') {
-          linksInfo += '\n📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\n';
-          linksInfo += 'リンクをクリックして直接アクセスできます。\n';
+          linksInfo += '\n${l10n.outlookLinkNote}\n';
         }
       }
     }
     
     final enhancedBody = '''
-${originalBody.isNotEmpty ? originalBody : 'メッセージがありません。'}
+${originalBody.isNotEmpty ? originalBody : l10n.noMessage}
 ────────────────────────────────────────────────────────
-【関連タスク情報】
-${taskInfo.isNotEmpty ? taskInfo : 'タスク情報がありません。'}
+${l10n.relatedTaskInfo}
+${taskInfo.isNotEmpty ? taskInfo : l10n.noTaskInfo}
 ${subtaskInfo.isNotEmpty ? subtaskInfo : ''}
-${linksInfo.isNotEmpty ? '────────────────────────────────────────────────────────\n\n【関連資料】\n$linksInfo' : ''}
+${linksInfo.isNotEmpty ? '────────────────────────────────────────────────────────\n\n${l10n.relatedMaterials}\n$linksInfo' : ''}
 ────────────────────────────────────────────────────────
-【メール情報】
-送信日時: $formattedTime
-送信ID: $token
+${l10n.mailInfo}
+${l10n.sentDateTime} $formattedTime
+${l10n.sentId} $token
 ────────────────────────────────────────────────────────
 ''';
     
@@ -3591,8 +3654,13 @@ ${linksInfo.isNotEmpty ? '──────────────────
 
   /// 強化されたHTMLメール本文を作成
   String _createEnhancedHtmlMailBody(String originalBody, String token) {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
     final currentTime = DateTime.now();
-    final formattedTime = '${currentTime.year}年${currentTime.month}月${currentTime.day}日 ${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+    final dateFormat = locale.languageCode == 'ja' 
+        ? DateFormat('yyyy年MM月dd日 HH:mm')
+        : DateFormat('yyyy/MM/dd HH:mm');
+    final formattedTime = dateFormat.format(currentTime);
     
     // タスク情報を取得
     final taskTitle = widget.task?.title ?? _titleController.text.trim();
@@ -3602,10 +3670,10 @@ ${linksInfo.isNotEmpty ? '──────────────────
     
     String taskInfo = '';
     if (taskTitle.isNotEmpty) {
-      taskInfo += '<div style="margin-bottom: 8px;"><strong>タスク:</strong> $taskTitle</div>';
+      taskInfo += '<div style="margin-bottom: 8px;"><strong>${l10n.taskLabel}</strong> $taskTitle</div>';
     }
     if (taskDescription.isNotEmpty) {
-      taskInfo += '<div style="margin-bottom: 8px;"><strong>説明:</strong> $taskDescription</div>';
+      taskInfo += '<div style="margin-bottom: 8px;"><strong>${l10n.descriptionLabel}</strong> $taskDescription</div>';
     }
     
     // サブタスク情報を追加（チェックONの時のみ）
@@ -3617,11 +3685,12 @@ ${linksInfo.isNotEmpty ? '──────────────────
         ..sort((a, b) => a.order.compareTo(b.order));
       
       if (subtasks.isNotEmpty) {
-        final progress = '<div style="margin: 10px 0;"><strong>サブタスク進捗:</strong> ${widget.task!.completedSubTasksCount}/${widget.task!.totalSubTasksCount}</div>';
+        final minutesLabel = locale.languageCode == 'ja' ? '分' : ' min';
+        final progress = '<div style="margin: 10px 0;"><strong>${l10n.subtaskProgress}</strong> ${widget.task!.completedSubTasksCount}/${widget.task!.totalSubTasksCount}</div>';
       final items = subtasks.map((s) {
         final mark = s.isCompleted ? '✅' : '⬜️';
-        final est = s.estimatedMinutes != null ? ' (${s.estimatedMinutes}分)' : '';
-        final done = s.completedAt != null ? '｜完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}' : '';
+        final est = s.estimatedMinutes != null ? ' (${s.estimatedMinutes}$minutesLabel)' : '';
+        final done = s.completedAt != null ? '｜${l10n.completedLabel} ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}' : '';
         final safe = s.title
             .replaceAll('&', '&amp;')
             .replaceAll('<', '&lt;')
@@ -3632,12 +3701,15 @@ ${linksInfo.isNotEmpty ? '──────────────────
       }
     }
     if (taskDueDate != null) {
-      final dueDateStr = '${taskDueDate.year}年${taskDueDate.month}月${taskDueDate.day}日';
-      taskInfo += '<div style="margin-bottom: 8px;"><strong>期限:</strong> $dueDateStr</div>';
+      final dueDateFormat = locale.languageCode == 'ja' 
+          ? DateFormat('yyyy年MM月dd日')
+          : DateFormat('yyyy/MM/dd');
+      final dueDateStr = dueDateFormat.format(taskDueDate);
+      taskInfo += '<div style="margin-bottom: 8px;"><strong>${l10n.dueDateLabel}</strong> $dueDateStr</div>';
     }
     if (taskStatus != null) {
       final statusText = _getStatusText(taskStatus);
-      taskInfo += '<div style="margin-bottom: 8px;"><strong>ステータス:</strong> $statusText</div>';
+      taskInfo += '<div style="margin-bottom: 8px;"><strong>${l10n.statusLabel}</strong> $statusText</div>';
     }
     
     // 関連リンク情報を取得
@@ -3645,7 +3717,7 @@ ${linksInfo.isNotEmpty ? '──────────────────
     if (widget.task != null) {
       final relatedLinks = _getRelatedLinks(widget.task!);
       if (relatedLinks.isNotEmpty) {
-        linksInfo += '<div style="margin: 15px 0;"><strong>関連資料:</strong><ul style="margin: 5px 0;">';
+        linksInfo += '<div style="margin: 15px 0;"><strong>${l10n.relatedMaterialsLabel}:</strong><ul style="margin: 5px 0;">';
         for (final link in relatedLinks) {
           if (link.path.startsWith('http')) {
             // HTTP/HTTPSリンクはクリック可能
@@ -3660,9 +3732,13 @@ ${linksInfo.isNotEmpty ? '──────────────────
               linksInfo += '<li style="margin-bottom: 8px;"><a href="$fileUrl1" style="color: #007bff; text-decoration: underline;">${link.label}</a><br>';
               linksInfo += '<small style="color: #666;">${link.path}</small><br>';
               if (link.path.length > 100) {
-                linksInfo += '<a href="$fileUrl2" style="color: #6c757d; text-decoration: underline; font-size: 11px;">[代替リンク]</a> ';
+                final altLinkLabel = locale.languageCode == 'ja' ? '[代替リンク]' : '[Alternative Link]';
+                linksInfo += '<a href="$fileUrl2" style="color: #6c757d; text-decoration: underline; font-size: 11px;">$altLinkLabel</a> ';
               }
-              linksInfo += '<small style="color: #999; font-size: 11px;">※ リンクが機能しない場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください</small></li>';
+              final linkNote = locale.languageCode == 'ja' 
+                  ? '※ リンクが機能しない場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください'
+                  : '※ If the link does not work, copy the path and paste it into Explorer\'s address bar';
+              linksInfo += '<small style="color: #999; font-size: 11px;">$linkNote</small></li>';
             } else {
               // Gmailでは説明付きで表示（クリック不可）
               linksInfo += '<li style="margin-bottom: 8px;"><strong>${link.label}</strong><br><small style="color: #666;">${link.path}</small></li>';
@@ -3688,22 +3764,23 @@ ${linksInfo.isNotEmpty ? '──────────────────
         // メールアプリに応じた注意書きを追加
         if (_selectedMailApp == 'gmail') {
           linksInfo += '<div style="margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-left: 3px solid #007bff; font-size: 12px; color: #666;">';
-          linksInfo += '<strong>📝 注意:</strong> ネットワーク共有やローカルファイルのリンクは、Gmailでは直接クリックできません。<br>';
-          linksInfo += 'リンクをコピーして、ファイルエクスプローラーやブラウザのアドレスバーに貼り付けてアクセスしてください。';
+          linksInfo += '<strong>${l10n.gmailLinkNote}</strong>';
           linksInfo += '</div></div>';
         } else if (_selectedMailApp == 'outlook') {
           linksInfo += '<div style="margin-top: 10px; padding: 8px; background-color: #e8f5e8; border-left: 3px solid #28a745; font-size: 12px; color: #666;">';
-          linksInfo += '<strong>📝 注意:</strong> Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。<br>';
-          linksInfo += 'リンクをクリックして直接アクセスできます。<br>';
-          linksInfo += '<strong>※ 長いパスでリンクが途中で切れる場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください。</strong>';
+          linksInfo += '<strong>${l10n.outlookLinkNote}</strong>';
+          final longPathNote = locale.languageCode == 'ja' 
+              ? '<br><strong>※ 長いパスでリンクが途中で切れる場合は、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてください。</strong>'
+              : '<br><strong>※ If the link is cut off due to a long path, copy the path and paste it into Explorer\'s address bar.</strong>';
+          linksInfo += longPathNote;
           linksInfo += '</div></div>';
         }
       }
     }
     
     final memoHtml = originalBody.isNotEmpty 
-        ? '<div style="margin: 15px 0;"><strong>メモ:</strong><br>${originalBody.replaceAll('\n', '<br>')}</div>'
-        : '<div style="margin: 15px 0;">メッセージがありません。</div>';
+        ? '<div style="margin: 15px 0;"><strong>${l10n.memoLabel}</strong><br>${originalBody.replaceAll('\n', '<br>')}</div>'
+        : '<div style="margin: 15px 0;">${l10n.noMessage}</div>';
     
     return '''
     <html>
@@ -3711,11 +3788,11 @@ ${linksInfo.isNotEmpty ? '──────────────────
       <div style="background-color: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         
         <div style="border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px;">
-          <h2 style="color: #007bff; margin: 0; font-size: 18px;">📋 タスク情報</h2>
+          <h2 style="color: #007bff; margin: 0; font-size: 18px;">${l10n.taskInfoHeader}</h2>
         </div>
         
         <div style="margin-bottom: 20px;">
-          ${taskInfo.isNotEmpty ? taskInfo : '<div>タスク情報がありません。</div>'}
+          ${taskInfo.isNotEmpty ? taskInfo : '<div>${l10n.noTaskInfo}</div>'}
           ${subtaskInfo.isNotEmpty ? subtaskInfo : ''}
         </div>
         
@@ -3725,8 +3802,8 @@ ${linksInfo.isNotEmpty ? '──────────────────
         
         <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef; font-size: 12px; color: #6c757d;">
           <div style="display: inline-block; background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">Link Navigator</div>
-          <div>送信日時: $formattedTime</div>
-          <div>送信ID: $token</div>
+          <div>${l10n.sentDateTime} $formattedTime</div>
+          <div>${l10n.sentId} $token</div>
         </div>
         
       </div>
@@ -3803,14 +3880,14 @@ ${linksInfo.isNotEmpty ? '──────────────────
       
       final taskId = widget.task?.id;
       if (taskId == null) {
-        SnackBarService.showError(context, 'タスクが選択されていません');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.taskNotSelected);
         return;
       }
       
       final mailLogs = mailService.getMailLogsForTask(taskId);
       
       if (mailLogs.isEmpty) {
-        SnackBarService.showInfo(context, 'このタスクの送信履歴はありません');
+        SnackBarService.showInfo(context, AppLocalizations.of(context)!.noSendHistoryForTask);
         return;
       }
       
@@ -3822,7 +3899,7 @@ ${linksInfo.isNotEmpty ? '──────────────────
               children: [
                 Icon(Icons.history, color: Colors.green),
                 const SizedBox(width: 8),
-                const Text('送信履歴'),
+                Text(AppLocalizations.of(context)!.sendHistory),
               ],
             ),
             content: SizedBox(
@@ -3928,7 +4005,7 @@ ${linksInfo.isNotEmpty ? '──────────────────
           _assignedToController.text = bodyWithoutToken;
         });
         
-        SnackBarService.showSuccess(context, '送信履歴を再利用しました');
+        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.sendHistoryReused);
       }
     } catch (e) {
       SnackBarService.showError(context, '履歴取得エラー: $e');
@@ -3943,12 +4020,12 @@ ${linksInfo.isNotEmpty ? '──────────────────
       
       final isAvailable = await mailService.isOutlookAvailable();
       if (isAvailable) {
-        SnackBarService.showSuccess(context, 'Outlook接続テスト成功');
+        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.outlookConnectionTestSuccess);
       } else {
-        SnackBarService.showError(context, 'Outlook接続テスト失敗: Outlookが利用できません');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.outlookConnectionTestFailed);
       }
     } catch (e) {
-      SnackBarService.showError(context, 'Outlook接続テストエラー: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.outlookConnectionTestError(e.toString()));
     }
   }
 
@@ -3962,13 +4039,13 @@ ${linksInfo.isNotEmpty ? '──────────────────
         to: '',
         cc: '',
         bcc: '',
-        subject: 'Gmail接続テスト',
-        body: 'これはGmail接続テストです。',
+        subject: AppLocalizations.of(context)!.gmailConnectionTest,
+        body: AppLocalizations.of(context)!.gmailConnectionTestBody,
       );
       
-      SnackBarService.showSuccess(context, 'Gmail接続テスト成功: Gmailが開きました');
+      SnackBarService.showSuccess(context, AppLocalizations.of(context)!.gmailConnectionTestSuccess);
     } catch (e) {
-      SnackBarService.showError(context, 'Gmail接続テストエラー: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.gmailConnectionTestError(e.toString()));
     }
   }
 
@@ -3999,12 +4076,12 @@ ${linksInfo.isNotEmpty ? '──────────────────
         print('=== テストメール送信完了 ===');
       }
 
-      SnackBarService.showSuccess(context, 'テストメール送信完了');
+      SnackBarService.showSuccess(context, AppLocalizations.of(context)!.testMailSent);
       
       // メール送信後のコールバックを実行
       widget.onMailSent?.call();
     } catch (e) {
-      SnackBarService.showError(context, 'テストメール送信エラー: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.testMailSendError(e.toString()));
     }
   }
 
@@ -4224,7 +4301,7 @@ class _ContactAddDialogState extends State<_ContactAddDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('連絡先を追加'),
+      title: Text(AppLocalizations.of(context)!.addContact),
       content: Form(
         key: _formKey,
         child: Column(
@@ -4232,13 +4309,13 @@ class _ContactAddDialogState extends State<_ContactAddDialog> {
           children: [
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: '名前 *',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: '${AppLocalizations.of(context)!.name} *',
+                border: const OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return '名前を入力してください';
+                  return AppLocalizations.of(context)!.nameRequired;
                 }
                 return null;
               },
@@ -4341,21 +4418,23 @@ class _HistorySelectionDialogState extends State<_HistorySelectionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('送信履歴から選択'),
+      title: Text(AppLocalizations.of(context)!.selectFromSendHistory),
       content: SizedBox(
         width: 450,
         height: 400,
         child: _historyContacts.isEmpty
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.history, size: 48, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('送信履歴がありません'),
-                  SizedBox(height: 8),
-                  Text('メールを送信すると、宛先が自動で連絡先に登録されます', 
-                       style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const Icon(Icons.history, size: 48, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text(AppLocalizations.of(context)!.noSendHistory),
+                  const SizedBox(height: 8),
+                  Text(
+                    AppLocalizations.of(context)!.sendHistoryAutoRegister,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                 ],
               ),
             )
