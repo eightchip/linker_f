@@ -4530,6 +4530,272 @@
   "outlookLinkNote": "📝 Note: In Outlook, network share and local file links are also clickable.\nYou can click the link to access it directly.",
   "@outlookLinkNote": {
     "description": "Outlook link note"
+  },
+  "periodLabel": "Period:",
+  "@periodLabel": {
+    "description": "Period label with colon"
+  },
+  "startLabel": "Start:",
+  "@startLabel": {
+    "description": "Start label with colon"
+  },
+  "endLabel": "End:",
+  "@endLabel": {
+    "description": "End label with colon"
+  },
+  "getSchedules": "Get Schedules",
+  "@getSchedules": {
+    "description": "Get schedules button"
+  },
+  "searchSchedules": "Search schedules...",
+  "@searchSchedules": {
+    "description": "Search schedules placeholder"
+  },
+  "sortByTitle": "By Title",
+  "@sortByTitle": {
+    "description": "Sort by title"
+  },
+  "sortByDateTime": "By Date/Time",
+  "@sortByDateTime": {
+    "description": "Sort by date time"
+  },
+  "processing": "Processing...",
+  "@processing": {
+    "description": "Processing message"
+  },
+  "assignToTasks": "Assign to Tasks ({count} items)",
+  "@assignToTasks": {
+    "description": "Assign to tasks button",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createNewTask": "Create New Task",
+  "@createNewTask": {
+    "description": "Create new task button"
+  },
+  "tableFormat": "Table Format",
+  "@tableFormat": {
+    "description": "Table format"
+  },
+  "oneCellFormat": "One Cell Format",
+  "@oneCellFormat": {
+    "description": "One cell format"
+  },
+  "linkOpened": "Opened link \"{label}\"",
+  "@linkOpened": {
+    "description": "Link opened message",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "linkNotFound": "Link not found",
+  "@linkNotFound": {
+    "description": "Link not found message"
+  },
+  "completionDateColon": "Completion Date:",
+  "@completionDateColon": {
+    "description": "Completion date label with colon"
+  },
+  "completedColon": "Completed:",
+  "@completedColon": {
+    "description": "Completed label with colon"
+  },
+  "copyToExcelOneCellForm": "Copy to Excel (One Cell Form)",
+  "@copyToExcelOneCellForm": {
+    "description": "Copy to Excel one cell form"
+  },
+  "excelCopyOnlyInListView": "Excel copy is only available in list view.",
+  "@excelCopyOnlyInListView": {
+    "description": "Excel copy only in list view message"
+  },
+  "schedulesCopiedToExcel": "Copied {count} schedules to clipboard in {format} format (can be pasted into Excel)",
+  "@schedulesCopiedToExcel": {
+    "description": "Schedules copied to Excel message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "schedulesCopiedToExcelOneCell": "Copied {count} schedules to clipboard in one cell form (can be pasted into Excel)",
+  "@schedulesCopiedToExcelOneCell": {
+    "description": "Schedules copied to Excel one cell form message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oneCellForm": "One Cell Form",
+  "@oneCellForm": {
+    "description": "One cell form label"
+  },
+  "tableForm": "Table Form",
+  "@tableForm": {
+    "description": "Table form label"
+  },
+  "importOutlookSchedules": "Import Outlook Schedules",
+  "@importOutlookSchedules": {
+    "description": "Import Outlook schedules title"
+  },
+  "noSchedulesToImport": "No schedules to import",
+  "@noSchedulesToImport": {
+    "description": "No schedules to import message"
+  },
+  "processing": "Processing...",
+  "@processing": {
+    "description": "Processing message"
+  },
+  "meeting": "Meeting",
+  "@meeting": {
+    "description": "Meeting label"
+  },
+  "recurring": "Recurring",
+  "@recurring": {
+    "description": "Recurring label"
+  },
+  "online": "Online",
+  "@online": {
+    "description": "Online label"
+  },
+  "noMatchingTasks": "No matching tasks",
+  "@noMatchingTasks": {
+    "description": "No matching tasks message"
+  },
+  "outlookUnavailableSkipped": "Skipped automatic import because Outlook is unavailable",
+  "@outlookUnavailableSkipped": {
+    "description": "Outlook unavailable skipped message"
+  },
+  "outlookAutoImportCompletedDetails": "Outlook auto import completed\nRetrieved: {total} items\nAdded: {added} items\nSkipped: {skipped} items",
+  "@outlookAutoImportCompletedDetails": {
+    "description": "Outlook auto import completed details",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportCompletedNoNew": "Outlook auto import completed\nRetrieved: {total} items\nNo schedules to import",
+  "@outlookAutoImportCompletedNoNew": {
+    "description": "Outlook auto import completed no new schedules",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportCompletedSkipped": "Outlook auto import completed\nRetrieved: {total} items\nAdded: 0 items\nSkipped: {skipped} items (already imported)",
+  "@outlookAutoImportCompletedSkipped": {
+    "description": "Outlook auto import completed skipped",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportCompletedAdded": "Outlook auto import completed: Added {added} schedules",
+  "@outlookAutoImportCompletedAdded": {
+    "description": "Outlook auto import completed added",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportCompletedSkippedOnly": "Outlook auto import completed: {skipped} schedules are already imported",
+  "@outlookAutoImportCompletedSkippedOnly": {
+    "description": "Outlook auto import completed skipped only",
+    "placeholders": {
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportError": "An error occurred during Outlook auto import.\nError: {error}",
+  "@outlookAutoImportError": {
+    "description": "Outlook auto import error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "selectDateToCopy": "Please select the date to copy",
+  "@selectDateToCopy": {
+    "description": "Select date to copy message"
+  },
+  "taskNotFound": "Task not found",
+  "@taskNotFound": {
+    "description": "Task not found message"
+  },
+  "relatedTaskNotFound": "Related task not found",
+  "@relatedTaskNotFound": {
+    "description": "Related task not found message"
+  },
+  "excelHeaderDate": "Date",
+  "@excelHeaderDate": {
+    "description": "Excel header: Date"
+  },
+  "excelHeaderStartTime": "Start Time",
+  "@excelHeaderStartTime": {
+    "description": "Excel header: Start Time"
+  },
+  "excelHeaderEndTime": "End Time",
+  "@excelHeaderEndTime": {
+    "description": "Excel header: End Time"
+  },
+  "excelHeaderTitle": "Title",
+  "@excelHeaderTitle": {
+    "description": "Excel header: Title"
+  },
+  "excelHeaderLocation": "Location",
+  "@excelHeaderLocation": {
+    "description": "Excel header: Location"
+  },
+  "excelHeaderTaskName": "Task Name",
+  "@excelHeaderTaskName": {
+    "description": "Excel header: Task Name"
+  },
+  "gettingSchedulesFromOutlook": "Getting schedules from Outlook...",
+  "@gettingSchedulesFromOutlook": {
+    "description": "Getting schedules from Outlook message"
+  },
+  "gettingSchedules": "Getting schedules...",
+  "@gettingSchedules": {
+    "description": "Getting schedules message"
+  },
+  "outlookNotRunningOrUnavailable": "Outlook is not running or unavailable. Please start Outlook and try again.",
+  "@outlookNotRunningOrUnavailable": {
+    "description": "Outlook not running or unavailable message"
+  },
+  "noSchedulesThisMonth": "No schedules in this month",
+  "@noSchedulesThisMonth": {
+    "description": "No schedules this month message"
+  },
+  "scheduleShortcuts": "Schedule Shortcuts",
+  "@scheduleShortcuts": {
+    "description": "Schedule shortcuts dialog title"
+  },
+  "focusSearchBar": "Focus on search bar",
+  "@focusSearchBar": {
+    "description": "Focus on search bar shortcut description"
   }
 }
 

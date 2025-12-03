@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class ShortcutHelpEntry {
   final String keys;
@@ -45,7 +46,7 @@ Future<void> showShortcutHelpDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('閉じる'),
+          child: Text(AppLocalizations.of(context)!.close),
         ),
       ],
     ),

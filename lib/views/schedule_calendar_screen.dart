@@ -58,7 +58,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
   
   // 今日の日付の位置を保持
   GlobalKey? _todayKey;
-  ScheduleCalendarView _currentView = ScheduleCalendarView.list;
+  ScheduleCalendarView _currentView = ScheduleCalendarView.month;
 
   @override
   void initState() {
@@ -287,7 +287,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                 : AppLocalizations.of(context)!.copyToExcelSelected(_selectedDates.length),
             onSelected: (value) {
               if (_currentView != ScheduleCalendarView.list) {
-                SnackBarService.showInfo(context, 'エクセルコピーはリスト表示時のみ利用できます。');
+                SnackBarService.showInfo(context, AppLocalizations.of(context)!.excelCopyOnlyInListView);
                 return;
               }
               if (value == 'table') {
@@ -646,7 +646,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           } catch (e) {
             task = TaskItem(
               id: schedule.taskId,
-              title: 'タスクが見つかりません',
+              title: AppLocalizations.of(context)!.taskNotFound,
               createdAt: DateTime.now(),
             );
           }
@@ -875,7 +875,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                         builder: (context) => TaskDialog(task: task),
                       );
                     } catch (e) {
-                      SnackBarService.showWarning(context, '関連タスクが見つかりませんでした');
+                      SnackBarService.showWarning(context, AppLocalizations.of(context)!.relatedTaskNotFound);
                     }
                   },
                   child: _searchQuery.isEmpty
@@ -1007,20 +1007,20 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                     // 月次表示用のExcel出力ボタン
                     PopupMenuButton<String>(
                       icon: const Icon(Icons.content_copy, size: 18),
-                      tooltip: 'エクセルにコピー（1セル形式）',
+                      tooltip: AppLocalizations.of(context)!.copyToExcelOneCellForm,
                       onSelected: (value) {
                         if (value == 'onecell') {
                           _copyMonthToExcel(monthStart, schedulesByDate, taskMap);
                         }
                       },
                       itemBuilder: (context) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'onecell',
                           child: Row(
                             children: [
-                              Icon(Icons.content_copy, size: 20),
-                              SizedBox(width: 8),
-                              Text('エクセルにコピー（1セル形式）'),
+                              const Icon(Icons.content_copy, size: 20),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!.copyToExcelOneCellForm),
                             ],
                           ),
                         ),
@@ -1119,7 +1119,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             ),
             ListTile(
               leading: const Icon(Icons.content_copy),
-              title: const Text('エクセルにコピー'),
+              title: Text(AppLocalizations.of(context)!.copyToExcel),
               onTap: () {
                 Navigator.pop(context);
                 _copyToExcel();
@@ -1132,12 +1132,13 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
   }
 
   void _showShortcutGuide(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showShortcutHelpDialog(
       context,
-      title: '予定表ショートカット',
-      entries: const [
-        ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
-        ShortcutHelpEntry('Ctrl + F', '検索バーにフォーカス'),
+      title: l10n.scheduleShortcuts,
+      entries: [
+        ShortcutHelpEntry('F1', l10n.showShortcutList),
+        ShortcutHelpEntry('Ctrl + F', l10n.focusSearchBar),
       ],
     );
   }
@@ -1413,7 +1414,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     // 選択された日付がない場合は警告
     if (_selectedDates.isEmpty) {
       if (mounted) {
-        SnackBarService.showWarning(context, 'コピーする日付を選択してください');
+        SnackBarService.showWarning(context, AppLocalizations.of(context)!.selectDateToCopy);
       }
       return;
     }
@@ -1432,7 +1433,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           (t) => t.id == schedule.taskId,
           orElse: () => TaskItem(
             id: schedule.taskId,
-            title: 'タスクが見つかりません',
+            title: AppLocalizations.of(context)!.taskNotFound,
             createdAt: DateTime.now(),
           ),
         );
@@ -1465,7 +1466,8 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       final dateFormat = DateFormat('yyyy/MM/dd');
       
       // ヘッダー
-      buffer.writeln('日付\t開始時刻\t終了時刻\tタイトル\t場所\tタスク名');
+      final l10n = AppLocalizations.of(context)!;
+      buffer.writeln('${l10n.excelHeaderDate}\t${l10n.excelHeaderStartTime}\t${l10n.excelHeaderEndTime}\t${l10n.excelHeaderTitle}\t${l10n.excelHeaderLocation}\t${l10n.excelHeaderTaskName}');
       
       // データ行
       for (final schedule in filteredSchedules) {
@@ -1473,7 +1475,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           (t) => t.id == schedule.taskId,
           orElse: () => TaskItem(
             id: schedule.taskId,
-            title: 'タスクが見つかりません',
+            title: AppLocalizations.of(context)!.taskNotFound,
             createdAt: DateTime.now(),
           ),
         );
@@ -1495,8 +1497,13 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     await Clipboard.setData(ClipboardData(text: buffer.toString()));
     
     if (mounted) {
-      final formatText = isOneCellForm ? '1セル形式' : '表形式';
-      SnackBarService.showSuccess(context, '${filteredSchedules.length}件の予定を$formatTextでクリップボードにコピーしました（エクセルに貼り付け可能）');
+      final formatText = isOneCellForm 
+          ? AppLocalizations.of(context)!.oneCellFormat 
+          : AppLocalizations.of(context)!.tableFormat;
+      SnackBarService.showSuccess(
+        context, 
+        AppLocalizations.of(context)!.schedulesCopiedToExcel(filteredSchedules.length, formatText),
+      );
     }
   }
 
@@ -1527,7 +1534,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     
     if (monthSchedules.isEmpty) {
       if (mounted) {
-        SnackBarService.showWarning(context, 'この月には予定がありません');
+        SnackBarService.showWarning(context, AppLocalizations.of(context)!.noSchedulesThisMonth);
       }
       return;
     }
@@ -1543,7 +1550,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
         (t) => t.id == schedule.taskId,
         orElse: () => TaskItem(
           id: schedule.taskId,
-          title: 'タスクが見つかりません',
+          title: AppLocalizations.of(context)!.taskNotFound,
           createdAt: DateTime.now(),
         ),
       );
@@ -1578,7 +1585,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     if (mounted) {
       SnackBarService.showSuccess(
         context,
-        '${monthSchedules.length}件の予定を1セル形式でクリップボードにコピーしました（エクセルに貼り付け可能）',
+        AppLocalizations.of(context)!.schedulesCopiedToExcelOneCell(monthSchedules.length),
       );
     }
   }

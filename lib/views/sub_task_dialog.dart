@@ -401,7 +401,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                                 ),
                                 if (subTask.completedAt != null)
                                   Text(
-                                    '完了日: ${DateFormat('yyyy/MM/dd HH:mm').format(subTask.completedAt!)}',
+                                    '${AppLocalizations.of(context)!.completionDateColon} ${DateFormat('yyyy/MM/dd HH:mm').format(subTask.completedAt!)}',
                                     style: TextStyle(
                                       color: Colors.green[600],
                                       fontSize: 12,

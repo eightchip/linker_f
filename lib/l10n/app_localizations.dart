@@ -1310,16 +1310,16 @@ abstract class AppLocalizations {
   /// **'エクセルにコピー（日付を選択してください）'**
   String get copyToExcelSelectDate;
 
-  /// 表形式メニュー項目
+  /// Table format
   ///
   /// In ja, this message translates to:
-  /// **'表形式（複数列）'**
+  /// **'表形式'**
   String get tableFormat;
 
-  /// 1セル形式メニュー項目
+  /// One cell format
   ///
   /// In ja, this message translates to:
-  /// **'1セル形式（列挙）'**
+  /// **'1セル形式'**
   String get oneCellFormat;
 
   /// アクションメニューツールチップ
@@ -1892,10 +1892,10 @@ abstract class AppLocalizations {
   /// **'選択してください'**
   String get selectPlease;
 
-  /// 新しいタスクを作成ショートカット説明
+  /// Create new task button
   ///
   /// In ja, this message translates to:
-  /// **'新しいタスクを作成'**
+  /// **'新規タスク作成'**
   String get createNewTask;
 
   /// 一括選択モードを切り替えショートカット説明
@@ -5607,6 +5607,288 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\nリンクをクリックして直接アクセスできます。'**
   String get outlookLinkNote;
+
+  /// Period label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'期間:'**
+  String get periodLabel;
+
+  /// Start label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'開始:'**
+  String get startLabel;
+
+  /// End label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'終了:'**
+  String get endLabel;
+
+  /// Get schedules button
+  ///
+  /// In ja, this message translates to:
+  /// **'予定を取得'**
+  String get getSchedules;
+
+  /// Search schedules placeholder
+  ///
+  /// In ja, this message translates to:
+  /// **'予定を検索...'**
+  String get searchSchedules;
+
+  /// Sort by title
+  ///
+  /// In ja, this message translates to:
+  /// **'タイトル順'**
+  String get sortByTitle;
+
+  /// Sort by date time
+  ///
+  /// In ja, this message translates to:
+  /// **'日時順'**
+  String get sortByDateTime;
+
+  /// Processing message
+  ///
+  /// In ja, this message translates to:
+  /// **'処理中...'**
+  String get processing;
+
+  /// Assign to tasks button
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクに割り当て ({count}件)'**
+  String assignToTasks(int count);
+
+  /// Link opened message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンク「{label}」を開きました'**
+  String linkOpened(String label);
+
+  /// Link not found message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクが見つかりません'**
+  String get linkNotFound;
+
+  /// Completion date label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'完了日:'**
+  String get completionDateColon;
+
+  /// Completed label with colon
+  ///
+  /// In ja, this message translates to:
+  /// **'完了:'**
+  String get completedColon;
+
+  /// Copy to Excel one cell form
+  ///
+  /// In ja, this message translates to:
+  /// **'エクセルにコピー（1セル形式）'**
+  String get copyToExcelOneCellForm;
+
+  /// Excel copy only in list view message
+  ///
+  /// In ja, this message translates to:
+  /// **'エクセルコピーはリスト表示時のみ利用できます。'**
+  String get excelCopyOnlyInListView;
+
+  /// Schedules copied to Excel message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件の予定を{format}でクリップボードにコピーしました（エクセルに貼り付け可能）'**
+  String schedulesCopiedToExcel(int count, String format);
+
+  /// Schedules copied to Excel one cell form message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件の予定を1セル形式でクリップボードにコピーしました（エクセルに貼り付け可能）'**
+  String schedulesCopiedToExcelOneCell(int count);
+
+  /// One cell form label
+  ///
+  /// In ja, this message translates to:
+  /// **'1セル形式'**
+  String get oneCellForm;
+
+  /// Table form label
+  ///
+  /// In ja, this message translates to:
+  /// **'表形式'**
+  String get tableForm;
+
+  /// Import Outlook schedules title
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook予定を取り込む'**
+  String get importOutlookSchedules;
+
+  /// No schedules to import message
+  ///
+  /// In ja, this message translates to:
+  /// **'取り込む必要がある予定はありません'**
+  String get noSchedulesToImport;
+
+  /// Meeting label
+  ///
+  /// In ja, this message translates to:
+  /// **'会議'**
+  String get meeting;
+
+  /// Recurring label
+  ///
+  /// In ja, this message translates to:
+  /// **'定期'**
+  String get recurring;
+
+  /// Online label
+  ///
+  /// In ja, this message translates to:
+  /// **'オンライン'**
+  String get online;
+
+  /// No matching tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'条件に合致するタスクがありません'**
+  String get noMatchingTasks;
+
+  /// Outlook unavailable skipped message
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookが利用できないため、自動取り込みをスキップしました'**
+  String get outlookUnavailableSkipped;
+
+  /// Outlook auto import completed details
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook自動取り込み完了\n取得: {total}件\n追加: {added}件\nスキップ: {skipped}件'**
+  String outlookAutoImportCompletedDetails(int total, int added, int skipped);
+
+  /// Outlook auto import completed no new schedules
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook自動取り込み完了\n取得: {total}件\n取り込む予定はありませんでした'**
+  String outlookAutoImportCompletedNoNew(int total);
+
+  /// Outlook auto import completed skipped
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook自動取り込み完了\n取得: {total}件\n追加: 0件\nスキップ: {skipped}件（既に取り込まれています）'**
+  String outlookAutoImportCompletedSkipped(int total, int skipped);
+
+  /// Outlook auto import completed added
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook自動取り込み完了: {added}件の予定を追加しました'**
+  String outlookAutoImportCompletedAdded(int added);
+
+  /// Outlook auto import completed skipped only
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook自動取り込み完了: {skipped}件の予定は既に取り込まれています'**
+  String outlookAutoImportCompletedSkippedOnly(int skipped);
+
+  /// Outlook auto import error
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook自動取り込み中にエラーが発生しました。\nエラー: {error}'**
+  String outlookAutoImportError(String error);
+
+  /// Select date to copy message
+  ///
+  /// In ja, this message translates to:
+  /// **'コピーする日付を選択してください'**
+  String get selectDateToCopy;
+
+  /// Task not found message
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクが見つかりません'**
+  String get taskNotFound;
+
+  /// Related task not found message
+  ///
+  /// In ja, this message translates to:
+  /// **'関連タスクが見つかりませんでした'**
+  String get relatedTaskNotFound;
+
+  /// Excel header: Date
+  ///
+  /// In ja, this message translates to:
+  /// **'日付'**
+  String get excelHeaderDate;
+
+  /// Excel header: Start Time
+  ///
+  /// In ja, this message translates to:
+  /// **'開始時刻'**
+  String get excelHeaderStartTime;
+
+  /// Excel header: End Time
+  ///
+  /// In ja, this message translates to:
+  /// **'終了時刻'**
+  String get excelHeaderEndTime;
+
+  /// Excel header: Title
+  ///
+  /// In ja, this message translates to:
+  /// **'タイトル'**
+  String get excelHeaderTitle;
+
+  /// Excel header: Location
+  ///
+  /// In ja, this message translates to:
+  /// **'場所'**
+  String get excelHeaderLocation;
+
+  /// Excel header: Task Name
+  ///
+  /// In ja, this message translates to:
+  /// **'タスク名'**
+  String get excelHeaderTaskName;
+
+  /// Getting schedules from Outlook message
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookから予定を取得中...'**
+  String get gettingSchedulesFromOutlook;
+
+  /// Getting schedules message
+  ///
+  /// In ja, this message translates to:
+  /// **'予定を取得中...'**
+  String get gettingSchedules;
+
+  /// Outlook not running or unavailable message
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlookが起動していないか、利用できません。Outlookを起動してから再度お試しください。'**
+  String get outlookNotRunningOrUnavailable;
+
+  /// No schedules this month message
+  ///
+  /// In ja, this message translates to:
+  /// **'この月には予定がありません'**
+  String get noSchedulesThisMonth;
+
+  /// Schedule shortcuts dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'予定表ショートカット'**
+  String get scheduleShortcuts;
+
+  /// Focus on search bar shortcut description
+  ///
+  /// In ja, this message translates to:
+  /// **'検索バーにフォーカス'**
+  String get focusSearchBar;
 }
 
 class _AppLocalizationsDelegate

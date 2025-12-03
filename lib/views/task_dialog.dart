@@ -1988,7 +1988,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         Text('推定: ${s.estimatedMinutes}分', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                       if (s.completedAt!=null) ...[
                         const SizedBox(width: 8),
-                        Text('完了: ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                        Text('${AppLocalizations.of(context)!.completedLabel} ${DateFormat('MM/dd HH:mm').format(s.completedAt!)}', style: const TextStyle(fontSize: 11, color: Colors.green)),
                       ],
                     ]),
                       ],

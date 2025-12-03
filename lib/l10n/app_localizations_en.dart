@@ -639,10 +639,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copyToExcelSelectDate => 'Copy to Excel (Please select dates)';
 
   @override
-  String get tableFormat => 'Table Format (Multiple Columns)';
+  String get tableFormat => 'Table Format';
 
   @override
-  String get oneCellFormat => 'One Cell Format (List)';
+  String get oneCellFormat => 'One Cell Format';
 
   @override
   String get action => 'Action';
@@ -956,7 +956,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectPlease => 'Please select';
 
   @override
-  String get createNewTask => 'Create a new task';
+  String get createNewTask => 'Create New Task';
 
   @override
   String get toggleBatchSelectionMode => 'Toggle batch selection mode';
@@ -3102,4 +3102,168 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get outlookLinkNote =>
       '📝 Note: In Outlook, network share and local file links are also clickable.\nYou can click the link to access it directly.';
+
+  @override
+  String get periodLabel => 'Period:';
+
+  @override
+  String get startLabel => 'Start:';
+
+  @override
+  String get endLabel => 'End:';
+
+  @override
+  String get getSchedules => 'Get Schedules';
+
+  @override
+  String get searchSchedules => 'Search schedules...';
+
+  @override
+  String get sortByTitle => 'By Title';
+
+  @override
+  String get sortByDateTime => 'By Date/Time';
+
+  @override
+  String get processing => 'Processing...';
+
+  @override
+  String assignToTasks(int count) {
+    return 'Assign to Tasks ($count items)';
+  }
+
+  @override
+  String linkOpened(String label) {
+    return 'Opened link \"$label\"';
+  }
+
+  @override
+  String get linkNotFound => 'Link not found';
+
+  @override
+  String get completionDateColon => 'Completion Date:';
+
+  @override
+  String get completedColon => 'Completed:';
+
+  @override
+  String get copyToExcelOneCellForm => 'Copy to Excel (One Cell Form)';
+
+  @override
+  String get excelCopyOnlyInListView =>
+      'Excel copy is only available in list view.';
+
+  @override
+  String schedulesCopiedToExcel(int count, String format) {
+    return 'Copied $count schedules to clipboard in $format format (can be pasted into Excel)';
+  }
+
+  @override
+  String schedulesCopiedToExcelOneCell(int count) {
+    return 'Copied $count schedules to clipboard in one cell form (can be pasted into Excel)';
+  }
+
+  @override
+  String get oneCellForm => 'One Cell Form';
+
+  @override
+  String get tableForm => 'Table Form';
+
+  @override
+  String get importOutlookSchedules => 'Import Outlook Schedules';
+
+  @override
+  String get noSchedulesToImport => 'No schedules to import';
+
+  @override
+  String get meeting => 'Meeting';
+
+  @override
+  String get recurring => 'Recurring';
+
+  @override
+  String get online => 'Online';
+
+  @override
+  String get noMatchingTasks => 'No matching tasks';
+
+  @override
+  String get outlookUnavailableSkipped =>
+      'Skipped automatic import because Outlook is unavailable';
+
+  @override
+  String outlookAutoImportCompletedDetails(int total, int added, int skipped) {
+    return 'Outlook auto import completed\nRetrieved: $total items\nAdded: $added items\nSkipped: $skipped items';
+  }
+
+  @override
+  String outlookAutoImportCompletedNoNew(int total) {
+    return 'Outlook auto import completed\nRetrieved: $total items\nNo schedules to import';
+  }
+
+  @override
+  String outlookAutoImportCompletedSkipped(int total, int skipped) {
+    return 'Outlook auto import completed\nRetrieved: $total items\nAdded: 0 items\nSkipped: $skipped items (already imported)';
+  }
+
+  @override
+  String outlookAutoImportCompletedAdded(int added) {
+    return 'Outlook auto import completed: Added $added schedules';
+  }
+
+  @override
+  String outlookAutoImportCompletedSkippedOnly(int skipped) {
+    return 'Outlook auto import completed: $skipped schedules are already imported';
+  }
+
+  @override
+  String outlookAutoImportError(String error) {
+    return 'An error occurred during Outlook auto import.\nError: $error';
+  }
+
+  @override
+  String get selectDateToCopy => 'Please select the date to copy';
+
+  @override
+  String get taskNotFound => 'Task not found';
+
+  @override
+  String get relatedTaskNotFound => 'Related task not found';
+
+  @override
+  String get excelHeaderDate => 'Date';
+
+  @override
+  String get excelHeaderStartTime => 'Start Time';
+
+  @override
+  String get excelHeaderEndTime => 'End Time';
+
+  @override
+  String get excelHeaderTitle => 'Title';
+
+  @override
+  String get excelHeaderLocation => 'Location';
+
+  @override
+  String get excelHeaderTaskName => 'Task Name';
+
+  @override
+  String get gettingSchedulesFromOutlook => 'Getting schedules from Outlook...';
+
+  @override
+  String get gettingSchedules => 'Getting schedules...';
+
+  @override
+  String get outlookNotRunningOrUnavailable =>
+      'Outlook is not running or unavailable. Please start Outlook and try again.';
+
+  @override
+  String get noSchedulesThisMonth => 'No schedules in this month';
+
+  @override
+  String get scheduleShortcuts => 'Schedule Shortcuts';
+
+  @override
+  String get focusSearchBar => 'Focus on search bar';
 }

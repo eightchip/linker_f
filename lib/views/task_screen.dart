@@ -5020,13 +5020,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       // 成功メッセージを表示
       SnackBarService.showSuccess(
         context,
-        'リンク「${targetLink.label}」を開きました',
+        AppLocalizations.of(context)!.linkOpened(targetLink.label),
       );
     } else {
       // エラーメッセージを表示
       SnackBarService.showError(
         context,
-        'リンクが見つかりません',
+        AppLocalizations.of(context)!.linkNotFound,
       );
     }
   }
@@ -8814,7 +8814,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       
       SnackBarService.showSuccess(
         context,
-        'リンク「${link.label}」を開きました',
+        AppLocalizations.of(context)!.linkOpened(link.label),
       );
     } catch (e) {
       SnackBarService.showError(

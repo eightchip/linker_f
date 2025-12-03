@@ -8,6 +8,7 @@ import '../services/outlook_calendar_service.dart';
 import '../services/snackbar_service.dart';
 import '../viewmodels/schedule_viewmodel.dart';
 import '../viewmodels/task_viewmodel.dart';
+import '../l10n/app_localizations.dart';
 
 enum OutlookEventSource { personal }
 
@@ -63,7 +64,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
   Future<void> _loadAndMatchEvents() async {
     setState(() {
       _isLoading = true;
-      _loadingMessage = 'Outlookから予定を取得中...';
+      _loadingMessage = AppLocalizations.of(context)!.gettingSchedulesFromOutlook;
       _filteredEvents = [];
       _selectedIndices.clear();
     });
@@ -75,7 +76,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
         if (mounted) {
           SnackBarService.showWarning(
             context,
-            'Outlookが起動していないか、利用できません。Outlookを起動してから再度お試しください。',
+            AppLocalizations.of(context)!.outlookNotRunningOrUnavailable,
           );
         }
         setState(() {
@@ -101,7 +102,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
           : DateTime.now().add(const Duration(days: 30));
 
       setState(() {
-        _loadingMessage = '予定を取得中...';
+        _loadingMessage = AppLocalizations.of(context)!.gettingSchedules;
       });
 
       final events = await _outlookService.getCalendarEvents(
@@ -141,7 +142,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       });
 
       if (_filteredEvents.isEmpty && mounted) {
-        SnackBarService.showInfo(context, '取り込む必要がある予定はありません。');
+        SnackBarService.showInfo(context, AppLocalizations.of(context)!.noSchedulesToImport);
       }
     } catch (e) {
       if (mounted) {
@@ -337,9 +338,9 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
               children: [
                 const Icon(Icons.calendar_today, color: Colors.blue, size: 28),
                 const SizedBox(width: 12),
-                const Text(
-                  'Outlook予定を取り込む',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)!.importOutlookSchedules,
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
@@ -357,13 +358,13 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
             // 期間選択と取得ボタン
             Row(
               children: [
-                const Text('期間: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                Text('${AppLocalizations.of(context)!.periodLabel} ', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: _selectStartDate,
                   icon: const Icon(Icons.calendar_today, size: 18),
                   label: Text(
-                    '開始: ${dateFormat.format(_startDate!)}',
+                    '${AppLocalizations.of(context)!.startLabel} ${dateFormat.format(_startDate!)}',
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
@@ -372,7 +373,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                   onPressed: _selectEndDate,
                   icon: const Icon(Icons.calendar_today, size: 18),
                   label: Text(
-                    '終了: ${dateFormat.format(_endDate!)}',
+                    '${AppLocalizations.of(context)!.endLabel} ${dateFormat.format(_endDate!)}',
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
@@ -386,7 +387,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.refresh),
-                  label: const Text('予定を取得', style: TextStyle(fontSize: 16)),
+                  label: Text(AppLocalizations.of(context)!.getSchedules, style: const TextStyle(fontSize: 16)),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   ),
@@ -403,7 +404,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
-                        hintText: '予定を検索...',
+                        hintText: AppLocalizations.of(context)!.searchSchedules,
                         prefixIcon: const Icon(Icons.search),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -425,14 +426,14 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                         _sortFilteredEvents();
                       });
                     },
-                    children: const [
+                    children: [
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('タイトル順'),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(AppLocalizations.of(context)!.sortByTitle),
                       ),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('日時順'),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(AppLocalizations.of(context)!.sortByDateTime),
                       ),
                     ],
                   ),
@@ -451,7 +452,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                       const CircularProgressIndicator(),
                       const SizedBox(height: 24),
                       Text(
-                        _loadingMessage ?? '処理中...',
+                        _loadingMessage ?? AppLocalizations.of(context)!.processing,
                         style: const TextStyle(fontSize: 16),
                       ),
                     ],
@@ -468,9 +469,9 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                     children: [
                       const Icon(Icons.calendar_today, size: 64, color: Colors.grey),
                       const SizedBox(height: 16),
-                      const Text(
-                        '取り込む必要がある予定はありません',
-                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                      Text(
+                        AppLocalizations.of(context)!.noSchedulesToImport,
+                        style: const TextStyle(color: Colors.grey, fontSize: 16),
                       ),
                     ],
                   ),
@@ -491,7 +492,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('キャンセル', style: TextStyle(fontSize: 16)),
+                  child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(fontSize: 16)),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
@@ -502,7 +503,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   ),
                   child: Text(
-                    'タスクに割り当て (${_selectedIndices.length}件)',
+                    AppLocalizations.of(context)!.assignToTasks(_selectedIndices.length),
                     style: const TextStyle(fontSize: 16),
                   ),
                 ),
@@ -512,7 +513,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
                     await _createNewTasks();
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text('新規タスク作成', style: TextStyle(fontSize: 16)),
+                  label: Text(AppLocalizations.of(context)!.createNewTask, style: const TextStyle(fontSize: 16)),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     backgroundColor: Colors.green,

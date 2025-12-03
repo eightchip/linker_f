@@ -630,10 +630,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get copyToExcelSelectDate => 'エクセルにコピー（日付を選択してください）';
 
   @override
-  String get tableFormat => '表形式（複数列）';
+  String get tableFormat => '表形式';
 
   @override
-  String get oneCellFormat => '1セル形式（列挙）';
+  String get oneCellFormat => '1セル形式';
 
   @override
   String get action => 'アクション';
@@ -943,7 +943,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get selectPlease => '選択してください';
 
   @override
-  String get createNewTask => '新しいタスクを作成';
+  String get createNewTask => '新規タスク作成';
 
   @override
   String get toggleBatchSelectionMode => '一括選択モードを切り替え';
@@ -3046,4 +3046,166 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get outlookLinkNote =>
       '📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\nリンクをクリックして直接アクセスできます。';
+
+  @override
+  String get periodLabel => '期間:';
+
+  @override
+  String get startLabel => '開始:';
+
+  @override
+  String get endLabel => '終了:';
+
+  @override
+  String get getSchedules => '予定を取得';
+
+  @override
+  String get searchSchedules => '予定を検索...';
+
+  @override
+  String get sortByTitle => 'タイトル順';
+
+  @override
+  String get sortByDateTime => '日時順';
+
+  @override
+  String get processing => '処理中...';
+
+  @override
+  String assignToTasks(int count) {
+    return 'タスクに割り当て ($count件)';
+  }
+
+  @override
+  String linkOpened(String label) {
+    return 'リンク「$label」を開きました';
+  }
+
+  @override
+  String get linkNotFound => 'リンクが見つかりません';
+
+  @override
+  String get completionDateColon => '完了日:';
+
+  @override
+  String get completedColon => '完了:';
+
+  @override
+  String get copyToExcelOneCellForm => 'エクセルにコピー（1セル形式）';
+
+  @override
+  String get excelCopyOnlyInListView => 'エクセルコピーはリスト表示時のみ利用できます。';
+
+  @override
+  String schedulesCopiedToExcel(int count, String format) {
+    return '$count件の予定を$formatでクリップボードにコピーしました（エクセルに貼り付け可能）';
+  }
+
+  @override
+  String schedulesCopiedToExcelOneCell(int count) {
+    return '$count件の予定を1セル形式でクリップボードにコピーしました（エクセルに貼り付け可能）';
+  }
+
+  @override
+  String get oneCellForm => '1セル形式';
+
+  @override
+  String get tableForm => '表形式';
+
+  @override
+  String get importOutlookSchedules => 'Outlook予定を取り込む';
+
+  @override
+  String get noSchedulesToImport => '取り込む必要がある予定はありません';
+
+  @override
+  String get meeting => '会議';
+
+  @override
+  String get recurring => '定期';
+
+  @override
+  String get online => 'オンライン';
+
+  @override
+  String get noMatchingTasks => '条件に合致するタスクがありません';
+
+  @override
+  String get outlookUnavailableSkipped => 'Outlookが利用できないため、自動取り込みをスキップしました';
+
+  @override
+  String outlookAutoImportCompletedDetails(int total, int added, int skipped) {
+    return 'Outlook自動取り込み完了\n取得: $total件\n追加: $added件\nスキップ: $skipped件';
+  }
+
+  @override
+  String outlookAutoImportCompletedNoNew(int total) {
+    return 'Outlook自動取り込み完了\n取得: $total件\n取り込む予定はありませんでした';
+  }
+
+  @override
+  String outlookAutoImportCompletedSkipped(int total, int skipped) {
+    return 'Outlook自動取り込み完了\n取得: $total件\n追加: 0件\nスキップ: $skipped件（既に取り込まれています）';
+  }
+
+  @override
+  String outlookAutoImportCompletedAdded(int added) {
+    return 'Outlook自動取り込み完了: $added件の予定を追加しました';
+  }
+
+  @override
+  String outlookAutoImportCompletedSkippedOnly(int skipped) {
+    return 'Outlook自動取り込み完了: $skipped件の予定は既に取り込まれています';
+  }
+
+  @override
+  String outlookAutoImportError(String error) {
+    return 'Outlook自動取り込み中にエラーが発生しました。\nエラー: $error';
+  }
+
+  @override
+  String get selectDateToCopy => 'コピーする日付を選択してください';
+
+  @override
+  String get taskNotFound => 'タスクが見つかりません';
+
+  @override
+  String get relatedTaskNotFound => '関連タスクが見つかりませんでした';
+
+  @override
+  String get excelHeaderDate => '日付';
+
+  @override
+  String get excelHeaderStartTime => '開始時刻';
+
+  @override
+  String get excelHeaderEndTime => '終了時刻';
+
+  @override
+  String get excelHeaderTitle => 'タイトル';
+
+  @override
+  String get excelHeaderLocation => '場所';
+
+  @override
+  String get excelHeaderTaskName => 'タスク名';
+
+  @override
+  String get gettingSchedulesFromOutlook => 'Outlookから予定を取得中...';
+
+  @override
+  String get gettingSchedules => '予定を取得中...';
+
+  @override
+  String get outlookNotRunningOrUnavailable =>
+      'Outlookが起動していないか、利用できません。Outlookを起動してから再度お試しください。';
+
+  @override
+  String get noSchedulesThisMonth => 'この月には予定がありません';
+
+  @override
+  String get scheduleShortcuts => '予定表ショートカット';
+
+  @override
+  String get focusSearchBar => '検索バーにフォーカス';
 }

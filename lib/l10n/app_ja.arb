@@ -4611,6 +4611,272 @@
   "outlookLinkNote": "📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\nリンクをクリックして直接アクセスできます。",
   "@outlookLinkNote": {
     "description": "Outlook link note"
+  },
+  "periodLabel": "期間:",
+  "@periodLabel": {
+    "description": "Period label with colon"
+  },
+  "startLabel": "開始:",
+  "@startLabel": {
+    "description": "Start label with colon"
+  },
+  "endLabel": "終了:",
+  "@endLabel": {
+    "description": "End label with colon"
+  },
+  "getSchedules": "予定を取得",
+  "@getSchedules": {
+    "description": "Get schedules button"
+  },
+  "searchSchedules": "予定を検索...",
+  "@searchSchedules": {
+    "description": "Search schedules placeholder"
+  },
+  "sortByTitle": "タイトル順",
+  "@sortByTitle": {
+    "description": "Sort by title"
+  },
+  "sortByDateTime": "日時順",
+  "@sortByDateTime": {
+    "description": "Sort by date time"
+  },
+  "processing": "処理中...",
+  "@processing": {
+    "description": "Processing message"
+  },
+  "assignToTasks": "タスクに割り当て ({count}件)",
+  "@assignToTasks": {
+    "description": "Assign to tasks button",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createNewTask": "新規タスク作成",
+  "@createNewTask": {
+    "description": "Create new task button"
+  },
+  "tableFormat": "表形式",
+  "@tableFormat": {
+    "description": "Table format"
+  },
+  "oneCellFormat": "1セル形式",
+  "@oneCellFormat": {
+    "description": "One cell format"
+  },
+  "linkOpened": "リンク「{label}」を開きました",
+  "@linkOpened": {
+    "description": "Link opened message",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "linkNotFound": "リンクが見つかりません",
+  "@linkNotFound": {
+    "description": "Link not found message"
+  },
+  "completionDateColon": "完了日:",
+  "@completionDateColon": {
+    "description": "Completion date label with colon"
+  },
+  "completedColon": "完了:",
+  "@completedColon": {
+    "description": "Completed label with colon"
+  },
+  "copyToExcelOneCellForm": "エクセルにコピー（1セル形式）",
+  "@copyToExcelOneCellForm": {
+    "description": "Copy to Excel one cell form"
+  },
+  "excelCopyOnlyInListView": "エクセルコピーはリスト表示時のみ利用できます。",
+  "@excelCopyOnlyInListView": {
+    "description": "Excel copy only in list view message"
+  },
+  "schedulesCopiedToExcel": "{count}件の予定を{format}でクリップボードにコピーしました（エクセルに貼り付け可能）",
+  "@schedulesCopiedToExcel": {
+    "description": "Schedules copied to Excel message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "schedulesCopiedToExcelOneCell": "{count}件の予定を1セル形式でクリップボードにコピーしました（エクセルに貼り付け可能）",
+  "@schedulesCopiedToExcelOneCell": {
+    "description": "Schedules copied to Excel one cell form message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oneCellForm": "1セル形式",
+  "@oneCellForm": {
+    "description": "One cell form label"
+  },
+  "tableForm": "表形式",
+  "@tableForm": {
+    "description": "Table form label"
+  },
+  "importOutlookSchedules": "Outlook予定を取り込む",
+  "@importOutlookSchedules": {
+    "description": "Import Outlook schedules title"
+  },
+  "noSchedulesToImport": "取り込む必要がある予定はありません",
+  "@noSchedulesToImport": {
+    "description": "No schedules to import message"
+  },
+  "processing": "処理中...",
+  "@processing": {
+    "description": "Processing message"
+  },
+  "meeting": "会議",
+  "@meeting": {
+    "description": "Meeting label"
+  },
+  "recurring": "定期",
+  "@recurring": {
+    "description": "Recurring label"
+  },
+  "online": "オンライン",
+  "@online": {
+    "description": "Online label"
+  },
+  "noMatchingTasks": "条件に合致するタスクがありません",
+  "@noMatchingTasks": {
+    "description": "No matching tasks message"
+  },
+  "outlookUnavailableSkipped": "Outlookが利用できないため、自動取り込みをスキップしました",
+  "@outlookUnavailableSkipped": {
+    "description": "Outlook unavailable skipped message"
+  },
+  "outlookAutoImportCompletedDetails": "Outlook自動取り込み完了\n取得: {total}件\n追加: {added}件\nスキップ: {skipped}件",
+  "@outlookAutoImportCompletedDetails": {
+    "description": "Outlook auto import completed details",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportCompletedNoNew": "Outlook自動取り込み完了\n取得: {total}件\n取り込む予定はありませんでした",
+  "@outlookAutoImportCompletedNoNew": {
+    "description": "Outlook auto import completed no new schedules",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportCompletedSkipped": "Outlook自動取り込み完了\n取得: {total}件\n追加: 0件\nスキップ: {skipped}件（既に取り込まれています）",
+  "@outlookAutoImportCompletedSkipped": {
+    "description": "Outlook auto import completed skipped",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportCompletedAdded": "Outlook自動取り込み完了: {added}件の予定を追加しました",
+  "@outlookAutoImportCompletedAdded": {
+    "description": "Outlook auto import completed added",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportCompletedSkippedOnly": "Outlook自動取り込み完了: {skipped}件の予定は既に取り込まれています",
+  "@outlookAutoImportCompletedSkippedOnly": {
+    "description": "Outlook auto import completed skipped only",
+    "placeholders": {
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "outlookAutoImportError": "Outlook自動取り込み中にエラーが発生しました。\nエラー: {error}",
+  "@outlookAutoImportError": {
+    "description": "Outlook auto import error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "selectDateToCopy": "コピーする日付を選択してください",
+  "@selectDateToCopy": {
+    "description": "Select date to copy message"
+  },
+  "taskNotFound": "タスクが見つかりません",
+  "@taskNotFound": {
+    "description": "Task not found message"
+  },
+  "relatedTaskNotFound": "関連タスクが見つかりませんでした",
+  "@relatedTaskNotFound": {
+    "description": "Related task not found message"
+  },
+  "excelHeaderDate": "日付",
+  "@excelHeaderDate": {
+    "description": "Excel header: Date"
+  },
+  "excelHeaderStartTime": "開始時刻",
+  "@excelHeaderStartTime": {
+    "description": "Excel header: Start Time"
+  },
+  "excelHeaderEndTime": "終了時刻",
+  "@excelHeaderEndTime": {
+    "description": "Excel header: End Time"
+  },
+  "excelHeaderTitle": "タイトル",
+  "@excelHeaderTitle": {
+    "description": "Excel header: Title"
+  },
+  "excelHeaderLocation": "場所",
+  "@excelHeaderLocation": {
+    "description": "Excel header: Location"
+  },
+  "excelHeaderTaskName": "タスク名",
+  "@excelHeaderTaskName": {
+    "description": "Excel header: Task Name"
+  },
+  "gettingSchedulesFromOutlook": "Outlookから予定を取得中...",
+  "@gettingSchedulesFromOutlook": {
+    "description": "Getting schedules from Outlook message"
+  },
+  "gettingSchedules": "予定を取得中...",
+  "@gettingSchedules": {
+    "description": "Getting schedules message"
+  },
+  "outlookNotRunningOrUnavailable": "Outlookが起動していないか、利用できません。Outlookを起動してから再度お試しください。",
+  "@outlookNotRunningOrUnavailable": {
+    "description": "Outlook not running or unavailable message"
+  },
+  "noSchedulesThisMonth": "この月には予定がありません",
+  "@noSchedulesThisMonth": {
+    "description": "No schedules this month message"
+  },
+  "scheduleShortcuts": "予定表ショートカット",
+  "@scheduleShortcuts": {
+    "description": "Schedule shortcuts dialog title"
+  },
+  "focusSearchBar": "検索バーにフォーカス",
+  "@focusSearchBar": {
+    "description": "Focus on search bar shortcut description"
   }
 }
 
