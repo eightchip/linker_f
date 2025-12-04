@@ -1007,7 +1007,7 @@ abstract class AppLocalizations {
   /// サブタスクツールチップ
   ///
   /// In ja, this message translates to:
-  /// **'サブタスク: {total}個\n完了: {completed}個'**
+  /// **'サブタスク: {total}\n完了: {completed}'**
   String subtaskTooltip(int total, int completed);
 
   /// すべて詳細表示ツールチップ
@@ -1112,6 +1112,12 @@ abstract class AppLocalizations {
   /// **'グループを削除'**
   String get deleteGroup;
 
+  /// グループ削除確認メッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'このグループを削除しますか？'**
+  String get deleteGroupConfirm;
+
   /// リンクを追加ツールチップ
   ///
   /// In ja, this message translates to:
@@ -1136,7 +1142,7 @@ abstract class AppLocalizations {
   /// **'リンクからタスクを追加'**
   String get addTaskFromLink;
 
-  /// コピーボタン
+  /// Copy tooltip
   ///
   /// In ja, this message translates to:
   /// **'コピー'**
@@ -1148,7 +1154,7 @@ abstract class AppLocalizations {
   /// **'このタスクを同期'**
   String get syncTask;
 
-  /// 削除ボタン
+  /// Delete tooltip
   ///
   /// In ja, this message translates to:
   /// **'削除'**
@@ -1351,6 +1357,12 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'{count}日超過'**
   String daysOverdue(int count);
+
+  /// 1日超過
+  ///
+  /// In ja, this message translates to:
+  /// **'1日超過'**
+  String get oneDayOverdue;
 
   /// 未設定ラベル
   ///
@@ -1730,11 +1742,23 @@ abstract class AppLocalizations {
   /// **'フィルターをリセットしました'**
   String get filterReset;
 
-  /// グループ名を編集ツールチップ
+  /// No description provided for @editGroupName.
   ///
   /// In ja, this message translates to:
   /// **'グループ名を編集'**
   String get editGroupName;
+
+  /// New group name label
+  ///
+  /// In ja, this message translates to:
+  /// **'新しいグループ名'**
+  String get newGroupName;
+
+  /// Color label
+  ///
+  /// In ja, this message translates to:
+  /// **'色'**
+  String get color;
 
   /// リンクからタスクを作成ツールチップ
   ///
@@ -4581,13 +4605,31 @@ abstract class AppLocalizations {
   /// Some files not registered message
   ///
   /// In ja, this message translates to:
-  /// **'一部のファイル/フォルダはアクセスできなかったため登録されませんでした'**
+  /// **'一部のファイル/フォルダは登録されませんでした'**
   String get someFilesNotRegistered;
+
+  /// Folder is empty error reason
+  ///
+  /// In ja, this message translates to:
+  /// **'フォルダが空です'**
+  String get folderIsEmpty;
+
+  /// Access denied or other error reason
+  ///
+  /// In ja, this message translates to:
+  /// **'アクセス権限がないか、その他のエラーが発生しました'**
+  String get accessDeniedOrOtherError;
+
+  /// Does not exist error reason
+  ///
+  /// In ja, this message translates to:
+  /// **'存在しません'**
+  String get doesNotExist;
 
   /// Edit memo dialog title
   ///
   /// In ja, this message translates to:
-  /// **'メモ編集'**
+  /// **'メモを編集'**
   String get editMemo;
 
   /// Enter memo hint
@@ -5889,6 +5931,456 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'検索バーにフォーカス'**
   String get focusSearchBar;
+
+  /// Select icon and color button and dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'アイコンと色を選択'**
+  String get selectIconAndColor;
+
+  /// Select color label
+  ///
+  /// In ja, this message translates to:
+  /// **'色を選択:'**
+  String get selectColor;
+
+  /// Preview label
+  ///
+  /// In ja, this message translates to:
+  /// **'プレビュー:'**
+  String get preview;
+
+  /// Decide/Confirm button label for icon selection
+  ///
+  /// In ja, this message translates to:
+  /// **'決定'**
+  String get decide;
+
+  /// Other subtasks count message
+  ///
+  /// In ja, this message translates to:
+  /// **'他{count}個'**
+  String otherSubTasks(int count);
+
+  /// Globe icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'地球アイコン'**
+  String get iconGlobe;
+
+  /// Folder icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'フォルダ'**
+  String get iconFolder;
+
+  /// Open folder icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'開いたフォルダ'**
+  String get iconFolderOpen;
+
+  /// Special folder icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'特別なフォルダ'**
+  String get iconFolderSpecial;
+
+  /// Shared folder icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'共有フォルダ'**
+  String get iconFolderShared;
+
+  /// Zip folder icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'圧縮フォルダ'**
+  String get iconFolderZip;
+
+  /// Copy folder icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'コピーフォルダ'**
+  String get iconFolderCopy;
+
+  /// Delete folder icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'削除フォルダ'**
+  String get iconFolderDelete;
+
+  /// Off folder icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'無効フォルダ'**
+  String get iconFolderOff;
+
+  /// Folder outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'フォルダ（アウトライン）'**
+  String get iconFolderOutlined;
+
+  /// Open folder outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'開いたフォルダ（アウトライン）'**
+  String get iconFolderOpenOutlined;
+
+  /// Special folder outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'特別なフォルダ（アウトライン）'**
+  String get iconFolderSpecialOutlined;
+
+  /// Shared folder outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'共有フォルダ（アウトライン）'**
+  String get iconFolderSharedOutlined;
+
+  /// Zip folder outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'圧縮フォルダ（アウトライン）'**
+  String get iconFolderZipOutlined;
+
+  /// Copy folder outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'コピーフォルダ（アウトライン）'**
+  String get iconFolderCopyOutlined;
+
+  /// Delete folder outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'削除フォルダ（アウトライン）'**
+  String get iconFolderDeleteOutlined;
+
+  /// Off folder outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'無効フォルダ（アウトライン）'**
+  String get iconFolderOffOutlined;
+
+  /// Upload folder icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'アップロードフォルダ'**
+  String get iconFolderUpload;
+
+  /// Upload folder outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'アップロードフォルダ（アウトライン）'**
+  String get iconFolderUploadOutlined;
+
+  /// File move icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'ファイル移動'**
+  String get iconFileMove;
+
+  /// File move outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'ファイル移動（アウトライン）'**
+  String get iconFileMoveOutlined;
+
+  /// File rename icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'ファイル名変更'**
+  String get iconFileRename;
+
+  /// File rename outlined icon tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'ファイル名変更（アウトライン）'**
+  String get iconFileRenameOutlined;
+
+  /// Associate links with task subtitle
+  ///
+  /// In ja, this message translates to:
+  /// **'タスク「{title}」にリンクを関連付け'**
+  String associateLinksWithTask(String title);
+
+  /// Existing related links title
+  ///
+  /// In ja, this message translates to:
+  /// **'既存の関連リンク（{count}個）'**
+  String existingRelatedLinks(int count);
+
+  /// Click to expand and delete instruction
+  ///
+  /// In ja, this message translates to:
+  /// **'クリックして展開・削除'**
+  String get clickToExpandAndDelete;
+
+  /// Select link to associate instruction
+  ///
+  /// In ja, this message translates to:
+  /// **'関連付けたいリンクを選択してください：'**
+  String get selectLinkToAssociate;
+
+  /// Search links placeholder
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクを検索...'**
+  String get searchLinks;
+
+  /// Selected links count display
+  ///
+  /// In ja, this message translates to:
+  /// **'選択されたリンク: {selected}個（既存: {existing}個）'**
+  String selectedLinks(int selected, int existing);
+
+  /// Linked links not found message
+  ///
+  /// In ja, this message translates to:
+  /// **'関連付けられたリンクが見つかりません（{count}個のリンクIDが存在）'**
+  String linkedLinksNotFound(int count);
+
+  /// Link deleted success message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクを削除しました'**
+  String get linkDeleted;
+
+  /// Link deletion failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクの削除に失敗しました: {error}'**
+  String linkDeletionFailed(String error);
+
+  /// Items count display
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}個'**
+  String itemsCount(int count);
+
+  /// Link list title
+  ///
+  /// In ja, this message translates to:
+  /// **'リンク一覧: {count}個'**
+  String linkList(int count);
+
+  /// Link association updated success message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクの関連付けを更新しました'**
+  String get linkAssociationUpdated;
+
+  /// Link association update failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクの関連付け更新に失敗しました: {error}'**
+  String linkAssociationUpdateFailed(String error);
+
+  /// Orphaned schedules task title
+  ///
+  /// In ja, this message translates to:
+  /// **'孤立予定'**
+  String get orphanedSchedules;
+
+  /// Orphaned schedules task description
+  ///
+  /// In ja, this message translates to:
+  /// **'存在しないタスクに紐づいていた予定をまとめるためのタスクです。'**
+  String get orphanedSchedulesDescription;
+
+  /// System generated tag
+  ///
+  /// In ja, this message translates to:
+  /// **'システム生成'**
+  String get systemGenerated;
+
+  /// Items count display (short format)
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件'**
+  String itemsCountShort(int count);
+
+  /// Schedules assigned message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件の予定を割り当てました'**
+  String schedulesAssigned(int count);
+
+  /// Tasks created and schedules assigned message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクを作成し、予定を割り当てました'**
+  String tasksCreatedAndSchedulesAssigned(int count);
+
+  /// Items displayed count
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件表示'**
+  String itemsDisplayed(int count);
+
+  /// Candidate tasks found message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件の候補タスクが見つかりました'**
+  String candidateTasksFound(int count);
+
+  /// Change assigned task tooltip and dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'割当タスクを変更'**
+  String get changeAssignedTask;
+
+  /// No assignable tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'割り当て可能なタスクがありません'**
+  String get noAssignableTasks;
+
+  /// No other tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'他のタスクがありません'**
+  String get noOtherTasks;
+
+  /// Schedule assigned to task message
+  ///
+  /// In ja, this message translates to:
+  /// **'「{scheduleTitle}」を「{taskTitle}」に割り当てました'**
+  String scheduleAssignedToTask(String scheduleTitle, String taskTitle);
+
+  /// Schedule task assignment change error message
+  ///
+  /// In ja, this message translates to:
+  /// **'タスク割り当て変更エラー: {error}'**
+  String scheduleTaskAssignmentChangeError(String error);
+
+  /// Schedule task assignment change failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'予定のタスク割り当て変更に失敗しました。'**
+  String get scheduleTaskAssignmentChangeFailed;
+
+  /// Edit tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'編集'**
+  String get edit;
+
+  /// Schedule copied and added message
+  ///
+  /// In ja, this message translates to:
+  /// **'予定をコピーして追加しました'**
+  String get scheduleCopiedAndAdded;
+
+  /// Drag order (manual) option
+  ///
+  /// In ja, this message translates to:
+  /// **'ドラッグ順（手動）'**
+  String get dragOrderManual;
+
+  /// Memo pad title
+  ///
+  /// In ja, this message translates to:
+  /// **'メモ帳'**
+  String get memoPad;
+
+  /// New memo button label
+  ///
+  /// In ja, this message translates to:
+  /// **'新しいメモ'**
+  String get newMemo;
+
+  /// Delete memo dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'メモを削除'**
+  String get deleteMemo;
+
+  /// Delete memo confirmation message
+  ///
+  /// In ja, this message translates to:
+  /// **'このメモを削除しますか？'**
+  String get deleteMemoConfirm;
+
+  /// Memo content input hint
+  ///
+  /// In ja, this message translates to:
+  /// **'メモの内容を入力してください...'**
+  String get memoContentHint;
+
+  /// Search memos placeholder
+  ///
+  /// In ja, this message translates to:
+  /// **'メモを検索...'**
+  String get searchMemos;
+
+  /// No memos message
+  ///
+  /// In ja, this message translates to:
+  /// **'メモがありません'**
+  String get noMemos;
+
+  /// No memos found message
+  ///
+  /// In ja, this message translates to:
+  /// **'該当するメモが見つかりません'**
+  String get noMemosFound;
+
+  /// Memo added success message
+  ///
+  /// In ja, this message translates to:
+  /// **'メモを追加しました'**
+  String get memoAdded;
+
+  /// Memo updated success message
+  ///
+  /// In ja, this message translates to:
+  /// **'メモを更新しました'**
+  String get memoUpdated;
+
+  /// Memo deleted success message
+  ///
+  /// In ja, this message translates to:
+  /// **'メモを削除しました'**
+  String get memoDeleted;
+
+  /// Memo save error message
+  ///
+  /// In ja, this message translates to:
+  /// **'メモの保存に失敗しました: {error}'**
+  String memoSaveError(String error);
+
+  /// Memo delete error message
+  ///
+  /// In ja, this message translates to:
+  /// **'メモの削除に失敗しました: {error}'**
+  String memoDeleteError(String error);
+
+  /// Memo add failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'メモの追加に失敗しました'**
+  String get memoAddFailed;
+
+  /// Memo update failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'メモの更新に失敗しました'**
+  String get memoUpdateFailed;
+
+  /// Memo delete failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'メモの削除に失敗しました'**
+  String get memoDeleteFailed;
+
+  /// No tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクがありません'**
+  String get noTasks;
 }
 
 class _AppLocalizationsDelegate

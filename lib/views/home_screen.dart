@@ -592,20 +592,21 @@ class HomeScreen extends ConsumerStatefulWidget {
   }
 
   static void showShortcutHelp(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showShortcutHelpDialog(
       context,
-      title: AppLocalizations.of(context)!.linkManagementShortcuts,
+      title: l10n.linkManagementShortcuts,
       entries: [
-        const ShortcutHelpEntry('Ctrl + N', 'グループを追加'),
-        const ShortcutHelpEntry('Ctrl + F', '検索バーを開く'),
-        const ShortcutHelpEntry('Ctrl + T', 'タスク管理画面を開く'),
-        const ShortcutHelpEntry('Ctrl + E', 'メモ一括編集を開く'),
-        ShortcutHelpEntry('Ctrl + O', AppLocalizations.of(context)!.changeGroupOrder),
-        const ShortcutHelpEntry('Ctrl + Shift + S', '設定を開く'),
-        const ShortcutHelpEntry('↓', '3点メニューにフォーカス'),
-        const ShortcutHelpEntry('Esc', '検索バーを閉じる'),
-        const ShortcutHelpEntry('Tab', 'リンクタイプフィルターを切り替え'),
-        const ShortcutHelpEntry('F1', 'ショートカット一覧を表示'),
+        ShortcutHelpEntry('Ctrl + N', l10n.addGroupShortcut),
+        ShortcutHelpEntry('Ctrl + F', l10n.openSearchBar),
+        ShortcutHelpEntry('Ctrl + T', l10n.openTaskManagement),
+        ShortcutHelpEntry('Ctrl + E', l10n.openMemoBulkEdit),
+        ShortcutHelpEntry('Ctrl + O', l10n.changeGroupOrder),
+        ShortcutHelpEntry('Ctrl + Shift + S', l10n.openSettings),
+        ShortcutHelpEntry('↓', l10n.focusThreeDotMenu),
+        ShortcutHelpEntry('Esc', l10n.closeSearchBar),
+        ShortcutHelpEntry('Tab', l10n.switchLinkTypeFilter),
+        ShortcutHelpEntry('F1', l10n.showShortcutList),
       ],
     );
   }
@@ -1582,7 +1583,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         const SizedBox(height: 16),
                                         Row(
                                           children: [
-                                            const Text('色: '),
+                                            Text('${AppLocalizations.of(context)!.color}: '),
                                             Expanded(child: ColorPaletteSelector(
                                               selectedColor: selectedColor,
                                               onColorSelected: (color) => setState(() => selectedColor = color),
@@ -1651,7 +1652,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             context: context,
                             builder: (context) => StatefulBuilder(
                               builder: (context, setState) => AlertDialog(
-                                title: const Text('グループ名を編集'),
+                                title: Text(AppLocalizations.of(context)!.editGroupName),
                                 content: SingleChildScrollView(
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
@@ -1659,12 +1660,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       TextField(
                                         controller: controller,
                                         autofocus: true,
-                                        decoration: const InputDecoration(labelText: '新しいグループ名'),
+                                        decoration: InputDecoration(labelText: AppLocalizations.of(context)!.newGroupName),
                                       ),
                                       const SizedBox(height: 16),
                                       Row(
                                         children: [
-                                          const Text('色: '),
+                                          Text('${AppLocalizations.of(context)!.color}: '),
                                           Expanded(child: ColorPaletteSelector(
                                             selectedColor: selectedColor,
                                             onColorSelected: (color) => setState(() => selectedColor = color),
@@ -1756,7 +1757,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         const SizedBox(height: 16),
                                         Row(
                                           children: [
-                                            const Text('色: '),
+                                            Text('${AppLocalizations.of(context)!.color}: '),
                                             Expanded(child: ColorPaletteSelector(
                                               selectedColor: selectedColor,
                                               onColorSelected: (color) => setState(() => selectedColor = color),
@@ -1972,18 +1973,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _deleteGroup(String groupId) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => UnifiedDialog(
-        title: 'グループを削除',
+        title: l10n.deleteGroup,
         icon: Icons.delete_outline,
         iconColor: Colors.red,
-        content: const Text('このグループを削除しますか？'),
+        content: Text(l10n.deleteGroupConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             style: AppButtonStyles.text(context),
-            child: const Text('キャンセル'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1991,7 +1993,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Navigator.pop(context);
             },
             style: AppButtonStyles.danger(context),
-            child: const Text('削除'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -2890,7 +2892,7 @@ class _IconSelectorState extends State<IconSelector> {
         // アイコン選択ボタン
         ElevatedButton(
           onPressed: () => _showIconPicker(),
-          child: const Text('アイコンと色を選択'),
+          child: Text(AppLocalizations.of(context)!.selectIconAndColor),
         ),
       ],
     );
@@ -2901,7 +2903,7 @@ class _IconSelectorState extends State<IconSelector> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('アイコンと色を選択'),
+          title: Text(AppLocalizations.of(context)!.selectIconAndColor),
           content: SizedBox(
             width: 500,
             height: 600,
@@ -2989,7 +2991,7 @@ class _IconSelectorState extends State<IconSelector> {
                   ),
                   const SizedBox(height: 16),
                   // 色選択セクション
-                  const Text('色を選択:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(AppLocalizations.of(context)!.selectColor, style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   ColorPaletteSelector(
                     selectedColor: _selectedIconColor.value,
@@ -3014,7 +3016,7 @@ class _IconSelectorState extends State<IconSelector> {
                     ),
                     child: Column(
                       children: [
-                        const Text('プレビュー:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(AppLocalizations.of(context)!.preview, style: const TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         _buildIconWidget(_selectedIcon, _selectedIconColor, size: 32),
                       ],
@@ -3034,7 +3036,7 @@ class _IconSelectorState extends State<IconSelector> {
                 widget.onIconSelected(_selectedIcon, _selectedIconColor);
                 Navigator.pop(context);
               },
-              child: const Text('決定'),
+              child: Text(AppLocalizations.of(context)!.decide),
             ),
           ],
         ),
@@ -3322,6 +3324,7 @@ class _IconSelectorState extends State<IconSelector> {
 
   // アイコンのTooltipを取得するメソッド
   String _getIconTooltip(IconData icon) {
+    final l10n = AppLocalizations.of(context)!;
     // Font AwesomeアイコンのTooltipを先にチェック
     if (icon.codePoint == FontAwesomeIcons.google.codePoint) return 'Google';
     if (icon.codePoint == FontAwesomeIcons.github.codePoint) return 'GitHub';
@@ -3387,29 +3390,29 @@ class _IconSelectorState extends State<IconSelector> {
     if (icon.codePoint == FontAwesomeIcons.trello.codePoint) return 'Trello';
     
     // Material IconsのTooltip
-    if (icon.codePoint == Icons.public.codePoint) return '地球アイコン';
-    if (icon.codePoint == Icons.folder.codePoint) return 'フォルダ';
-    if (icon.codePoint == Icons.folder_open.codePoint) return '開いたフォルダ';
-    if (icon.codePoint == Icons.folder_special.codePoint) return '特別なフォルダ';
-    if (icon.codePoint == Icons.folder_shared.codePoint) return '共有フォルダ';
-    if (icon.codePoint == Icons.folder_zip.codePoint) return '圧縮フォルダ';
-    if (icon.codePoint == Icons.folder_copy.codePoint) return 'コピーフォルダ';
-    if (icon.codePoint == Icons.folder_delete.codePoint) return '削除フォルダ';
-    if (icon.codePoint == Icons.folder_off.codePoint) return '無効フォルダ';
-    if (icon.codePoint == Icons.folder_outlined.codePoint) return 'フォルダ（アウトライン）';
-    if (icon.codePoint == Icons.folder_open_outlined.codePoint) return '開いたフォルダ（アウトライン）';
-    if (icon.codePoint == Icons.folder_special_outlined.codePoint) return '特別なフォルダ（アウトライン）';
-    if (icon.codePoint == Icons.folder_shared_outlined.codePoint) return '共有フォルダ（アウトライン）';
-    if (icon.codePoint == Icons.folder_zip_outlined.codePoint) return '圧縮フォルダ（アウトライン）';
-    if (icon.codePoint == Icons.folder_copy_outlined.codePoint) return 'コピーフォルダ（アウトライン）';
-    if (icon.codePoint == Icons.folder_delete_outlined.codePoint) return '削除フォルダ（アウトライン）';
-    if (icon.codePoint == Icons.folder_off_outlined.codePoint) return '無効フォルダ（アウトライン）';
-    if (icon.codePoint == Icons.drive_folder_upload.codePoint) return 'アップロードフォルダ';
-    if (icon.codePoint == Icons.drive_folder_upload_outlined.codePoint) return 'アップロードフォルダ（アウトライン）';
-    if (icon.codePoint == Icons.drive_file_move.codePoint) return 'ファイル移動';
-    if (icon.codePoint == Icons.drive_file_move_outlined.codePoint) return 'ファイル移動（アウトライン）';
-    if (icon.codePoint == Icons.drive_file_rename_outline.codePoint) return 'ファイル名変更';
-    if (icon.codePoint == Icons.drive_file_rename_outline_outlined.codePoint) return 'ファイル名変更（アウトライン）';
+    if (icon.codePoint == Icons.public.codePoint) return l10n.iconGlobe;
+    if (icon.codePoint == Icons.folder.codePoint) return l10n.iconFolder;
+    if (icon.codePoint == Icons.folder_open.codePoint) return l10n.iconFolderOpen;
+    if (icon.codePoint == Icons.folder_special.codePoint) return l10n.iconFolderSpecial;
+    if (icon.codePoint == Icons.folder_shared.codePoint) return l10n.iconFolderShared;
+    if (icon.codePoint == Icons.folder_zip.codePoint) return l10n.iconFolderZip;
+    if (icon.codePoint == Icons.folder_copy.codePoint) return l10n.iconFolderCopy;
+    if (icon.codePoint == Icons.folder_delete.codePoint) return l10n.iconFolderDelete;
+    if (icon.codePoint == Icons.folder_off.codePoint) return l10n.iconFolderOff;
+    if (icon.codePoint == Icons.folder_outlined.codePoint) return l10n.iconFolderOutlined;
+    if (icon.codePoint == Icons.folder_open_outlined.codePoint) return l10n.iconFolderOpenOutlined;
+    if (icon.codePoint == Icons.folder_special_outlined.codePoint) return l10n.iconFolderSpecialOutlined;
+    if (icon.codePoint == Icons.folder_shared_outlined.codePoint) return l10n.iconFolderSharedOutlined;
+    if (icon.codePoint == Icons.folder_zip_outlined.codePoint) return l10n.iconFolderZipOutlined;
+    if (icon.codePoint == Icons.folder_copy_outlined.codePoint) return l10n.iconFolderCopyOutlined;
+    if (icon.codePoint == Icons.folder_delete_outlined.codePoint) return l10n.iconFolderDeleteOutlined;
+    if (icon.codePoint == Icons.folder_off_outlined.codePoint) return l10n.iconFolderOffOutlined;
+    if (icon.codePoint == Icons.drive_folder_upload.codePoint) return l10n.iconFolderUpload;
+    if (icon.codePoint == Icons.drive_folder_upload_outlined.codePoint) return l10n.iconFolderUploadOutlined;
+    if (icon.codePoint == Icons.drive_file_move.codePoint) return l10n.iconFileMove;
+    if (icon.codePoint == Icons.drive_file_move_outlined.codePoint) return l10n.iconFileMoveOutlined;
+    if (icon.codePoint == Icons.drive_file_rename_outline.codePoint) return l10n.iconFileRename;
+    if (icon.codePoint == Icons.drive_file_rename_outline_outlined.codePoint) return l10n.iconFileRenameOutlined;
     if (icon.codePoint == Icons.book.codePoint) return '本';
     if (icon.codePoint == Icons.book_outlined.codePoint) return '本（アウトライン）';
     if (icon.codePoint == Icons.bookmark.codePoint) return 'ブックマーク';

@@ -619,7 +619,7 @@
   "@subtask": {
     "description": "サブタスクラベル"
   },
-  "subtaskTooltip": "サブタスク: {total}個\n完了: {completed}個",
+  "subtaskTooltip": "サブタスク: {total}\n完了: {completed}",
   "@subtaskTooltip": {
     "description": "サブタスクツールチップ",
     "placeholders": {
@@ -706,6 +706,10 @@
   "deleteGroup": "グループを削除",
   "@deleteGroup": {
     "description": "グループを削除ツールチップ"
+  },
+  "deleteGroupConfirm": "このグループを削除しますか？",
+  "@deleteGroupConfirm": {
+    "description": "グループ削除確認メッセージ"
   },
   "addLink": "リンクを追加",
   "@addLink": {
@@ -889,6 +893,10 @@
         "type": "int"
       }
     }
+  },
+  "oneDayOverdue": "1日超過",
+  "@oneDayOverdue": {
+    "description": "1日超過"
   },
   "notSet": "未設定",
   "@notSet": {
@@ -1186,7 +1194,14 @@
   },
   "editGroupName": "グループ名を編集",
   "@editGroupName": {
-    "description": "グループ名を編集ツールチップ"
+  },
+  "newGroupName": "新しいグループ名",
+  "@newGroupName": {
+    "description": "New group name label"
+  },
+  "color": "色",
+  "@color": {
+    "description": "Color label"
   },
   "createTaskFromLink": "このリンクからタスクを作成",
   "@createTaskFromLink": {
@@ -3642,9 +3657,21 @@
   "@removeTagDescription": {
     "description": "Remove tag description"
   },
-  "someFilesNotRegistered": "一部のファイル/フォルダはアクセスできなかったため登録されませんでした",
+  "someFilesNotRegistered": "一部のファイル/フォルダは登録されませんでした",
   "@someFilesNotRegistered": {
     "description": "Some files not registered message"
+  },
+  "folderIsEmpty": "フォルダが空です",
+  "@folderIsEmpty": {
+    "description": "Folder is empty error reason"
+  },
+  "accessDeniedOrOtherError": "アクセス権限がないか、その他のエラーが発生しました",
+  "@accessDeniedOrOtherError": {
+    "description": "Access denied or other error reason"
+  },
+  "doesNotExist": "存在しません",
+  "@doesNotExist": {
+    "description": "Does not exist error reason"
   },
   "editMemo": "メモ編集",
   "@editMemo": {
@@ -4877,6 +4904,418 @@
   "focusSearchBar": "検索バーにフォーカス",
   "@focusSearchBar": {
     "description": "Focus on search bar shortcut description"
+  },
+  "selectIconAndColor": "アイコンと色を選択",
+  "@selectIconAndColor": {
+    "description": "Select icon and color button and dialog title"
+  },
+  "selectColor": "色を選択:",
+  "@selectColor": {
+    "description": "Select color label"
+  },
+  "preview": "プレビュー:",
+  "@preview": {
+    "description": "Preview label"
+  },
+  "decide": "決定",
+  "@decide": {
+    "description": "Decide/Confirm button label for icon selection"
+  },
+  "otherSubTasks": "他{count}個",
+  "@otherSubTasks": {
+    "description": "Other subtasks count message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "iconGlobe": "地球アイコン",
+  "@iconGlobe": {
+    "description": "Globe icon tooltip"
+  },
+  "iconFolder": "フォルダ",
+  "@iconFolder": {
+    "description": "Folder icon tooltip"
+  },
+  "iconFolderOpen": "開いたフォルダ",
+  "@iconFolderOpen": {
+    "description": "Open folder icon tooltip"
+  },
+  "iconFolderSpecial": "特別なフォルダ",
+  "@iconFolderSpecial": {
+    "description": "Special folder icon tooltip"
+  },
+  "iconFolderShared": "共有フォルダ",
+  "@iconFolderShared": {
+    "description": "Shared folder icon tooltip"
+  },
+  "iconFolderZip": "圧縮フォルダ",
+  "@iconFolderZip": {
+    "description": "Zip folder icon tooltip"
+  },
+  "iconFolderCopy": "コピーフォルダ",
+  "@iconFolderCopy": {
+    "description": "Copy folder icon tooltip"
+  },
+  "iconFolderDelete": "削除フォルダ",
+  "@iconFolderDelete": {
+    "description": "Delete folder icon tooltip"
+  },
+  "iconFolderOff": "無効フォルダ",
+  "@iconFolderOff": {
+    "description": "Off folder icon tooltip"
+  },
+  "iconFolderOutlined": "フォルダ（アウトライン）",
+  "@iconFolderOutlined": {
+    "description": "Folder outlined icon tooltip"
+  },
+  "iconFolderOpenOutlined": "開いたフォルダ（アウトライン）",
+  "@iconFolderOpenOutlined": {
+    "description": "Open folder outlined icon tooltip"
+  },
+  "iconFolderSpecialOutlined": "特別なフォルダ（アウトライン）",
+  "@iconFolderSpecialOutlined": {
+    "description": "Special folder outlined icon tooltip"
+  },
+  "iconFolderSharedOutlined": "共有フォルダ（アウトライン）",
+  "@iconFolderSharedOutlined": {
+    "description": "Shared folder outlined icon tooltip"
+  },
+  "iconFolderZipOutlined": "圧縮フォルダ（アウトライン）",
+  "@iconFolderZipOutlined": {
+    "description": "Zip folder outlined icon tooltip"
+  },
+  "iconFolderCopyOutlined": "コピーフォルダ（アウトライン）",
+  "@iconFolderCopyOutlined": {
+    "description": "Copy folder outlined icon tooltip"
+  },
+  "iconFolderDeleteOutlined": "削除フォルダ（アウトライン）",
+  "@iconFolderDeleteOutlined": {
+    "description": "Delete folder outlined icon tooltip"
+  },
+  "iconFolderOffOutlined": "無効フォルダ（アウトライン）",
+  "@iconFolderOffOutlined": {
+    "description": "Off folder outlined icon tooltip"
+  },
+  "iconFolderUpload": "アップロードフォルダ",
+  "@iconFolderUpload": {
+    "description": "Upload folder icon tooltip"
+  },
+  "iconFolderUploadOutlined": "アップロードフォルダ（アウトライン）",
+  "@iconFolderUploadOutlined": {
+    "description": "Upload folder outlined icon tooltip"
+  },
+  "iconFileMove": "ファイル移動",
+  "@iconFileMove": {
+    "description": "File move icon tooltip"
+  },
+  "iconFileMoveOutlined": "ファイル移動（アウトライン）",
+  "@iconFileMoveOutlined": {
+    "description": "File move outlined icon tooltip"
+  },
+  "iconFileRename": "ファイル名変更",
+  "@iconFileRename": {
+    "description": "File rename icon tooltip"
+  },
+  "iconFileRenameOutlined": "ファイル名変更（アウトライン）",
+  "@iconFileRenameOutlined": {
+    "description": "File rename outlined icon tooltip"
+  },
+  "associateLinksWithTask": "タスク「{title}」にリンクを関連付け",
+  "@associateLinksWithTask": {
+    "description": "Associate links with task subtitle",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "existingRelatedLinks": "既存の関連リンク（{count}個）",
+  "@existingRelatedLinks": {
+    "description": "Existing related links title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clickToExpandAndDelete": "クリックして展開・削除",
+  "@clickToExpandAndDelete": {
+    "description": "Click to expand and delete instruction"
+  },
+  "selectLinkToAssociate": "関連付けたいリンクを選択してください：",
+  "@selectLinkToAssociate": {
+    "description": "Select link to associate instruction"
+  },
+  "searchLinks": "リンクを検索...",
+  "@searchLinks": {
+    "description": "Search links placeholder"
+  },
+  "selectedLinks": "選択されたリンク: {selected}個（既存: {existing}個）",
+  "@selectedLinks": {
+    "description": "Selected links count display",
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "existing": {
+        "type": "int"
+      }
+    }
+  },
+  "linkedLinksNotFound": "関連付けられたリンクが見つかりません（{count}個のリンクIDが存在）",
+  "@linkedLinksNotFound": {
+    "description": "Linked links not found message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linkDeleted": "リンクを削除しました",
+  "@linkDeleted": {
+    "description": "Link deleted success message"
+  },
+  "linkDeletionFailed": "リンクの削除に失敗しました: {error}",
+  "@linkDeletionFailed": {
+    "description": "Link deletion failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "itemsCount": "{count}個",
+  "@itemsCount": {
+    "description": "Items count display",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linkList": "リンク一覧: {count}個",
+  "@linkList": {
+    "description": "Link list title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linkAssociationUpdated": "リンクの関連付けを更新しました",
+  "@linkAssociationUpdated": {
+    "description": "Link association updated success message"
+  },
+  "linkAssociationUpdateFailed": "リンクの関連付け更新に失敗しました: {error}",
+  "@linkAssociationUpdateFailed": {
+    "description": "Link association update failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "orphanedSchedules": "孤立予定",
+  "@orphanedSchedules": {
+    "description": "Orphaned schedules task title"
+  },
+  "orphanedSchedulesDescription": "存在しないタスクに紐づいていた予定をまとめるためのタスクです。",
+  "@orphanedSchedulesDescription": {
+    "description": "Orphaned schedules task description"
+  },
+  "systemGenerated": "システム生成",
+  "@systemGenerated": {
+    "description": "System generated tag"
+  },
+  "itemsCountShort": "{count}件",
+  "@itemsCountShort": {
+    "description": "Items count display (short format)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "schedulesAssigned": "{count}件の予定を割り当てました",
+  "@schedulesAssigned": {
+    "description": "Schedules assigned message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksCreatedAndSchedulesAssigned": "{count}件のタスクを作成し、予定を割り当てました",
+  "@tasksCreatedAndSchedulesAssigned": {
+    "description": "Tasks created and schedules assigned message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "itemsDisplayed": "{count}件表示",
+  "@itemsDisplayed": {
+    "description": "Items displayed count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "candidateTasksFound": "{count}件の候補タスクが見つかりました",
+  "@candidateTasksFound": {
+    "description": "Candidate tasks found message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "changeAssignedTask": "割当タスクを変更",
+  "@changeAssignedTask": {
+    "description": "Change assigned task tooltip and dialog title"
+  },
+  "noAssignableTasks": "割り当て可能なタスクがありません",
+  "@noAssignableTasks": {
+    "description": "No assignable tasks message"
+  },
+  "noOtherTasks": "他のタスクがありません",
+  "@noOtherTasks": {
+    "description": "No other tasks message"
+  },
+  "scheduleAssignedToTask": "「{scheduleTitle}」を「{taskTitle}」に割り当てました",
+  "@scheduleAssignedToTask": {
+    "description": "Schedule assigned to task message",
+    "placeholders": {
+      "scheduleTitle": {
+        "type": "String"
+      },
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTaskAssignmentChangeError": "タスク割り当て変更エラー: {error}",
+  "@scheduleTaskAssignmentChangeError": {
+    "description": "Schedule task assignment change error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTaskAssignmentChangeFailed": "予定のタスク割り当て変更に失敗しました。",
+  "@scheduleTaskAssignmentChangeFailed": {
+    "description": "Schedule task assignment change failed message"
+  },
+  "copy": "コピー",
+  "@copy": {
+    "description": "Copy tooltip"
+  },
+  "edit": "編集",
+  "@edit": {
+    "description": "Edit tooltip"
+  },
+  "delete": "削除",
+  "@delete": {
+    "description": "Delete tooltip"
+  },
+  "scheduleCopiedAndAdded": "予定をコピーして追加しました",
+  "@scheduleCopiedAndAdded": {
+    "description": "Schedule copied and added message"
+  },
+  "dragOrderManual": "ドラッグ順（手動）",
+  "@dragOrderManual": {
+    "description": "Drag order (manual) option"
+  },
+  "memoPad": "メモ帳",
+  "@memoPad": {
+    "description": "Memo pad title"
+  },
+  "newMemo": "新しいメモ",
+  "@newMemo": {
+    "description": "New memo button label"
+  },
+  "editMemo": "メモを編集",
+  "@editMemo": {
+    "description": "Edit memo dialog title"
+  },
+  "deleteMemo": "メモを削除",
+  "@deleteMemo": {
+    "description": "Delete memo dialog title"
+  },
+  "deleteMemoConfirm": "このメモを削除しますか？",
+  "@deleteMemoConfirm": {
+    "description": "Delete memo confirmation message"
+  },
+  "memoContentHint": "メモの内容を入力してください...",
+  "@memoContentHint": {
+    "description": "Memo content input hint"
+  },
+  "searchMemos": "メモを検索...",
+  "@searchMemos": {
+    "description": "Search memos placeholder"
+  },
+  "noMemos": "メモがありません",
+  "@noMemos": {
+    "description": "No memos message"
+  },
+  "noMemosFound": "該当するメモが見つかりません",
+  "@noMemosFound": {
+    "description": "No memos found message"
+  },
+  "memoAdded": "メモを追加しました",
+  "@memoAdded": {
+    "description": "Memo added success message"
+  },
+  "memoUpdated": "メモを更新しました",
+  "@memoUpdated": {
+    "description": "Memo updated success message"
+  },
+  "memoDeleted": "メモを削除しました",
+  "@memoDeleted": {
+    "description": "Memo deleted success message"
+  },
+  "memoSaveError": "メモの保存に失敗しました: {error}",
+  "@memoSaveError": {
+    "description": "Memo save error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "memoDeleteError": "メモの削除に失敗しました: {error}",
+  "@memoDeleteError": {
+    "description": "Memo delete error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "memoContentHint": "メモの内容を入力してください...",
+  "@memoContentHint": {
+    "description": "Memo content input hint"
+  },
+  "memoAddFailed": "メモの追加に失敗しました",
+  "@memoAddFailed": {
+    "description": "Memo add failed message"
+  },
+  "memoUpdateFailed": "メモの更新に失敗しました",
+  "@memoUpdateFailed": {
+    "description": "Memo update failed message"
+  },
+  "memoDeleteFailed": "メモの削除に失敗しました",
+  "@memoDeleteFailed": {
+    "description": "Memo delete failed message"
+  },
+  "noTasks": "タスクがありません",
+  "@noTasks": {
+    "description": "No tasks message"
   }
 }
 

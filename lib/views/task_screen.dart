@@ -48,6 +48,7 @@ import '../widgets/app_spacing.dart';
 import '../widgets/link_association_dialog.dart';
 import '../widgets/window_control_buttons.dart';
 import '../widgets/shortcut_help_dialog.dart';
+import '../widgets/memo_pad_panel.dart';
 import 'help_center_screen.dart';
 
 // 検索候補の種類
@@ -170,6 +171,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   List<Map<String, String>> _sortOrders = [{'field': 'dueDate', 'order': 'asc'}]; // 第3順位まで設定可能
   bool _showFilters = false; // フィルター表示/非表示の切り替え
   bool _showHeaderSection = true; // 統計情報と検索バーの表示/非表示の切り替え
+  bool _showMemoPad = false; // メモ帳パネルの表示/非表示の切り替え
   ListViewMode _listViewMode = ListViewMode.compact; // リストビュー表示モード（デフォルトはカードビュー）
   int _compactGridColumns = 4; // コンパクトモードのグリッド列数（デフォルト4列）
   final FocusNode _appBarMenuFocusNode = FocusNode();
@@ -1916,6 +1918,18 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           ..._buildWindowControlButtons(),
              ] else ...[
             IconButton(
+              icon: Icon(_showMemoPad ? Icons.note : Icons.note_outlined),
+              color: _showMemoPad 
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurface,
+              tooltip: AppLocalizations.of(context)!.memoPad,
+              onPressed: () {
+                setState(() {
+                  _showMemoPad = !_showMemoPad;
+                });
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.help_outline),
               color: Theme.of(context).colorScheme.primary,
               tooltip: '${AppLocalizations.of(context)!.shortcutKeys} (F1)',
@@ -2004,32 +2018,48 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           ],//else
          ],//actions
        ),
-        body: Column(
+        body: Row(
           children: [
-          // 統計情報と検索・フィルターを1行に配置
-          if (_showHeaderSection) _buildCompactHeaderSection(statistics),
-        
-        // 検索候補リスト
-        if (_showSearchSuggestions && _showHeaderSection) _buildSearchSuggestions(),
-          
-          // 検索オプション（折りたたみ可能）
-          if (_showSearchOptions && _showHeaderSection) _buildSearchOptionsSection(),
-          
-          // ステータスフィルター（折りたたみ可能）
-          if (_showFilters) _buildStatusFilterSection(),
-          
-        // タスク一覧（グループ化 or ピン留めタスク固定 + 通常タスクスクロール）
-          Expanded(
-            child: sortedTasks.isEmpty
-                ? const Center(
-                    child: Text('タスクがありません'),
-                  )
-              : (groupedTasks != null && groupedTasks.isNotEmpty)
-                  ? _buildGroupedTaskList(groupedTasks)
-                : _buildPinnedAndScrollableTaskList(sortedTasks),
-          ),//Expanded
+            // メインコンテンツ（タスク一覧）
+            Expanded(
+              child: Column(
+                children: [
+                  // 統計情報と検索・フィルターを1行に配置
+                  if (_showHeaderSection) _buildCompactHeaderSection(statistics),
+                
+                  // 検索候補リスト
+                  if (_showSearchSuggestions && _showHeaderSection) _buildSearchSuggestions(),
+                    
+                    // 検索オプション（折りたたみ可能）
+                    if (_showSearchOptions && _showHeaderSection) _buildSearchOptionsSection(),
+                    
+                    // ステータスフィルター（折りたたみ可能）
+                    if (_showFilters) _buildStatusFilterSection(),
+                    
+                  // タスク一覧（グループ化 or ピン留めタスク固定 + 通常タスクスクロール）
+                  Expanded(
+                    child: sortedTasks.isEmpty
+                        ? Center(
+                            child: Text(AppLocalizations.of(context)!.noTasks),
+                          )
+                      : (groupedTasks != null && groupedTasks.isNotEmpty)
+                          ? _buildGroupedTaskList(groupedTasks)
+                        : _buildPinnedAndScrollableTaskList(sortedTasks),
+                  ),//Expanded
+                ],//children
+              ),//Column
+            ),
+            // メモ帳パネル（表示時のみ）
+            if (_showMemoPad)
+              MemoPadPanel(
+                onClose: () {
+                  setState(() {
+                    _showMemoPad = false;
+                  });
+                },
+              ),
           ],//children
-        ),//Column
+        ),//Row
           ),//Scaffold
         ),//Focus
       ),//FocusScope
@@ -2702,7 +2732,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                           ),
                           value: _sortOrders.isNotEmpty ? _sortOrders[0]['field'] : 'dueDate',
                           items: [
-                            const DropdownMenuItem(value: 'custom', child: Text('ドラッグ順（手動）')),
+                            DropdownMenuItem(value: 'custom', child: Text(AppLocalizations.of(context)!.dragOrderManual)),
                             DropdownMenuItem(value: 'dueDate', child: Text(AppLocalizations.of(context)!.dueDateOrder)),
                             DropdownMenuItem(value: 'priority', child: Text(AppLocalizations.of(context)!.priorityOrder)),
                             DropdownMenuItem(value: 'title', child: Text(AppLocalizations.of(context)!.titleOrder)),
@@ -4221,7 +4251,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     
     final l10n = AppLocalizations.of(context)!;
     if (difference < 0) {
-      return l10n.daysOverdue(-difference);
+      final overdueDays = -difference;
+      return overdueDays == 1 ? l10n.oneDayOverdue : l10n.daysOverdue(overdueDays);
     } else if (difference == 0) {
       return l10n.today;
     } else if (difference == 1) {
@@ -5744,8 +5775,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     }
 
     final buffer = StringBuffer();
-    buffer.writeln('${AppLocalizations.of(context)!.subtask}: ${task.totalSubTasksCount}個');
-    buffer.writeln('${AppLocalizations.of(context)!.completed}: ${task.completedSubTasksCount}個');
+    buffer.writeln('${AppLocalizations.of(context)!.subtask}: ${task.totalSubTasksCount}');
+    buffer.writeln('${AppLocalizations.of(context)!.completed}: ${task.completedSubTasksCount}');
     buffer.writeln('');
     
     // 最大20個まで表示
@@ -5768,7 +5799,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     }
     
     if (subTasks.length > 20) {
-      buffer.writeln('... 他${subTasks.length - 20}個');
+      final l10n = AppLocalizations.of(context)!;
+      buffer.writeln('... ${l10n.otherSubTasks(subTasks.length - 20)}');
     }
     
     return buffer.toString().trim();

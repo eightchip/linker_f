@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/app_localizations.dart';
 import '../models/task_item.dart';
 import '../models/link_item.dart';
 import '../models/group.dart';
@@ -42,6 +43,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
   Widget build(BuildContext context) {
     final linkGroups = ref.watch(linkViewModelProvider);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -102,7 +104,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'リンク管理',
+                          l10n.linkManagement,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
@@ -110,7 +112,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'タスク「${widget.task.title}」にリンクを関連付け',
+                          l10n.associateLinksWithTask(widget.task.title),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
@@ -149,14 +151,14 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                             size: 16,
                           ),
                           title: Text(
-                            '既存の関連リンク（${_currentExistingLinkCount}個）',
+                            l10n.existingRelatedLinks(_currentExistingLinkCount),
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: theme.colorScheme.error,
                             ),
                           ),
                           subtitle: Text(
-                            'クリックして展開・削除',
+                            l10n.clickToExpandAndDelete,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.error.withValues(alpha: 0.7),
                             ),
@@ -173,7 +175,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                     ],
                     
                     Text(
-                      '関連付けたいリンクを選択してください：',
+                      l10n.selectLinkToAssociate,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
@@ -192,7 +194,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                       ),
                       child: TextField(
                         decoration: InputDecoration(
-                          hintText: 'リンクを検索...',
+                          hintText: l10n.searchLinks,
                           prefixIcon: Icon(
                             Icons.search,
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -276,7 +278,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         Text(
-                          '選択されたリンク: ${_getValidSelectedLinkCount()}個（既存: ${_currentExistingLinkCount}個）',
+                          l10n.selectedLinks(_getValidSelectedLinkCount(), _currentExistingLinkCount),
                           style: TextStyle(
                             color: _getValidSelectedLinkCount() > 0 
                                 ? theme.colorScheme.primary
@@ -300,7 +302,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                           foregroundColor: theme.colorScheme.outline,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
-                        child: const Text('キャンセル'),
+                        child: Text(l10n.cancel),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
@@ -313,7 +315,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text('保存'),
+                        child: Text(l10n.save),
                       ),
                     ],
                   ),
@@ -328,6 +330,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
 
   /// 既存の関連リンクリストを構築（カード形式）
   Widget _buildExistingLinksGrid(LinkState linkGroups, ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     final existingLinks = <LinkItem>[];
     
     for (final linkId in widget.task.relatedLinkIds) {
@@ -356,7 +359,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
         return Container(
           padding: const EdgeInsets.all(16),
           child: Text(
-            '関連付けられたリンクが見つかりません（${_currentExistingLinkCount}個のリンクIDが存在）',
+            l10n.linkedLinksNotFound(_currentExistingLinkCount),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.error.withValues(alpha: 0.8),
             ),
@@ -496,6 +499,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
 
   /// タスクからリンクを削除
   void _removeLinkFromTask(String linkId) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final taskViewModel = ref.read(taskViewModelProvider.notifier);
       final updatedLinkIds = List<String>.from(widget.task.relatedLinkIds);
@@ -514,20 +518,21 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
       if (mounted) {
         SnackBarService.showSuccess(
           context,
-          'リンクを削除しました',
+          l10n.linkDeleted,
         );
       }
     } catch (e) {
       if (mounted) {
         SnackBarService.showError(
           context,
-          'リンクの削除に失敗しました: $e',
+          l10n.linkDeletionFailed(e.toString()),
         );
       }
     }
   }
 
   Widget _buildGroupCard(Group group, ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -579,7 +584,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                '${group.items.length}個',
+                l10n.itemsCount(group.items.length),
                 style: TextStyle(
                   color: _getGroupColor(group),
                   fontSize: 12,
@@ -608,7 +613,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'リンク一覧: ${group.items.length}個',
+                  l10n.linkList(group.items.length),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: _getGroupColor(group),
                     fontWeight: FontWeight.w600,
@@ -804,6 +809,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
   }
 
   Future<void> _saveLinkAssociations() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final taskViewModel = ref.read(taskViewModelProvider.notifier);
       
@@ -811,7 +817,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
       
       SnackBarService.showSuccess(
         context,
-        'リンクの関連付けを更新しました',
+        l10n.linkAssociationUpdated,
       );
       
       widget.onLinksUpdated();
@@ -820,7 +826,7 @@ class _LinkAssociationDialogState extends ConsumerState<LinkAssociationDialog> {
     } catch (e) {
       SnackBarService.showError(
         context,
-        'リンクの関連付け更新に失敗しました: $e',
+        l10n.linkAssociationUpdateFailed(e.toString()),
       );
     }
   }

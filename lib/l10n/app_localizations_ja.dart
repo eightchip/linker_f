@@ -472,7 +472,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String subtaskTooltip(int total, int completed) {
-    return 'サブタスク: $total個\n完了: $completed個';
+    return 'サブタスク: $total\n完了: $completed';
   }
 
   @override
@@ -527,6 +527,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteGroup => 'グループを削除';
+
+  @override
+  String get deleteGroupConfirm => 'このグループを削除しますか？';
 
   @override
   String get addLink => 'リンクを追加';
@@ -653,6 +656,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String daysOverdue(int count) {
     return '$count日超過';
   }
+
+  @override
+  String get oneDayOverdue => '1日超過';
 
   @override
   String get notSet => '未設定';
@@ -857,6 +863,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get editGroupName => 'グループ名を編集';
+
+  @override
+  String get newGroupName => '新しいグループ名';
+
+  @override
+  String get color => '色';
 
   @override
   String get createTaskFromLink => 'このリンクからタスクを作成';
@@ -2456,10 +2468,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get removeTagDescription => '指定したタグを削除します';
 
   @override
-  String get someFilesNotRegistered => '一部のファイル/フォルダはアクセスできなかったため登録されませんでした';
+  String get someFilesNotRegistered => '一部のファイル/フォルダは登録されませんでした';
 
   @override
-  String get editMemo => 'メモ編集';
+  String get folderIsEmpty => 'フォルダが空です';
+
+  @override
+  String get accessDeniedOrOtherError => 'アクセス権限がないか、その他のエラーが発生しました';
+
+  @override
+  String get doesNotExist => '存在しません';
+
+  @override
+  String get editMemo => 'メモを編集';
 
   @override
   String get enterMemo => 'メモを入力...';
@@ -3208,4 +3229,265 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get focusSearchBar => '検索バーにフォーカス';
+
+  @override
+  String get selectIconAndColor => 'アイコンと色を選択';
+
+  @override
+  String get selectColor => '色を選択:';
+
+  @override
+  String get preview => 'プレビュー:';
+
+  @override
+  String get decide => '決定';
+
+  @override
+  String otherSubTasks(int count) {
+    return '他$count個';
+  }
+
+  @override
+  String get iconGlobe => '地球アイコン';
+
+  @override
+  String get iconFolder => 'フォルダ';
+
+  @override
+  String get iconFolderOpen => '開いたフォルダ';
+
+  @override
+  String get iconFolderSpecial => '特別なフォルダ';
+
+  @override
+  String get iconFolderShared => '共有フォルダ';
+
+  @override
+  String get iconFolderZip => '圧縮フォルダ';
+
+  @override
+  String get iconFolderCopy => 'コピーフォルダ';
+
+  @override
+  String get iconFolderDelete => '削除フォルダ';
+
+  @override
+  String get iconFolderOff => '無効フォルダ';
+
+  @override
+  String get iconFolderOutlined => 'フォルダ（アウトライン）';
+
+  @override
+  String get iconFolderOpenOutlined => '開いたフォルダ（アウトライン）';
+
+  @override
+  String get iconFolderSpecialOutlined => '特別なフォルダ（アウトライン）';
+
+  @override
+  String get iconFolderSharedOutlined => '共有フォルダ（アウトライン）';
+
+  @override
+  String get iconFolderZipOutlined => '圧縮フォルダ（アウトライン）';
+
+  @override
+  String get iconFolderCopyOutlined => 'コピーフォルダ（アウトライン）';
+
+  @override
+  String get iconFolderDeleteOutlined => '削除フォルダ（アウトライン）';
+
+  @override
+  String get iconFolderOffOutlined => '無効フォルダ（アウトライン）';
+
+  @override
+  String get iconFolderUpload => 'アップロードフォルダ';
+
+  @override
+  String get iconFolderUploadOutlined => 'アップロードフォルダ（アウトライン）';
+
+  @override
+  String get iconFileMove => 'ファイル移動';
+
+  @override
+  String get iconFileMoveOutlined => 'ファイル移動（アウトライン）';
+
+  @override
+  String get iconFileRename => 'ファイル名変更';
+
+  @override
+  String get iconFileRenameOutlined => 'ファイル名変更（アウトライン）';
+
+  @override
+  String associateLinksWithTask(String title) {
+    return 'タスク「$title」にリンクを関連付け';
+  }
+
+  @override
+  String existingRelatedLinks(int count) {
+    return '既存の関連リンク（$count個）';
+  }
+
+  @override
+  String get clickToExpandAndDelete => 'クリックして展開・削除';
+
+  @override
+  String get selectLinkToAssociate => '関連付けたいリンクを選択してください：';
+
+  @override
+  String get searchLinks => 'リンクを検索...';
+
+  @override
+  String selectedLinks(int selected, int existing) {
+    return '選択されたリンク: $selected個（既存: $existing個）';
+  }
+
+  @override
+  String linkedLinksNotFound(int count) {
+    return '関連付けられたリンクが見つかりません（$count個のリンクIDが存在）';
+  }
+
+  @override
+  String get linkDeleted => 'リンクを削除しました';
+
+  @override
+  String linkDeletionFailed(String error) {
+    return 'リンクの削除に失敗しました: $error';
+  }
+
+  @override
+  String itemsCount(int count) {
+    return '$count個';
+  }
+
+  @override
+  String linkList(int count) {
+    return 'リンク一覧: $count個';
+  }
+
+  @override
+  String get linkAssociationUpdated => 'リンクの関連付けを更新しました';
+
+  @override
+  String linkAssociationUpdateFailed(String error) {
+    return 'リンクの関連付け更新に失敗しました: $error';
+  }
+
+  @override
+  String get orphanedSchedules => '孤立予定';
+
+  @override
+  String get orphanedSchedulesDescription => '存在しないタスクに紐づいていた予定をまとめるためのタスクです。';
+
+  @override
+  String get systemGenerated => 'システム生成';
+
+  @override
+  String itemsCountShort(int count) {
+    return '$count件';
+  }
+
+  @override
+  String schedulesAssigned(int count) {
+    return '$count件の予定を割り当てました';
+  }
+
+  @override
+  String tasksCreatedAndSchedulesAssigned(int count) {
+    return '$count件のタスクを作成し、予定を割り当てました';
+  }
+
+  @override
+  String itemsDisplayed(int count) {
+    return '$count件表示';
+  }
+
+  @override
+  String candidateTasksFound(int count) {
+    return '$count件の候補タスクが見つかりました';
+  }
+
+  @override
+  String get changeAssignedTask => '割当タスクを変更';
+
+  @override
+  String get noAssignableTasks => '割り当て可能なタスクがありません';
+
+  @override
+  String get noOtherTasks => '他のタスクがありません';
+
+  @override
+  String scheduleAssignedToTask(String scheduleTitle, String taskTitle) {
+    return '「$scheduleTitle」を「$taskTitle」に割り当てました';
+  }
+
+  @override
+  String scheduleTaskAssignmentChangeError(String error) {
+    return 'タスク割り当て変更エラー: $error';
+  }
+
+  @override
+  String get scheduleTaskAssignmentChangeFailed => '予定のタスク割り当て変更に失敗しました。';
+
+  @override
+  String get edit => '編集';
+
+  @override
+  String get scheduleCopiedAndAdded => '予定をコピーして追加しました';
+
+  @override
+  String get dragOrderManual => 'ドラッグ順（手動）';
+
+  @override
+  String get memoPad => 'メモ帳';
+
+  @override
+  String get newMemo => '新しいメモ';
+
+  @override
+  String get deleteMemo => 'メモを削除';
+
+  @override
+  String get deleteMemoConfirm => 'このメモを削除しますか？';
+
+  @override
+  String get memoContentHint => 'メモの内容を入力してください...';
+
+  @override
+  String get searchMemos => 'メモを検索...';
+
+  @override
+  String get noMemos => 'メモがありません';
+
+  @override
+  String get noMemosFound => '該当するメモが見つかりません';
+
+  @override
+  String get memoAdded => 'メモを追加しました';
+
+  @override
+  String get memoUpdated => 'メモを更新しました';
+
+  @override
+  String get memoDeleted => 'メモを削除しました';
+
+  @override
+  String memoSaveError(String error) {
+    return 'メモの保存に失敗しました: $error';
+  }
+
+  @override
+  String memoDeleteError(String error) {
+    return 'メモの削除に失敗しました: $error';
+  }
+
+  @override
+  String get memoAddFailed => 'メモの追加に失敗しました';
+
+  @override
+  String get memoUpdateFailed => 'メモの更新に失敗しました';
+
+  @override
+  String get memoDeleteFailed => 'メモの削除に失敗しました';
+
+  @override
+  String get noTasks => 'タスクがありません';
 }

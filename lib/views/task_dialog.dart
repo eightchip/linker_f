@@ -1702,7 +1702,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${subTasks.where((s) => s.isCompleted).length}/${subTasks.length} 完了',
+                      '${subTasks.where((s) => s.isCompleted).length}/${subTasks.length} ${AppLocalizations.of(context)!.completed}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.blue.shade800,
@@ -2091,7 +2091,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${schedules.length}件',
+                      AppLocalizations.of(context)!.itemsCountShort(schedules.length),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange.shade800,
@@ -2148,7 +2148,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 Text(AppLocalizations.of(context)!.schedule, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const Spacer(),
                 Text(
-                  '${schedules.length}件',
+                  AppLocalizations.of(context)!.itemsCountShort(schedules.length),
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -2552,7 +2552,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.copy, color: Colors.orange, size: 18),
-                tooltip: 'コピー',
+                tooltip: AppLocalizations.of(context)!.copy,
                 onPressed: () async {
                   if (widget.task == null) return;
                   
@@ -2585,14 +2585,14 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   if (mounted) {
                     SnackBarService.showSuccess(
                       context,
-                      '予定をコピーして追加しました',
+                      AppLocalizations.of(context)!.scheduleCopiedAndAdded,
                     );
                   }
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.edit, color: Colors.blue, size: 18),
-                tooltip: '編集',
+                tooltip: AppLocalizations.of(context)!.edit,
                 onPressed: () {
                   _scheduleTitleController.text = schedule.title;
                   _scheduleLocationController.text = schedule.location ?? '';
@@ -2612,14 +2612,14 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               ),
               IconButton(
                 icon: const Icon(Icons.swap_horiz, color: Colors.green, size: 18),
-                tooltip: '割当タスクを変更',
+                tooltip: AppLocalizations.of(context)!.changeAssignedTask,
                 onPressed: () async {
                   await _changeScheduleTask(schedule);
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red, size: 18),
-                tooltip: '削除',
+                tooltip: AppLocalizations.of(context)!.delete,
                 onPressed: () async {
                   final l10n = AppLocalizations.of(context)!;
                   final confirm = await showDialog<bool>(
@@ -4109,6 +4109,7 @@ ${l10n.sentId} $token
 
   /// 予定のタスク割り当てを変更
   Future<void> _changeScheduleTask(ScheduleItem schedule) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final tasks = ref.read(taskViewModelProvider);
       final incompleteTasks = tasks.where((t) => t.status != TaskStatus.completed).toList();
@@ -4117,7 +4118,7 @@ ${l10n.sentId} $token
         if (mounted) {
           SnackBarService.showWarning(
             context,
-            '割り当て可能なタスクがありません',
+            l10n.noAssignableTasks,
           );
         }
         return;
@@ -4130,7 +4131,7 @@ ${l10n.sentId} $token
         if (mounted) {
           SnackBarService.showWarning(
             context,
-            '他のタスクがありません',
+            l10n.noOtherTasks,
           );
         }
         return;
@@ -4140,7 +4141,7 @@ ${l10n.sentId} $token
       final selectedTask = await showDialog<TaskItem>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('割当タスクを変更'),
+          title: Text(l10n.changeAssignedTask),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
@@ -4165,7 +4166,7 @@ ${l10n.sentId} $token
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(l10n.cancel),
             ),
           ],
         ),
@@ -4173,24 +4174,33 @@ ${l10n.sentId} $token
 
       if (selectedTask != null && mounted) {
         final scheduleViewModel = ref.read(scheduleViewModelProvider.notifier);
-        await scheduleViewModel.changeScheduleTaskId(schedule.id, selectedTask.id);
-        
-        // データを再読み込みしてUIを更新
-        await scheduleViewModel.loadSchedules();
-        setState(() {});
+        try {
+          await scheduleViewModel.changeScheduleTaskId(schedule.id, selectedTask.id);
+          
+          // データを再読み込みしてUIを更新
+          await scheduleViewModel.loadSchedules();
+          setState(() {});
 
-        if (mounted) {
-          SnackBarService.showSuccess(
-            context,
-            '「${schedule.title}」を「${selectedTask.title}」に割り当てました',
-          );
+          if (mounted) {
+            SnackBarService.showSuccess(
+              context,
+              l10n.scheduleAssignedToTask(schedule.title, selectedTask.title),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            SnackBarService.showError(
+              context,
+              l10n.scheduleTaskAssignmentChangeFailed,
+            );
+          }
         }
       }
     } catch (e) {
       if (mounted) {
         SnackBarService.showError(
           context,
-          'タスク割り当て変更エラー: $e',
+          l10n.scheduleTaskAssignmentChangeError(e.toString()),
         );
       }
     }

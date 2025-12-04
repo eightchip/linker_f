@@ -362,7 +362,8 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       }
     } catch (e) {
       print('予定のタスクID変更エラー: $e');
-      SnackBarService.showGlobalError('予定のタスク割り当て変更に失敗しました。');
+      // エラーメッセージは呼び出し側でローカライゼーションを適用
+      rethrow;
     }
   }
 
@@ -390,7 +391,8 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
       }
     } catch (e) {
       print('予定のタスクID一括変更エラー: $e');
-      SnackBarService.showGlobalError('予定のタスク割り当て変更に失敗しました。');
+      // エラーメッセージは呼び出し側でローカライゼーションを適用
+      rethrow;
     }
   }
 }

@@ -780,6 +780,10 @@
   "@deleteGroup": {
     "description": "Delete group tooltip"
   },
+  "deleteGroupConfirm": "Do you want to delete this group?",
+  "@deleteGroupConfirm": {
+    "description": "Delete group confirmation message"
+  },
   "addLink": "Add Link",
   "@addLink": {
     "description": "Add link tooltip"
@@ -979,11 +983,15 @@
       }
     }
   },
+  "oneDayOverdue": "1 day overdue",
+  "@oneDayOverdue": {
+    "description": "One day overdue"
+  },
   "notSet": "Not Set",
   "@notSet": {
     "description": "Not set label"
   },
-  "showOtherLinks": "Show {count} other links",
+  "showOtherLinks": "Show {count} more links",
   "@showOtherLinks": {
     "description": "Show other links",
     "placeholders": {
@@ -1184,7 +1192,14 @@
   },
   "editGroupName": "Edit Group Name",
   "@editGroupName": {
-    "description": "Edit group name tooltip"
+  },
+  "newGroupName": "New Group Name",
+  "@newGroupName": {
+    "description": "New group name label"
+  },
+  "color": "Color",
+  "@color": {
+    "description": "Color label"
   },
   "createTaskFromLink": "Create task from this link",
   "@createTaskFromLink": {
@@ -4796,6 +4811,418 @@
   "focusSearchBar": "Focus on search bar",
   "@focusSearchBar": {
     "description": "Focus on search bar shortcut description"
+  },
+  "selectIconAndColor": "Select Icon and Color",
+  "@selectIconAndColor": {
+    "description": "Select icon and color button and dialog title"
+  },
+  "selectColor": "Select Color:",
+  "@selectColor": {
+    "description": "Select color label"
+  },
+  "preview": "Preview:",
+  "@preview": {
+    "description": "Preview label"
+  },
+  "decide": "Confirm",
+  "@decide": {
+    "description": "Decide/Confirm button label for icon selection"
+  },
+  "otherSubTasks": "Other {count}",
+  "@otherSubTasks": {
+    "description": "Other subtasks count message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "iconGlobe": "Globe",
+  "@iconGlobe": {
+    "description": "Globe icon tooltip"
+  },
+  "iconFolder": "Folder",
+  "@iconFolder": {
+    "description": "Folder icon tooltip"
+  },
+  "iconFolderOpen": "Open Folder",
+  "@iconFolderOpen": {
+    "description": "Open folder icon tooltip"
+  },
+  "iconFolderSpecial": "Special Folder",
+  "@iconFolderSpecial": {
+    "description": "Special folder icon tooltip"
+  },
+  "iconFolderShared": "Shared Folder",
+  "@iconFolderShared": {
+    "description": "Shared folder icon tooltip"
+  },
+  "iconFolderZip": "Zip Folder",
+  "@iconFolderZip": {
+    "description": "Zip folder icon tooltip"
+  },
+  "iconFolderCopy": "Copy Folder",
+  "@iconFolderCopy": {
+    "description": "Copy folder icon tooltip"
+  },
+  "iconFolderDelete": "Delete Folder",
+  "@iconFolderDelete": {
+    "description": "Delete folder icon tooltip"
+  },
+  "iconFolderOff": "Disabled Folder",
+  "@iconFolderOff": {
+    "description": "Off folder icon tooltip"
+  },
+  "iconFolderOutlined": "Folder (Outlined)",
+  "@iconFolderOutlined": {
+    "description": "Folder outlined icon tooltip"
+  },
+  "iconFolderOpenOutlined": "Open Folder (Outlined)",
+  "@iconFolderOpenOutlined": {
+    "description": "Open folder outlined icon tooltip"
+  },
+  "iconFolderSpecialOutlined": "Special Folder (Outlined)",
+  "@iconFolderSpecialOutlined": {
+    "description": "Special folder outlined icon tooltip"
+  },
+  "iconFolderSharedOutlined": "Shared Folder (Outlined)",
+  "@iconFolderSharedOutlined": {
+    "description": "Shared folder outlined icon tooltip"
+  },
+  "iconFolderZipOutlined": "Zip Folder (Outlined)",
+  "@iconFolderZipOutlined": {
+    "description": "Zip folder outlined icon tooltip"
+  },
+  "iconFolderCopyOutlined": "Copy Folder (Outlined)",
+  "@iconFolderCopyOutlined": {
+    "description": "Copy folder outlined icon tooltip"
+  },
+  "iconFolderDeleteOutlined": "Delete Folder (Outlined)",
+  "@iconFolderDeleteOutlined": {
+    "description": "Delete folder outlined icon tooltip"
+  },
+  "iconFolderOffOutlined": "Disabled Folder (Outlined)",
+  "@iconFolderOffOutlined": {
+    "description": "Off folder outlined icon tooltip"
+  },
+  "iconFolderUpload": "Upload Folder",
+  "@iconFolderUpload": {
+    "description": "Upload folder icon tooltip"
+  },
+  "iconFolderUploadOutlined": "Upload Folder (Outlined)",
+  "@iconFolderUploadOutlined": {
+    "description": "Upload folder outlined icon tooltip"
+  },
+  "iconFileMove": "Move File",
+  "@iconFileMove": {
+    "description": "File move icon tooltip"
+  },
+  "iconFileMoveOutlined": "Move File (Outlined)",
+  "@iconFileMoveOutlined": {
+    "description": "File move outlined icon tooltip"
+  },
+  "iconFileRename": "Rename File",
+  "@iconFileRename": {
+    "description": "File rename icon tooltip"
+  },
+  "iconFileRenameOutlined": "Rename File (Outlined)",
+  "@iconFileRenameOutlined": {
+    "description": "File rename outlined icon tooltip"
+  },
+  "associateLinksWithTask": "Associate links with task \"{title}\"",
+  "@associateLinksWithTask": {
+    "description": "Associate links with task subtitle",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "existingRelatedLinks": "Existing related links ({count})",
+  "@existingRelatedLinks": {
+    "description": "Existing related links title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clickToExpandAndDelete": "Click to expand and delete",
+  "@clickToExpandAndDelete": {
+    "description": "Click to expand and delete instruction"
+  },
+  "selectLinkToAssociate": "Please select the link you want to associate:",
+  "@selectLinkToAssociate": {
+    "description": "Select link to associate instruction"
+  },
+  "searchLinks": "Search for links...",
+  "@searchLinks": {
+    "description": "Search links placeholder"
+  },
+  "selectedLinks": "Selected links: {selected} (Existing: {existing})",
+  "@selectedLinks": {
+    "description": "Selected links count display",
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "existing": {
+        "type": "int"
+      }
+    }
+  },
+  "linkedLinksNotFound": "Linked links not found ({count} link IDs exist)",
+  "@linkedLinksNotFound": {
+    "description": "Linked links not found message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linkDeleted": "Link deleted",
+  "@linkDeleted": {
+    "description": "Link deleted success message"
+  },
+  "linkDeletionFailed": "Link deletion failed: {error}",
+  "@linkDeletionFailed": {
+    "description": "Link deletion failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "itemsCount": "{count}",
+  "@itemsCount": {
+    "description": "Items count display",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linkList": "Link list: {count}",
+  "@linkList": {
+    "description": "Link list title",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linkAssociationUpdated": "Link association updated",
+  "@linkAssociationUpdated": {
+    "description": "Link association updated success message"
+  },
+  "linkAssociationUpdateFailed": "Link association update failed: {error}",
+  "@linkAssociationUpdateFailed": {
+    "description": "Link association update failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "orphanedSchedules": "Orphaned Schedules",
+  "@orphanedSchedules": {
+    "description": "Orphaned schedules task title"
+  },
+  "orphanedSchedulesDescription": "Task to collect schedules that were linked to non-existent tasks.",
+  "@orphanedSchedulesDescription": {
+    "description": "Orphaned schedules task description"
+  },
+  "systemGenerated": "System Generated",
+  "@systemGenerated": {
+    "description": "System generated tag"
+  },
+  "itemsCountShort": "{count}",
+  "@itemsCountShort": {
+    "description": "Items count display (short format)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "schedulesAssigned": "Assigned {count} schedules",
+  "@schedulesAssigned": {
+    "description": "Schedules assigned message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksCreatedAndSchedulesAssigned": "Created {count} tasks and assigned schedules",
+  "@tasksCreatedAndSchedulesAssigned": {
+    "description": "Tasks created and schedules assigned message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "itemsDisplayed": "{count} displayed",
+  "@itemsDisplayed": {
+    "description": "Items displayed count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "candidateTasksFound": "Found {count} candidate tasks",
+  "@candidateTasksFound": {
+    "description": "Candidate tasks found message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "changeAssignedTask": "Change Assigned Task",
+  "@changeAssignedTask": {
+    "description": "Change assigned task tooltip and dialog title"
+  },
+  "noAssignableTasks": "No assignable tasks available",
+  "@noAssignableTasks": {
+    "description": "No assignable tasks message"
+  },
+  "noOtherTasks": "No other tasks available",
+  "@noOtherTasks": {
+    "description": "No other tasks message"
+  },
+  "scheduleAssignedToTask": "Assigned \"{scheduleTitle}\" to \"{taskTitle}\"",
+  "@scheduleAssignedToTask": {
+    "description": "Schedule assigned to task message",
+    "placeholders": {
+      "scheduleTitle": {
+        "type": "String"
+      },
+      "taskTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTaskAssignmentChangeError": "Task assignment change error: {error}",
+  "@scheduleTaskAssignmentChangeError": {
+    "description": "Schedule task assignment change error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleTaskAssignmentChangeFailed": "Failed to change schedule task assignment.",
+  "@scheduleTaskAssignmentChangeFailed": {
+    "description": "Schedule task assignment change failed message"
+  },
+  "copy": "Copy",
+  "@copy": {
+    "description": "Copy tooltip"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit tooltip"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete tooltip"
+  },
+  "scheduleCopiedAndAdded": "Schedule copied and added",
+  "@scheduleCopiedAndAdded": {
+    "description": "Schedule copied and added message"
+  },
+  "dragOrderManual": "Drag Order (Manual)",
+  "@dragOrderManual": {
+    "description": "Drag order (manual) option"
+  },
+  "memoPad": "Memo Pad",
+  "@memoPad": {
+    "description": "Memo pad title"
+  },
+  "newMemo": "New Memo",
+  "@newMemo": {
+    "description": "New memo button label"
+  },
+  "editMemo": "Edit Memo",
+  "@editMemo": {
+    "description": "Edit memo dialog title"
+  },
+  "deleteMemo": "Delete Memo",
+  "@deleteMemo": {
+    "description": "Delete memo dialog title"
+  },
+  "deleteMemoConfirm": "Are you sure you want to delete this memo?",
+  "@deleteMemoConfirm": {
+    "description": "Delete memo confirmation message"
+  },
+  "memoContentHint": "Enter memo content...",
+  "@memoContentHint": {
+    "description": "Memo content input hint"
+  },
+  "searchMemos": "Search memos...",
+  "@searchMemos": {
+    "description": "Search memos placeholder"
+  },
+  "noMemos": "No memos",
+  "@noMemos": {
+    "description": "No memos message"
+  },
+  "noMemosFound": "No matching memos found",
+  "@noMemosFound": {
+    "description": "No memos found message"
+  },
+  "memoAdded": "Memo added",
+  "@memoAdded": {
+    "description": "Memo added success message"
+  },
+  "memoUpdated": "Memo updated",
+  "@memoUpdated": {
+    "description": "Memo updated success message"
+  },
+  "memoDeleted": "Memo deleted",
+  "@memoDeleted": {
+    "description": "Memo deleted success message"
+  },
+  "memoSaveError": "Failed to save memo: {error}",
+  "@memoSaveError": {
+    "description": "Memo save error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "memoDeleteError": "Failed to delete memo: {error}",
+  "@memoDeleteError": {
+    "description": "Memo delete error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "memoContentHint": "Enter memo content...",
+  "@memoContentHint": {
+    "description": "Memo content input hint"
+  },
+  "memoAddFailed": "Failed to add memo",
+  "@memoAddFailed": {
+    "description": "Memo add failed message"
+  },
+  "memoUpdateFailed": "Failed to update memo",
+  "@memoUpdateFailed": {
+    "description": "Memo update failed message"
+  },
+  "memoDeleteFailed": "Failed to delete memo",
+  "@memoDeleteFailed": {
+    "description": "Memo delete failed message"
+  },
+  "noTasks": "No tasks",
+  "@noTasks": {
+    "description": "No tasks message"
   }
 }
 

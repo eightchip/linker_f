@@ -5,6 +5,7 @@ import '../models/group.dart';
 import '../models/task_item.dart';
 import '../models/sub_task.dart';
 import '../models/schedule_item.dart';
+import 'settings_service.dart';
 
 class MigrationService {
   static const String _migrationVersionKey = 'migration_version';
@@ -245,27 +246,80 @@ class MigrationService {
       if (schedulesBox != null) {
         TaskItem? orphanTask;
         
+        // 言語設定を取得
+        final settingsService = SettingsService.instance;
+        final locale = settingsService.locale;
+        final isEnglish = locale == 'en';
+        
+        // 孤立予定タスクのタイトル（日本語と英語の両方をチェック）
+        final orphanedTitleJa = '孤立予定';
+        final orphanedTitleEn = 'Orphaned Schedules';
+        final orphanedDescriptionJa = '存在しないタスクに紐づいていた予定をまとめるためのタスクです。';
+        final orphanedDescriptionEn = 'Task to collect schedules that were linked to non-existent tasks.';
+        final systemGeneratedTagJa = 'システム生成';
+        final systemGeneratedTagEn = 'System Generated';
+        final orphanedTagJa = '孤立予定';
+        final orphanedTagEn = 'Orphaned Schedules';
+        
+        final orphanedTitle = isEnglish ? orphanedTitleEn : orphanedTitleJa;
+        final orphanedDescription = isEnglish ? orphanedDescriptionEn : orphanedDescriptionJa;
+        final systemGeneratedTag = isEnglish ? systemGeneratedTagEn : systemGeneratedTagJa;
+        final orphanedTag = isEnglish ? orphanedTagEn : orphanedTagJa;
+        
         for (final schedule in schedulesBox.values) {
           if (!taskIds.contains(schedule.taskId)) {
-            // 孤立予定タスクを作成または取得
+            // 孤立予定タスクを作成または取得（日本語と英語の両方をチェック）
             if (orphanTask == null) {
               final orphanTasks = tasksBox.values.where((t) => 
-                t.title == '孤立予定' || t.title.contains('孤立した予定')
+                t.title == orphanedTitleJa || 
+                t.title == orphanedTitleEn ||
+                t.title.contains('孤立した予定') ||
+                t.title.contains('Orphaned')
               ).toList();
               
               if (orphanTasks.isNotEmpty) {
                 orphanTask = orphanTasks.first;
+                // 既存のタスクのタイトル、説明、タグを現在の言語設定に応じて更新
+                final needsUpdate = 
+                    (isEnglish && orphanTask!.title == orphanedTitleJa) ||
+                    (!isEnglish && orphanTask!.title == orphanedTitleEn) ||
+                    (isEnglish && orphanTask!.description == orphanedDescriptionJa) ||
+                    (!isEnglish && orphanTask!.description == orphanedDescriptionEn) ||
+                    (isEnglish && orphanTask!.tags.contains(systemGeneratedTagJa)) ||
+                    (!isEnglish && orphanTask!.tags.contains(systemGeneratedTagEn)) ||
+                    (isEnglish && orphanTask!.tags.contains(orphanedTagJa)) ||
+                    (!isEnglish && orphanTask!.tags.contains(orphanedTagEn));
+                
+                if (needsUpdate) {
+                  // タグを更新
+                  final updatedTags = orphanTask!.tags.map((tag) {
+                    if (tag == systemGeneratedTagJa || tag == systemGeneratedTagEn) {
+                      return systemGeneratedTag;
+                    } else if (tag == orphanedTagJa || tag == orphanedTagEn) {
+                      return orphanedTag;
+                    }
+                    return tag;
+                  }).toList();
+                  
+                  orphanTask = orphanTask!.copyWith(
+                    title: orphanedTitle,
+                    description: orphanedDescription,
+                    tags: updatedTags,
+                  );
+                  await tasksBox.put(orphanTask!.id, orphanTask!);
+                  print('孤立予定タスクを現在の言語設定に更新しました: ${orphanTask!.id}');
+                }
               } else {
                 // 孤立予定タスクを作成
                 final uuid = Uuid();
                 orphanTask = TaskItem(
                   id: uuid.v4(),
-                  title: '孤立予定',
-                  description: '存在しないタスクに紐づいていた予定をまとめるためのタスクです。',
+                  title: orphanedTitle,
+                  description: orphanedDescription,
                   priority: TaskPriority.low,
                   status: TaskStatus.inProgress,
                   createdAt: DateTime.now(),
-                  tags: ['システム生成', '孤立予定'],
+                  tags: [systemGeneratedTag, orphanedTag],
                 );
                 await tasksBox.put(orphanTask.id, orphanTask);
                 taskIds.add(orphanTask.id);

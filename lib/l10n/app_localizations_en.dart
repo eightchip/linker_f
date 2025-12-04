@@ -538,6 +538,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteGroup => 'Delete Group';
 
   @override
+  String get deleteGroupConfirm => 'Do you want to delete this group?';
+
+  @override
   String get addLink => 'Add Link';
 
   @override
@@ -664,11 +667,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get oneDayOverdue => '1 day overdue';
+
+  @override
   String get notSet => 'Not Set';
 
   @override
   String showOtherLinks(int count) {
-    return 'Show $count other links';
+    return 'Show $count more links';
   }
 
   @override
@@ -869,6 +875,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editGroupName => 'Edit Group Name';
+
+  @override
+  String get newGroupName => 'New Group Name';
+
+  @override
+  String get color => 'Color';
 
   @override
   String get createTaskFromLink => 'Create task from this link';
@@ -2501,6 +2513,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Some files/folders could not be accessed and were not registered';
 
   @override
+  String get folderIsEmpty => 'フォルダが空です';
+
+  @override
+  String get accessDeniedOrOtherError => 'アクセス権限がないか、その他のエラーが発生しました';
+
+  @override
+  String get doesNotExist => '存在しません';
+
+  @override
   String get editMemo => 'Edit Memo';
 
   @override
@@ -3266,4 +3287,268 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get focusSearchBar => 'Focus on search bar';
+
+  @override
+  String get selectIconAndColor => 'Select Icon and Color';
+
+  @override
+  String get selectColor => 'Select Color:';
+
+  @override
+  String get preview => 'Preview:';
+
+  @override
+  String get decide => 'Confirm';
+
+  @override
+  String otherSubTasks(int count) {
+    return 'Other $count';
+  }
+
+  @override
+  String get iconGlobe => 'Globe';
+
+  @override
+  String get iconFolder => 'Folder';
+
+  @override
+  String get iconFolderOpen => 'Open Folder';
+
+  @override
+  String get iconFolderSpecial => 'Special Folder';
+
+  @override
+  String get iconFolderShared => 'Shared Folder';
+
+  @override
+  String get iconFolderZip => 'Zip Folder';
+
+  @override
+  String get iconFolderCopy => 'Copy Folder';
+
+  @override
+  String get iconFolderDelete => 'Delete Folder';
+
+  @override
+  String get iconFolderOff => 'Disabled Folder';
+
+  @override
+  String get iconFolderOutlined => 'Folder (Outlined)';
+
+  @override
+  String get iconFolderOpenOutlined => 'Open Folder (Outlined)';
+
+  @override
+  String get iconFolderSpecialOutlined => 'Special Folder (Outlined)';
+
+  @override
+  String get iconFolderSharedOutlined => 'Shared Folder (Outlined)';
+
+  @override
+  String get iconFolderZipOutlined => 'Zip Folder (Outlined)';
+
+  @override
+  String get iconFolderCopyOutlined => 'Copy Folder (Outlined)';
+
+  @override
+  String get iconFolderDeleteOutlined => 'Delete Folder (Outlined)';
+
+  @override
+  String get iconFolderOffOutlined => 'Disabled Folder (Outlined)';
+
+  @override
+  String get iconFolderUpload => 'Upload Folder';
+
+  @override
+  String get iconFolderUploadOutlined => 'Upload Folder (Outlined)';
+
+  @override
+  String get iconFileMove => 'Move File';
+
+  @override
+  String get iconFileMoveOutlined => 'Move File (Outlined)';
+
+  @override
+  String get iconFileRename => 'Rename File';
+
+  @override
+  String get iconFileRenameOutlined => 'Rename File (Outlined)';
+
+  @override
+  String associateLinksWithTask(String title) {
+    return 'Associate links with task \"$title\"';
+  }
+
+  @override
+  String existingRelatedLinks(int count) {
+    return 'Existing related links ($count)';
+  }
+
+  @override
+  String get clickToExpandAndDelete => 'Click to expand and delete';
+
+  @override
+  String get selectLinkToAssociate =>
+      'Please select the link you want to associate:';
+
+  @override
+  String get searchLinks => 'Search for links...';
+
+  @override
+  String selectedLinks(int selected, int existing) {
+    return 'Selected links: $selected (Existing: $existing)';
+  }
+
+  @override
+  String linkedLinksNotFound(int count) {
+    return 'Linked links not found ($count link IDs exist)';
+  }
+
+  @override
+  String get linkDeleted => 'Link deleted';
+
+  @override
+  String linkDeletionFailed(String error) {
+    return 'Link deletion failed: $error';
+  }
+
+  @override
+  String itemsCount(int count) {
+    return '$count';
+  }
+
+  @override
+  String linkList(int count) {
+    return 'Link list: $count';
+  }
+
+  @override
+  String get linkAssociationUpdated => 'Link association updated';
+
+  @override
+  String linkAssociationUpdateFailed(String error) {
+    return 'Link association update failed: $error';
+  }
+
+  @override
+  String get orphanedSchedules => 'Orphaned Schedules';
+
+  @override
+  String get orphanedSchedulesDescription =>
+      'Task to collect schedules that were linked to non-existent tasks.';
+
+  @override
+  String get systemGenerated => 'System Generated';
+
+  @override
+  String itemsCountShort(int count) {
+    return '$count';
+  }
+
+  @override
+  String schedulesAssigned(int count) {
+    return 'Assigned $count schedules';
+  }
+
+  @override
+  String tasksCreatedAndSchedulesAssigned(int count) {
+    return 'Created $count tasks and assigned schedules';
+  }
+
+  @override
+  String itemsDisplayed(int count) {
+    return '$count displayed';
+  }
+
+  @override
+  String candidateTasksFound(int count) {
+    return 'Found $count candidate tasks';
+  }
+
+  @override
+  String get changeAssignedTask => 'Change Assigned Task';
+
+  @override
+  String get noAssignableTasks => 'No assignable tasks available';
+
+  @override
+  String get noOtherTasks => 'No other tasks available';
+
+  @override
+  String scheduleAssignedToTask(String scheduleTitle, String taskTitle) {
+    return 'Assigned \"$scheduleTitle\" to \"$taskTitle\"';
+  }
+
+  @override
+  String scheduleTaskAssignmentChangeError(String error) {
+    return 'Task assignment change error: $error';
+  }
+
+  @override
+  String get scheduleTaskAssignmentChangeFailed =>
+      'Failed to change schedule task assignment.';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get scheduleCopiedAndAdded => 'Schedule copied and added';
+
+  @override
+  String get dragOrderManual => 'Drag Order (Manual)';
+
+  @override
+  String get memoPad => 'Memo Pad';
+
+  @override
+  String get newMemo => 'New Memo';
+
+  @override
+  String get deleteMemo => 'Delete Memo';
+
+  @override
+  String get deleteMemoConfirm => 'Are you sure you want to delete this memo?';
+
+  @override
+  String get memoContentHint => 'Enter memo content...';
+
+  @override
+  String get searchMemos => 'Search memos...';
+
+  @override
+  String get noMemos => 'No memos';
+
+  @override
+  String get noMemosFound => 'No matching memos found';
+
+  @override
+  String get memoAdded => 'Memo added';
+
+  @override
+  String get memoUpdated => 'Memo updated';
+
+  @override
+  String get memoDeleted => 'Memo deleted';
+
+  @override
+  String memoSaveError(String error) {
+    return 'Failed to save memo: $error';
+  }
+
+  @override
+  String memoDeleteError(String error) {
+    return 'Failed to delete memo: $error';
+  }
+
+  @override
+  String get memoAddFailed => 'Failed to add memo';
+
+  @override
+  String get memoUpdateFailed => 'Failed to update memo';
+
+  @override
+  String get memoDeleteFailed => 'Failed to delete memo';
+
+  @override
+  String get noTasks => 'No tasks';
 }

@@ -14,6 +14,7 @@ import 'models/sub_task.dart';
 import 'models/sent_mail_log.dart';
 import 'models/email_contact.dart';
 import 'models/schedule_item.dart';
+import 'models/memo_item.dart';
 import 'views/link_launcher_app.dart';
 import 'package:path_provider/path_provider.dart';
 import 'services/notification_service.dart';
@@ -170,6 +171,11 @@ Future<void> _initializeHive() async {
       Hive.registerAdapter(ScheduleItemAdapter());
     } catch (e) {
       print('ScheduleItemAdapter登録エラー: $e');
+    }
+    try {
+      Hive.registerAdapter(MemoItemAdapter());
+    } catch (e) {
+      print('MemoItemAdapter登録エラー: $e');
     }
     
     print('Hive初期化完了');

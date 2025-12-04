@@ -609,7 +609,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
     if (mounted && selectedEvents.isNotEmpty) {
       SnackBarService.showSuccess(
         context,
-        '${selectedEvents.length}件の予定を割り当てました',
+        AppLocalizations.of(context)!.schedulesAssigned(selectedEvents.length),
       );
       // ダイアログは閉じずに継続表示
       setState(() {
@@ -683,7 +683,10 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       }
 
       if (mounted) {
-        SnackBarService.showSuccess(context, '$successCount件のタスクを作成し、予定を割り当てました');
+        SnackBarService.showSuccess(
+          context,
+          AppLocalizations.of(context)!.tasksCreatedAndSchedulesAssigned(successCount),
+        );
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -1195,7 +1198,7 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
                 ),
                 const Spacer(),
                 Text(
-                  '${filteredTasks.length}件表示',
+                  AppLocalizations.of(context)!.itemsDisplayed(filteredTasks.length),
                   style: const TextStyle(color: Colors.grey),
                 ),
               ],
@@ -1216,7 +1219,7 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${_candidateTasks!.length}件の候補タスクが見つかりました',
+                        AppLocalizations.of(context)!.candidateTasksFound(_candidateTasks!.length),
                         style: TextStyle(
                           color: Colors.blue.shade900,
                           fontWeight: FontWeight.w600,

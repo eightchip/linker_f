@@ -652,17 +652,25 @@ class _GroupCardState extends ConsumerState<GroupCard> {
             try {
               final dir = Directory(path);
               if (await dir.exists()) {
-                await dir.list().first;
-                if (widget.onDropAddLink != null) {
-                  await widget.onDropAddLink!(p.basename(path), path, type);
-                  added = true;
-                  folderCount++;
+                try {
+                  await dir.list().first;
+                  if (widget.onDropAddLink != null) {
+                    await widget.onDropAddLink!(p.basename(path), path, type);
+                    added = true;
+                    folderCount++;
+                  }
+                } on StateError {
+                  // フォルダが空の場合
+                  failed.add('${p.basename(path)} (${AppLocalizations.of(context)!.folderIsEmpty})');
+                } catch (e) {
+                  // その他のエラー（アクセス権限など）
+                  failed.add('${p.basename(path)} (${AppLocalizations.of(context)!.accessDeniedOrOtherError})');
                 }
               } else {
-                failed.add(path);
+                failed.add('${p.basename(path)} (${AppLocalizations.of(context)!.doesNotExist})');
               }
-            } catch (_) {
-              failed.add(path);
+            } catch (e) {
+              failed.add('${p.basename(path)} (${AppLocalizations.of(context)!.accessDeniedOrOtherError})');
             }
           } else {
             type = LinkType.file;
