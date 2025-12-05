@@ -112,7 +112,7 @@ class _GlobalMenuDialogState extends ConsumerState<GlobalMenuDialog> {
                   _buildMenuItem(
                     icon: Icons.file_download,
                     iconColor: Colors.green,
-                    title: '${AppLocalizations.of(context)!.exportLinksToExcel}',
+                    title: '${AppLocalizations.of(context)!.exportLinksToExcel} (Ctrl+Shift+X)',
                     value: 'export_links_excel',
                   ),
                   const SizedBox(height: 16),

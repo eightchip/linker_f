@@ -5264,6 +5264,10 @@
   "@exportLinksToExcel": {
     "description": "Export links to Excel menu item"
   },
+  "exportLinksToExcelShortcut": "Export Links to Excel",
+  "@exportLinksToExcelShortcut": {
+    "description": "Export links to Excel shortcut description"
+  },
   "selectGroupsToExport": "Select Groups to Export",
   "@selectGroupsToExport": {
     "description": "Select groups to export dialog title"
@@ -5293,6 +5297,82 @@
         "type": "String"
       }
     }
+  },
+  "excelHyperlinkActivationTitle": "How to Activate Hyperlinks",
+  "@excelHyperlinkActivationTitle": {
+    "description": "Excel hyperlink activation instruction title"
+  },
+  "excelHyperlinkActivationDescription": "If hyperlinks are displayed as text strings in the exported Excel file, you can activate them all at once using the following steps:",
+  "@excelHyperlinkActivationDescription": {
+    "description": "Excel hyperlink activation instruction description"
+  },
+  "excelHyperlinkActivationStep1": "Select the Link column (Column C)",
+  "@excelHyperlinkActivationStep1": {
+    "description": "Excel hyperlink activation step 1"
+  },
+  "excelHyperlinkActivationStep2": "Press Ctrl + H to open the \"Find and Replace\" dialog",
+  "@excelHyperlinkActivationStep2": {
+    "description": "Excel hyperlink activation step 2"
+  },
+  "excelHyperlinkActivationStep3": "Enter \"=HYPERLINK\" in the \"Find what\" field",
+  "@excelHyperlinkActivationStep3": {
+    "description": "Excel hyperlink activation step 3"
+  },
+  "excelHyperlinkActivationStep4": "Enter \"=HYPERLINK\" in the \"Replace with\" field and click \"Replace All\"",
+  "@excelHyperlinkActivationStep4": {
+    "description": "Excel hyperlink activation step 4"
+  },
+  "excelHyperlinkActivationNote": "This will cause Excel to re-evaluate the formulas and activate the hyperlinks. The instructions are also documented in the \"How to Activate Hyperlinks\" sheet in the Excel file.",
+  "@excelHyperlinkActivationNote": {
+    "description": "Excel hyperlink activation note"
+  },
+  "excelLinksSheetName": "Links",
+  "@excelLinksSheetName": {
+    "description": "Excel links sheet name"
+  },
+  "excelHyperlinkActivationSheetName": "How to Activate Hyperlinks",
+  "@excelHyperlinkActivationSheetName": {
+    "description": "Excel hyperlink activation sheet name"
+  },
+  "excelColumnGroupName": "Group Name",
+  "@excelColumnGroupName": {
+    "description": "Excel column header for group name"
+  },
+  "excelColumnLabel": "Label",
+  "@excelColumnLabel": {
+    "description": "Excel column header for label"
+  },
+  "excelColumnLink": "Link",
+  "@excelColumnLink": {
+    "description": "Excel column header for link"
+  },
+  "excelColumnMemo": "Memo",
+  "@excelColumnMemo": {
+    "description": "Excel column header for memo"
+  },
+  "excelSecurityWarningTitle": "About Security Warnings",
+  "@excelSecurityWarningTitle": {
+    "description": "Excel security warning title"
+  },
+  "excelSecurityWarningDescription": "When you click a hyperlink, Excel may display a security warning. This is Excel's standard security feature for links to local files or network paths.",
+  "@excelSecurityWarningDescription": {
+    "description": "Excel security warning description"
+  },
+  "excelSecurityWarningSolution": "If a warning appears, click \"Yes\" to continue. Links to trusted files are safe.",
+  "@excelSecurityWarningSolution": {
+    "description": "Excel security warning solution"
+  },
+  "officialWebsite": "Official Website",
+  "@officialWebsite": {
+    "description": "Official website label"
+  },
+  "officialWebsiteDescription": "For detailed information, screenshots, and demo videos, please visit our official website.",
+  "@officialWebsiteDescription": {
+    "description": "Official website description"
+  },
+  "openWebsite": "Open Website",
+  "@openWebsite": {
+    "description": "Open website button text"
   },
   "noGroupsSelected": "No groups selected",
   "@noGroupsSelected": {

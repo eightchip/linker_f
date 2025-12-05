@@ -1,14 +1,10 @@
-import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data' show Uint8List;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:chewie/chewie.dart';
-import 'package:video_player/video_player.dart';
 import '../services/snackbar_service.dart';
 import '../l10n/app_localizations.dart';
 
@@ -35,18 +31,6 @@ class _ManualSection {
 }
 
 class _HelpCenterScreenState extends State<HelpCenterScreen> {
-  static const Map<String, String> _screenshotMap = {
-    'link-menu': 'assets/help/link_menu.png',
-    'task-menu': 'assets/help/task_menu.png',
-    'task-grid': 'assets/help/task_grid.png',
-    'schedule-list': 'assets/help/schedule_list.png',
-  };
-
-  static const Map<String, String> _videoMap = {
-    'add_new_group': 'assets/help/videos/add_new_group.mp4',
-    'new_memo_task_add': 'assets/help/videos/new_memo_task_add.mp4',
-    'task_screen': 'assets/help/videos/task_screen.mp4',
-  };
 
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -199,245 +183,14 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     });
   }
 
-  Future<void> _showScreenshot(String screenshotId) async {
-    final assetPath = _screenshotMap[screenshotId];
-    if (assetPath == null) {
-      if (mounted) {
-        SnackBarService.showWarning(
-          context,
-          AppLocalizations.of(context)!.screenshotNotRegistered(screenshotId),
-        );
-      }
-      return;
-    }
-
-    try {
-      final data = await rootBundle.load(assetPath);
-      if (!mounted) return;
-      final bytes = data.buffer.asUint8List();
-      await showDialog<void>(
-        context: context,
-        builder: (context) => Dialog(
-          insetPadding: const EdgeInsets.all(24),
-          backgroundColor: Colors.black.withOpacity(0.85),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.7,
-                width: MediaQuery.of(context).size.width * 0.8,
-                child: InteractiveViewer(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.memory(
-                      bytes,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                assetPath.split('/').last,
-                style: const TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      SnackBarService.showWarning(
-        context,
-        AppLocalizations.of(context)!.screenshotLoadFailed(assetPath),
-      );
-    }
-  }
-
-  Future<void> _showVideo(String videoId) async {
-    final source = _videoMap[videoId];
-    if (source == null) {
-      if (mounted) {
-        SnackBarService.showWarning(
-          context,
-          AppLocalizations.of(context)!.videoNotRegistered(videoId),
-        );
-      }
-      return;
-    }
-
-    VideoPlayerController? videoController;
-    ChewieController? chewieController;
-    File? tempVideoFile;
-    bool launchedExternally = false;
-    try {
-      if (source.startsWith('http')) {
-        videoController = VideoPlayerController.networkUrl(Uri.parse(source));
-      } else {
-        tempVideoFile = await _copyAssetToTemp(source);
-        if (tempVideoFile == null) {
-          throw Exception('アセット動画を一時ファイルへ展開できませんでした。');
-        }
-        videoController = VideoPlayerController.file(tempVideoFile);
-      }
-      await videoController.initialize();
-      chewieController = ChewieController(
-        videoPlayerController: videoController,
-        autoPlay: true,
-        looping: false,
-        allowMuting: true,
-        materialProgressColors: ChewieProgressColors(
-          playedColor: Theme.of(context).colorScheme.primary,
-          handleColor: Theme.of(context).colorScheme.primary,
-          backgroundColor: Colors.white24,
-          bufferedColor: Colors.white38,
-        ),
-      );
-
-      if (!mounted) return;
-
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: true,
-        builder: (context) {
-          final aspectRatio =
-              videoController!.value.aspectRatio > 0 ? videoController.value.aspectRatio : 16 / 9;
-          return Dialog(
-            insetPadding: const EdgeInsets.all(24),
-            backgroundColor: Colors.black.withOpacity(0.85),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  child: AspectRatio(
-                    aspectRatio: aspectRatio,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Chewie(controller: chewieController!),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  source.startsWith('http') ? source : source.split('/').last,
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          );
-        },
-      );
-    } catch (e, stack) {
-      debugPrint('HelpCenter: video load error for $source -> $e');
-      debugPrintStack(stackTrace: stack);
-
-      if (!source.startsWith('http')) {
-        tempVideoFile ??= await _copyAssetToTemp(source);
-        if (tempVideoFile != null && await tempVideoFile.exists()) {
-          try {
-            await Process.start(
-              tempVideoFile.path,
-              const [],
-              mode: ProcessStartMode.normal,
-            );
-            launchedExternally = true;
-            if (mounted) {
-              SnackBarService.showInfo(
-                context,
-                '内蔵プレーヤーで再生できなかったため、既定のアプリで動画を開きました。',
-              );
-            }
-          } catch (launchError, launchStack) {
-            debugPrint('HelpCenter: fallback launch error -> $launchError');
-            debugPrintStack(stackTrace: launchStack);
-            try {
-              await Process.run(
-                'cmd',
-                ['/c', 'start', '', tempVideoFile.path],
-                runInShell: true,
-              );
-              launchedExternally = true;
-              if (mounted) {
-                SnackBarService.showInfo(
-                  context,
-                  '既定のアプリで動画を開きました。',
-                );
-              }
-            } catch (fallbackError, fallbackStack) {
-              debugPrint('HelpCenter: secondary fallback error -> $fallbackError');
-              debugPrintStack(stackTrace: fallbackStack);
-            }
-          }
-        }
-      }
-
-      if (!launchedExternally && mounted) {
-        SnackBarService.showWarning(
-          context,
-          '動画を再生できませんでした。\n$e\n($source)',
-        );
-      }
-    } finally {
-      chewieController?.dispose();
-      videoController?.dispose();
-      if (!launchedExternally &&
-          tempVideoFile != null &&
-          await tempVideoFile.exists()) {
-        try {
-          await tempVideoFile.delete();
-        } catch (_) {}
-      }
-    }
-  }
-
-  Future<File?> _copyAssetToTemp(String assetPath) async {
-    try {
-      final byteData = await rootBundle.load(assetPath);
-      final tempDir = await getTemporaryDirectory();
-      final fileName = assetPath.split('/').last;
-      final file = File('${tempDir.path}/$fileName');
-      final Uint8List bytes =
-          byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
-      await file.writeAsBytes(bytes, flush: true);
-      return file;
-    } catch (e, stack) {
-      debugPrint('HelpCenter: asset copy error for $assetPath -> $e');
-      debugPrintStack(stackTrace: stack);
-      return null;
-    }
-  }
 
   Future<void> _handleLinkTap(String text, String? href, String? title) async {
     if (href == null) {
       return;
     }
 
-    if (href.startsWith('screenshot:')) {
-      final screenshotId = href.substring('screenshot:'.length);
-      await _showScreenshot(screenshotId);
-      return;
-    }
-
-    if (href.startsWith('video:')) {
-      final videoId = href.substring('video:'.length);
-      await _showVideo(videoId);
+    // 画像・動画リンクは無視（公式サイトを参照）
+    if (href.startsWith('screenshot:') || href.startsWith('video:')) {
       return;
     }
 
@@ -733,6 +486,79 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
             ],
           ),
           const SizedBox(height: 20),
+          // 公式サイトへのリンク
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: accentColor.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.language,
+                  color: accentColor,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.officialWebsite,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        AppLocalizations.of(context)!.officialWebsiteDescription,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse('https://linknavigator.vercel.app/');
+                    try {
+                      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      if (!launched && mounted) {
+                        SnackBarService.showWarning(
+                          context,
+                          AppLocalizations.of(context)!.linkOpenFailed(uri.toString()),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        SnackBarService.showWarning(
+                          context,
+                          AppLocalizations.of(context)!.linkOpenFailed(uri.toString()),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: Text(AppLocalizations.of(context)!.openWebsite),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    foregroundColor: colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -838,6 +664,13 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     heroCard,
+                    const SizedBox(height: 24),
+                    _buildOfficialWebsiteCard(
+                      context,
+                      accentColor: accentColor,
+                      secondaryColor: secondaryColor,
+                      colorScheme: colorScheme,
+                    ),
                     const SizedBox(height: 24),
                     ..._sections.map(
                         (section) => Container(
@@ -1274,6 +1107,114 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           Text(AppLocalizations.of(context)!.helpContentNotFound),
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _loadManual, child: Text(AppLocalizations.of(context)!.reload)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfficialWebsiteCard(
+    BuildContext context, {
+    required Color accentColor,
+    required Color secondaryColor,
+    required ColorScheme colorScheme,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            accentColor.withOpacity(0.1),
+            secondaryColor.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: accentColor.withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: accentColor.withOpacity(0.3),
+              ),
+            ),
+            child: Icon(
+              Icons.language,
+              color: accentColor,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.officialWebsite,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: accentColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  AppLocalizations.of(context)!.officialWebsiteDescription,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.8),
+                        height: 1.6,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse('https://linknavigator.vercel.app/');
+                    try {
+                      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      if (!launched && mounted) {
+                        SnackBarService.showWarning(
+                          context,
+                          AppLocalizations.of(context)!.linkOpenFailed(uri.toString()),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        SnackBarService.showWarning(
+                          context,
+                          AppLocalizations.of(context)!.linkOpenFailed(uri.toString()),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: Text(AppLocalizations.of(context)!.openWebsite),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

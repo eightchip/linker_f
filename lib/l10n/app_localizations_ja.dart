@@ -3605,6 +3605,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exportLinksToExcel => 'リンクをエクセル出力';
 
   @override
+  String get exportLinksToExcelShortcut => 'リンクをエクセル出力';
+
+  @override
   String get selectGroupsToExport => 'エクスポートするグループを選択';
 
   @override
@@ -3616,6 +3619,70 @@ class AppLocalizationsJa extends AppLocalizations {
   String linksExportFailed(String error) {
     return 'リンクのエクスポートに失敗しました: $error';
   }
+
+  @override
+  String get excelHyperlinkActivationTitle => 'ハイパーリンクを有効化する方法';
+
+  @override
+  String get excelHyperlinkActivationDescription =>
+      'エクスポートしたExcelファイルで、ハイパーリンクが文字列として表示されている場合、以下の手順で一括して有効化できます：';
+
+  @override
+  String get excelHyperlinkActivationStep1 => 'リンク列（C列）を選択します';
+
+  @override
+  String get excelHyperlinkActivationStep2 =>
+      'Ctrl + H キーを押して「検索と置換」ダイアログを開きます';
+
+  @override
+  String get excelHyperlinkActivationStep3 => '検索する文字列に「=HYPERLINK」と入力します';
+
+  @override
+  String get excelHyperlinkActivationStep4 =>
+      '置換後の文字列にも「=HYPERLINK」と入力し、「すべて置換」をクリックします';
+
+  @override
+  String get excelHyperlinkActivationNote =>
+      'これにより、Excelが数式を再評価し、ハイパーリンクが有効になります。また、Excelファイルの「ハイパーリンク有効化方法」シートにも手順が記載されています。';
+
+  @override
+  String get excelLinksSheetName => 'リンク一覧';
+
+  @override
+  String get excelHyperlinkActivationSheetName => 'ハイパーリンク有効化方法';
+
+  @override
+  String get excelColumnGroupName => 'グループ名';
+
+  @override
+  String get excelColumnLabel => 'ラベル';
+
+  @override
+  String get excelColumnLink => 'リンク';
+
+  @override
+  String get excelColumnMemo => 'メモ';
+
+  @override
+  String get excelSecurityWarningTitle => 'セキュリティ警告について';
+
+  @override
+  String get excelSecurityWarningDescription =>
+      'ハイパーリンクをクリックすると、Excelのセキュリティ警告が表示される場合があります。これは、ローカルファイルやネットワークパスへのリンクに対するExcelの標準的なセキュリティ機能です。';
+
+  @override
+  String get excelSecurityWarningSolution =>
+      '警告が表示された場合は、「はい」をクリックして続行してください。信頼できるファイルへのリンクであれば安全です。';
+
+  @override
+  String get officialWebsite => '公式サイト';
+
+  @override
+  String get officialWebsiteDescription =>
+      '詳細な情報やスクリーンショット、デモ動画は公式サイトでご確認いただけます。';
+
+  @override
+  String get openWebsite => 'サイトを開く';
 
   @override
   String get noGroupsSelected => 'グループが選択されていません';

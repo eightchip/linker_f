@@ -55,6 +55,10 @@ class _ShortcutHelpIntent extends Intent {
   const _ShortcutHelpIntent();
 }
 
+class _ExportLinksExcelIntent extends Intent {
+  const _ExportLinksExcelIntent();
+}
+
 class _SettingsIntent extends Intent {
   const _SettingsIntent();
 }
@@ -599,6 +603,7 @@ class HomeScreen extends ConsumerStatefulWidget {
         ShortcutHelpEntry('Ctrl + E', l10n.openMemoBulkEdit),
         ShortcutHelpEntry('Ctrl + O', l10n.changeGroupOrder),
         ShortcutHelpEntry('Ctrl + Shift + S', l10n.openSettings),
+        ShortcutHelpEntry('Ctrl + Shift + X', l10n.exportLinksToExcelShortcut),
         ShortcutHelpEntry('↓', l10n.focusThreeDotMenu),
         ShortcutHelpEntry('Esc', l10n.closeSearchBar),
         ShortcutHelpEntry('Tab', l10n.switchLinkTypeFilter),
@@ -656,6 +661,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         break;
       case 'shortcut_help':
         _showShortcutHelp(context);
+        break;
+      case 'export_links_excel':
+        _exportLinksToExcel(context, ref);
         break;
     }
   }
@@ -1061,10 +1069,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Excelワークブックを作成
       final excel = Excel.createExcel();
       excel.delete('Sheet1'); // デフォルトシートを削除
-      final sheet = excel['リンク一覧']; // 新しいシートを作成
+      
+      // ローカライズされたシート名を取得
+      final l10n = AppLocalizations.of(context)!;
+      final linksSheetName = l10n.excelLinksSheetName;
+      final instructionSheetName = l10n.excelHyperlinkActivationSheetName;
+      
+      final sheet = excel[linksSheetName]; // 新しいシートを作成
+      
+      // 説明シートを作成
+      final instructionSheet = excel[instructionSheetName]; // 説明シートを作成
 
-      // ヘッダー行を追加
-      sheet.appendRow(['グループ名', 'ラベル', 'リンク', 'メモ']);
+      // ヘッダー行を追加（ローカライズ）
+      sheet.appendRow([
+        l10n.excelColumnGroupName,
+        l10n.excelColumnLabel,
+        l10n.excelColumnLink,
+        l10n.excelColumnMemo,
+      ]);
+      
+      // 説明シートに手順を追加
+      instructionSheet.appendRow([l10n.excelHyperlinkActivationTitle]);
+      instructionSheet.appendRow([]); // 空行
+      instructionSheet.appendRow([l10n.excelHyperlinkActivationStep1]);
+      instructionSheet.appendRow([l10n.excelHyperlinkActivationStep2]);
+      instructionSheet.appendRow([l10n.excelHyperlinkActivationStep3]);
+      instructionSheet.appendRow([l10n.excelHyperlinkActivationStep4]);
+      instructionSheet.appendRow([]); // 空行
+      instructionSheet.appendRow([l10n.excelHyperlinkActivationNote]);
+      instructionSheet.appendRow([]); // 空行
+      instructionSheet.appendRow([l10n.excelSecurityWarningTitle]);
+      instructionSheet.appendRow([l10n.excelSecurityWarningDescription]);
+      instructionSheet.appendRow([l10n.excelSecurityWarningSolution]);
 
       // 選択されたグループのリンクを追加
       for (final group in groups) {
@@ -1087,10 +1123,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // HTTP/HTTPSリンク
               hyperlinkUrl = link.path;
             } else if (link.path.startsWith(r'\\')) {
-              // UNCパス
+              // UNCパス - Excelのセキュリティ警告を回避するため、file:///形式を使用
               hyperlinkUrl = 'file:///${link.path.replaceAll(r'\', '/')}';
             } else if (link.path.contains(':\\')) {
-              // ローカルファイルパス
+              // ローカルファイルパス - Excelのセキュリティ警告を回避するため、file:///形式を使用
               hyperlinkUrl = 'file:///${link.path.replaceAll(r'\', '/')}';
             } else {
               // その他のパスもハイパーリンクとして設定
@@ -1098,7 +1134,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             }
             
             // セルにハイパーリンクを設定
-            // excelパッケージのバージョン2.1.0では、ExcelのHYPERLINK関数を使用してハイパーリンクを作成します
             try {
               // ExcelのHYPERLINK関数を使用してハイパーリンクを作成
               // 形式: =HYPERLINK("URL", "表示テキスト")
@@ -1107,11 +1142,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final escapedText = link.path.replaceAll('"', '""').replaceAll('\n', ' ').replaceAll('\r', '');
               final hyperlinkFormula = '=HYPERLINK("$escapedUrl","$escapedText")';
               
-              // セルに数式を設定（excelパッケージでは、数式は文字列として設定できる可能性があります）
+              // 数式として設定するために、文字列の先頭に=を付けて設定
+              // excelパッケージでは、数式は文字列として設定し、Excelが自動的に認識します
+              // ただし、Excelで開いた際に数式として認識されるように、セルに直接設定します
               linkCell.value = hyperlinkFormula;
               
-              // 数式として認識させるために、セルのタイプを設定する必要があるかもしれません
-              // ただし、excelパッケージのバージョン2.1.0では、この機能が限定的な可能性があります
+              // 注意: excelパッケージのバージョン2.1.0では、数式を直接設定する機能が限定的です
+              // Excelで開いた際に、F2キーを押してEnterキーを押すと、数式が有効になります
+              // または、Excelの「数式」タブから「数式の表示」を切り替えると、数式が有効になります
             } catch (e) {
               // HYPERLINK関数の設定に失敗した場合は、通常のテキストとして表示
               print('ハイパーリンクの設定に失敗: $e');
@@ -1141,6 +1179,238 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (excelBytes != null) {
           await file.writeAsBytes(excelBytes);
           
+          // Excelファイルを開いて数式を有効化する（Windowsのみ）
+          if (Platform.isWindows) {
+            try {
+              // PowerShellスクリプトでExcelファイルを開き、数式を有効化して保存
+              // セキュリティ警告を無効化する設定も追加
+              final escapedPath = file.path.replaceAll(r'\', r'\\').replaceAll('"', '""');
+              final script = '''
+\$ErrorActionPreference = "Stop"
+try {
+  \$excel = New-Object -ComObject Excel.Application
+  \$excel.Visible = \$false
+  \$excel.DisplayAlerts = \$false
+  \$excel.AutomationSecurity = 1  # msoAutomationSecurityLow - セキュリティ警告を無効化
+  \$excel.AskToUpdateLinks = \$false  # リンク更新の確認を無効化
+  \$excel.EnableEvents = \$false  # イベントを無効化
+  
+  # ファイルを開く（ReadOnly: false, UpdateLinks: 0 (xlUpdateLinksNever)）
+  \$workbook = \$excel.Workbooks.Open("$escapedPath", \$false, \$false, \$null, \$null, \$null, \$true, \$null, \$null, \$null, \$null, \$null, \$null, \$null, \$null)
+  \$worksheet = \$workbook.Worksheets.Item(1)
+  
+  # すべてのセルを再計算
+  \$worksheet.Calculate()
+  
+  # ハイパーリンクセルを再設定して数式を有効化
+  \$lastRow = \$worksheet.UsedRange.Rows.Count
+  if (\$lastRow -gt 1) {
+    for (\$row = 2; \$row -le \$lastRow; \$row++) {
+      try {
+        \$cell = \$worksheet.Cells.Item(\$row, 3)  # 3列目（リンク列）
+        \$formula = \$cell.Formula
+        if (\$formula -and \$formula -like "=HYPERLINK*") {
+          # 数式を再設定して有効化（Value2プロパティを使用）
+          \$cell.Value2 = \$formula
+        }
+      } catch {
+        # 個別のセル処理エラーは無視して続行
+        continue
+      }
+    }
+  }
+  
+  # 計算モードを自動に設定
+  \$excel.Calculation = -4105  # xlCalculationAutomatic
+  
+  \$workbook.Save()
+  \$workbook.Close(\$false)
+  \$excel.Quit()
+  
+  # COMオブジェクトの解放
+  [System.Runtime.Interopservices.Marshal]::ReleaseComObject(\$worksheet) | Out-Null
+  [System.Runtime.Interopservices.Marshal]::ReleaseComObject(\$workbook) | Out-Null
+  [System.Runtime.Interopservices.Marshal]::ReleaseComObject(\$excel) | Out-Null
+  [System.GC]::Collect()
+  [System.GC]::WaitForPendingFinalizers()
+  
+  exit 0
+} catch {
+  Write-Error "エラー: \$(\$_.Exception.Message)"
+  Write-Error "スタックトレース: \$(\$_.ScriptStackTrace)"
+  exit 1
+}
+''';
+              
+              final scriptFile = File('${file.parent.path}\\temp_activate_formulas.ps1');
+              await scriptFile.writeAsString(script);
+              
+              final processResult = await Process.run(
+                'powershell.exe',
+                [
+                  '-NoProfile',
+                  '-ExecutionPolicy', 'Bypass',
+                  '-File', scriptFile.path,
+                ],
+                runInShell: true,
+              );
+              
+              // 一時スクリプトファイルを削除
+              try {
+                await scriptFile.delete();
+              } catch (e) {
+                print('一時スクリプトファイルの削除に失敗: $e');
+              }
+              
+              if (processResult.exitCode != 0) {
+                print('PowerShellスクリプトの実行に失敗: ${processResult.stderr}');
+                // エラーが発生しても続行（ファイルは正常に生成されている）
+              }
+            } catch (e) {
+              print('数式の有効化に失敗: $e');
+              // エラーが発生しても続行（ファイルは正常に生成されている）
+            }
+          }
+          
+          // エクスポートしたフォルダを開く
+          try {
+            final directory = file.parent;
+            if (Platform.isWindows) {
+              await Process.run('explorer', [directory.path], runInShell: true);
+            } else if (Platform.isMacOS) {
+              await Process.run('open', [directory.path]);
+            } else if (Platform.isLinux) {
+              await Process.run('xdg-open', [directory.path]);
+            }
+          } catch (e) {
+            print('フォルダを開く際にエラーが発生しました: $e');
+          }
+          
+          // ハイパーリンク有効化の説明ダイアログを表示
+          if (mounted) {
+            await showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.excelHyperlinkActivationTitle),
+                  ],
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.excelHyperlinkActivationDescription,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInstructionStep(
+                        context,
+                        '1',
+                        AppLocalizations.of(context)!.excelHyperlinkActivationStep1,
+                      ),
+                      _buildInstructionStep(
+                        context,
+                        '2',
+                        AppLocalizations.of(context)!.excelHyperlinkActivationStep2,
+                      ),
+                      _buildInstructionStep(
+                        context,
+                        '3',
+                        AppLocalizations.of(context)!.excelHyperlinkActivationStep3,
+                      ),
+                      _buildInstructionStep(
+                        context,
+                        '4',
+                        AppLocalizations.of(context)!.excelHyperlinkActivationStep4,
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.lightbulb_outline, size: 20, color: Colors.blue.shade700),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                AppLocalizations.of(context)!.excelHyperlinkActivationNote,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue.shade900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, size: 20, color: Colors.orange.shade700),
+                                const SizedBox(width: 8),
+                                Text(
+                                  AppLocalizations.of(context)!.excelSecurityWarningTitle,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange.shade900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              AppLocalizations.of(context)!.excelSecurityWarningDescription,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              AppLocalizations.of(context)!.excelSecurityWarningSolution,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade900,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(AppLocalizations.of(context)!.close),
+                  ),
+                ],
+              ),
+            );
+          }
+          
           SnackBarService.showSuccess(
             context,
             AppLocalizations.of(context)!.linksExported(result),
@@ -1159,6 +1429,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _showShortcutHelp(BuildContext context) {
     HomeScreen.showShortcutHelp(context);
+  }
+
+  Widget _buildInstructionStep(BuildContext context, String stepNumber, String instruction) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                stepNumber,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              instruction,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -1261,6 +1567,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               LogicalKeySet(LogicalKeyboardKey.f1): const _ShortcutHelpIntent(),
               LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyH): const _HelpCenterIntent(),
               LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyS): const _SettingsIntent(),
+              LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyX): const _ExportLinksExcelIntent(),
               LogicalKeySet(LogicalKeyboardKey.arrowRight): const _PopupMenuIntent(),
               LogicalKeySet(LogicalKeyboardKey.escape): const _EscapeIntent(),
               LogicalKeySet(LogicalKeyboardKey.tab): const _TabIntent(),
@@ -1370,6 +1677,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return null;
                     }
                     _showSettingsScreen(context);
+                    return null;
+                  },
+                ),
+                _ExportLinksExcelIntent: CallbackAction<_ExportLinksExcelIntent>(
+                  onInvoke: (_) {
+                    // モーダルが開いている場合はショートカットを無効化
+                    if (ModalRoute.of(context)?.isFirst != true) {
+                      return null;
+                    }
+                    final focused = FocusManager.instance.primaryFocus;
+                    if (focused?.context?.widget is! EditableText) {
+                      _exportLinksToExcel(context, ref);
+                    }
                     return null;
                   },
                 ),

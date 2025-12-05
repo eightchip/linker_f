@@ -3667,6 +3667,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportLinksToExcel => 'Export Links to Excel';
 
   @override
+  String get exportLinksToExcelShortcut => 'Export Links to Excel';
+
+  @override
   String get selectGroupsToExport => 'Select Groups to Export';
 
   @override
@@ -3678,6 +3681,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String linksExportFailed(String error) {
     return 'Failed to export links: $error';
   }
+
+  @override
+  String get excelHyperlinkActivationTitle => 'How to Activate Hyperlinks';
+
+  @override
+  String get excelHyperlinkActivationDescription =>
+      'If hyperlinks are displayed as text strings in the exported Excel file, you can activate them all at once using the following steps:';
+
+  @override
+  String get excelHyperlinkActivationStep1 =>
+      'Select the Link column (Column C)';
+
+  @override
+  String get excelHyperlinkActivationStep2 =>
+      'Press Ctrl + H to open the \"Find and Replace\" dialog';
+
+  @override
+  String get excelHyperlinkActivationStep3 =>
+      'Enter \"=HYPERLINK\" in the \"Find what\" field';
+
+  @override
+  String get excelHyperlinkActivationStep4 =>
+      'Enter \"=HYPERLINK\" in the \"Replace with\" field and click \"Replace All\"';
+
+  @override
+  String get excelHyperlinkActivationNote =>
+      'This will cause Excel to re-evaluate the formulas and activate the hyperlinks. The instructions are also documented in the \"How to Activate Hyperlinks\" sheet in the Excel file.';
+
+  @override
+  String get excelLinksSheetName => 'Links';
+
+  @override
+  String get excelHyperlinkActivationSheetName => 'How to Activate Hyperlinks';
+
+  @override
+  String get excelColumnGroupName => 'Group Name';
+
+  @override
+  String get excelColumnLabel => 'Label';
+
+  @override
+  String get excelColumnLink => 'Link';
+
+  @override
+  String get excelColumnMemo => 'Memo';
+
+  @override
+  String get excelSecurityWarningTitle => 'About Security Warnings';
+
+  @override
+  String get excelSecurityWarningDescription =>
+      'When you click a hyperlink, Excel may display a security warning. This is Excel\'s standard security feature for links to local files or network paths.';
+
+  @override
+  String get excelSecurityWarningSolution =>
+      'If a warning appears, click \"Yes\" to continue. Links to trusted files are safe.';
+
+  @override
+  String get officialWebsite => 'Official Website';
+
+  @override
+  String get officialWebsiteDescription =>
+      'For detailed information, screenshots, and demo videos, please visit our official website.';
+
+  @override
+  String get openWebsite => 'Open Website';
 
   @override
   String get noGroupsSelected => 'No groups selected';

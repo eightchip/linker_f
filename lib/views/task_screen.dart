@@ -1982,7 +1982,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     }
                     // リンク管理画面のメニュー項目（まずリンク管理画面に遷移）
                     else if (result == 'add_group' || result == 'search' || 
-                             result == 'group_order' || result == 'shortcut_help') {
+                             result == 'group_order' || result == 'shortcut_help' ||
+                             result == 'export_links_excel') {
                       if (Navigator.of(context).canPop()) {
                         // 通常のナビゲーション（ホーム画面から来た場合）
                         Navigator.of(context).pop();

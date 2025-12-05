@@ -5503,6 +5503,10 @@
   "@exportLinksToExcel": {
     "description": "Export links to Excel menu item"
   },
+  "exportLinksToExcelShortcut": "リンクをエクセル出力",
+  "@exportLinksToExcelShortcut": {
+    "description": "Export links to Excel shortcut description"
+  },
   "selectGroupsToExport": "エクスポートするグループを選択",
   "@selectGroupsToExport": {
     "description": "Select groups to export dialog title"
@@ -5532,6 +5536,82 @@
         "type": "String"
       }
     }
+  },
+  "excelHyperlinkActivationTitle": "ハイパーリンクを有効化する方法",
+  "@excelHyperlinkActivationTitle": {
+    "description": "Excel hyperlink activation instruction title"
+  },
+  "excelHyperlinkActivationDescription": "エクスポートしたExcelファイルで、ハイパーリンクが文字列として表示されている場合、以下の手順で一括して有効化できます：",
+  "@excelHyperlinkActivationDescription": {
+    "description": "Excel hyperlink activation instruction description"
+  },
+  "excelHyperlinkActivationStep1": "リンク列（C列）を選択します",
+  "@excelHyperlinkActivationStep1": {
+    "description": "Excel hyperlink activation step 1"
+  },
+  "excelHyperlinkActivationStep2": "Ctrl + H キーを押して「検索と置換」ダイアログを開きます",
+  "@excelHyperlinkActivationStep2": {
+    "description": "Excel hyperlink activation step 2"
+  },
+  "excelHyperlinkActivationStep3": "検索する文字列に「=HYPERLINK」と入力します",
+  "@excelHyperlinkActivationStep3": {
+    "description": "Excel hyperlink activation step 3"
+  },
+  "excelHyperlinkActivationStep4": "置換後の文字列にも「=HYPERLINK」と入力し、「すべて置換」をクリックします",
+  "@excelHyperlinkActivationStep4": {
+    "description": "Excel hyperlink activation step 4"
+  },
+  "excelHyperlinkActivationNote": "これにより、Excelが数式を再評価し、ハイパーリンクが有効になります。また、Excelファイルの「ハイパーリンク有効化方法」シートにも手順が記載されています。",
+  "@excelHyperlinkActivationNote": {
+    "description": "Excel hyperlink activation note"
+  },
+  "excelLinksSheetName": "リンク一覧",
+  "@excelLinksSheetName": {
+    "description": "Excel links sheet name"
+  },
+  "excelHyperlinkActivationSheetName": "ハイパーリンク有効化方法",
+  "@excelHyperlinkActivationSheetName": {
+    "description": "Excel hyperlink activation sheet name"
+  },
+  "excelColumnGroupName": "グループ名",
+  "@excelColumnGroupName": {
+    "description": "Excel column header for group name"
+  },
+  "excelColumnLabel": "ラベル",
+  "@excelColumnLabel": {
+    "description": "Excel column header for label"
+  },
+  "excelColumnLink": "リンク",
+  "@excelColumnLink": {
+    "description": "Excel column header for link"
+  },
+  "excelColumnMemo": "メモ",
+  "@excelColumnMemo": {
+    "description": "Excel column header for memo"
+  },
+  "excelSecurityWarningTitle": "セキュリティ警告について",
+  "@excelSecurityWarningTitle": {
+    "description": "Excel security warning title"
+  },
+  "excelSecurityWarningDescription": "ハイパーリンクをクリックすると、Excelのセキュリティ警告が表示される場合があります。これは、ローカルファイルやネットワークパスへのリンクに対するExcelの標準的なセキュリティ機能です。",
+  "@excelSecurityWarningDescription": {
+    "description": "Excel security warning description"
+  },
+  "excelSecurityWarningSolution": "警告が表示された場合は、「はい」をクリックして続行してください。信頼できるファイルへのリンクであれば安全です。",
+  "@excelSecurityWarningSolution": {
+    "description": "Excel security warning solution"
+  },
+  "officialWebsite": "公式サイト",
+  "@officialWebsite": {
+    "description": "Official website label"
+  },
+  "officialWebsiteDescription": "詳細な情報やスクリーンショット、デモ動画は公式サイトでご確認いただけます。",
+  "@officialWebsiteDescription": {
+    "description": "Official website description"
+  },
+  "openWebsite": "サイトを開く",
+  "@openWebsite": {
+    "description": "Open website button text"
   },
   "noGroupsSelected": "グループが選択されていません",
   "@noGroupsSelected": {

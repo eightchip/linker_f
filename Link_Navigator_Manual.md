@@ -35,16 +35,14 @@
 - **Search Bar**: Search function (optional display)
 
 ## Screen Categories and Main Entries
-| Category | Screen | Main Entry | Screenshot |
-|---|---|---|---|
-| Link Management | Link Management Screen | 3-dot menu in top right | [Link Management 3-dot Menu](screenshot:link-menu) |
-| Task Management | Task List View (Standard/Compact) | Link Management 3-dot menu → "Task Management" | [Task Screen 3-dot Menu](screenshot:task-menu) |
-| Task Management | Schedule List | Task List Screen 3-dot menu → "Schedule List" | [Schedule List](screenshot:schedule-list) |
+| Category | Screen | Main Entry |
+|---|---|---|
+| Link Management | Link Management Screen | 3-dot menu in top right |
+| Task Management | Task List View (Standard/Compact) | Link Management 3-dot menu → "Task Management" |
+| Task Management | Schedule List | Task List Screen 3-dot menu → "Schedule List" |
 
-### Demo Videos
-- [Link Management: Creating New Groups and Adding Files/Folders](video:add_new_group)
-- [Link Management: Moving Groups, Adding Memos, Creating New Tasks](video:new_memo_task_add)
-- [Task Management: Introduction to Various Features (Compact View / Schedule List)](video:task_screen)
+> 💡 **For detailed information, visit our official website**  
+> For detailed information including screenshots and demo videos, please visit our [official website](https://linknavigator.vercel.app/).
 
 ### Link Management Screen
 - This is the main view for managing groups and links.
@@ -52,7 +50,6 @@
 - Shortcuts are set for major operations such as `Ctrl+N` for adding groups and `Ctrl+F` for displaying the search bar.
 
 #### Global Menu (3-dot Menu)
-- `[View Link Management 3-dot Menu Screenshot](screenshot:link-menu)`
 - **Common Menu**: Accessible from both screens
   - **Settings**: Configure various settings such as theme, color presets, and data management (`Ctrl+Shift+S`)
   - **Help Center**: Display this manual
@@ -87,7 +84,6 @@
 - Can select the number of columns and toggle detailed display.
 
 #### Schedule List
-- `[View Schedule List Screenshot](screenshot:schedule-list)`
 - Check schedules linked to tasks in date order. You can switch between list/weekly/monthly display from the menu in the top right of the screen.
 
 ## Basic Operations
@@ -486,9 +482,6 @@
 - Launch from global menu (3-dot menu) on Link Management Screen / Task Management Screen
 - Quickly navigate to desired items with heading list (table of contents) and keyword search
 - "Export HTML / Print" button displays content in browser, allowing direct printing or PDF saving
-- Clicking "View Screenshot" links in the manual displays images placed in the `assets/help/` folder in a popup (please place image files as needed for your purposes)
-- Clicking "View Video" links plays MP4 files placed in `assets/help/videos/` within the app (warning is displayed if file does not exist).
-
 ## Notification Function
 
 ### Notification Settings
@@ -501,22 +494,6 @@
 - Overdue task notification
 - Test notification
 
-## How to Create Demo Videos
-1. **Record**  
-   - Use Windows 11 standard *Xbox Game Bar* (`Win + G`) → "Capture" widget → Press "Start Recording"  
-   - Or use any recording software such as Clipchamp / OBS Studio
-2. **Edit (Optional)**  
-   - Trimming unnecessary parts and adding subtitles and highlights improves visibility
-3. **Export**  
-   - MP4 (H.264 + AAC) format, resolution 1920x1080 / 60fps or less recommended  
-   - File size of about 50MB or less is stable for loading
-4. **Place**  
-   - Save in `assets/help/videos/` folder with the following names  
-     - `demo_link.mp4` … Link Management Screen demo  
-     - `demo_task.mp4` … Task Management Screen demo  
-     - `demo_schedule.mp4` … Schedule List demo  
-   - To use different names, edit `_videoMap` in `lib/views/help_center_screen.dart`
-5. **Build**  
    - `flutter pub get` → `flutter build windows` (or `flutter run`) to rebuild, then playable from Help Center
 
 ## Keyboard Shortcuts

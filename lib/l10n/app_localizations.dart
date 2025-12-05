@@ -6568,6 +6568,12 @@ abstract class AppLocalizations {
   /// **'リンクをエクセル出力'**
   String get exportLinksToExcel;
 
+  /// Export links to Excel shortcut description
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクをエクセル出力'**
+  String get exportLinksToExcelShortcut;
+
   /// Select groups to export dialog title
   ///
   /// In ja, this message translates to:
@@ -6585,6 +6591,120 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'リンクのエクスポートに失敗しました: {error}'**
   String linksExportFailed(String error);
+
+  /// Excel hyperlink activation instruction title
+  ///
+  /// In ja, this message translates to:
+  /// **'ハイパーリンクを有効化する方法'**
+  String get excelHyperlinkActivationTitle;
+
+  /// Excel hyperlink activation instruction description
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポートしたExcelファイルで、ハイパーリンクが文字列として表示されている場合、以下の手順で一括して有効化できます：'**
+  String get excelHyperlinkActivationDescription;
+
+  /// Excel hyperlink activation step 1
+  ///
+  /// In ja, this message translates to:
+  /// **'リンク列（C列）を選択します'**
+  String get excelHyperlinkActivationStep1;
+
+  /// Excel hyperlink activation step 2
+  ///
+  /// In ja, this message translates to:
+  /// **'Ctrl + H キーを押して「検索と置換」ダイアログを開きます'**
+  String get excelHyperlinkActivationStep2;
+
+  /// Excel hyperlink activation step 3
+  ///
+  /// In ja, this message translates to:
+  /// **'検索する文字列に「=HYPERLINK」と入力します'**
+  String get excelHyperlinkActivationStep3;
+
+  /// Excel hyperlink activation step 4
+  ///
+  /// In ja, this message translates to:
+  /// **'置換後の文字列にも「=HYPERLINK」と入力し、「すべて置換」をクリックします'**
+  String get excelHyperlinkActivationStep4;
+
+  /// Excel hyperlink activation note
+  ///
+  /// In ja, this message translates to:
+  /// **'これにより、Excelが数式を再評価し、ハイパーリンクが有効になります。また、Excelファイルの「ハイパーリンク有効化方法」シートにも手順が記載されています。'**
+  String get excelHyperlinkActivationNote;
+
+  /// Excel links sheet name
+  ///
+  /// In ja, this message translates to:
+  /// **'リンク一覧'**
+  String get excelLinksSheetName;
+
+  /// Excel hyperlink activation sheet name
+  ///
+  /// In ja, this message translates to:
+  /// **'ハイパーリンク有効化方法'**
+  String get excelHyperlinkActivationSheetName;
+
+  /// Excel column header for group name
+  ///
+  /// In ja, this message translates to:
+  /// **'グループ名'**
+  String get excelColumnGroupName;
+
+  /// Excel column header for label
+  ///
+  /// In ja, this message translates to:
+  /// **'ラベル'**
+  String get excelColumnLabel;
+
+  /// Excel column header for link
+  ///
+  /// In ja, this message translates to:
+  /// **'リンク'**
+  String get excelColumnLink;
+
+  /// Excel column header for memo
+  ///
+  /// In ja, this message translates to:
+  /// **'メモ'**
+  String get excelColumnMemo;
+
+  /// Excel security warning title
+  ///
+  /// In ja, this message translates to:
+  /// **'セキュリティ警告について'**
+  String get excelSecurityWarningTitle;
+
+  /// Excel security warning description
+  ///
+  /// In ja, this message translates to:
+  /// **'ハイパーリンクをクリックすると、Excelのセキュリティ警告が表示される場合があります。これは、ローカルファイルやネットワークパスへのリンクに対するExcelの標準的なセキュリティ機能です。'**
+  String get excelSecurityWarningDescription;
+
+  /// Excel security warning solution
+  ///
+  /// In ja, this message translates to:
+  /// **'警告が表示された場合は、「はい」をクリックして続行してください。信頼できるファイルへのリンクであれば安全です。'**
+  String get excelSecurityWarningSolution;
+
+  /// Official website label
+  ///
+  /// In ja, this message translates to:
+  /// **'公式サイト'**
+  String get officialWebsite;
+
+  /// Official website description
+  ///
+  /// In ja, this message translates to:
+  /// **'詳細な情報やスクリーンショット、デモ動画は公式サイトでご確認いただけます。'**
+  String get officialWebsiteDescription;
+
+  /// Open website button text
+  ///
+  /// In ja, this message translates to:
+  /// **'サイトを開く'**
+  String get openWebsite;
 
   /// No groups selected message
   ///
