@@ -146,7 +146,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, '予定の取得に失敗しました: $e');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.scheduleFetchFailed(e.toString()));
       }
       setState(() {
         _isLoading = false;
@@ -600,7 +600,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
         }
       } catch (e) {
         if (mounted) {
-          SnackBarService.showError(context, '予定「${item.event['Subject']}」の割り当てに失敗しました: $e');
+          SnackBarService.showError(context, AppLocalizations.of(context)!.scheduleAssignmentFailed(item.event['Subject']?.toString() ?? '', e.toString()));
         }
       }
     }
@@ -691,7 +691,7 @@ class _OutlookCalendarImportDialogV2State extends ConsumerState<OutlookCalendarI
       }
     } catch (e) {
       if (mounted) {
-        SnackBarService.showError(context, 'タスクの作成に失敗しました: $e');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.taskCreationFailed(e.toString()));
       }
     }
   }
@@ -1179,9 +1179,9 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
                 DropdownButton<TaskStatus?>(
                   value: _selectedStatus,
                   items: [
-                    const DropdownMenuItem<TaskStatus?>(
+                    DropdownMenuItem<TaskStatus?>(
                       value: null,
-                      child: Text('すべて'),
+                      child: Text(AppLocalizations.of(context)!.all),
                     ),
                     ...TaskStatus.values.map(
                       (status) => DropdownMenuItem<TaskStatus?>(
@@ -1232,7 +1232,7 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
                           _showAllTasks = true;
                         });
                       },
-                      child: const Text('候補をさらに表示'),
+                      child: Text(AppLocalizations.of(context)!.showMoreCandidates),
                     ),
                   ],
                 ),
@@ -1241,8 +1241,8 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
             const Divider(),
             Expanded(
               child: filteredTasks.isEmpty
-                  ? const Center(
-                      child: Text('条件に合致するタスクがありません'),
+                  ? Center(
+                      child: Text(AppLocalizations.of(context)!.noMatchingTasks),
                     )
                   : ListView.separated(
                       itemCount: filteredTasks.length,
@@ -1330,7 +1330,7 @@ class _TaskSelectionDialogState extends State<_TaskSelectionDialog> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('キャンセル'),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                 ),
               ],
             ),

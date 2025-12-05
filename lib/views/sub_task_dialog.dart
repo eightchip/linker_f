@@ -307,7 +307,7 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                         const SizedBox(width: 8),
                         TextButton(
                           onPressed: _cancelEdit,
-                          child: const Text('キャンセル'),
+                          child: Text(AppLocalizations.of(context)!.cancel),
                         ),
                       ],
                     ],

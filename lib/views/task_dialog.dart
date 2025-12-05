@@ -701,7 +701,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                         ElevatedButton.icon(
                           onPressed: _showCompletionReportDialog,
                           icon: const Icon(Icons.report),
-                          label: const Text('完了報告'),
+                          label: Text(AppLocalizations.of(context)!.completionReport),
                           style: AppButtonStyles.primary(context),
                         ),
                         const SizedBox(width: 8),
@@ -1140,7 +1140,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       controller: _tagsController,
       decoration: InputDecoration(
         labelText: AppLocalizations.of(context)!.tags,
-        hintText: 'カンマ区切りで入力（例: 仕事, 重要, プロジェクトA）',
+        hintText: AppLocalizations.of(context)!.tagsHint,
         border: const OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       ),
@@ -1257,12 +1257,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               child: InkWell(
                 onTap: () => _selectDate(context, false),
                 child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'リマインダー日',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.reminderDate,
+                    border: const OutlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
-                  child: Text(_reminderTime != null ? DateFormat('yyyy/MM/dd').format(_reminderTime!) : 'リマインダー日を選択',
+                  child: Text(_reminderTime != null ? DateFormat('yyyy/MM/dd').format(_reminderTime!) : AppLocalizations.of(context)!.selectReminderDate,
                     style: const TextStyle(fontSize: 14)),
                 ),
               ),
@@ -1272,12 +1272,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
               child: InkWell(
                 onTap: _reminderTime != null ? () => _selectTime(context) : null,
                 child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'リマインダー時刻',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.reminderTime,
+                    border: const OutlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
-                  child: Text(_reminderTime != null ? DateFormat('HH:mm').format(_reminderTime!) : '時刻を選択',
+                  child: Text(_reminderTime != null ? DateFormat('HH:mm').format(_reminderTime!) : AppLocalizations.of(context)!.selectTime,
                     style: const TextStyle(fontSize: 14)),
                 ),
               ),
@@ -1291,7 +1291,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                   _recurringReminderPattern = '';
                 }),
                 icon: const Icon(Icons.clear, size: 18),
-                tooltip: 'リマインダーをクリア',
+                tooltip: AppLocalizations.of(context)!.clearReminder,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 padding: EdgeInsets.zero,
               ),
@@ -1301,7 +1301,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         Row(
           children: [
             Checkbox(value: _isRecurringReminder, onChanged: (value) => setState(() => _isRecurringReminder = value ?? false)),
-            Text('繰り返しリマインダー',
+            Text(AppLocalizations.of(context)!.recurringReminder,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
             if (_isRecurringReminder) ...[
               const SizedBox(width: 16),
@@ -1852,7 +1852,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ElevatedButton(
                   onPressed: () async {
                     if (widget.task == null) {
-                      SnackBarService.showInfo(context, '先にタスクを作成してください');
+                      SnackBarService.showInfo(context, AppLocalizations.of(context)!.createTaskFirst);
                       return;
                     }
                     final vm = ref.read(subTaskViewModelProvider.notifier);
@@ -1861,7 +1861,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       // 追加
                       final title = _subTaskTitleController.text.trim();
                       if (title.isEmpty) {
-                        SnackBarService.showError(context, 'サブタスクのタイトルは必須です');
+                        SnackBarService.showError(context, AppLocalizations.of(context)!.subTaskTitleRequired);
                         return;
                       }
                       final newSub = vm.createSubTask(
@@ -1878,7 +1878,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                       // 更新
                       final title = _subTaskTitleController.text.trim();
                       if (title.isEmpty) {
-                        SnackBarService.showError(context, 'サブタスクのタイトルは必須です');
+                        SnackBarService.showError(context, AppLocalizations.of(context)!.subTaskTitleRequired);
                         return;
                       }
                       final updated = _editingSubTask!.copyWith(
@@ -2121,10 +2121,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   // 予定編集セクション
   Widget _buildScheduleSection() {
     if (widget.task == null) {
-      return const Card(
+      return Card(
         child: Padding(
-          padding: EdgeInsets.all(12),
-          child: Text('※ タスク作成後に予定編集が可能になります'),
+          padding: const EdgeInsets.all(12),
+          child: Text(AppLocalizations.of(context)!.scheduleEditAvailableAfterTaskCreation),
         ),
       );
     }
@@ -2303,7 +2303,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 ElevatedButton(
                   onPressed: () async {
                     if (widget.task == null) {
-                      SnackBarService.showInfo(context, '先にタスクを作成してください');
+                      SnackBarService.showInfo(context, AppLocalizations.of(context)!.createTaskFirst);
                       return;
                     }
                     if (_scheduleStartDate == null || _scheduleStartTime == null) {
@@ -2361,7 +2361,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                               children: [
                                 Icon(Icons.warning, color: Colors.orange.shade700),
                                 const SizedBox(width: 8),
-                                const Text('予定の重複'),
+                                Text(AppLocalizations.of(context)!.scheduleOverlap),
                               ],
                             ),
                             content: SizedBox(
@@ -2371,7 +2371,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '以下の予定と時間が重複しています：',
+                                    AppLocalizations.of(context)!.overlappingSchedulesMessage,
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.orange.shade900,
@@ -2401,9 +2401,9 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                                             subtitle: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Text('時間: $timeText'),
+                                                Text('${AppLocalizations.of(context)!.time}: $timeText'),
                                                 if (overlapping.location != null && overlapping.location!.isNotEmpty)
-                                                  Text('場所: ${overlapping.location}'),
+                                                  Text('${AppLocalizations.of(context)!.location}: ${overlapping.location}'),
                                               ],
                                             ),
                                             leading: Icon(Icons.event, color: Colors.orange.shade700),
@@ -2434,7 +2434,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                                   backgroundColor: Colors.orange.shade700,
                                   foregroundColor: Colors.white,
                                 ),
-                                child: const Text('追加する'),
+                                child: Text(AppLocalizations.of(context)!.add),
                               ),
                             ],
                           ),
@@ -3949,9 +3949,9 @@ ${l10n.sentId} $token
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('宛先: ${log.to}'),
-                                  Text('送信日時: $dateStr'),
-                                  Text('アプリ: ${log.app}'),
+                                  Text('${AppLocalizations.of(context)!.to}: ${log.to}'),
+                                  Text('${AppLocalizations.of(context)!.sentDateTime}: $dateStr'),
+                                  Text('${AppLocalizations.of(context)!.app}: ${log.app}'),
                                   const SizedBox(height: 8),
                                   Container(
                                     padding: const EdgeInsets.all(6),
@@ -3984,7 +3984,7 @@ ${l10n.sentId} $token
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('キャンセル'),
+                child: Text(AppLocalizations.of(context)!.cancel),
               ),
             ],
           );
@@ -4008,7 +4008,7 @@ ${l10n.sentId} $token
         SnackBarService.showSuccess(context, AppLocalizations.of(context)!.sendHistoryReused);
       }
     } catch (e) {
-      SnackBarService.showError(context, '履歴取得エラー: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.historyFetchError(e.toString()));
     }
   }
 
@@ -4100,9 +4100,9 @@ ${l10n.sentId} $token
         // 完了報告送信（簡易版）
         await Future.delayed(const Duration(seconds: 1));
         
-        SnackBarService.showSuccess(context, '完了報告を送信しました');
+        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.completionReportSent);
       } catch (e) {
-        SnackBarService.showError(context, '完了報告送信エラー: $e');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.completionReportSendError(e.toString()));
       }
     }
   }
@@ -4229,7 +4229,7 @@ class _CompletionReportDialogState extends State<_CompletionReportDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('完了報告'),
+      title: Text(AppLocalizations.of(context)!.completionReport),
       content: Form(
         key: _formKey,
         child: Column(
@@ -4237,26 +4237,26 @@ class _CompletionReportDialogState extends State<_CompletionReportDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'タスク: ${widget.taskTitle}',
+              '${AppLocalizations.of(context)!.task}: ${widget.taskTitle}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              '依頼者: ${widget.requesterEmail}',
+              '${AppLocalizations.of(context)!.requester}: ${widget.requesterEmail}',
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: '完了メモ',
-                hintText: '完了内容や結果を記入してください',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.completionNotes,
+                hintText: AppLocalizations.of(context)!.completionNotesHint,
                 border: OutlineInputBorder(),
               ),
               maxLines: 5,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return '完了メモを入力してください';
+                  return AppLocalizations.of(context)!.completionNotesRequired;
                 }
                 return null;
               },
@@ -4267,7 +4267,7 @@ class _CompletionReportDialogState extends State<_CompletionReportDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
+          child: Text(AppLocalizations.of(context)!.cancel),
         ),
         ElevatedButton(
           onPressed: () {
@@ -4275,7 +4275,7 @@ class _CompletionReportDialogState extends State<_CompletionReportDialog> {
               Navigator.of(context).pop(_notesController.text.trim());
             }
           },
-          child: const Text('完了報告を送信'),
+          child: Text(AppLocalizations.of(context)!.sendCompletionReport),
         ),
       ],
     );
@@ -4361,7 +4361,7 @@ class _ContactAddDialogState extends State<_ContactAddDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
+          child: Text(AppLocalizations.of(context)!.cancel),
         ),
         ElevatedButton(
           onPressed: () async {
@@ -4380,11 +4380,11 @@ class _ContactAddDialogState extends State<_ContactAddDialog> {
                 
                 Navigator.of(context).pop(contact);
               } catch (e) {
-                SnackBarService.showError(context, '連絡先追加エラー: $e');
+                SnackBarService.showError(context, AppLocalizations.of(context)!.contactAddError(e.toString()));
               }
             }
           },
-          child: const Text('追加'),
+          child: Text(AppLocalizations.of(context)!.add),
         ),
       ],
     );
@@ -4497,13 +4497,13 @@ class _HistorySelectionDialogState extends State<_HistorySelectionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
+          child: Text(AppLocalizations.of(context)!.cancel),
         ),
         ElevatedButton(
           onPressed: _selectedContacts.isEmpty
             ? null
             : () => Navigator.of(context).pop(_selectedContacts),
-          child: Text('選択 (${_selectedContacts.length})'),
+          child: Text(AppLocalizations.of(context)!.selectWithCount(_selectedContacts.length)),
         ),
       ],
     );
@@ -4561,7 +4561,7 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('時間を選択'),
+      title: Text(AppLocalizations.of(context)!.selectTime),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -4671,13 +4671,13 @@ class _CustomTimePickerDialogState extends State<CustomTimePickerDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
+          child: Text(AppLocalizations.of(context)!.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(
             TimeOfDay(hour: _hour, minute: _minute),
           ),
-          child: const Text('OK'),
+          child: Text(AppLocalizations.of(context)!.ok),
         ),
       ],
     );

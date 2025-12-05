@@ -324,7 +324,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get grouping => 'Grouping';
 
   @override
-  String get createFromTemplate => 'Create from template';
+  String get createFromTemplate => 'Create from Template';
 
   @override
   String get toggleStatisticsSearchBar => 'Show/hide statistics/search bar';
@@ -357,6 +357,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchHistory => 'Search History';
+
+  @override
+  String get noSearchHistory => 'No search history';
 
   @override
   String get clear => 'Clear';
@@ -676,6 +679,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String showOtherLinks(int count) {
     return 'Show $count more links';
   }
+
+  @override
+  String get showMore => 'Show more';
 
   @override
   String get editTask => 'Edit Task';
@@ -1005,10 +1011,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterManagement => 'フィルター管理';
 
   @override
-  String get urgentTasks => '緊急タスク';
+  String get urgentTasks => 'Urgent Tasks';
 
   @override
-  String get todayTasks => '今日のタスク';
+  String get todayTasks => 'Today\'s Tasks';
 
   @override
   String get total => 'Total';
@@ -1259,7 +1265,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteScheduleConfirm(String title) {
-    return 'Do you want to delete \"$title\"?';
+    return 'Delete \"$title\"?';
   }
 
   @override
@@ -1347,6 +1353,95 @@ class AppLocalizationsEn extends AppLocalizations {
   String fileOpenFailed(String path) {
     return 'Failed to open file: $path';
   }
+
+  @override
+  String contactAddError(String error) {
+    return 'Contact add error: $error';
+  }
+
+  @override
+  String linksAddedToTasks(int count) {
+    return 'Added links to $count tasks';
+  }
+
+  @override
+  String linksRemovedFromTasks(int count) {
+    return 'Removed links from $count tasks';
+  }
+
+  @override
+  String linksReplacedInTasks(int count) {
+    return 'Replaced links in $count tasks';
+  }
+
+  @override
+  String linksChangedInTasks(int count) {
+    return 'Changed links in $count tasks';
+  }
+
+  @override
+  String tagsAddedToTasks(int count) {
+    return 'Added tags to $count tasks';
+  }
+
+  @override
+  String tagsRemovedFromTasks(int count) {
+    return 'Removed tags from $count tasks';
+  }
+
+  @override
+  String tagsReplacedInTasks(int count) {
+    return 'Replaced tags in $count tasks';
+  }
+
+  @override
+  String tagsChangedInTasks(int count) {
+    return 'Changed tags in $count tasks';
+  }
+
+  @override
+  String syncingTask(String title) {
+    return 'Syncing \"$title\"...';
+  }
+
+  @override
+  String get fromTodayOneWeek => '1 Week from Today';
+
+  @override
+  String get fromTodayTwoWeeks => '2 Weeks from Today';
+
+  @override
+  String get fromTodayOneMonth => '1 Month from Today';
+
+  @override
+  String get fromTodayThreeMonths => '3 Months from Today';
+
+  @override
+  String get tagsCommaSeparated => 'Tags (comma-separated)';
+
+  @override
+  String get tagsExample => 'Example: Urgent, Important, Project A';
+
+  @override
+  String get tomorrow => 'Tomorrow';
+
+  @override
+  String get thisWeek => 'This Week';
+
+  @override
+  String get nextWeek => 'Next Week';
+
+  @override
+  String get thisMonth => 'This Month';
+
+  @override
+  String get later => 'Later';
+
+  @override
+  String get overdue => 'Overdue';
+
+  @override
+  String get noDueDate => 'No Due Date';
 
   @override
   String get colorPresets => 'Color Presets';
@@ -2624,7 +2719,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tagsHint =>
-      'Enter tags separated by commas (e.g., work, important, project)';
+      'Enter comma-separated (e.g., Work, Important, Project A)';
 
   @override
   String get faviconUrlHint => 'Example: https://www.resonabank.co.jp/';
@@ -3083,7 +3178,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mailInfo => '[Mail Information]';
 
   @override
-  String get sentDateTime => 'Sent Date/Time:';
+  String get sentDateTime => 'Sent Date/Time';
 
   @override
   String get sentId => 'Sent ID:';
@@ -3414,7 +3509,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String itemsCount(int count) {
-    return '$count';
+    return '$count items';
   }
 
   @override
@@ -3551,4 +3646,158 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noTasks => 'No tasks';
+
+  @override
+  String get clickToEditAndDragToReorder =>
+      'Click to edit\nDrag icon to change order';
+
+  @override
+  String get reminderDate => 'Reminder Date';
+
+  @override
+  String get reminderTime => 'Reminder Time';
+
+  @override
+  String get selectReminderDate => 'Select Reminder Date';
+
+  @override
+  String get selectTime => 'Select Time';
+
+  @override
+  String get exportLinksToExcel => 'Export Links to Excel';
+
+  @override
+  String get selectGroupsToExport => 'Select Groups to Export';
+
+  @override
+  String linksExported(String filePath) {
+    return 'Links exported to Excel: $filePath';
+  }
+
+  @override
+  String linksExportFailed(String error) {
+    return 'Failed to export links: $error';
+  }
+
+  @override
+  String get noGroupsSelected => 'No groups selected';
+
+  @override
+  String get completionReport => 'Completion Report';
+
+  @override
+  String get scheduleEditAvailableAfterTaskCreation =>
+      '※ Schedule editing will be available after task creation';
+
+  @override
+  String get scheduleOverlap => 'Schedule Overlap';
+
+  @override
+  String get overlappingSchedulesMessage =>
+      'The following schedules overlap in time:';
+
+  @override
+  String get time => 'Time';
+
+  @override
+  String get completionNotes => 'Completion Notes';
+
+  @override
+  String get completionNotesHint => 'Enter completion details and results';
+
+  @override
+  String get completionNotesRequired => 'Please enter completion notes';
+
+  @override
+  String get sendCompletionReport => 'Send Completion Report';
+
+  @override
+  String get clearReminder => 'Clear Reminder';
+
+  @override
+  String get recurringReminder => 'Recurring Reminder';
+
+  @override
+  String selectWithCount(int count) {
+    return 'Select ($count)';
+  }
+
+  @override
+  String get to => 'To';
+
+  @override
+  String get app => 'App';
+
+  @override
+  String get bulkAssignLinks => 'Bulk Assign Links';
+
+  @override
+  String get replaceAllTags => 'Replace all existing tags';
+
+  @override
+  String get goToSettings => 'Go to Settings';
+
+  @override
+  String get mailAction => 'Mail Action';
+
+  @override
+  String get selectMailAction =>
+      'Please select a mail action related to this task.';
+
+  @override
+  String get reply => 'Reply';
+
+  @override
+  String get showMoreCandidates => 'Show More Candidates';
+
+  @override
+  String get selectTask => 'Select Task';
+
+  @override
+  String get createTaskFirstToAddSchedule =>
+      'Please create a task first to add a schedule';
+
+  @override
+  String get scheduleCopied => 'Schedule copied';
+
+  @override
+  String get scheduleDeleted => 'Schedule deleted';
+
+  @override
+  String scheduleFetchFailed(String error) {
+    return 'Failed to fetch schedules: $error';
+  }
+
+  @override
+  String scheduleAssignmentFailed(String title, String error) {
+    return 'Failed to assign schedule \"$title\": $error';
+  }
+
+  @override
+  String taskCreationFailed(String error) {
+    return 'Failed to create task: $error';
+  }
+
+  @override
+  String get needAtLeastTwoGroups =>
+      'At least two groups are required to change the order';
+
+  @override
+  String get createTaskFirst => 'Please create a task first';
+
+  @override
+  String get subTaskTitleRequired => 'Sub task title is required';
+
+  @override
+  String historyFetchError(String error) {
+    return 'History fetch error: $error';
+  }
+
+  @override
+  String get completionReportSent => 'Completion report sent';
+
+  @override
+  String completionReportSendError(String error) {
+    return 'Completion report send error: $error';
+  }
 }

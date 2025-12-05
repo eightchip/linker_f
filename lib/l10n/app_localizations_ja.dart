@@ -252,7 +252,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String linksCount(int count) {
-    return '$count件のリンク';
+    return '$count個のリンク';
   }
 
   @override
@@ -349,6 +349,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get searchHistory => '検索履歴';
+
+  @override
+  String get noSearchHistory => '検索履歴がありません';
 
   @override
   String get clear => 'クリア';
@@ -669,6 +672,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get showMore => 'もっと見る';
+
+  @override
   String get editTask => 'タスクを編集';
 
   @override
@@ -732,7 +738,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get description => '説明';
 
   @override
-  String get add => '追加';
+  String get add => '追加する';
 
   @override
   String get creationDate => '作成日';
@@ -1331,6 +1337,95 @@ class AppLocalizationsJa extends AppLocalizations {
   String fileOpenFailed(String path) {
     return 'ファイルを開けませんでした: $path';
   }
+
+  @override
+  String contactAddError(String error) {
+    return '連絡先追加エラー: $error';
+  }
+
+  @override
+  String linksAddedToTasks(int count) {
+    return '$count件のタスクにリンクを追加しました';
+  }
+
+  @override
+  String linksRemovedFromTasks(int count) {
+    return '$count件のタスクからリンクを削除しました';
+  }
+
+  @override
+  String linksReplacedInTasks(int count) {
+    return '$count件のタスクのリンクを置き換えました';
+  }
+
+  @override
+  String linksChangedInTasks(int count) {
+    return '$count件のタスクのリンクを変更しました';
+  }
+
+  @override
+  String tagsAddedToTasks(int count) {
+    return '$count件のタスクにタグを追加しました';
+  }
+
+  @override
+  String tagsRemovedFromTasks(int count) {
+    return '$count件のタスクからタグを削除しました';
+  }
+
+  @override
+  String tagsReplacedInTasks(int count) {
+    return '$count件のタスクのタグを置き換えました';
+  }
+
+  @override
+  String tagsChangedInTasks(int count) {
+    return '$count件のタスクのタグを変更しました';
+  }
+
+  @override
+  String syncingTask(String title) {
+    return '「$title」を同期中...';
+  }
+
+  @override
+  String get fromTodayOneWeek => '今日から1週間';
+
+  @override
+  String get fromTodayTwoWeeks => '今日から2週間';
+
+  @override
+  String get fromTodayOneMonth => '今日から1ヶ月';
+
+  @override
+  String get fromTodayThreeMonths => '今日から3ヶ月';
+
+  @override
+  String get tagsCommaSeparated => 'タグ（カンマ区切り）';
+
+  @override
+  String get tagsExample => '例: 緊急,重要,プロジェクトA';
+
+  @override
+  String get tomorrow => '明日';
+
+  @override
+  String get thisWeek => '今週';
+
+  @override
+  String get nextWeek => '来週';
+
+  @override
+  String get thisMonth => '今月';
+
+  @override
+  String get later => '来月以降';
+
+  @override
+  String get overdue => '期限切れ';
+
+  @override
+  String get noDueDate => '期限未設定';
 
   @override
   String get colorPresets => 'カラープリセット';
@@ -2579,7 +2674,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get pathUrlHint => 'ファイルパスまたはURLを入力...';
 
   @override
-  String get tagsHint => 'カンマ区切りでタグを入力（例: 仕事, 重要, プロジェクト）';
+  String get tagsHint => 'カンマ区切りで入力（例: 仕事, 重要, プロジェクトA）';
 
   @override
   String get faviconUrlHint => '例: https://www.resonabank.co.jp/';
@@ -3028,7 +3123,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get mailInfo => '【メール情報】';
 
   @override
-  String get sentDateTime => '送信日時:';
+  String get sentDateTime => '送信日時';
 
   @override
   String get sentId => '送信ID:';
@@ -3355,7 +3450,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String itemsCount(int count) {
-    return '$count個';
+    return '$count件';
   }
 
   @override
@@ -3490,4 +3585,152 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noTasks => 'タスクがありません';
+
+  @override
+  String get clickToEditAndDragToReorder => 'クリックで編集\nドラッグアイコンで順序変更';
+
+  @override
+  String get reminderDate => 'リマインダー日';
+
+  @override
+  String get reminderTime => 'リマインダー時刻';
+
+  @override
+  String get selectReminderDate => 'リマインダー日を選択';
+
+  @override
+  String get selectTime => '時間を選択';
+
+  @override
+  String get exportLinksToExcel => 'リンクをエクセル出力';
+
+  @override
+  String get selectGroupsToExport => 'エクスポートするグループを選択';
+
+  @override
+  String linksExported(String filePath) {
+    return 'リンクをエクセル形式でエクスポートしました: $filePath';
+  }
+
+  @override
+  String linksExportFailed(String error) {
+    return 'リンクのエクスポートに失敗しました: $error';
+  }
+
+  @override
+  String get noGroupsSelected => 'グループが選択されていません';
+
+  @override
+  String get completionReport => '完了報告';
+
+  @override
+  String get scheduleEditAvailableAfterTaskCreation => '※ タスク作成後に予定編集が可能になります';
+
+  @override
+  String get scheduleOverlap => '予定の重複';
+
+  @override
+  String get overlappingSchedulesMessage => '以下の予定と時間が重複しています：';
+
+  @override
+  String get time => '時間';
+
+  @override
+  String get completionNotes => '完了メモ';
+
+  @override
+  String get completionNotesHint => '完了内容や結果を記入してください';
+
+  @override
+  String get completionNotesRequired => '完了メモを入力してください';
+
+  @override
+  String get sendCompletionReport => '完了報告を送信';
+
+  @override
+  String get clearReminder => 'リマインダーをクリア';
+
+  @override
+  String get recurringReminder => '繰り返しリマインダー';
+
+  @override
+  String selectWithCount(int count) {
+    return '選択 ($count)';
+  }
+
+  @override
+  String get to => '宛先';
+
+  @override
+  String get app => 'アプリ';
+
+  @override
+  String get bulkAssignLinks => 'リンクを一括割り当て';
+
+  @override
+  String get replaceAllTags => '既存のタグを全て置き換えます';
+
+  @override
+  String get goToSettings => '設定画面へ';
+
+  @override
+  String get mailAction => 'メールアクション';
+
+  @override
+  String get selectMailAction => 'このタスクに関連するメールアクションを選択してください。';
+
+  @override
+  String get reply => '返信';
+
+  @override
+  String get showMoreCandidates => '候補をさらに表示';
+
+  @override
+  String get selectTask => 'タスクを選択';
+
+  @override
+  String get createTaskFirstToAddSchedule => '予定を追加するには、まずタスクを作成してください';
+
+  @override
+  String get scheduleCopied => '予定をコピーしました';
+
+  @override
+  String get scheduleDeleted => '予定を削除しました';
+
+  @override
+  String scheduleFetchFailed(String error) {
+    return '予定の取得に失敗しました: $error';
+  }
+
+  @override
+  String scheduleAssignmentFailed(String title, String error) {
+    return '予定「$title」の割り当てに失敗しました: $error';
+  }
+
+  @override
+  String taskCreationFailed(String error) {
+    return 'タスクの作成に失敗しました: $error';
+  }
+
+  @override
+  String get needAtLeastTwoGroups => '並び順を変更するには2つ以上のグループが必要です';
+
+  @override
+  String get createTaskFirst => '先にタスクを作成してください';
+
+  @override
+  String get subTaskTitleRequired => 'サブタスクのタイトルは必須です';
+
+  @override
+  String historyFetchError(String error) {
+    return '履歴取得エラー: $error';
+  }
+
+  @override
+  String get completionReportSent => '完了報告を送信しました';
+
+  @override
+  String completionReportSendError(String error) {
+    return '完了報告送信エラー: $error';
+  }
 }

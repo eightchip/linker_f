@@ -484,7 +484,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     final tasks = ref.read(taskViewModelProvider);
     if (tasks.isEmpty) {
       if (mounted) {
-        SnackBarService.showInfo(context, '予定を追加するには、まずタスクを作成してください');
+        SnackBarService.showInfo(context, AppLocalizations.of(context)!.createTaskFirstToAddSchedule);
       }
       return;
     }
@@ -493,7 +493,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     final selectedTask = await showDialog<TaskItem>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('タスクを選択'),
+        title: Text(AppLocalizations.of(context)!.selectTask),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView.builder(
@@ -1095,7 +1095,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           children: [
             ListTile(
               leading: const Icon(Icons.edit),
-              title: const Text('編集'),
+              title: Text(AppLocalizations.of(context)!.edit),
               onTap: () {
                 Navigator.pop(context);
                 _editSchedule(schedule, task);
@@ -1103,7 +1103,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             ),
             ListTile(
               leading: const Icon(Icons.copy),
-              title: const Text('コピー'),
+              title: Text(AppLocalizations.of(context)!.copy),
               onTap: () {
                 Navigator.pop(context);
                 _copySchedule(schedule, task);
@@ -1216,7 +1216,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
             children: [
               Icon(Icons.warning, color: Colors.orange.shade700),
               const SizedBox(width: 8),
-              const Text('予定の重複'),
+              Text(AppLocalizations.of(context)!.scheduleOverlap),
             ],
           ),
           content: SizedBox(
@@ -1226,7 +1226,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '以下の予定と時間が重複しています：',
+                  AppLocalizations.of(context)!.overlappingSchedulesMessage,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.orange.shade900,
@@ -1255,9 +1255,9 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('時間: $timeText'),
+                              Text('${AppLocalizations.of(context)!.time}: $timeText'),
                               if (overlapping.location != null && overlapping.location!.isNotEmpty)
-                                Text('場所: ${overlapping.location}'),
+                                Text('${AppLocalizations.of(context)!.location}: ${overlapping.location}'),
                             ],
                           ),
                           leading: Icon(Icons.event, color: Colors.orange.shade700),
@@ -1280,7 +1280,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
@@ -1288,7 +1288,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                 backgroundColor: Colors.orange.shade700,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('追加する'),
+              child: Text(AppLocalizations.of(context)!.add),
             ),
           ],
         ),
@@ -1302,7 +1302,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     await vm.addSchedule(newSchedule);
     
     if (mounted) {
-      SnackBarService.showSuccess(context, '予定をコピーしました');
+        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.scheduleCopied);
     }
   }
 
@@ -1327,17 +1327,17 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('予定を削除'),
-        content: Text('「${schedule.title}」を削除しますか？'),
+        title: Text(AppLocalizations.of(context)!.deleteSchedule),
+        content: Text(AppLocalizations.of(context)!.deleteScheduleConfirm(schedule.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
+            child: Text(AppLocalizations.of(context)!.delete),
           ),
         ],
       ),
@@ -1348,7 +1348,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       await vm.deleteSchedule(schedule.id);
       
       if (mounted) {
-        SnackBarService.showSuccess(context, '予定を削除しました');
+        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.scheduleDeleted);
       }
     }
   }

@@ -104,7 +104,7 @@ abstract class AppLocalizations {
   /// **'Link Navigator'**
   String get appTitle;
 
-  /// 設定画面のタイトル
+  /// Settings label
   ///
   /// In ja, this message translates to:
   /// **'設定'**
@@ -572,10 +572,10 @@ abstract class AppLocalizations {
   /// **'ショートカット一覧を表示'**
   String get showShortcutList;
 
-  /// リンク数表示
+  /// Links count display
   ///
   /// In ja, this message translates to:
-  /// **'{count}件のリンク'**
+  /// **'{count}個のリンク'**
   String linksCount(int count);
 
   /// 検索フィールドのプレースホルダー
@@ -620,7 +620,7 @@ abstract class AppLocalizations {
   /// **'タイプ'**
   String get type;
 
-  /// すべてのタイプ
+  /// All option
   ///
   /// In ja, this message translates to:
   /// **'すべて'**
@@ -668,37 +668,37 @@ abstract class AppLocalizations {
   /// **'タスク管理（タスク管理画面で有効）'**
   String get taskManagementEnabled;
 
-  /// 新規タスクダイアログタイトル
+  /// New task label
   ///
   /// In ja, this message translates to:
   /// **'新しいタスク'**
   String get newTask;
 
-  /// 一括選択モードメニュー項目
+  /// Bulk select mode label
   ///
   /// In ja, this message translates to:
   /// **'一括選択モード'**
   String get bulkSelectMode;
 
-  /// CSV出力メニュー項目
+  /// CSV export label
   ///
   /// In ja, this message translates to:
   /// **'CSV出力'**
   String get csvExport;
 
-  /// スケジュール一覧メニュー項目
+  /// Schedule list label
   ///
   /// In ja, this message translates to:
   /// **'スケジュール一覧'**
   String get scheduleList;
 
-  /// Grouping dialog title
+  /// Grouping label
   ///
   /// In ja, this message translates to:
   /// **'グループ化'**
   String get grouping;
 
-  /// テンプレートから作成ショートカット説明
+  /// Create from template label
   ///
   /// In ja, this message translates to:
   /// **'テンプレートから作成'**
@@ -763,6 +763,12 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'検索履歴'**
   String get searchHistory;
+
+  /// 検索履歴がない場合のメッセージ
+  ///
+  /// In ja, this message translates to:
+  /// **'検索履歴がありません'**
+  String get noSearchHistory;
 
   /// クリアツールチップ
   ///
@@ -1118,7 +1124,7 @@ abstract class AppLocalizations {
   /// **'このグループを削除しますか？'**
   String get deleteGroupConfirm;
 
-  /// リンクを追加ツールチップ
+  /// Add link dialog title
   ///
   /// In ja, this message translates to:
   /// **'リンクを追加'**
@@ -1154,13 +1160,13 @@ abstract class AppLocalizations {
   /// **'このタスクを同期'**
   String get syncTask;
 
-  /// Delete tooltip
+  /// Delete button
   ///
   /// In ja, this message translates to:
   /// **'削除'**
   String get delete;
 
-  /// 優先度：高
+  /// High priority label
   ///
   /// In ja, this message translates to:
   /// **'高'**
@@ -1178,7 +1184,7 @@ abstract class AppLocalizations {
   /// **'低'**
   String get low;
 
-  /// 優先度：緊急
+  /// Urgent priority label
   ///
   /// In ja, this message translates to:
   /// **'緊急'**
@@ -1334,7 +1340,7 @@ abstract class AppLocalizations {
   /// **'アクション'**
   String get action;
 
-  /// 今日の期限日
+  /// Today group name
   ///
   /// In ja, this message translates to:
   /// **'今日'**
@@ -1376,6 +1382,12 @@ abstract class AppLocalizations {
   /// **'他{count}個のリンクを表示'**
   String showOtherLinks(int count);
 
+  /// もっと見るボタン
+  ///
+  /// In ja, this message translates to:
+  /// **'もっと見る'**
+  String get showMore;
+
   /// タスク編集ダイアログタイトル
   ///
   /// In ja, this message translates to:
@@ -1388,7 +1400,7 @@ abstract class AppLocalizations {
   /// **'タイトル'**
   String get title;
 
-  /// 本文ラベル
+  /// Body title
   ///
   /// In ja, this message translates to:
   /// **'本文'**
@@ -1502,10 +1514,10 @@ abstract class AppLocalizations {
   /// **'説明'**
   String get description;
 
-  /// Add option
+  /// Add button
   ///
   /// In ja, this message translates to:
-  /// **'追加'**
+  /// **'追加する'**
   String get add;
 
   /// 作成日ラベル
@@ -1970,7 +1982,7 @@ abstract class AppLocalizations {
   /// **'履歴'**
   String get history;
 
-  /// タスクラベル
+  /// Task label
   ///
   /// In ja, this message translates to:
   /// **'タスク'**
@@ -2042,7 +2054,7 @@ abstract class AppLocalizations {
   /// **'説明文'**
   String get descriptionText;
 
-  /// Requester field label
+  /// Requester label
   ///
   /// In ja, this message translates to:
   /// **'依頼者'**
@@ -2084,7 +2096,7 @@ abstract class AppLocalizations {
   /// **'終了日時'**
   String get endDateTime;
 
-  /// 場所ラベル
+  /// Location label
   ///
   /// In ja, this message translates to:
   /// **'場所'**
@@ -2444,13 +2456,13 @@ abstract class AppLocalizations {
   /// **'バックアップに失敗しましたが、結合を続行します: {error}'**
   String backupFailedContinue(String error);
 
-  /// 予定削除ダイアログタイトル
+  /// Delete schedule dialog title
   ///
   /// In ja, this message translates to:
   /// **'予定を削除'**
   String get deleteSchedule;
 
-  /// 予定削除確認メッセージ
+  /// Delete schedule confirmation message
   ///
   /// In ja, this message translates to:
   /// **'「{title}」を削除しますか？'**
@@ -2599,6 +2611,144 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'ファイルを開けませんでした: {path}'**
   String fileOpenFailed(String path);
+
+  /// Contact add error message
+  ///
+  /// In ja, this message translates to:
+  /// **'連絡先追加エラー: {error}'**
+  String contactAddError(String error);
+
+  /// Links added to tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクにリンクを追加しました'**
+  String linksAddedToTasks(int count);
+
+  /// Links removed from tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクからリンクを削除しました'**
+  String linksRemovedFromTasks(int count);
+
+  /// Links replaced in tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクのリンクを置き換えました'**
+  String linksReplacedInTasks(int count);
+
+  /// Links changed in tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクのリンクを変更しました'**
+  String linksChangedInTasks(int count);
+
+  /// Tags added to tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクにタグを追加しました'**
+  String tagsAddedToTasks(int count);
+
+  /// Tags removed from tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクからタグを削除しました'**
+  String tagsRemovedFromTasks(int count);
+
+  /// Tags replaced in tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクのタグを置き換えました'**
+  String tagsReplacedInTasks(int count);
+
+  /// Tags changed in tasks message
+  ///
+  /// In ja, this message translates to:
+  /// **'{count}件のタスクのタグを変更しました'**
+  String tagsChangedInTasks(int count);
+
+  /// Syncing task message
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」を同期中...'**
+  String syncingTask(String title);
+
+  /// From today one week button
+  ///
+  /// In ja, this message translates to:
+  /// **'今日から1週間'**
+  String get fromTodayOneWeek;
+
+  /// From today two weeks button
+  ///
+  /// In ja, this message translates to:
+  /// **'今日から2週間'**
+  String get fromTodayTwoWeeks;
+
+  /// From today one month button
+  ///
+  /// In ja, this message translates to:
+  /// **'今日から1ヶ月'**
+  String get fromTodayOneMonth;
+
+  /// From today three months button
+  ///
+  /// In ja, this message translates to:
+  /// **'今日から3ヶ月'**
+  String get fromTodayThreeMonths;
+
+  /// Tags comma separated label
+  ///
+  /// In ja, this message translates to:
+  /// **'タグ（カンマ区切り）'**
+  String get tagsCommaSeparated;
+
+  /// Tags example hint
+  ///
+  /// In ja, this message translates to:
+  /// **'例: 緊急,重要,プロジェクトA'**
+  String get tagsExample;
+
+  /// Tomorrow group name
+  ///
+  /// In ja, this message translates to:
+  /// **'明日'**
+  String get tomorrow;
+
+  /// This week group name
+  ///
+  /// In ja, this message translates to:
+  /// **'今週'**
+  String get thisWeek;
+
+  /// Next week group name
+  ///
+  /// In ja, this message translates to:
+  /// **'来週'**
+  String get nextWeek;
+
+  /// This month group name
+  ///
+  /// In ja, this message translates to:
+  /// **'今月'**
+  String get thisMonth;
+
+  /// Later group name
+  ///
+  /// In ja, this message translates to:
+  /// **'来月以降'**
+  String get later;
+
+  /// Overdue group name
+  ///
+  /// In ja, this message translates to:
+  /// **'期限切れ'**
+  String get overdue;
+
+  /// No due date group name
+  ///
+  /// In ja, this message translates to:
+  /// **'期限未設定'**
+  String get noDueDate;
 
   /// カラープリセットラベル
   ///
@@ -4788,10 +4938,10 @@ abstract class AppLocalizations {
   /// **'ファイルパスまたはURLを入力...'**
   String get pathUrlHint;
 
-  /// Tags hint
+  /// Tags input hint
   ///
   /// In ja, this message translates to:
-  /// **'カンマ区切りでタグを入力（例: 仕事, 重要, プロジェクト）'**
+  /// **'カンマ区切りで入力（例: 仕事, 重要, プロジェクトA）'**
   String get tagsHint;
 
   /// Favicon URL hint
@@ -5572,10 +5722,10 @@ abstract class AppLocalizations {
   /// **'【メール情報】'**
   String get mailInfo;
 
-  /// Sent date time label with colon
+  /// Sent date/time label
   ///
   /// In ja, this message translates to:
-  /// **'送信日時:'**
+  /// **'送信日時'**
   String get sentDateTime;
 
   /// Sent ID label with colon
@@ -6157,7 +6307,7 @@ abstract class AppLocalizations {
   /// Items count display
   ///
   /// In ja, this message translates to:
-  /// **'{count}個'**
+  /// **'{count}件'**
   String itemsCount(int count);
 
   /// Link list title
@@ -6262,7 +6412,7 @@ abstract class AppLocalizations {
   /// **'予定のタスク割り当て変更に失敗しました。'**
   String get scheduleTaskAssignmentChangeFailed;
 
-  /// Edit tooltip
+  /// Edit label
   ///
   /// In ja, this message translates to:
   /// **'編集'**
@@ -6381,6 +6531,270 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'タスクがありません'**
   String get noTasks;
+
+  /// Tooltip message for click to edit and drag to reorder
+  ///
+  /// In ja, this message translates to:
+  /// **'クリックで編集\nドラッグアイコンで順序変更'**
+  String get clickToEditAndDragToReorder;
+
+  /// Reminder date label
+  ///
+  /// In ja, this message translates to:
+  /// **'リマインダー日'**
+  String get reminderDate;
+
+  /// Reminder time label
+  ///
+  /// In ja, this message translates to:
+  /// **'リマインダー時刻'**
+  String get reminderTime;
+
+  /// Select reminder date placeholder
+  ///
+  /// In ja, this message translates to:
+  /// **'リマインダー日を選択'**
+  String get selectReminderDate;
+
+  /// Select time dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'時間を選択'**
+  String get selectTime;
+
+  /// Export links to Excel menu item
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクをエクセル出力'**
+  String get exportLinksToExcel;
+
+  /// Select groups to export dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポートするグループを選択'**
+  String get selectGroupsToExport;
+
+  /// Links exported message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクをエクセル形式でエクスポートしました: {filePath}'**
+  String linksExported(String filePath);
+
+  /// Links export failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクのエクスポートに失敗しました: {error}'**
+  String linksExportFailed(String error);
+
+  /// No groups selected message
+  ///
+  /// In ja, this message translates to:
+  /// **'グループが選択されていません'**
+  String get noGroupsSelected;
+
+  /// Completion report title
+  ///
+  /// In ja, this message translates to:
+  /// **'完了報告'**
+  String get completionReport;
+
+  /// Note about schedule editing availability
+  ///
+  /// In ja, this message translates to:
+  /// **'※ タスク作成後に予定編集が可能になります'**
+  String get scheduleEditAvailableAfterTaskCreation;
+
+  /// Schedule overlap title
+  ///
+  /// In ja, this message translates to:
+  /// **'予定の重複'**
+  String get scheduleOverlap;
+
+  /// Overlapping schedules message
+  ///
+  /// In ja, this message translates to:
+  /// **'以下の予定と時間が重複しています：'**
+  String get overlappingSchedulesMessage;
+
+  /// Time label
+  ///
+  /// In ja, this message translates to:
+  /// **'時間'**
+  String get time;
+
+  /// Completion notes label
+  ///
+  /// In ja, this message translates to:
+  /// **'完了メモ'**
+  String get completionNotes;
+
+  /// Completion notes hint
+  ///
+  /// In ja, this message translates to:
+  /// **'完了内容や結果を記入してください'**
+  String get completionNotesHint;
+
+  /// Completion notes validation message
+  ///
+  /// In ja, this message translates to:
+  /// **'完了メモを入力してください'**
+  String get completionNotesRequired;
+
+  /// Send completion report button
+  ///
+  /// In ja, this message translates to:
+  /// **'完了報告を送信'**
+  String get sendCompletionReport;
+
+  /// Clear reminder tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'リマインダーをクリア'**
+  String get clearReminder;
+
+  /// Recurring reminder label
+  ///
+  /// In ja, this message translates to:
+  /// **'繰り返しリマインダー'**
+  String get recurringReminder;
+
+  /// Select button with count
+  ///
+  /// In ja, this message translates to:
+  /// **'選択 ({count})'**
+  String selectWithCount(int count);
+
+  /// To label
+  ///
+  /// In ja, this message translates to:
+  /// **'宛先'**
+  String get to;
+
+  /// App label
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリ'**
+  String get app;
+
+  /// Bulk assign links dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクを一括割り当て'**
+  String get bulkAssignLinks;
+
+  /// Replace all tags description
+  ///
+  /// In ja, this message translates to:
+  /// **'既存のタグを全て置き換えます'**
+  String get replaceAllTags;
+
+  /// Go to settings button
+  ///
+  /// In ja, this message translates to:
+  /// **'設定画面へ'**
+  String get goToSettings;
+
+  /// Mail action title
+  ///
+  /// In ja, this message translates to:
+  /// **'メールアクション'**
+  String get mailAction;
+
+  /// Select mail action message
+  ///
+  /// In ja, this message translates to:
+  /// **'このタスクに関連するメールアクションを選択してください。'**
+  String get selectMailAction;
+
+  /// Reply button
+  ///
+  /// In ja, this message translates to:
+  /// **'返信'**
+  String get reply;
+
+  /// Show more candidates button
+  ///
+  /// In ja, this message translates to:
+  /// **'候補をさらに表示'**
+  String get showMoreCandidates;
+
+  /// Select task dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクを選択'**
+  String get selectTask;
+
+  /// Message to create task first to add schedule
+  ///
+  /// In ja, this message translates to:
+  /// **'予定を追加するには、まずタスクを作成してください'**
+  String get createTaskFirstToAddSchedule;
+
+  /// Schedule copied message
+  ///
+  /// In ja, this message translates to:
+  /// **'予定をコピーしました'**
+  String get scheduleCopied;
+
+  /// Schedule deleted message
+  ///
+  /// In ja, this message translates to:
+  /// **'予定を削除しました'**
+  String get scheduleDeleted;
+
+  /// Schedule fetch failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'予定の取得に失敗しました: {error}'**
+  String scheduleFetchFailed(String error);
+
+  /// Schedule assignment failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'予定「{title}」の割り当てに失敗しました: {error}'**
+  String scheduleAssignmentFailed(String title, String error);
+
+  /// Task creation failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクの作成に失敗しました: {error}'**
+  String taskCreationFailed(String error);
+
+  /// Need at least two groups message
+  ///
+  /// In ja, this message translates to:
+  /// **'並び順を変更するには2つ以上のグループが必要です'**
+  String get needAtLeastTwoGroups;
+
+  /// Create task first message
+  ///
+  /// In ja, this message translates to:
+  /// **'先にタスクを作成してください'**
+  String get createTaskFirst;
+
+  /// Sub task title required message
+  ///
+  /// In ja, this message translates to:
+  /// **'サブタスクのタイトルは必須です'**
+  String get subTaskTitleRequired;
+
+  /// History fetch error message
+  ///
+  /// In ja, this message translates to:
+  /// **'履歴取得エラー: {error}'**
+  String historyFetchError(String error);
+
+  /// Completion report sent message
+  ///
+  /// In ja, this message translates to:
+  /// **'完了報告を送信しました'**
+  String get completionReportSent;
+
+  /// Completion report send error message
+  ///
+  /// In ja, this message translates to:
+  /// **'完了報告送信エラー: {error}'**
+  String completionReportSendError(String error);
 }
 
 class _AppLocalizationsDelegate

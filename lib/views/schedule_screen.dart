@@ -1110,7 +1110,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             _buildPriorityMenuItem(
               context,
               TaskPriority.urgent,
-              '緊急',
+              AppLocalizations.of(context)!.urgent,
               Colors.deepPurple,
               task,
             ),
@@ -1434,7 +1434,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         break;
       case TaskPriority.urgent:
         color = colorScheme.error;
-        text = '緊急';
+        text = AppLocalizations.of(context)!.urgent;
         break;
     }
 
@@ -1631,7 +1631,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   children: [
                     _buildQuickRangeButton(
                       context,
-                      '今日から1週間',
+                      AppLocalizations.of(context)!.fromTodayOneWeek,
                       () {
                         final now = DateTime.now();
                         setDialogState(() {
@@ -1642,7 +1642,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                     ),
                     _buildQuickRangeButton(
                       context,
-                      '今日から2週間',
+                      AppLocalizations.of(context)!.fromTodayTwoWeeks,
                       () {
                         final now = DateTime.now();
                         setDialogState(() {
@@ -1653,7 +1653,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                     ),
                     _buildQuickRangeButton(
                       context,
-                      '今日から1ヶ月',
+                      AppLocalizations.of(context)!.fromTodayOneMonth,
                       () {
                         final now = DateTime.now();
                         setDialogState(() {
@@ -1664,7 +1664,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                     ),
                     _buildQuickRangeButton(
                       context,
-                      '今日から3ヶ月',
+                      AppLocalizations.of(context)!.fromTodayThreeMonths,
                       () {
                         final now = DateTime.now();
                         setDialogState(() {
@@ -2041,7 +2041,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                     },
                   ),
                   _buildFilterChip<TaskPriority>(
-                    '緊急',
+                    AppLocalizations.of(context)!.urgent,
                     TaskPriority.urgent,
                     selectedPriority == TaskPriority.urgent,
                     (value) {

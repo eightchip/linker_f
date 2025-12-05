@@ -233,7 +233,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   bool _showSearchOptions = false;
   
   // 名前付きフィルター
-  Map<String, Map<String, dynamic>> _savedFilterPresets = {};
   
   // カスタム順序（ドラッグ&ドロップ用）
   List<String> _customTaskOrder = [];
@@ -259,8 +258,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     _loadSearchHistory();
     // ピン留めを読み込み（非同期）
     _loadPinnedTasks();
-    // 保存されたフィルターを読み込み
-    _loadSavedFilterPresets();
     // カスタム順序を読み込み
     _loadCustomTaskOrder();
     
@@ -649,7 +646,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
           ],
         ),
@@ -756,7 +753,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('リンクを一括割り当て'),
+          title: Text(AppLocalizations.of(context)!.bulkAssignLinks),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -836,7 +833,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: selectedLinkId != null
@@ -908,16 +905,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         String message;
         switch (operation) {
           case 'add':
-            message = '$updatedCount件のタスクにリンクを追加しました';
+            message = AppLocalizations.of(context)!.linksAddedToTasks(updatedCount);
             break;
           case 'remove':
-            message = '$updatedCount件のタスクからリンクを削除しました';
+            message = AppLocalizations.of(context)!.linksRemovedFromTasks(updatedCount);
             break;
           case 'replace':
-            message = '$updatedCount件のタスクのリンクを置き換えました';
+            message = AppLocalizations.of(context)!.linksReplacedInTasks(updatedCount);
             break;
           default:
-            message = '$updatedCount件のタスクのリンクを変更しました';
+            message = AppLocalizations.of(context)!.linksChangedInTasks(updatedCount);
         }
         SnackBarService.showSuccess(context, message);
       }
@@ -1185,7 +1182,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () async {
@@ -1268,8 +1265,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 },
               ),
               RadioListTile<String>(
-                title: const Text('置換'),
-                subtitle: const Text('既存のタグを全て置き換えます'),
+                title: Text(AppLocalizations.of(context)!.replace),
+                subtitle: Text(AppLocalizations.of(context)!.replaceAllTags),
                 value: 'replace',
                 groupValue: operationMode,
                 onChanged: (value) {
@@ -1281,9 +1278,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               const Divider(),
               TextField(
                 controller: tagController,
-                decoration: const InputDecoration(
-                  labelText: 'タグ（カンマ区切り）',
-                  hintText: '例: 緊急,重要,プロジェクトA',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.tagsCommaSeparated,
+                  hintText: AppLocalizations.of(context)!.tagsExample,
                 ),
               ),
             ],
@@ -1291,7 +1288,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('キャンセル'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             TextButton(
               onPressed: () async {
@@ -1354,16 +1351,16 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         String message;
         switch (operation) {
           case 'add':
-            message = '$updatedCount件のタスクにタグを追加しました';
+            message = AppLocalizations.of(context)!.tagsAddedToTasks(updatedCount);
             break;
           case 'remove':
-            message = '$updatedCount件のタスクからタグを削除しました';
+            message = AppLocalizations.of(context)!.tagsRemovedFromTasks(updatedCount);
             break;
           case 'replace':
-            message = '$updatedCount件のタスクのタグを置き換えました';
+            message = AppLocalizations.of(context)!.tagsReplacedInTasks(updatedCount);
             break;
           default:
-            message = '$updatedCount件のタスクのタグを変更しました';
+            message = AppLocalizations.of(context)!.tagsChangedInTasks(updatedCount);
         }
         SnackBarService.showSuccess(context, message);
       }
@@ -2333,13 +2330,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   tooltip: AppLocalizations.of(context)!.saveLoadFilters,
                   onSelected: (value) {
                     switch (value) {
-                      case 'save':
-                        _showSaveFilterDialog();
-                        break;
-                      case 'load':
-                        _showLoadFilterDialog();
-                        break;
-                      case 'quick_urgent':
+                  case 'quick_urgent':
                         _applyQuickFilter('urgent');
                         break;
                       case 'quick_today':
@@ -2354,26 +2345,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                     }
                   },
                   itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'save',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.save, size: 20),
-                          const SizedBox(width: 8),
-                          Text(AppLocalizations.of(context)!.saveCurrentFilter),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'load',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.folder_open, size: 20),
-                          const SizedBox(width: 8),
-                          Text(AppLocalizations.of(context)!.filterManagement),
-                        ],
-                      ),
-                    ),
                     const PopupMenuDivider(),
                     PopupMenuItem(
                       value: 'quick_urgent',
@@ -2481,7 +2452,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                         Icon(Icons.grid_view, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          '${_compactGridColumns}${AppLocalizations.of(context)!.columns}',
+                          '${_compactGridColumns} ${AppLocalizations.of(context)!.columns}',
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],
@@ -2516,7 +2487,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                               if (_compactGridColumns == i)
                                 const Icon(Icons.check, size: 16, color: Colors.green),
                               if (_compactGridColumns == i) const SizedBox(width: 8),
-                              Text('$i${AppLocalizations.of(context)!.columns}'),
+                              Text('$i ${AppLocalizations.of(context)!.columns}'),
                             ],
                           ),
                         ),
@@ -3038,7 +3009,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
     if (reorderIndex != null) {
       cardContent = Tooltip(
-        message: 'クリックで編集\nドラッグアイコンで順序変更',
+        message: AppLocalizations.of(context)!.clickToEditAndDragToReorder,
         waitDuration: const Duration(milliseconds: 500),
         child: cardContent,
       );
@@ -3659,7 +3630,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                 Text(
                   isExpanded 
                     ? AppLocalizations.of(context)!.collapseLinks
-                    : AppLocalizations.of(context)!.showOtherLinks(links.length - maxVisibleLinks),
+                    : AppLocalizations.of(context)!.showMore,
                   style: TextStyle(
                     color: Colors.blue[700],
                     fontSize: 11,
@@ -4735,7 +4706,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     
     try {
       syncStatusNotifier.startSync(
-        message: '「${task.title}」を同期中...',
+        message: AppLocalizations.of(context)!.syncingTask(task.title),
         totalItems: 1,
       );
       
@@ -5649,7 +5620,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Icon(Icons.add, color: Colors.green, size: 20),
               SizedBox(width: 8),
-              Text('新しいタスク (Ctrl+N)'),
+              Text('${AppLocalizations.of(context)!.newTask} (Ctrl+N)'),
             ],
           ),
         ),
@@ -5660,7 +5631,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Icon(Icons.checklist, color: Colors.blue, size: 20),
               SizedBox(width: 8),
-              Text('一括選択モード (Ctrl+B)'),
+              Text('${AppLocalizations.of(context)!.bulkSelectMode} (Ctrl+B)'),
             ],
           ),
         ),
@@ -5671,7 +5642,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Icon(Icons.download, color: Colors.green, size: 20),
               SizedBox(width: 8),
-              Text('CSV出力 (Ctrl+Shift+E)'),
+              Text('${AppLocalizations.of(context)!.csvExport} (Ctrl+Shift+E)'),
             ],
           ),
         ),
@@ -5681,7 +5652,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Icon(Icons.settings, color: Colors.grey, size: 20),
               SizedBox(width: 8),
-              Text('設定 (Ctrl+Shift+S)'),
+              Text('${AppLocalizations.of(context)!.settings} (Ctrl+Shift+S)'),
             ],
           ),
         ),
@@ -5693,7 +5664,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Icon(Icons.calendar_month, color: Colors.orange, size: 20),
               const SizedBox(width: 8),
-                const Text('スケジュール一覧 (Ctrl+S)'),
+                Text('${AppLocalizations.of(context)!.scheduleList} (Ctrl+S)'),
             ],
           ),
         ),
@@ -5716,7 +5687,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Icon(Icons.group, color: Colors.purple, size: 20),
               SizedBox(width: 8),
-              Text('グループ化 (Ctrl+G)'),
+              Text('${AppLocalizations.of(context)!.grouping} (Ctrl+G)'),
             ],
           ),
         ),
@@ -5727,7 +5698,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
             children: [
               Icon(Icons.content_copy, color: Colors.teal, size: 20),
               SizedBox(width: 8),
-              Text('テンプレートから作成 (Ctrl+Shift+T)'),
+              Text('${AppLocalizations.of(context)!.createFromTemplate} (Ctrl+Shift+T)'),
             ],
           ),
         ),
@@ -6151,260 +6122,6 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     print('🟢 [_saveListViewMode] 終了');
   }
 
-  /// 保存されたフィルタープリセットを読み込み
-  void _loadSavedFilterPresets() {
-    try {
-      final box = Hive.box('filterPresets');
-      final presets = box.get('taskFilterPresets', defaultValue: <String, Map>{});
-      _savedFilterPresets = Map<String, Map<String, dynamic>>.from(
-        presets.map((key, value) => MapEntry(key.toString(), Map<String, dynamic>.from(value)))
-      );
-    } catch (e) {
-      print('フィルタープリセット読み込みエラー: $e');
-      _savedFilterPresets = {};
-    }
-  }
-
-  /// 保存されたフィルタープリセットを保存
-  void _saveFilterPresets() {
-    try {
-      final box = Hive.box('filterPresets');
-      box.put('taskFilterPresets', _savedFilterPresets);
-    } catch (e) {
-      print('フィルタープリセット保存エラー: $e');
-    }
-  }
-
-  /// フィルター保存ダイアログを表示
-  void _showSaveFilterDialog() {
-    final nameController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.saveFilter),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(
-            labelText: AppLocalizations.of(context)!.filterName,
-            hintText: AppLocalizations.of(context)!.filterNameExample,
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              if (name.isNotEmpty) {
-                _savedFilterPresets[name] = {
-                  'statuses': _filterStatuses.toList(),
-                  'priority': _filterPriority,
-                  'sortOrders': _sortOrders,
-                  'searchQuery': _searchQuery,
-                };
-                _saveFilterPresets();
-                Navigator.of(context).pop();
-                SnackBarService.showSuccess(context, AppLocalizations.of(context)!.filterSaved(name));
-              }
-            },
-            child: const Text('保存'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// フィルター読み込みダイアログを表示（エクスポート/インポート機能付き）
-  void _showLoadFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.filterManagement),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // エクスポート/インポートボタン
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                      await _exportFilterPresets();
-                    },
-                    icon: const Icon(Icons.upload, size: 18),
-                    label: Text(AppLocalizations.of(context)!.export),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                      await _importFilterPresets();
-                    },
-                    icon: const Icon(Icons.download, size: 18),
-                    label: Text(AppLocalizations.of(context)!.import),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-              // 保存されたフィルター一覧
-              if (_savedFilterPresets.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(AppLocalizations.of(context)!.noSavedFilters),
-                )
-              else
-                Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _savedFilterPresets.length,
-                    itemBuilder: (context, index) {
-                      final presetName = _savedFilterPresets.keys.elementAt(index);
-                      final preset = _savedFilterPresets[presetName]!;
-                      return ListTile(
-                        title: Text(presetName),
-                        subtitle: Text(
-                          'ステータス: ${preset['statuses']?.length ?? 0}件, '
-                          '優先度: ${preset['priority'] ?? 'すべて'}, '
-                          '検索: ${preset['searchQuery']?.toString().isEmpty ?? true ? 'なし' : 'あり'}'
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.delete, size: 20),
-                              onPressed: () {
-                                _savedFilterPresets.remove(presetName);
-                                _saveFilterPresets();
-                                Navigator.of(context).pop();
-                                _showLoadFilterDialog();
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.check, size: 20),
-                              onPressed: () {
-                                setState(() {
-                                  final statusList = (preset['statuses'] as List?);
-                                  _filterStatuses = statusList != null 
-                                      ? statusList.map((e) => e.toString()).toSet() 
-                                      : {'all'};
-                                  _filterPriority = preset['priority']?.toString() ?? 'all';
-                                  _sortOrders = (preset['sortOrders'] as List?)?.map((e) => Map<String, String>.from(e)).toList() ?? [{'field': 'dueDate', 'order': 'asc'}];
-                                  _searchQuery = preset['searchQuery']?.toString() ?? '';
-                                  _searchController.text = _searchQuery;
-                                });
-                                _saveFilterSettings();
-                                Navigator.of(context).pop();
-                                SnackBarService.showSuccess(context, AppLocalizations.of(context)!.filterLoaded(presetName));
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// フィルタープリセットをエクスポート
-  Future<void> _exportFilterPresets() async {
-    try {
-      final exportData = {
-        'version': '1.0',
-        'exportedAt': DateTime.now().toIso8601String(),
-        'presets': _savedFilterPresets,
-      };
-      
-      final jsonString = jsonEncode(exportData);
-      
-      // ファイル保存ダイアログを表示
-      final result = await FilePicker.platform.saveFile(
-        dialogTitle: AppLocalizations.of(context)!.exportFilterPresets,
-        fileName: 'task_filter_presets_${DateTime.now().millisecondsSinceEpoch}.json',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
-      
-      if (result != null) {
-        final file = File(result);
-        await file.writeAsString(jsonString);
-        
-        if (mounted) {
-          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.filterPresetsExported);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarService.showError(context, '${AppLocalizations.of(context)!.exportFailed}: $e');
-      }
-    }
-  }
-
-  /// フィルタープリセットをインポート
-  Future<void> _importFilterPresets() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        dialogTitle: AppLocalizations.of(context)!.importFilterPresets,
-      );
-      
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final jsonString = await file.readAsString();
-        final importData = jsonDecode(jsonString) as Map<String, dynamic>;
-        
-        if (importData['presets'] != null) {
-          final importedPresets = Map<String, Map<String, dynamic>>.from(
-            (importData['presets'] as Map).map((key, value) => 
-              MapEntry(key.toString(), Map<String, dynamic>.from(value))
-            )
-          );
-          
-          // 既存のプリセットとマージ（同名の場合は上書き）
-          _savedFilterPresets.addAll(importedPresets);
-          _saveFilterPresets();
-          _loadSavedFilterPresets();
-          
-          if (mounted) {
-            SnackBarService.showSuccess(
-              context, 
-              AppLocalizations.of(context)!.filterPresetsImported(importedPresets.length)
-            );
-          }
-        } else {
-          if (mounted) {
-            SnackBarService.showError(context, AppLocalizations.of(context)!.invalidFileFormat);
-          }
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarService.showError(context, '${AppLocalizations.of(context)!.importFailed}: $e');
-      }
-    }
-  }
 
   /// クイックフィルターを適用
   void _applyQuickFilter(String filterType) {
@@ -6828,68 +6545,74 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   void _showSearchHistory() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.history),
-            SizedBox(width: 8),
-            Text('検索履歴'),
-          ],
-        ),
-        content: SizedBox(
-          width: 400,
-          height: 300,
-          child: _searchHistory.isEmpty
-            ? const Center(
-                child: Text('検索履歴がありません'),
-              )
-            : ListView.builder(
-                itemCount: _searchHistory.length,
-                itemBuilder: (context, index) {
-                  final query = _searchHistory[index];
-                  return ListTile(
-                    leading: const Icon(Icons.search, size: 20),
-                    title: Text(
-                      query,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, size: 18),
-                      onPressed: () {
-                        setState(() {
-                          _searchHistory.removeAt(index);
-                        });
-                        _saveSearchHistory();
-                      },
-                    ),
-                    onTap: () {
-                      _searchController.text = query;
-                      setState(() {
-                        _searchQuery = query;
-                        _userTypedSearch = true;
-                      });
-                      Navigator.of(context).pop();
-                    },
-                  );
-                },
-              ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('閉じる'),
-          ),
-          if (_searchHistory.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                _clearSearchHistory();
-                Navigator.of(context).pop();
-              },
-              child: Text(AppLocalizations.of(context)!.clearHistoryConfirm),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.history),
+                const SizedBox(width: 8),
+                Text(AppLocalizations.of(context)!.searchHistory),
+              ],
             ),
-        ],
+            content: SizedBox(
+              width: 400,
+              height: 300,
+              child: _searchHistory.isEmpty
+                ? Center(
+                    child: Text(AppLocalizations.of(context)!.noSearchHistory),
+                  )
+                : ListView.builder(
+                    itemCount: _searchHistory.length,
+                    itemBuilder: (context, index) {
+                      final query = _searchHistory[index];
+                      return ListTile(
+                        leading: const Icon(Icons.search, size: 20),
+                        title: Text(
+                          query,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, size: 18),
+                          onPressed: () {
+                            setState(() {
+                              _searchHistory.removeAt(index);
+                            });
+                            setDialogState(() {}); // ダイアログ内の状態を更新
+                            _saveSearchHistory();
+                          },
+                        ),
+                        onTap: () {
+                          _searchController.text = query;
+                          setState(() {
+                            _searchQuery = query;
+                            _userTypedSearch = true;
+                          });
+                          Navigator.of(context).pop();
+                        },
+                      );
+                    },
+                  ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(AppLocalizations.of(context)!.close),
+              ),
+              if (_searchHistory.isNotEmpty)
+                TextButton(
+                  onPressed: () {
+                    _clearSearchHistory();
+                    setDialogState(() {}); // ダイアログ内の状態を更新
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(AppLocalizations.of(context)!.clearHistoryConfirm),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -7104,41 +6827,42 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     final nextWeekEnd = nextWeekStart.add(const Duration(days: 6));
     final nextMonthStart = DateTime(now.year, now.month + 1, 1);
 
+    final l10n = AppLocalizations.of(context)!;
     final groups = <String, List<TaskItem>>{
-      '今日': [],
-      '明日': [],
-      '今週': [],
-      '来週': [],
-      '今月': [],
-      '来月以降': [],
-      '期限切れ': [],
-      '期限未設定': [],
+      l10n.today: [],
+      l10n.tomorrow: [],
+      l10n.thisWeek: [],
+      l10n.nextWeek: [],
+      l10n.thisMonth: [],
+      l10n.later: [],
+      l10n.overdue: [],
+      l10n.noDueDate: [],
     };
 
     for (final task in tasks) {
       if (task.dueDate == null) {
-        groups['期限未設定']!.add(task);
+        groups[l10n.noDueDate]!.add(task);
         continue;
       }
 
       final taskDate = DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
       
       if (taskDate == today) {
-        groups['今日']!.add(task);
+        groups[l10n.today]!.add(task);
       } else if (taskDate == tomorrow) {
-        groups['明日']!.add(task);
+        groups[l10n.tomorrow]!.add(task);
       } else if (taskDate.isBefore(today)) {
-        groups['期限切れ']!.add(task);
+        groups[l10n.overdue]!.add(task);
       } else if (taskDate.isAfter(nextWeekEnd)) {
         if (taskDate.isBefore(nextMonthStart)) {
-          groups['今月']!.add(task);
+          groups[l10n.thisMonth]!.add(task);
         } else {
-          groups['来月以降']!.add(task);
+          groups[l10n.later]!.add(task);
         }
       } else if (taskDate.isAfter(weekEnd)) {
-        groups['来週']!.add(task);
+        groups[l10n.nextWeek]!.add(task);
       } else {
-        groups['今週']!.add(task);
+        groups[l10n.thisWeek]!.add(task);
       }
     }
 
@@ -7228,26 +6952,27 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
 
   /// 優先度でグループ化
   Map<String, List<TaskItem>> _groupByPriority(List<TaskItem> tasks) {
+    final l10n = AppLocalizations.of(context)!;
     final groups = <String, List<TaskItem>>{
-      '緊急': [],
-      '高': [],
-      '中': [],
-      '低': [],
+      l10n.urgent: [],
+      l10n.high: [],
+      l10n.medium: [],
+      l10n.low: [],
     };
 
     for (final task in tasks) {
       switch (task.priority) {
         case TaskPriority.urgent:
-          groups['緊急']!.add(task);
+          groups[l10n.urgent]!.add(task);
           break;
         case TaskPriority.high:
-          groups['高']!.add(task);
+          groups[l10n.high]!.add(task);
           break;
         case TaskPriority.medium:
-          groups['中']!.add(task);
+          groups[l10n.medium]!.add(task);
           break;
         case TaskPriority.low:
-          groups['低']!.add(task);
+          groups[l10n.low]!.add(task);
           break;
       }
     }
@@ -7260,9 +6985,10 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     final sortedKeys = groups.keys.toList();
     
     // グループの表示順序を調整
+    final l10n = AppLocalizations.of(context)!;
     if (_groupByOption == GroupByOption.dueDate) {
       // 期限日の場合は時系列順
-      final order = ['今日', '明日', '今週', '来週', '今月', '来月以降', '期限切れ', '期限未設定'];
+      final order = [l10n.today, l10n.tomorrow, l10n.thisWeek, l10n.nextWeek, l10n.thisMonth, l10n.later, l10n.overdue, l10n.noDueDate];
       sortedKeys.sort((a, b) {
         final indexA = order.indexOf(a);
         final indexB = order.indexOf(b);
@@ -7273,7 +6999,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       });
     } else if (_groupByOption == GroupByOption.priority) {
       // 優先度の場合は緊急度順
-      final order = ['緊急', '高', '中', '低'];
+      final order = [l10n.urgent, l10n.high, l10n.medium, l10n.low];
       sortedKeys.sort((a, b) {
         final indexA = order.indexOf(a);
         final indexB = order.indexOf(b);
@@ -7299,7 +7025,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         
         return ExpansionTile(
           leading: Icon(_getGroupIcon(groupName)),
-          title: Text('$groupName (${tasks.length}件)'),
+          title: Text('$groupName (${AppLocalizations.of(context)!.itemsCount(tasks.length)})'),
           initiallyExpanded: true,
           children: [
             // ピン留めタスク
@@ -7327,12 +7053,13 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
   }
   /// グループ名に応じたアイコンを取得
   IconData _getGroupIcon(String groupName) {
+    final l10n = AppLocalizations.of(context)!;
     if (_groupByOption == GroupByOption.dueDate) {
-      if (groupName == '今日' || groupName == '明日') {
+      if (groupName == l10n.today || groupName == l10n.tomorrow) {
         return Icons.today;
-      } else if (groupName == '期限切れ') {
+      } else if (groupName == l10n.overdue) {
         return Icons.warning;
-      } else if (groupName == '期限未設定') {
+      } else if (groupName == l10n.noDueDate) {
         return Icons.event_busy;
       } else {
         return Icons.calendar_month;
@@ -7371,34 +7098,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     final pinnedTasks = sortedTasks.where((task) => _pinnedTaskIds.contains(task.id)).toList();
     final unpinnedTasks = sortedTasks.where((task) => !_pinnedTaskIds.contains(task.id)).toList();
     
-    // ピン留めタスクがある場合は固定 + スクロール表示
-    if (pinnedTasks.isNotEmpty) {
-      return Column(
-        children: [
-          // ピン留めタスク（固定表示）
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).dividerColor,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Column(
-              children: pinnedTasks.map((task) => _buildTaskCard(task)).toList(),
-            ),
-          ),
-          // 通常タスク（スクロール可能、ドラッグ&ドロップ対応）
-          Expanded(
-            child: unpinnedTasks.isEmpty
-                ? const Center(child: Text('その他のタスクはありません'))
-                : _buildReorderableTaskList(unpinnedTasks),
-          ),
-        ],
-      );
-    }
+    // ピン留めタスクも含めて全体をスクロール可能にする
+    final allTasks = [...pinnedTasks, ...unpinnedTasks];
+    return _buildReorderableTaskList(allTasks);
     
     // ピン留めタスクがない場合はドラッグ&ドロップ対応リストを表示
     return _buildReorderableTaskList(unpinnedTasks);
@@ -8206,7 +7908,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             style: AppButtonStyles.text(context),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -8219,7 +7921,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               );
             },
             style: AppButtonStyles.primary(context),
-            child: const Text('設定画面へ'),
+            child: Text(AppLocalizations.of(context)!.goToSettings),
           ),
         ],
       ),
@@ -8233,9 +7935,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       case TaskPriority.medium:
         return '中';
       case TaskPriority.high:
-        return '高';
+        return AppLocalizations.of(context)!.high;
       case TaskPriority.urgent:
-        return '緊急';
+        return AppLocalizations.of(context)!.urgent;
     }
   }
   String _getStatusText(TaskStatus status) {
@@ -8374,15 +8076,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     showDialog(
       context: context,
       builder: (context) => UnifiedDialog(
-        title: 'メールアクション',
+        title: AppLocalizations.of(context)!.mailAction,
         icon: Icons.email,
         iconColor: Colors.blue,
-        content: const Text('このタスクに関連するメールアクションを選択してください。'),
+        content: Text(AppLocalizations.of(context)!.selectMailAction),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             style: AppButtonStyles.text(context),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -8390,7 +8092,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
               _replyToEmail(task);
             },
             style: AppButtonStyles.primary(context),
-            child: const Text('返信'),
+            child: Text(AppLocalizations.of(context)!.reply),
           ),
         ],
       ),
@@ -8590,7 +8292,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         SnackBarService.showError(context, AppLocalizations.of(context)!.urlOpenFailed(url));
       }
     } catch (e) {
-      SnackBarService.showError(context, 'URLを開けませんでした: $url');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.urlOpenFailed(url));
     }
   }
 
@@ -8604,7 +8306,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         SnackBarService.showError(context, AppLocalizations.of(context)!.fileOpenFailed(fileUrl));
       }
     } catch (e) {
-      SnackBarService.showError(context, 'ファイルを開けませんでした: $fileUrl');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.fileOpenFailed(fileUrl));
     }
   }
 
@@ -8618,7 +8320,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         SnackBarService.showError(context, AppLocalizations.of(context)!.fileOpenFailed(path));
       }
     } catch (e) {
-      SnackBarService.showError(context, 'ファイルを開けませんでした: $path');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.fileOpenFailed(path));
     }
   }
 
@@ -9039,14 +8741,14 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('本文'),
+            title: Text(AppLocalizations.of(context)!.body),
             content: SingleChildScrollView(
               child: Text(description),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('閉じる'),
+                child: Text(AppLocalizations.of(context)!.close),
               ),
             ],
           ),

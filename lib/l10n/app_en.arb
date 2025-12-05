@@ -459,6 +459,10 @@
   "@searchHistory": {
     "description": "Search history tooltip"
   },
+  "noSearchHistory": "No search history",
+  "@noSearchHistory": {
+    "description": "Message when there is no search history"
+  },
   "clear": "Clear",
   "@clear": {
     "description": "Clear tooltip"
@@ -1000,6 +1004,10 @@
       }
     }
   },
+  "showMore": "Show more",
+  "@showMore": {
+    "description": "Show more button"
+  },
   "editTask": "Edit Task",
   "@editTask": {
     "description": "Edit task dialog title"
@@ -1414,6 +1422,14 @@
   "selectDateTimeOptional": "Select Date/Time (Optional)",
   "@selectDateTimeOptional": {
     "description": "Select date/time placeholder (optional)"
+  },
+  "urgentTasks": "Urgent Tasks",
+  "@urgentTasks": {
+    "description": "Urgent tasks menu item"
+  },
+  "todayTasks": "Today's Tasks",
+  "@todayTasks": {
+    "description": "Today's tasks menu item"
   },
   "addSchedule": "Add Schedule",
   "@addSchedule": {
@@ -5223,6 +5239,516 @@
   "noTasks": "No tasks",
   "@noTasks": {
     "description": "No tasks message"
+  },
+  "clickToEditAndDragToReorder": "Click to edit\nDrag icon to change order",
+  "@clickToEditAndDragToReorder": {
+    "description": "Tooltip message for click to edit and drag to reorder"
+  },
+  "reminderDate": "Reminder Date",
+  "@reminderDate": {
+    "description": "Reminder date label"
+  },
+  "reminderTime": "Reminder Time",
+  "@reminderTime": {
+    "description": "Reminder time label"
+  },
+  "selectReminderDate": "Select Reminder Date",
+  "@selectReminderDate": {
+    "description": "Select reminder date placeholder"
+  },
+  "selectTime": "Select Time",
+  "@selectTime": {
+    "description": "Select time placeholder"
+  },
+  "exportLinksToExcel": "Export Links to Excel",
+  "@exportLinksToExcel": {
+    "description": "Export links to Excel menu item"
+  },
+  "selectGroupsToExport": "Select Groups to Export",
+  "@selectGroupsToExport": {
+    "description": "Select groups to export dialog title"
+  },
+  "selectAll": "Select All",
+  "@selectAll": {
+    "description": "Select all button"
+  },
+  "deselectAll": "Deselect All",
+  "@deselectAll": {
+    "description": "Deselect all button"
+  },
+  "linksExported": "Links exported to Excel: {filePath}",
+  "@linksExported": {
+    "description": "Links exported message",
+    "placeholders": {
+      "filePath": {
+        "type": "String"
+      }
+    }
+  },
+  "linksExportFailed": "Failed to export links: {error}",
+  "@linksExportFailed": {
+    "description": "Links export failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noGroupsSelected": "No groups selected",
+  "@noGroupsSelected": {
+    "description": "No groups selected message"
+  },
+  "completionReport": "Completion Report",
+  "@completionReport": {
+    "description": "Completion report title"
+  },
+  "scheduleEditAvailableAfterTaskCreation": "※ Schedule editing will be available after task creation",
+  "@scheduleEditAvailableAfterTaskCreation": {
+    "description": "Note about schedule editing availability"
+  },
+  "scheduleOverlap": "Schedule Overlap",
+  "@scheduleOverlap": {
+    "description": "Schedule overlap title"
+  },
+  "overlappingSchedulesMessage": "The following schedules overlap in time:",
+  "@overlappingSchedulesMessage": {
+    "description": "Overlapping schedules message"
+  },
+  "time": "Time",
+  "@time": {
+    "description": "Time label"
+  },
+  "location": "Location",
+  "@location": {
+    "description": "Location label"
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Add button"
+  },
+  "completionNotes": "Completion Notes",
+  "@completionNotes": {
+    "description": "Completion notes label"
+  },
+  "completionNotesHint": "Enter completion details and results",
+  "@completionNotesHint": {
+    "description": "Completion notes hint"
+  },
+  "completionNotesRequired": "Please enter completion notes",
+  "@completionNotesRequired": {
+    "description": "Completion notes validation message"
+  },
+  "sendCompletionReport": "Send Completion Report",
+  "@sendCompletionReport": {
+    "description": "Send completion report button"
+  },
+  "tagsHint": "Enter comma-separated (e.g., Work, Important, Project A)",
+  "@tagsHint": {
+    "description": "Tags input hint"
+  },
+  "clearReminder": "Clear Reminder",
+  "@clearReminder": {
+    "description": "Clear reminder tooltip"
+  },
+  "recurringReminder": "Recurring Reminder",
+  "@recurringReminder": {
+    "description": "Recurring reminder label"
+  },
+  "selectWithCount": "Select ({count})",
+  "@selectWithCount": {
+    "description": "Select button with count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectTime": "Select Time",
+  "@selectTime": {
+    "description": "Select time dialog title"
+  },
+  "to": "To",
+  "@to": {
+    "description": "To label"
+  },
+  "sentDateTime": "Sent Date/Time",
+  "@sentDateTime": {
+    "description": "Sent date/time label"
+  },
+  "app": "App",
+  "@app": {
+    "description": "App label"
+  },
+  "bulkAssignLinks": "Bulk Assign Links",
+  "@bulkAssignLinks": {
+    "description": "Bulk assign links dialog title"
+  },
+  "replace": "Replace",
+  "@replace": {
+    "description": "Replace option"
+  },
+  "replaceAllTags": "Replace all existing tags",
+  "@replaceAllTags": {
+    "description": "Replace all tags description"
+  },
+  "newTask": "New Task",
+  "@newTask": {
+    "description": "New task label"
+  },
+  "task": "Task",
+  "@task": {
+    "description": "Task label"
+  },
+  "requester": "Requester",
+  "@requester": {
+    "description": "Requester label"
+  },
+  "bulkSelectMode": "Bulk Select Mode",
+  "@bulkSelectMode": {
+    "description": "Bulk select mode label"
+  },
+  "csvExport": "CSV Export",
+  "@csvExport": {
+    "description": "CSV export label"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings label"
+  },
+  "scheduleList": "Schedule List",
+  "@scheduleList": {
+    "description": "Schedule list label"
+  },
+  "grouping": "Grouping",
+  "@grouping": {
+    "description": "Grouping label"
+  },
+  "createFromTemplate": "Create from Template",
+  "@createFromTemplate": {
+    "description": "Create from template label"
+  },
+  "itemsCount": "{count} items",
+  "@itemsCount": {
+    "description": "Items count display",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goToSettings": "Go to Settings",
+  "@goToSettings": {
+    "description": "Go to settings button"
+  },
+  "mailAction": "Mail Action",
+  "@mailAction": {
+    "description": "Mail action title"
+  },
+  "selectMailAction": "Please select a mail action related to this task.",
+  "@selectMailAction": {
+    "description": "Select mail action message"
+  },
+  "reply": "Reply",
+  "@reply": {
+    "description": "Reply button"
+  },
+  "body": "Body",
+  "@body": {
+    "description": "Body title"
+  },
+  "addLink": "Add Link",
+  "@addLink": {
+    "description": "Add link dialog title"
+  },
+  "showMoreCandidates": "Show More Candidates",
+  "@showMoreCandidates": {
+    "description": "Show more candidates button"
+  },
+  "selectTask": "Select Task",
+  "@selectTask": {
+    "description": "Select task dialog title"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit label"
+  },
+  "deleteSchedule": "Delete Schedule",
+  "@deleteSchedule": {
+    "description": "Delete schedule dialog title"
+  },
+  "deleteScheduleConfirm": "Delete \"{title}\"?",
+  "@deleteScheduleConfirm": {
+    "description": "Delete schedule confirmation message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "createTaskFirstToAddSchedule": "Please create a task first to add a schedule",
+  "@createTaskFirstToAddSchedule": {
+    "description": "Message to create task first to add schedule"
+  },
+  "scheduleCopied": "Schedule copied",
+  "@scheduleCopied": {
+    "description": "Schedule copied message"
+  },
+  "scheduleDeleted": "Schedule deleted",
+  "@scheduleDeleted": {
+    "description": "Schedule deleted message"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button"
+  },
+  "scheduleFetchFailed": "Failed to fetch schedules: {error}",
+  "@scheduleFetchFailed": {
+    "description": "Schedule fetch failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleAssignmentFailed": "Failed to assign schedule \"{title}\": {error}",
+  "@scheduleAssignmentFailed": {
+    "description": "Schedule assignment failed message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "taskCreationFailed": "Failed to create task: {error}",
+  "@taskCreationFailed": {
+    "description": "Task creation failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "all": "All",
+  "@all": {
+    "description": "All option"
+  },
+  "noMatchingTasks": "No matching tasks",
+  "@noMatchingTasks": {
+    "description": "No matching tasks message"
+  },
+  "needAtLeastTwoGroups": "At least two groups are required to change the order",
+  "@needAtLeastTwoGroups": {
+    "description": "Need at least two groups message"
+  },
+  "linksCount": "{count} links",
+  "@linksCount": {
+    "description": "Links count display",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createTaskFirst": "Please create a task first",
+  "@createTaskFirst": {
+    "description": "Create task first message"
+  },
+  "subTaskTitleRequired": "Sub task title is required",
+  "@subTaskTitleRequired": {
+    "description": "Sub task title required message"
+  },
+  "historyFetchError": "History fetch error: {error}",
+  "@historyFetchError": {
+    "description": "History fetch error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "completionReportSent": "Completion report sent",
+  "@completionReportSent": {
+    "description": "Completion report sent message"
+  },
+  "completionReportSendError": "Completion report send error: {error}",
+  "@completionReportSendError": {
+    "description": "Completion report send error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "contactAddError": "Contact add error: {error}",
+  "@contactAddError": {
+    "description": "Contact add error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "urlOpenFailed": "Failed to open URL: {url}",
+  "@urlOpenFailed": {
+    "description": "URL open failed message",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "fileOpenFailed": "Failed to open file: {path}",
+  "@fileOpenFailed": {
+    "description": "File open failed message",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "linksAddedToTasks": "Added links to {count} tasks",
+  "@linksAddedToTasks": {
+    "description": "Links added to tasks message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linksRemovedFromTasks": "Removed links from {count} tasks",
+  "@linksRemovedFromTasks": {
+    "description": "Links removed from tasks message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linksReplacedInTasks": "Replaced links in {count} tasks",
+  "@linksReplacedInTasks": {
+    "description": "Links replaced in tasks message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "linksChangedInTasks": "Changed links in {count} tasks",
+  "@linksChangedInTasks": {
+    "description": "Links changed in tasks message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsAddedToTasks": "Added tags to {count} tasks",
+  "@tagsAddedToTasks": {
+    "description": "Tags added to tasks message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsRemovedFromTasks": "Removed tags from {count} tasks",
+  "@tagsRemovedFromTasks": {
+    "description": "Tags removed from tasks message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsReplacedInTasks": "Replaced tags in {count} tasks",
+  "@tagsReplacedInTasks": {
+    "description": "Tags replaced in tasks message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsChangedInTasks": "Changed tags in {count} tasks",
+  "@tagsChangedInTasks": {
+    "description": "Tags changed in tasks message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncingTask": "Syncing \"{title}\"...",
+  "@syncingTask": {
+    "description": "Syncing task message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "urgent": "Urgent",
+  "@urgent": {
+    "description": "Urgent priority label"
+  },
+  "high": "High",
+  "@high": {
+    "description": "High priority label"
+  },
+  "fromTodayOneWeek": "1 Week from Today",
+  "@fromTodayOneWeek": {
+    "description": "From today one week button"
+  },
+  "fromTodayTwoWeeks": "2 Weeks from Today",
+  "@fromTodayTwoWeeks": {
+    "description": "From today two weeks button"
+  },
+  "fromTodayOneMonth": "1 Month from Today",
+  "@fromTodayOneMonth": {
+    "description": "From today one month button"
+  },
+  "fromTodayThreeMonths": "3 Months from Today",
+  "@fromTodayThreeMonths": {
+    "description": "From today three months button"
+  },
+  "tagsCommaSeparated": "Tags (comma-separated)",
+  "@tagsCommaSeparated": {
+    "description": "Tags comma separated label"
+  },
+  "tagsExample": "Example: Urgent, Important, Project A",
+  "@tagsExample": {
+    "description": "Tags example hint"
+  },
+  "tomorrow": "Tomorrow",
+  "@tomorrow": {
+    "description": "Tomorrow group name"
+  },
+  "thisWeek": "This Week",
+  "@thisWeek": {
+    "description": "This week group name"
+  },
+  "nextWeek": "Next Week",
+  "@nextWeek": {
+    "description": "Next week group name"
+  },
+  "thisMonth": "This Month",
+  "@thisMonth": {
+    "description": "This month group name"
+  },
+  "later": "Later",
+  "@later": {
+    "description": "Later group name"
+  },
+  "overdue": "Overdue",
+  "@overdue": {
+    "description": "Overdue group name"
+  },
+  "noDueDate": "No Due Date",
+  "@noDueDate": {
+    "description": "No due date group name"
   }
 }
 

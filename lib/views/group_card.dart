@@ -1843,7 +1843,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
         ],
       ),
@@ -1899,7 +1899,7 @@ class _GroupCardContentState extends ConsumerState<_GroupCardContent> with IconB
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
         ],
       ),

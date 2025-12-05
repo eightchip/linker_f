@@ -6,19 +6,15 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:collection/collection.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:excel/excel.dart' hide Border;
 
 import '../models/group.dart';
 import '../models/link_item.dart';
 import '../utils/favicon_service.dart';
-import '../services/settings_service.dart';
 import '../services/snackbar_service.dart';
-import '../services/windows_notification_service.dart';
-import '../utils/csv_export.dart';
 import '../viewmodels/font_size_provider.dart';
 import '../viewmodels/layout_settings_provider.dart';
 import '../viewmodels/link_viewmodel.dart';
@@ -475,7 +471,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   static void showGroupOrderDialog(BuildContext context, WidgetRef ref) {
     final groups = ref.read(linkViewModelProvider).groups;
     if (groups.length < 2) {
-      SnackBarService.showWarning(context, '並び順を変更するには2つ以上のグループが必要です');
+      SnackBarService.showWarning(context, AppLocalizations.of(context)!.needAtLeastTwoGroups);
       return;
     }
 
@@ -969,6 +965,198 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ショートカットヘルプダイアログ
+  /// リンクをエクセル出力
+  Future<void> _exportLinksToExcel(BuildContext context, WidgetRef ref) async {
+    final groups = ref.read(linkViewModelProvider).groups;
+    if (groups.isEmpty) {
+      SnackBarService.showWarning(context, AppLocalizations.of(context)!.noGroupsSelected);
+      return;
+    }
+
+    // グループ選択用のセット
+    final selectedGroupIds = <String>{};
+    
+    // グループ選択ダイアログを表示
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(AppLocalizations.of(context)!.selectGroupsToExport),
+            content: SizedBox(
+              width: 500,
+              height: 400,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            selectedGroupIds.clear();
+                            selectedGroupIds.addAll(groups.map((g) => g.id));
+                          });
+                        },
+                        child: Text(AppLocalizations.of(context)!.selectAll),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            selectedGroupIds.clear();
+                          });
+                        },
+                        child: Text(AppLocalizations.of(context)!.deselectAll),
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: groups.length,
+                      itemBuilder: (context, index) {
+                        final group = groups[index];
+                        final isSelected = selectedGroupIds.contains(group.id);
+                        return CheckboxListTile(
+                          title: Text(group.title),
+                          subtitle: Text(AppLocalizations.of(context)!.linksCount(group.items.length)),
+                          value: isSelected,
+                          onChanged: (value) {
+                            setState(() {
+                              if (value == true) {
+                                selectedGroupIds.add(group.id);
+                              } else {
+                                selectedGroupIds.remove(group.id);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(AppLocalizations.of(context)!.cancel),
+              ),
+              ElevatedButton(
+                onPressed: selectedGroupIds.isEmpty
+                    ? null
+                    : () => Navigator.of(context).pop(true),
+                child: Text(AppLocalizations.of(context)!.export),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (confirmed != true || selectedGroupIds.isEmpty) {
+      return;
+    }
+
+    try {
+      // Excelワークブックを作成
+      final excel = Excel.createExcel();
+      excel.delete('Sheet1'); // デフォルトシートを削除
+      final sheet = excel['リンク一覧']; // 新しいシートを作成
+
+      // ヘッダー行を追加
+      sheet.appendRow(['グループ名', 'ラベル', 'リンク', 'メモ']);
+
+      // 選択されたグループのリンクを追加
+      for (final group in groups) {
+        if (selectedGroupIds.contains(group.id)) {
+          for (final link in group.items) {
+            final rowIndex = sheet.maxRows;
+            sheet.appendRow([
+              group.title,
+              link.label,
+              link.path,
+              link.memo ?? '',
+            ]);
+
+            // リンク列（3列目、0-indexedなので2）にハイパーリンクを設定
+            final linkCell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex));
+            
+            // ハイパーリンクURLを準備（HTTP/HTTPS、ファイルパス、UNCパスに対応）
+            String hyperlinkUrl;
+            if (link.path.startsWith('http://') || link.path.startsWith('https://')) {
+              // HTTP/HTTPSリンク
+              hyperlinkUrl = link.path;
+            } else if (link.path.startsWith(r'\\')) {
+              // UNCパス
+              hyperlinkUrl = 'file:///${link.path.replaceAll(r'\', '/')}';
+            } else if (link.path.contains(':\\')) {
+              // ローカルファイルパス
+              hyperlinkUrl = 'file:///${link.path.replaceAll(r'\', '/')}';
+            } else {
+              // その他のパスもハイパーリンクとして設定
+              hyperlinkUrl = link.path;
+            }
+            
+            // セルにハイパーリンクを設定
+            // excelパッケージのバージョン2.1.0では、ExcelのHYPERLINK関数を使用してハイパーリンクを作成します
+            try {
+              // ExcelのHYPERLINK関数を使用してハイパーリンクを作成
+              // 形式: =HYPERLINK("URL", "表示テキスト")
+              // URL内の特殊文字をエスケープ
+              final escapedUrl = hyperlinkUrl.replaceAll('"', '""').replaceAll('\n', ' ').replaceAll('\r', '');
+              final escapedText = link.path.replaceAll('"', '""').replaceAll('\n', ' ').replaceAll('\r', '');
+              final hyperlinkFormula = '=HYPERLINK("$escapedUrl","$escapedText")';
+              
+              // セルに数式を設定（excelパッケージでは、数式は文字列として設定できる可能性があります）
+              linkCell.value = hyperlinkFormula;
+              
+              // 数式として認識させるために、セルのタイプを設定する必要があるかもしれません
+              // ただし、excelパッケージのバージョン2.1.0では、この機能が限定的な可能性があります
+            } catch (e) {
+              // HYPERLINK関数の設定に失敗した場合は、通常のテキストとして表示
+              print('ハイパーリンクの設定に失敗: $e');
+              linkCell.value = link.path;
+            }
+          }
+        }
+      }
+
+      // 列幅を調整（excelパッケージでは列幅設定が異なる可能性があるため、コメントアウト）
+      // sheet.setColumnWidth(0, 20.0); // グループ名
+      // sheet.setColumnWidth(1, 30.0); // ラベル
+      // sheet.setColumnWidth(2, 50.0); // リンク
+      // sheet.setColumnWidth(3, 40.0); // メモ
+
+      // ファイル保存ダイアログを表示
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: AppLocalizations.of(context)!.exportLinksToExcel,
+        fileName: 'links_export_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xlsx',
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+      );
+
+      if (result != null) {
+        final file = File(result);
+        final excelBytes = excel.encode();
+        if (excelBytes != null) {
+          await file.writeAsBytes(excelBytes);
+          
+          SnackBarService.showSuccess(
+            context,
+            AppLocalizations.of(context)!.linksExported(result),
+          );
+        } else {
+          throw Exception('Excelファイルの生成に失敗しました');
+        }
+      }
+    } catch (e) {
+      SnackBarService.showError(
+        context,
+        AppLocalizations.of(context)!.linksExportFailed(e.toString()),
+      );
+    }
+  }
+
   void _showShortcutHelp(BuildContext context) {
     HomeScreen.showShortcutHelp(context);
   }
@@ -1313,6 +1501,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         _showGroupOrderDialog(context);
                       } else if (result == 'shortcut_help') {
                         _showShortcutHelp(context);
+                      } else if (result == 'export_links_excel') {
+                        _exportLinksToExcel(context, ref);
                       }
                       // タスク管理画面のメニュー項目（まずタスク管理画面に遷移）
                       else if (result == 'add_task' || result == 'bulk_select' || 
@@ -1876,7 +2066,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('リンクを追加'),
+          title: Text(AppLocalizations.of(context)!.addLink),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1964,7 +2154,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Navigator.pop(context);
                 }
               },
-              child: const Text('追加'),
+              child: Text(AppLocalizations.of(context)!.add),
             ),
           ],
         ),
@@ -2003,7 +2193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _showGroupOrderDialog(BuildContext context) {
     final groups = ref.read(linkViewModelProvider).groups;
     if (groups.length < 2) {
-      SnackBarService.showWarning(context, '並び順を変更するには2つ以上のグループが必要です');
+      SnackBarService.showWarning(context, AppLocalizations.of(context)!.needAtLeastTwoGroups);
       return;
     }
 

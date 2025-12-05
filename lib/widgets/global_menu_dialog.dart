@@ -109,6 +109,12 @@ class _GlobalMenuDialogState extends ConsumerState<GlobalMenuDialog> {
                     title: '${AppLocalizations.of(context)!.shortcutKeys} (F1)',
                     value: 'shortcut_help',
                   ),
+                  _buildMenuItem(
+                    icon: Icons.file_download,
+                    iconColor: Colors.green,
+                    title: '${AppLocalizations.of(context)!.exportLinksToExcel}',
+                    value: 'export_links_excel',
+                  ),
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 16),
