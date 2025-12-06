@@ -3208,14 +3208,20 @@
   "@importantNotes": {
     "description": "Important notes title"
   },
-  "importantNotesContent": "• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】以下のいずれかに配置してください：\n1. ポータブル版: {portablePath}\n2. インストール版: {installedPath}",
+  "importantNotesContent": "• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】\nポータブル版に同梱されています: {portablePath}",
   "@importantNotesContent": {
     "description": "Important notes content",
     "placeholders": {
       "portablePath": {
         "type": "String"
-      },
-      "installedPath": {
+      }
+    }
+  },
+  "bundledWithPortable": "ポータブル版に同梱されています: {portablePath}",
+  "@bundledWithPortable": {
+    "description": "Bundled with portable version message",
+    "placeholders": {
+      "portablePath": {
         "type": "String"
       }
     }
@@ -5897,6 +5903,196 @@
     "description": "Completion report send error message",
     "placeholders": {
       "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accessTokenDescription": "access_token: Google Calendar APIへのアクセス権限",
+  "@accessTokenDescription": {
+    "description": "Access token description"
+  },
+  "refreshTokenDescription": "refresh_token: アクセストークンの更新用",
+  "@refreshTokenDescription": {
+    "description": "Refresh token description"
+  },
+  "expiresAtDescription": "expires_at: トークンの有効期限",
+  "@expiresAtDescription": {
+    "description": "Expires at description"
+  },
+  "noManualEditRequired": "※ このファイルは手動で編集する必要はありません。",
+  "@noManualEditRequired": {
+    "description": "No manual edit required message"
+  },
+  "openGoogleCloudConsole": "Google Cloud Consoleを開く",
+  "@openGoogleCloudConsole": {
+    "description": "Open Google Cloud Console button label"
+  },
+  "browserOpenFailed": "ブラウザを開けませんでした: {error}",
+  "@browserOpenFailed": {
+    "description": "Browser open failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "resetAllSettingsTitle": "設定をリセット",
+  "@resetAllSettingsTitle": {
+    "description": "Reset all settings dialog title"
+  },
+  "resetAllSettingsConfirm": "すべての設定をデフォルト値にリセットしますか？この操作は取り消せません。",
+  "@resetAllSettingsConfirm": {
+    "description": "Reset all settings confirmation message"
+  },
+  "resetButton": "リセット",
+  "@resetButton": {
+    "description": "Reset button label"
+  },
+  "dataRetention": "データの保持について",
+  "@dataRetention": {
+    "description": "Data retention section title"
+  },
+  "dataWillNotBeDeleted": "以下のデータは削除されません:",
+  "@dataWillNotBeDeleted": {
+    "description": "Data will not be deleted message"
+  },
+  "linkData": "リンクデータ",
+  "@linkData": {
+    "description": "Link data label"
+  },
+  "linkDataDescription": "すべてのリンク、グループ、メモが保持されます",
+  "@linkDataDescription": {
+    "description": "Link data description"
+  },
+  "taskData": "タスクデータ",
+  "@taskData": {
+    "description": "Task data label"
+  },
+  "taskDataDescription": "すべてのタスク、サブタスク、進捗が保持されます",
+  "@taskDataDescription": {
+    "description": "Task data description"
+  },
+  "searchHistoryRetained": "検索履歴は保持されます",
+  "@searchHistoryRetained": {
+    "description": "Search history retained message"
+  },
+  "resetAfterActions": "リセット後の動作",
+  "@resetAfterActions": {
+    "description": "Reset after actions section title"
+  },
+  "afterResetWillBe": "リセット後は以下のようになります:",
+  "@afterResetWillBe": {
+    "description": "After reset will be message"
+  },
+  "appRestart": "アプリ再起動",
+  "@appRestart": {
+    "description": "App restart label"
+  },
+  "appRestartDescription": "設定変更を反映するため再起動が推奨されます",
+  "@appRestartDescription": {
+    "description": "App restart description"
+  },
+  "settingsConfirmation": "設定確認",
+  "@settingsConfirmation": {
+    "description": "Settings confirmation label"
+  },
+  "settingsConfirmationDescription": "設定画面で新しい設定値を確認できます",
+  "@settingsConfirmationDescription": {
+    "description": "Settings confirmation description"
+  },
+  "dataRestore": "データ復元",
+  "@dataRestore": {
+    "description": "Data restore label"
+  },
+  "dataRestoreDescription": "エクスポート/インポート機能でデータを復元可能",
+  "@dataRestoreDescription": {
+    "description": "Data restore description"
+  },
+  "dateRangeSync": "日付範囲同期",
+  "@dateRangeSync": {
+    "description": "Date range sync dialog title"
+  },
+  "selectDateRangeToSync": "同期する日付範囲を選択してください",
+  "@selectDateRangeToSync": {
+    "description": "Select date range to sync message"
+  },
+  "startDate": "開始日",
+  "@startDate": {
+    "description": "Start date label"
+  },
+  "endDate": "終了日",
+  "@endDate": {
+    "description": "End date label"
+  },
+  "executeSync": "同期実行",
+  "@executeSync": {
+    "description": "Execute sync button label"
+  },
+  "dateRangeSyncInProgress": "日付範囲同期中...",
+  "@dateRangeSyncInProgress": {
+    "description": "Date range sync in progress message"
+  },
+  "dateRangeSyncCompleted": "日付範囲同期完了: {count}件成功",
+  "@dateRangeSyncCompleted": {
+    "description": "Date range sync completed message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dateRangeSyncCompletedSuccess": "日付範囲同期が完了しました",
+  "@dateRangeSyncCompletedSuccess": {
+    "description": "Date range sync completed success message"
+  },
+  "dateRangeSyncFailed": "日付範囲同期に失敗しました",
+  "@dateRangeSyncFailed": {
+    "description": "Date range sync failed message"
+  },
+  "dateRangeSyncError": "日付範囲同期中にエラーが発生しました: {error}",
+  "@dateRangeSyncError": {
+    "description": "Date range sync error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "syncing": "同期中...",
+  "@syncing": {
+    "description": "Syncing message"
+  },
+  "syncCompleted": "同期が完了しました",
+  "@syncCompleted": {
+    "description": "Sync completed message"
+  },
+  "syncFailed": "同期に失敗しました",
+  "@syncFailed": {
+    "description": "Sync failed message"
+  },
+  "taskSyncCompleted": "「{title}」の同期が完了しました",
+  "@taskSyncCompleted": {
+    "description": "Task sync completed message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskSyncFailedMessage": "「{title}」の同期に失敗しました",
+  "@taskSyncFailedMessage": {
+    "description": "Task sync failed message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskSyncErrorMessage": "「{title}」の同期中にエラーが発生しました",
+  "@taskSyncErrorMessage": {
+    "description": "Task sync error message",
+    "placeholders": {
+      "title": {
         "type": "String"
       }
     }

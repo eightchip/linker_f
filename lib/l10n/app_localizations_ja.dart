@@ -693,7 +693,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get tags => 'タグ';
 
   @override
-  String get startDate => '着手日';
+  String get startDate => '開始日';
 
   @override
   String get completionDate => '完了日';
@@ -2168,8 +2168,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get importantNotes => '重要な注意事項';
 
   @override
-  String importantNotesContent(String portablePath, String installedPath) {
-    return '• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】以下のいずれかに配置してください：\n1. ポータブル版: $portablePath\n2. インストール版: $installedPath';
+  String importantNotesContent(String portablePath) {
+    return '• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】\nポータブル版に同梱されています: $portablePath';
+  }
+
+  @override
+  String bundledWithPortable(String portablePath) {
+    return 'ポータブル版に同梱されています: $portablePath';
   }
 
   @override
@@ -2330,7 +2335,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get syncing => '同期中...';
 
   @override
-  String get syncCompleted => '同期完了';
+  String get syncCompleted => '同期が完了しました';
 
   @override
   String get syncError => '同期エラー';
@@ -3799,5 +3804,129 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String completionReportSendError(String error) {
     return '完了報告送信エラー: $error';
+  }
+
+  @override
+  String get accessTokenDescription =>
+      'access_token: Google Calendar APIへのアクセス権限';
+
+  @override
+  String get refreshTokenDescription => 'refresh_token: アクセストークンの更新用';
+
+  @override
+  String get expiresAtDescription => 'expires_at: トークンの有効期限';
+
+  @override
+  String get noManualEditRequired => '※ このファイルは手動で編集する必要はありません。';
+
+  @override
+  String get openGoogleCloudConsole => 'Google Cloud Consoleを開く';
+
+  @override
+  String browserOpenFailed(String error) {
+    return 'ブラウザを開けませんでした: $error';
+  }
+
+  @override
+  String get resetAllSettingsTitle => '設定をリセット';
+
+  @override
+  String get resetAllSettingsConfirm => 'すべての設定をデフォルト値にリセットしますか？この操作は取り消せません。';
+
+  @override
+  String get resetButton => 'リセット';
+
+  @override
+  String get dataRetention => 'データの保持について';
+
+  @override
+  String get dataWillNotBeDeleted => '以下のデータは削除されません:';
+
+  @override
+  String get linkData => 'リンクデータ';
+
+  @override
+  String get linkDataDescription => 'すべてのリンク、グループ、メモが保持されます';
+
+  @override
+  String get taskData => 'タスクデータ';
+
+  @override
+  String get taskDataDescription => 'すべてのタスク、サブタスク、進捗が保持されます';
+
+  @override
+  String get searchHistoryRetained => '検索履歴は保持されます';
+
+  @override
+  String get resetAfterActions => 'リセット後の動作';
+
+  @override
+  String get afterResetWillBe => 'リセット後は以下のようになります:';
+
+  @override
+  String get appRestart => 'アプリ再起動';
+
+  @override
+  String get appRestartDescription => '設定変更を反映するため再起動が推奨されます';
+
+  @override
+  String get settingsConfirmation => '設定確認';
+
+  @override
+  String get settingsConfirmationDescription => '設定画面で新しい設定値を確認できます';
+
+  @override
+  String get dataRestore => 'データ復元';
+
+  @override
+  String get dataRestoreDescription => 'エクスポート/インポート機能でデータを復元可能';
+
+  @override
+  String get dateRangeSync => '日付範囲同期';
+
+  @override
+  String get selectDateRangeToSync => '同期する日付範囲を選択してください';
+
+  @override
+  String get endDate => '終了日';
+
+  @override
+  String get executeSync => '同期実行';
+
+  @override
+  String get dateRangeSyncInProgress => '日付範囲同期中...';
+
+  @override
+  String dateRangeSyncCompleted(int count) {
+    return '日付範囲同期完了: $count件成功';
+  }
+
+  @override
+  String get dateRangeSyncCompletedSuccess => '日付範囲同期が完了しました';
+
+  @override
+  String get dateRangeSyncFailed => '日付範囲同期に失敗しました';
+
+  @override
+  String dateRangeSyncError(String error) {
+    return '日付範囲同期中にエラーが発生しました: $error';
+  }
+
+  @override
+  String get syncFailed => '同期に失敗しました';
+
+  @override
+  String taskSyncCompleted(String title) {
+    return '「$title」の同期が完了しました';
+  }
+
+  @override
+  String taskSyncFailedMessage(String title) {
+    return '「$title」の同期に失敗しました';
+  }
+
+  @override
+  String taskSyncErrorMessage(String title) {
+    return '「$title」の同期中にエラーが発生しました';
   }
 }

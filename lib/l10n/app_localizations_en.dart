@@ -2202,8 +2202,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importantNotes => 'Important Notes';
 
   @override
-  String importantNotesContent(String portablePath, String installedPath) {
-    return '• Administrator privileges are not required (can be executed at user level)\n• File names must match exactly\n• Manual permission is required if execution policy is restricted\n• May not work due to company PC security policies\n\n【Installation Location】Please place in one of the following:\n1. Portable Version: $portablePath\n2. Installed Version: $installedPath';
+  String importantNotesContent(String portablePath) {
+    return '• Administrator privileges are not required (can be executed at user level)\n• File names must match exactly\n• Manual permission is required if execution policy is restricted\n• May not work due to company PC security policies\n\n【Installation Location】\nBundled with portable version: $portablePath';
+  }
+
+  @override
+  String bundledWithPortable(String portablePath) {
+    return 'Bundled with portable version: $portablePath';
   }
 
   @override
@@ -2368,7 +2373,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncing => 'Syncing...';
 
   @override
-  String get syncCompleted => 'Sync Completed';
+  String get syncCompleted => 'Synchronization completed';
 
   @override
   String get syncError => 'Sync Error';
@@ -3868,5 +3873,139 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String completionReportSendError(String error) {
     return 'Completion report send error: $error';
+  }
+
+  @override
+  String get accessTokenDescription =>
+      'access_token: Access rights to Google Calendar API';
+
+  @override
+  String get refreshTokenDescription =>
+      'refresh_token: For refreshing access token';
+
+  @override
+  String get expiresAtDescription => 'expires_at: Token expiration date';
+
+  @override
+  String get noManualEditRequired =>
+      '※ This file does not need to be edited manually.';
+
+  @override
+  String get openGoogleCloudConsole => 'Open Google Cloud Console';
+
+  @override
+  String browserOpenFailed(String error) {
+    return 'Failed to open browser: $error';
+  }
+
+  @override
+  String get resetAllSettingsTitle => 'Reset Settings';
+
+  @override
+  String get resetAllSettingsConfirm =>
+      'Do you want to reset all settings to their default values? This operation cannot be undone.';
+
+  @override
+  String get resetButton => 'Reset';
+
+  @override
+  String get dataRetention => 'Data Retention';
+
+  @override
+  String get dataWillNotBeDeleted => 'The following data will not be deleted:';
+
+  @override
+  String get linkData => 'Link Data';
+
+  @override
+  String get linkDataDescription =>
+      'All links, groups, and memos will be retained';
+
+  @override
+  String get taskData => 'Task Data';
+
+  @override
+  String get taskDataDescription =>
+      'All tasks, subtasks, and progress will be retained';
+
+  @override
+  String get searchHistoryRetained => 'Search history will be retained';
+
+  @override
+  String get resetAfterActions => 'Actions After Reset';
+
+  @override
+  String get afterResetWillBe => 'After reset, the following will occur:';
+
+  @override
+  String get appRestart => 'App Restart';
+
+  @override
+  String get appRestartDescription =>
+      'A restart is recommended to reflect the setting changes';
+
+  @override
+  String get settingsConfirmation => 'Settings Confirmation';
+
+  @override
+  String get settingsConfirmationDescription =>
+      'You can confirm the new settings on the settings screen';
+
+  @override
+  String get dataRestore => 'Data Restore';
+
+  @override
+  String get dataRestoreDescription =>
+      'Data can be restored using the export/import function';
+
+  @override
+  String get dateRangeSync => 'Date Range Synchronization';
+
+  @override
+  String get selectDateRangeToSync =>
+      'Please select the date range to synchronize';
+
+  @override
+  String get endDate => 'End Date';
+
+  @override
+  String get executeSync => 'Execute Sync';
+
+  @override
+  String get dateRangeSyncInProgress => 'Synchronizing date range...';
+
+  @override
+  String dateRangeSyncCompleted(int count) {
+    return 'Date range sync completed: $count items succeeded';
+  }
+
+  @override
+  String get dateRangeSyncCompletedSuccess =>
+      'Date range synchronization completed';
+
+  @override
+  String get dateRangeSyncFailed => 'Date range synchronization failed';
+
+  @override
+  String dateRangeSyncError(String error) {
+    return 'An error occurred during date range synchronization: $error';
+  }
+
+  @override
+  String get syncFailed => 'Synchronization failed';
+
+  @override
+  String taskSyncCompleted(String title) {
+    return 'Synchronization of \"$title\" completed';
+  }
+
+  @override
+  String taskSyncFailedMessage(String title) {
+    return 'Synchronization of \"$title\" failed';
+  }
+
+  @override
+  String taskSyncErrorMessage(String title) {
+    return 'An error occurred while synchronizing \"$title\"';
   }
 }

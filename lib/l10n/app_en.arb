@@ -2988,14 +2988,20 @@
   "@importantNotes": {
     "description": "Important notes title"
   },
-  "importantNotesContent": "• Administrator privileges are not required (can be executed at user level)\n• File names must match exactly\n• Manual permission is required if execution policy is restricted\n• May not work due to company PC security policies\n\n【Installation Location】Please place in one of the following:\n1. Portable Version: {portablePath}\n2. Installed Version: {installedPath}",
+  "importantNotesContent": "• Administrator privileges are not required (can be executed at user level)\n• File names must match exactly\n• Manual permission is required if execution policy is restricted\n• May not work due to company PC security policies\n\n【Installation Location】\nBundled with portable version: {portablePath}",
   "@importantNotesContent": {
     "description": "Important notes content",
     "placeholders": {
       "portablePath": {
         "type": "String"
-      },
-      "installedPath": {
+      }
+    }
+  },
+  "bundledWithPortable": "Bundled with portable version: {portablePath}",
+  "@bundledWithPortable": {
+    "description": "Bundled with portable version message",
+    "placeholders": {
+      "portablePath": {
         "type": "String"
       }
     }
@@ -5829,6 +5835,196 @@
   "noDueDate": "No Due Date",
   "@noDueDate": {
     "description": "No due date group name"
+  },
+  "dateRangeSync": "Date Range Synchronization",
+  "@dateRangeSync": {
+    "description": "Date range sync dialog title"
+  },
+  "selectDateRangeToSync": "Please select the date range to synchronize",
+  "@selectDateRangeToSync": {
+    "description": "Select date range to sync message"
+  },
+  "startDate": "Start Date",
+  "@startDate": {
+    "description": "Start date label"
+  },
+  "endDate": "End Date",
+  "@endDate": {
+    "description": "End date label"
+  },
+  "executeSync": "Execute Sync",
+  "@executeSync": {
+    "description": "Execute sync button label"
+  },
+  "dateRangeSyncInProgress": "Synchronizing date range...",
+  "@dateRangeSyncInProgress": {
+    "description": "Date range sync in progress message"
+  },
+  "dateRangeSyncCompleted": "Date range sync completed: {count} items succeeded",
+  "@dateRangeSyncCompleted": {
+    "description": "Date range sync completed message",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dateRangeSyncCompletedSuccess": "Date range synchronization completed",
+  "@dateRangeSyncCompletedSuccess": {
+    "description": "Date range sync completed success message"
+  },
+  "dateRangeSyncFailed": "Date range synchronization failed",
+  "@dateRangeSyncFailed": {
+    "description": "Date range sync failed message"
+  },
+  "dateRangeSyncError": "An error occurred during date range synchronization: {error}",
+  "@dateRangeSyncError": {
+    "description": "Date range sync error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "syncing": "Syncing...",
+  "@syncing": {
+    "description": "Syncing message"
+  },
+  "syncCompleted": "Synchronization completed",
+  "@syncCompleted": {
+    "description": "Sync completed message"
+  },
+  "syncFailed": "Synchronization failed",
+  "@syncFailed": {
+    "description": "Sync failed message"
+  },
+  "taskSyncCompleted": "Synchronization of \"{title}\" completed",
+  "@taskSyncCompleted": {
+    "description": "Task sync completed message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskSyncFailedMessage": "Synchronization of \"{title}\" failed",
+  "@taskSyncFailedMessage": {
+    "description": "Task sync failed message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "taskSyncErrorMessage": "An error occurred while synchronizing \"{title}\"",
+  "@taskSyncErrorMessage": {
+    "description": "Task sync error message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "accessTokenDescription": "access_token: Access rights to Google Calendar API",
+  "@accessTokenDescription": {
+    "description": "Access token description"
+  },
+  "refreshTokenDescription": "refresh_token: For refreshing access token",
+  "@refreshTokenDescription": {
+    "description": "Refresh token description"
+  },
+  "expiresAtDescription": "expires_at: Token expiration date",
+  "@expiresAtDescription": {
+    "description": "Expires at description"
+  },
+  "noManualEditRequired": "※ This file does not need to be edited manually.",
+  "@noManualEditRequired": {
+    "description": "No manual edit required message"
+  },
+  "openGoogleCloudConsole": "Open Google Cloud Console",
+  "@openGoogleCloudConsole": {
+    "description": "Open Google Cloud Console button label"
+  },
+  "browserOpenFailed": "Failed to open browser: {error}",
+  "@browserOpenFailed": {
+    "description": "Browser open failed message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "resetAllSettingsTitle": "Reset Settings",
+  "@resetAllSettingsTitle": {
+    "description": "Reset all settings dialog title"
+  },
+  "resetAllSettingsConfirm": "Do you want to reset all settings to their default values? This operation cannot be undone.",
+  "@resetAllSettingsConfirm": {
+    "description": "Reset all settings confirmation message"
+  },
+  "resetButton": "Reset",
+  "@resetButton": {
+    "description": "Reset button label"
+  },
+  "dataRetention": "Data Retention",
+  "@dataRetention": {
+    "description": "Data retention section title"
+  },
+  "dataWillNotBeDeleted": "The following data will not be deleted:",
+  "@dataWillNotBeDeleted": {
+    "description": "Data will not be deleted message"
+  },
+  "linkData": "Link Data",
+  "@linkData": {
+    "description": "Link data label"
+  },
+  "linkDataDescription": "All links, groups, and memos will be retained",
+  "@linkDataDescription": {
+    "description": "Link data description"
+  },
+  "taskData": "Task Data",
+  "@taskData": {
+    "description": "Task data label"
+  },
+  "taskDataDescription": "All tasks, subtasks, and progress will be retained",
+  "@taskDataDescription": {
+    "description": "Task data description"
+  },
+  "searchHistoryRetained": "Search history will be retained",
+  "@searchHistoryRetained": {
+    "description": "Search history retained message"
+  },
+  "resetAfterActions": "Actions After Reset",
+  "@resetAfterActions": {
+    "description": "Reset after actions section title"
+  },
+  "afterResetWillBe": "After reset, the following will occur:",
+  "@afterResetWillBe": {
+    "description": "After reset will be message"
+  },
+  "appRestart": "App Restart",
+  "@appRestart": {
+    "description": "App restart label"
+  },
+  "appRestartDescription": "A restart is recommended to reflect the setting changes",
+  "@appRestartDescription": {
+    "description": "App restart description"
+  },
+  "settingsConfirmation": "Settings Confirmation",
+  "@settingsConfirmation": {
+    "description": "Settings confirmation label"
+  },
+  "settingsConfirmationDescription": "You can confirm the new settings on the settings screen",
+  "@settingsConfirmationDescription": {
+    "description": "Settings confirmation description"
+  },
+  "dataRestore": "Data Restore",
+  "@dataRestore": {
+    "description": "Data restore label"
+  },
+  "dataRestoreDescription": "Data can be restored using the export/import function",
+  "@dataRestoreDescription": {
+    "description": "Data restore description"
   }
 }
 

@@ -1424,10 +1424,10 @@ abstract class AppLocalizations {
   /// **'タグ'**
   String get tags;
 
-  /// 着手日ラベル
+  /// Start date label
   ///
   /// In ja, this message translates to:
-  /// **'着手日'**
+  /// **'開始日'**
   String get startDate;
 
   /// 完了日ラベル
@@ -4073,8 +4073,14 @@ abstract class AppLocalizations {
   /// Important notes content
   ///
   /// In ja, this message translates to:
-  /// **'• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】以下のいずれかに配置してください：\n1. ポータブル版: {portablePath}\n2. インストール版: {installedPath}'**
-  String importantNotesContent(String portablePath, String installedPath);
+  /// **'• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】\nポータブル版に同梱されています: {portablePath}'**
+  String importantNotesContent(String portablePath);
+
+  /// Bundled with portable version message
+  ///
+  /// In ja, this message translates to:
+  /// **'ポータブル版に同梱されています: {portablePath}'**
+  String bundledWithPortable(String portablePath);
 
   /// Connection test button label
   ///
@@ -4352,16 +4358,16 @@ abstract class AppLocalizations {
   /// **'待機中'**
   String get waiting;
 
-  /// Syncing status
+  /// Syncing message
   ///
   /// In ja, this message translates to:
   /// **'同期中...'**
   String get syncing;
 
-  /// Sync completed status
+  /// Sync completed message
   ///
   /// In ja, this message translates to:
-  /// **'同期完了'**
+  /// **'同期が完了しました'**
   String get syncCompleted;
 
   /// Sync error status
@@ -6915,6 +6921,228 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'完了報告送信エラー: {error}'**
   String completionReportSendError(String error);
+
+  /// Access token description
+  ///
+  /// In ja, this message translates to:
+  /// **'access_token: Google Calendar APIへのアクセス権限'**
+  String get accessTokenDescription;
+
+  /// Refresh token description
+  ///
+  /// In ja, this message translates to:
+  /// **'refresh_token: アクセストークンの更新用'**
+  String get refreshTokenDescription;
+
+  /// Expires at description
+  ///
+  /// In ja, this message translates to:
+  /// **'expires_at: トークンの有効期限'**
+  String get expiresAtDescription;
+
+  /// No manual edit required message
+  ///
+  /// In ja, this message translates to:
+  /// **'※ このファイルは手動で編集する必要はありません。'**
+  String get noManualEditRequired;
+
+  /// Open Google Cloud Console button label
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Cloud Consoleを開く'**
+  String get openGoogleCloudConsole;
+
+  /// Browser open failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'ブラウザを開けませんでした: {error}'**
+  String browserOpenFailed(String error);
+
+  /// Reset all settings dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'設定をリセット'**
+  String get resetAllSettingsTitle;
+
+  /// Reset all settings confirmation message
+  ///
+  /// In ja, this message translates to:
+  /// **'すべての設定をデフォルト値にリセットしますか？この操作は取り消せません。'**
+  String get resetAllSettingsConfirm;
+
+  /// Reset button label
+  ///
+  /// In ja, this message translates to:
+  /// **'リセット'**
+  String get resetButton;
+
+  /// Data retention section title
+  ///
+  /// In ja, this message translates to:
+  /// **'データの保持について'**
+  String get dataRetention;
+
+  /// Data will not be deleted message
+  ///
+  /// In ja, this message translates to:
+  /// **'以下のデータは削除されません:'**
+  String get dataWillNotBeDeleted;
+
+  /// Link data label
+  ///
+  /// In ja, this message translates to:
+  /// **'リンクデータ'**
+  String get linkData;
+
+  /// Link data description
+  ///
+  /// In ja, this message translates to:
+  /// **'すべてのリンク、グループ、メモが保持されます'**
+  String get linkDataDescription;
+
+  /// Task data label
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクデータ'**
+  String get taskData;
+
+  /// Task data description
+  ///
+  /// In ja, this message translates to:
+  /// **'すべてのタスク、サブタスク、進捗が保持されます'**
+  String get taskDataDescription;
+
+  /// Search history retained message
+  ///
+  /// In ja, this message translates to:
+  /// **'検索履歴は保持されます'**
+  String get searchHistoryRetained;
+
+  /// Reset after actions section title
+  ///
+  /// In ja, this message translates to:
+  /// **'リセット後の動作'**
+  String get resetAfterActions;
+
+  /// After reset will be message
+  ///
+  /// In ja, this message translates to:
+  /// **'リセット後は以下のようになります:'**
+  String get afterResetWillBe;
+
+  /// App restart label
+  ///
+  /// In ja, this message translates to:
+  /// **'アプリ再起動'**
+  String get appRestart;
+
+  /// App restart description
+  ///
+  /// In ja, this message translates to:
+  /// **'設定変更を反映するため再起動が推奨されます'**
+  String get appRestartDescription;
+
+  /// Settings confirmation label
+  ///
+  /// In ja, this message translates to:
+  /// **'設定確認'**
+  String get settingsConfirmation;
+
+  /// Settings confirmation description
+  ///
+  /// In ja, this message translates to:
+  /// **'設定画面で新しい設定値を確認できます'**
+  String get settingsConfirmationDescription;
+
+  /// Data restore label
+  ///
+  /// In ja, this message translates to:
+  /// **'データ復元'**
+  String get dataRestore;
+
+  /// Data restore description
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポート/インポート機能でデータを復元可能'**
+  String get dataRestoreDescription;
+
+  /// Date range sync dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'日付範囲同期'**
+  String get dateRangeSync;
+
+  /// Select date range to sync message
+  ///
+  /// In ja, this message translates to:
+  /// **'同期する日付範囲を選択してください'**
+  String get selectDateRangeToSync;
+
+  /// End date label
+  ///
+  /// In ja, this message translates to:
+  /// **'終了日'**
+  String get endDate;
+
+  /// Execute sync button label
+  ///
+  /// In ja, this message translates to:
+  /// **'同期実行'**
+  String get executeSync;
+
+  /// Date range sync in progress message
+  ///
+  /// In ja, this message translates to:
+  /// **'日付範囲同期中...'**
+  String get dateRangeSyncInProgress;
+
+  /// Date range sync completed message
+  ///
+  /// In ja, this message translates to:
+  /// **'日付範囲同期完了: {count}件成功'**
+  String dateRangeSyncCompleted(int count);
+
+  /// Date range sync completed success message
+  ///
+  /// In ja, this message translates to:
+  /// **'日付範囲同期が完了しました'**
+  String get dateRangeSyncCompletedSuccess;
+
+  /// Date range sync failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'日付範囲同期に失敗しました'**
+  String get dateRangeSyncFailed;
+
+  /// Date range sync error message
+  ///
+  /// In ja, this message translates to:
+  /// **'日付範囲同期中にエラーが発生しました: {error}'**
+  String dateRangeSyncError(String error);
+
+  /// Sync failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'同期に失敗しました'**
+  String get syncFailed;
+
+  /// Task sync completed message
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」の同期が完了しました'**
+  String taskSyncCompleted(String title);
+
+  /// Task sync failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」の同期に失敗しました'**
+  String taskSyncFailedMessage(String title);
+
+  /// Task sync error message
+  ///
+  /// In ja, this message translates to:
+  /// **'「{title}」の同期中にエラーが発生しました'**
+  String taskSyncErrorMessage(String title);
 }
 
 class _AppLocalizationsDelegate

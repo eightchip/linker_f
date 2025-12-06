@@ -4715,22 +4715,22 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       
       if (result['success'] == true) {
         syncStatusNotifier.syncSuccess(
-          message: '「${task.title}」の同期が完了しました',
+          message: AppLocalizations.of(context)!.taskSyncCompleted(task.title),
         );
         SnackBarService.showSuccess(context, AppLocalizations.of(context)!.taskSyncedToCalendar(task.title));
       } else {
         final errors = result['errors'] as List<String>?;
-        final errorMessage = errors?.isNotEmpty == true ? errors!.first : '不明なエラー';
+        final errorMessage = errors?.isNotEmpty == true ? errors!.first : AppLocalizations.of(context)!.unknownError;
         syncStatusNotifier.syncError(
           errorMessage: errorMessage,
-          message: '「${task.title}」の同期に失敗しました',
+          message: AppLocalizations.of(context)!.taskSyncFailedMessage(task.title),
         );
         SnackBarService.showError(context, AppLocalizations.of(context)!.taskSyncFailed(task.title, errorMessage));
       }
     } catch (e) {
       syncStatusNotifier.syncError(
         errorMessage: e.toString(),
-        message: '「${task.title}」の同期中にエラーが発生しました',
+        message: AppLocalizations.of(context)!.taskSyncErrorMessage(task.title),
       );
       SnackBarService.showError(context, AppLocalizations.of(context)!.taskSyncError(task.title, e.toString()));
     }

@@ -81,7 +81,7 @@ class SyncStatusNotifier extends StateNotifier<SyncState> {
   void startSync({String? message, int? totalItems}) {
     state = state.copyWith(
       status: SyncStatus.syncing,
-      message: message ?? '同期中...',
+      message: message,
       errorMessage: null,
       errorCode: null,
       progress: 0,
@@ -107,7 +107,7 @@ class SyncStatusNotifier extends StateNotifier<SyncState> {
   void syncSuccess({String? message}) {
     state = state.copyWith(
       status: SyncStatus.success,
-      message: message ?? '同期が完了しました',
+      message: message,
       errorMessage: null,
       errorCode: null,
       lastSyncTime: DateTime.now(),
@@ -123,7 +123,7 @@ class SyncStatusNotifier extends StateNotifier<SyncState> {
   }) {
     state = state.copyWith(
       status: SyncStatus.error,
-      message: message ?? '同期に失敗しました',
+      message: message,
       errorMessage: errorMessage,
       errorCode: errorCode,
     );

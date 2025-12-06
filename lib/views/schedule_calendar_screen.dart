@@ -528,9 +528,13 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
     DateTime now,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    // ロケールが初期化されていない場合はデフォルト形式を使用
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
+    // ロケールに応じた日付フォーマット
     final dateFormat = _localeInitialized
-        ? DateFormat('yyyy年MM月dd日(E)', 'ja_JP')
+        ? (locale.languageCode == 'ja' 
+            ? DateFormat('yyyy年MM月dd日(E)', 'ja_JP')
+            : DateFormat('yyyy/MM/dd (E)', 'en_US'))
         : DateFormat('yyyy/MM/dd (E)');
     final isToday = date.year == DateTime.now().year &&
         date.month == DateTime.now().month &&
@@ -627,7 +631,7 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${schedules.length}件',
+                  l10n.itemsCountShort(schedules.length),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -968,10 +972,18 @@ class _ScheduleCalendarScreenState extends ConsumerState<ScheduleCalendarScreen>
       monthGroups[monthStart]!.add(date);
     }
     final monthStarts = monthGroups.keys.toList()..sort();
-    final dayLabelFormat =
-        _localeInitialized ? DateFormat('d日(E)', 'ja_JP') : DateFormat('d (E)');
-    final monthHeaderFormat =
-        _localeInitialized ? DateFormat('yyyy年MM月', 'ja_JP') : DateFormat('yyyy/MM');
+    final locale = Localizations.localeOf(context);
+    // ロケールに応じた日付フォーマット
+    final dayLabelFormat = _localeInitialized
+        ? (locale.languageCode == 'ja'
+            ? DateFormat('d日(E)', 'ja_JP')
+            : DateFormat('d (E)', 'en_US'))
+        : DateFormat('d (E)');
+    final monthHeaderFormat = _localeInitialized
+        ? (locale.languageCode == 'ja'
+            ? DateFormat('yyyy年MM月', 'ja_JP')
+            : DateFormat('yyyy/MM', 'en_US'))
+        : DateFormat('yyyy/MM');
     final timeFormat = DateFormat('HH:mm');
 
     return ListView.builder(

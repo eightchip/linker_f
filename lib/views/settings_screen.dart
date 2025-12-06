@@ -4543,26 +4543,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildResetItem(AppLocalizations.of(context)!.itemSettingsReset, AppLocalizations.of(context)!.itemSettingsResetDesc),
             const SizedBox(height: 12),
             
-            _buildGuideStep('3', 'データの保持について'),
+            _buildGuideStep('3', AppLocalizations.of(context)!.dataRetention),
             Text(
-              '以下のデータは削除されません:',
+              AppLocalizations.of(context)!.dataWillNotBeDeleted,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
-            _buildResetItem('リンクデータ', 'すべてのリンク、グループ、メモが保持されます'),
-            _buildResetItem('タスクデータ', 'すべてのタスク、サブタスク、進捗が保持されます'),
-            _buildResetItem('検索履歴', '検索履歴は保持されます'),
+            _buildResetItem(AppLocalizations.of(context)!.linkData, AppLocalizations.of(context)!.linkDataDescription),
+            _buildResetItem(AppLocalizations.of(context)!.taskData, AppLocalizations.of(context)!.taskDataDescription),
+            _buildResetItem(AppLocalizations.of(context)!.searchHistory, AppLocalizations.of(context)!.searchHistoryRetained),
             const SizedBox(height: 12),
             
-            _buildGuideStep('4', 'リセット後の動作'),
+            _buildGuideStep('4', AppLocalizations.of(context)!.resetAfterActions),
             Text(
-              'リセット後は以下のようになります:',
+              AppLocalizations.of(context)!.afterResetWillBe,
               style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
-            _buildResetItem('アプリ再起動', '設定変更を反映するため再起動が推奨されます'),
-            _buildResetItem('設定確認', '設定画面で新しい設定値を確認できます'),
-            _buildResetItem('データ復元', 'エクスポート/インポート機能でデータを復元可能'),
+            _buildResetItem(AppLocalizations.of(context)!.appRestart, AppLocalizations.of(context)!.appRestartDescription),
+            _buildResetItem(AppLocalizations.of(context)!.settingsConfirmation, AppLocalizations.of(context)!.settingsConfirmationDescription),
+            _buildResetItem(AppLocalizations.of(context)!.dataRestore, AppLocalizations.of(context)!.dataRestoreDescription),
               ],
             ),
           ),
@@ -4570,7 +4570,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             style: AppButtonStyles.text(context),
-            child: const Text('閉じる'),
+            child: Text(AppLocalizations.of(context)!.close),
                 ),
               ],
             ),
@@ -4765,8 +4765,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('設定をリセット'),
-        content: const Text('すべての設定をデフォルト値にリセットしますか？この操作は取り消せません。'),
+        title: Text(AppLocalizations.of(context)!.resetAllSettingsTitle),
+        content: Text(AppLocalizations.of(context)!.resetAllSettingsConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -4782,7 +4782,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.of(context).pop();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('リセット'),
+            child: Text(AppLocalizations.of(context)!.resetButton),
           ),
         ],
       ),
@@ -5477,7 +5477,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         }
       } else {
         syncStatusNotifier.syncError(
-          errorMessage: result['error'] ?? '不明なエラー',
+          errorMessage: result['error'] ?? AppLocalizations.of(context)!.unknownError,
           message: AppLocalizations.of(context)!.orphanedEventsDeletionFailed,
         );
         SnackBarService.showError(context, '${AppLocalizations.of(context)!.orphanedEventsDeletionFailed}: ${result['error']}');
@@ -5546,7 +5546,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         }
       } else {
         syncStatusNotifier.syncError(
-          errorMessage: result['error'] ?? '不明なエラー',
+          errorMessage: result['error'] ?? AppLocalizations.of(context)!.unknownError,
           message: AppLocalizations.of(context)!.duplicateCleanupFailed,
         );
         SnackBarService.showError(context, '${AppLocalizations.of(context)!.duplicateCleanupFailed}: ${result['error']}');
@@ -5569,14 +5569,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('日付範囲同期'),
+          title: Text(AppLocalizations.of(context)!.dateRangeSync),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('同期する日付範囲を選択してください'),
+              Text(AppLocalizations.of(context)!.selectDateRangeToSync),
               const SizedBox(height: 16),
               ListTile(
-                title: const Text('開始日'),
+                title: Text(AppLocalizations.of(context)!.startDate),
                 subtitle: Text(DateFormat('yyyy/MM/dd').format(startDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
@@ -5592,7 +5592,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               ListTile(
-                title: const Text('終了日'),
+                title: Text(AppLocalizations.of(context)!.endDate),
                 subtitle: Text(DateFormat('yyyy/MM/dd').format(endDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
@@ -5619,7 +5619,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Navigator.of(context).pop();
                 await _performDateRangeSync(ref, startDate, endDate);
               },
-              child: const Text('同期実行'),
+              child: Text(AppLocalizations.of(context)!.executeSync),
             ),
           ],
         ),
@@ -5634,29 +5634,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     
     try {
       syncStatusNotifier.startSync(
-        message: '日付範囲同期中...',
+        message: AppLocalizations.of(context)!.dateRangeSyncInProgress,
       );
       
       final result = await taskViewModel.syncTasksByDateRange(startDate, endDate);
       
       if (result['success'] == true) {
         syncStatusNotifier.syncSuccess(
-          message: '日付範囲同期完了: ${result['successCount']}件成功',
+          message: AppLocalizations.of(context)!.dateRangeSyncCompleted(result['successCount'] ?? 0),
         );
-        SnackBarService.showSuccess(context, '日付範囲同期が完了しました');
+        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.dateRangeSyncCompletedSuccess);
       } else {
         syncStatusNotifier.syncError(
-          errorMessage: result['errors']?.join(', ') ?? '不明なエラー',
-          message: '日付範囲同期に失敗しました',
+          errorMessage: result['errors']?.join(', ') ?? AppLocalizations.of(context)!.unknownError,
+          message: AppLocalizations.of(context)!.dateRangeSyncFailed,
         );
-        SnackBarService.showError(context, '日付範囲同期に失敗しました');
+        SnackBarService.showError(context, AppLocalizations.of(context)!.dateRangeSyncFailed);
       }
     } catch (e) {
       syncStatusNotifier.syncError(
         errorMessage: e.toString(),
-        message: '日付範囲同期中にエラーが発生しました',
+        message: AppLocalizations.of(context)!.dateRangeSyncError(e.toString()),
       );
-      SnackBarService.showError(context, '日付範囲同期中にエラーが発生しました: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.dateRangeSyncError(e.toString()));
     }
   }
 
@@ -5814,16 +5814,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             // エラー時はデフォルト表示を使用
                           }
                           
-                          final appdataPath = Platform.environment['APPDATA'] ?? 
-                            'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
-                          
                           return Column(
                             children: [
                               _buildPowerShellFileInfo(
                                 'company_outlook_test.ps1',
                                 AppLocalizations.of(context)!.outlookConnectionTest,
                                 AppLocalizations.of(context)!.outlookConnectionTestDescription,
-                                '${AppLocalizations.of(context)!.portableVersion}: $portablePath\\\n${AppLocalizations.of(context)!.installedVersion}: $appdataPath\\Apps\\',
+                AppLocalizations.of(context)!.bundledWithPortable(portablePath),
                                 AppLocalizations.of(context)!.manualExecution,
                               ),
                               
@@ -5832,7 +5829,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 'compose_mail.ps1',
                                 AppLocalizations.of(context)!.mailCompositionSupport,
                                 AppLocalizations.of(context)!.mailCompositionSupportDescription,
-                                '${AppLocalizations.of(context)!.portableVersion}: $portablePath\\\n${AppLocalizations.of(context)!.installedVersion}: $appdataPath\\Apps\\',
+                AppLocalizations.of(context)!.bundledWithPortable(portablePath),
                                 AppLocalizations.of(context)!.manualExecution,
                               ),
                               
@@ -5840,7 +5837,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 'find_sent.ps1',
                                 AppLocalizations.of(context)!.sentMailSearch,
                                 AppLocalizations.of(context)!.sentMailSearchDescription,
-                                '${AppLocalizations.of(context)!.portableVersion}: $portablePath\\\n${AppLocalizations.of(context)!.installedVersion}: $appdataPath\\Apps\\',
+                AppLocalizations.of(context)!.bundledWithPortable(portablePath),
                                 AppLocalizations.of(context)!.manualExecution,
                               ),
                               
@@ -5848,7 +5845,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 'get_calendar_events.ps1',
                                 AppLocalizations.of(context)!.outlookCalendarEvents,
                                 AppLocalizations.of(context)!.outlookCalendarEventsDescription,
-                                '${AppLocalizations.of(context)!.portableVersion}: $portablePath\\\n${AppLocalizations.of(context)!.installedVersion}: $appdataPath\\Apps\\',
+                AppLocalizations.of(context)!.bundledWithPortable(portablePath),
                                 AppLocalizations.of(context)!.automaticExecution,
                               ),
                             ],
@@ -5894,11 +5891,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   // エラー時はデフォルト表示を使用
                                 }
                                 
-                                final appdataPath = Platform.environment['APPDATA'] ?? 
-                                  'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
-                                
                                 return Text(
-                                  AppLocalizations.of(context)!.importantNotesContent(portablePath, '$appdataPath\\Apps'),
+                                  AppLocalizations.of(context)!.importantNotesContent(portablePath),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.orange.shade700,
@@ -6101,15 +6095,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '• access_token: Google Calendar APIへのアクセス権限',
+                          '• ${AppLocalizations.of(context)!.accessTokenDescription}',
                           style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
                         ),
                         Text(
-                          '• refresh_token: アクセストークンの更新用',
+                          '• ${AppLocalizations.of(context)!.refreshTokenDescription}',
                           style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
                         ),
                         Text(
-                          '• expires_at: トークンの有効期限',
+                          '• ${AppLocalizations.of(context)!.expiresAtDescription}',
                           style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
                         ),
                       ],
@@ -6117,7 +6111,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '※ このファイルは手動で編集する必要はありません。',
+                    AppLocalizations.of(context)!.noManualEditRequired,
                     style: TextStyle(
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
@@ -6134,7 +6128,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             style: AppButtonStyles.text(context),
-            child: const Text('閉じる'),
+            child: Text(AppLocalizations.of(context)!.close),
           ),
           ElevatedButton.icon(
             onPressed: () async {
@@ -6142,11 +6136,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 await Process.run('cmd', ['/c', 'start', 'https://console.cloud.google.com/']);
                 Navigator.pop(context);
               } catch (e) {
-                SnackBarService.showError(context, 'ブラウザを開けませんでした: $e');
+                SnackBarService.showError(context, AppLocalizations.of(context)!.browserOpenFailed(e.toString()));
               }
             },
             icon: const Icon(Icons.open_in_browser),
-            label: const Text('Google Cloud Consoleを開く'),
+            label: Text(AppLocalizations.of(context)!.openGoogleCloudConsole),
             style: AppButtonStyles.primary(context),
           ),
         ],
