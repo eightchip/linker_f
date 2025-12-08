@@ -3175,7 +3175,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       if (scriptMatch != null) {
         final scriptName = scriptMatch.group(0)!;
         final paths = ScriptPathResolver.getScriptPaths(scriptName);
-        return l10n.powershellScriptNotFound(scriptName, paths['portablePath']!, paths['installedPath']!);
+        return l10n.powershellScriptNotFound(scriptName, paths['portablePath']!);
       }
     }
     

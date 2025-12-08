@@ -415,12 +415,12 @@ class _SubTaskDialogState extends ConsumerState<SubTaskDialog> {
                                 IconButton(
                                   onPressed: () => _startEdit(subTask),
                                   icon: const Icon(Icons.edit, color: Colors.blue),
-                                  tooltip: '編集',
+                                  tooltip: AppLocalizations.of(context)!.edit,
                                 ),
                                 IconButton(
                                   onPressed: () => _deleteSubTask(subTask.id),
                                   icon: const Icon(Icons.delete, color: Colors.red),
-                                  tooltip: '削除',
+                                  tooltip: AppLocalizations.of(context)!.delete,
                                 ),
                               ],
                             ),

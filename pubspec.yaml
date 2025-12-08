@@ -70,9 +70,6 @@ dependencies:
   
   # Icons
   font_awesome_flutter: ^10.7.0
-  pdf_render: ^1.4.0
-  pdf: ^3.10.4
-  pdfx: ^2.9.2
   
   # Office file processing
   excel: ^2.1.0

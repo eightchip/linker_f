@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/export_config.dart';
 import '../widgets/app_button_styles.dart';
+import '../l10n/app_localizations.dart';
 
 /// 部分インポートダイアログ
 class SelectiveImportDialog extends StatefulWidget {
@@ -27,9 +28,9 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
               children: [
                 const Icon(Icons.upload, color: Colors.blue, size: 28),
                 const SizedBox(width: 12),
-                const Text(
-                  '部分インポート設定',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  AppLocalizations.of(context)!.partialImportSettings,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -45,17 +46,17 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-              const Text(
-                'インポート方法を選択してください',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)!.selectImportMethod,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               
               // インポート方法
-              _buildSectionHeader('インポート方法'),
+              _buildSectionHeader(AppLocalizations.of(context)!.importMethod),
               RadioListTile<ImportMode>(
-                title: const Text('追加'),
-                subtitle: const Text('既存データに追加します'),
+                title: Text(AppLocalizations.of(context)!.add),
+                subtitle: Text(AppLocalizations.of(context)!.addToExistingData),
                 value: ImportMode.add,
                 groupValue: _config.importMode,
                 onChanged: (value) {
@@ -65,8 +66,8 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                 },
               ),
               RadioListTile<ImportMode>(
-                title: const Text('上書き'),
-                subtitle: const Text('既存データを置き換えます'),
+                title: Text(AppLocalizations.of(context)!.overwrite),
+                subtitle: Text(AppLocalizations.of(context)!.replaceExistingData),
                 value: ImportMode.overwrite,
                 groupValue: _config.importMode,
                 onChanged: (value) {
@@ -76,8 +77,8 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                 },
               ),
               RadioListTile<ImportMode>(
-                title: const Text('マージ'),
-                subtitle: const Text('重複をチェックして統合します'),
+                title: Text(AppLocalizations.of(context)!.merge),
+                subtitle: Text(AppLocalizations.of(context)!.mergeWithDuplicateCheck),
                 value: ImportMode.merge,
                 groupValue: _config.importMode,
                 onChanged: (value) {
@@ -90,10 +91,10 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
               const SizedBox(height: 16),
               
               // 重複処理方法
-              _buildSectionHeader('重複処理方法'),
+              _buildSectionHeader(AppLocalizations.of(context)!.duplicateHandling),
               RadioListTile<DuplicateHandling>(
-                title: const Text('スキップ'),
-                subtitle: const Text('重複データをスキップします'),
+                title: Text(AppLocalizations.of(context)!.skip),
+                subtitle: Text(AppLocalizations.of(context)!.skipDuplicateData),
                 value: DuplicateHandling.skip,
                 groupValue: _config.duplicateHandling,
                 onChanged: (value) {
@@ -103,8 +104,8 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                 },
               ),
               RadioListTile<DuplicateHandling>(
-                title: const Text('上書き'),
-                subtitle: const Text('既存データを上書きします'),
+                title: Text(AppLocalizations.of(context)!.overwrite),
+                subtitle: Text(AppLocalizations.of(context)!.overwriteExistingData),
                 value: DuplicateHandling.overwrite,
                 groupValue: _config.duplicateHandling,
                 onChanged: (value) {
@@ -114,8 +115,8 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                 },
               ),
               RadioListTile<DuplicateHandling>(
-                title: const Text('名前を変更'),
-                subtitle: const Text('名前を変更して追加します'),
+                title: Text(AppLocalizations.of(context)!.rename),
+                subtitle: Text(AppLocalizations.of(context)!.renameAndAdd),
                 value: DuplicateHandling.rename,
                 groupValue: _config.duplicateHandling,
                 onChanged: (value) {
@@ -128,9 +129,9 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
               const SizedBox(height: 16),
               
               // インポートするデータ
-              _buildSectionHeader('インポートするデータ'),
+              _buildSectionHeader(AppLocalizations.of(context)!.importData),
               CheckboxListTile(
-                title: const Text('リンク'),
+                title: Text(AppLocalizations.of(context)!.links),
                 value: _config.importLinks,
                 onChanged: (value) {
                   setState(() {
@@ -139,7 +140,7 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                 },
               ),
               CheckboxListTile(
-                title: const Text('グループ'),
+                title: Text(AppLocalizations.of(context)!.groups),
                 value: _config.importGroups,
                 onChanged: (value) {
                   setState(() {
@@ -148,7 +149,7 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                 },
               ),
               CheckboxListTile(
-                title: const Text('タスク'),
+                title: Text(AppLocalizations.of(context)!.tasks),
                 value: _config.importTasks,
                 onChanged: (value) {
                   setState(() {
@@ -157,7 +158,7 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                 },
               ),
               CheckboxListTile(
-                title: const Text('設定'),
+                title: Text(AppLocalizations.of(context)!.settings),
                 value: _config.importSettings,
                 onChanged: (value) {
                   setState(() {
@@ -177,7 +178,7 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   style: AppButtonStyles.text(context),
-                  child: const Text('キャンセル'),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -185,7 +186,7 @@ class _SelectiveImportDialogState extends State<SelectiveImportDialog> {
                     Navigator.pop(context, _config);
                   },
                   style: AppButtonStyles.primary(context),
-                  child: const Text('インポート'),
+                  child: Text(AppLocalizations.of(context)!.import),
                 ),
               ],
             ),

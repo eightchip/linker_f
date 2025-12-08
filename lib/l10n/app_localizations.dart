@@ -104,7 +104,7 @@ abstract class AppLocalizations {
   /// **'Link Navigator'**
   String get appTitle;
 
-  /// Settings label
+  /// Settings step
   ///
   /// In ja, this message translates to:
   /// **'設定'**
@@ -869,13 +869,13 @@ abstract class AppLocalizations {
   /// Select all button
   ///
   /// In ja, this message translates to:
-  /// **'すべて選択'**
+  /// **'全選択'**
   String get selectAll;
 
   /// Deselect all button
   ///
   /// In ja, this message translates to:
-  /// **'すべて解除'**
+  /// **'全解除'**
   String get deselectAll;
 
   /// カードビューツールチップ
@@ -890,25 +890,25 @@ abstract class AppLocalizations {
   /// **'リスト表示'**
   String get listView;
 
-  /// ステータスラベル
+  /// Status label
   ///
   /// In ja, this message translates to:
   /// **'ステータス'**
   String get status;
 
-  /// 未着手ステータス
+  /// Not started status
   ///
   /// In ja, this message translates to:
   /// **'未着手'**
   String get notStarted;
 
-  /// 進行中ステータス
+  /// In progress status
   ///
   /// In ja, this message translates to:
   /// **'進行中'**
   String get inProgress;
 
-  /// 完了ラベル
+  /// Completed status
   ///
   /// In ja, this message translates to:
   /// **'完了'**
@@ -1217,7 +1217,7 @@ abstract class AppLocalizations {
   /// Cancelled status
   ///
   /// In ja, this message translates to:
-  /// **'取消'**
+  /// **'キャンセル'**
   String get cancelled;
 
   /// キャンセルステータス（短縮版）
@@ -1226,10 +1226,10 @@ abstract class AppLocalizations {
   /// **'X'**
   String get cancelledShort;
 
-  /// 期限ラベル
+  /// Due date label
   ///
   /// In ja, this message translates to:
-  /// **'期限'**
+  /// **'期限日'**
   String get dueDate;
 
   /// 着手ラベル
@@ -1490,10 +1490,10 @@ abstract class AppLocalizations {
   /// **'更新'**
   String get update;
 
-  /// 着手日選択プレースホルダー
+  /// Select start date
   ///
   /// In ja, this message translates to:
-  /// **'着手日を選択'**
+  /// **'開始日を選択'**
   String get selectStartDate;
 
   /// サブタスクタイトルラベル
@@ -1514,13 +1514,13 @@ abstract class AppLocalizations {
   /// **'説明'**
   String get description;
 
-  /// Add button
+  /// Add import mode
   ///
   /// In ja, this message translates to:
-  /// **'追加する'**
+  /// **'追加'**
   String get add;
 
-  /// 作成日ラベル
+  /// Creation date label
   ///
   /// In ja, this message translates to:
   /// **'作成日'**
@@ -1733,10 +1733,10 @@ abstract class AppLocalizations {
   /// Export button
   ///
   /// In ja, this message translates to:
-  /// **'出力'**
+  /// **'エクスポート'**
   String get export;
 
-  /// インポートボタン
+  /// Import button
   ///
   /// In ja, this message translates to:
   /// **'インポート'**
@@ -1856,7 +1856,7 @@ abstract class AppLocalizations {
   /// **'タスクテンプレート'**
   String get taskTemplate;
 
-  /// テンプレート選択セクションタイトル
+  /// Select template hint
   ///
   /// In ja, this message translates to:
   /// **'テンプレートを選択'**
@@ -1868,16 +1868,16 @@ abstract class AppLocalizations {
   /// **'タスク詳細'**
   String get taskDetails;
 
-  /// テンプレート名ラベル
+  /// Template name label
   ///
   /// In ja, this message translates to:
   /// **'テンプレート名'**
   String get templateName;
 
-  /// テンプレート名の例
+  /// Template name example
   ///
   /// In ja, this message translates to:
-  /// **'例: 会議準備、定期報告など'**
+  /// **'例: 部署標準リンク集'**
   String get templateNameExample;
 
   /// タスク作成ボタン
@@ -4169,7 +4169,7 @@ abstract class AppLocalizations {
   /// Place file in app folder description
   ///
   /// In ja, this message translates to:
-  /// **'ダウンロードしたJSONファイルを「oauth2_credentials.json」としてアプリフォルダに配置'**
+  /// **'ダウンロードしたJSONファイルを「google_calendar_credentials.json」としてアプリフォルダに配置'**
   String get placeFileInAppFolderDescription;
 
   /// Execute OAuth2 authentication step
@@ -4381,6 +4381,48 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'最終同期: {time}'**
   String lastSync(String time);
+
+  /// Next scheduled sync time
+  ///
+  /// In ja, this message translates to:
+  /// **'次回同期予定: {time}'**
+  String nextSync(String time);
+
+  /// Auto sync is enabled message
+  ///
+  /// In ja, this message translates to:
+  /// **'自動同期が有効です'**
+  String get autoSyncEnabled;
+
+  /// Auto sync is disabled message
+  ///
+  /// In ja, this message translates to:
+  /// **'自動同期が無効です'**
+  String get autoSyncDisabled;
+
+  /// Access token expiry time
+  ///
+  /// In ja, this message translates to:
+  /// **'アクセストークン有効期限: {time}'**
+  String tokenExpiry(String time);
+
+  /// Token is valid message
+  ///
+  /// In ja, this message translates to:
+  /// **'認証トークンは有効です'**
+  String get tokenValid;
+
+  /// Token is expired message
+  ///
+  /// In ja, this message translates to:
+  /// **'認証トークンが期限切れです'**
+  String get tokenExpired;
+
+  /// Refresh token is available message
+  ///
+  /// In ja, this message translates to:
+  /// **'リフレッシュトークンが利用可能です'**
+  String get refreshTokenAvailable;
 
   /// Processing items message
   ///
@@ -4716,10 +4758,10 @@ abstract class AppLocalizations {
   /// **'リンクがありません'**
   String get noLinksYet;
 
-  /// Merge button label
+  /// Merge import mode
   ///
   /// In ja, this message translates to:
-  /// **'結合'**
+  /// **'マージ'**
   String get merge;
 
   /// Apply button label
@@ -5424,7 +5466,7 @@ abstract class AppLocalizations {
   /// **'Outlook接続テスト失敗: Outlookが利用できません'**
   String get outlookConnectionTestFailed;
 
-  /// Outlook connection test error
+  /// Outlook connection test error message
   ///
   /// In ja, this message translates to:
   /// **'Outlook接続テストエラー: {error}'**
@@ -5433,12 +5475,8 @@ abstract class AppLocalizations {
   /// PowerShell script not found error
   ///
   /// In ja, this message translates to:
-  /// **'PowerShellスクリプトが見つかりません: {scriptName}\n\n以下のいずれかの場所に配置してください:\n1. ポータブル版: {portablePath}\n2. インストール版: {installedPath}'**
-  String powershellScriptNotFound(
-    String scriptName,
-    String portablePath,
-    String installedPath,
-  );
+  /// **'PowerShellスクリプトが見つかりません: {scriptName}\n\n以下の場所に配置してください:\n{portablePath}'**
+  String powershellScriptNotFound(String scriptName, String portablePath);
 
   /// Name label
   ///
@@ -5541,6 +5579,78 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'有効なアクセストークンがありません。OAuth2認証を実行してください。'**
   String get noValidAccessToken;
+
+  /// Google Calendar not authenticated error message
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarが認証されていません。設定画面でOAuth2認証を実行してください。'**
+  String get googleCalendarNotAuthenticated;
+
+  /// Memo label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'メモ'**
+  String get googleCalendarMemo;
+
+  /// Tags label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'タグ'**
+  String get googleCalendarTags;
+
+  /// Estimated time label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'推定時間'**
+  String get googleCalendarEstimatedTime;
+
+  /// Subtask progress label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'サブタスク進捗'**
+  String get googleCalendarSubtaskProgress;
+
+  /// Subtask details label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'サブタスク詳細'**
+  String get googleCalendarSubtaskDetails;
+
+  /// Priority label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'優先度'**
+  String get googleCalendarPriority;
+
+  /// Status label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'ステータス'**
+  String get googleCalendarStatus;
+
+  /// Created date label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'作成日'**
+  String get googleCalendarCreatedDate;
+
+  /// Completed label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'完了'**
+  String get googleCalendarCompleted;
+
+  /// Hours label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'時間'**
+  String get googleCalendarHours;
+
+  /// Minutes label for Google Calendar
+  ///
+  /// In ja, this message translates to:
+  /// **'分'**
+  String get googleCalendarMinutes;
 
   /// Google Calendar event fetch failed error
   ///
@@ -6310,7 +6420,7 @@ abstract class AppLocalizations {
   /// **'リンクの削除に失敗しました: {error}'**
   String linkDeletionFailed(String error);
 
-  /// Items count display
+  /// Items count
   ///
   /// In ja, this message translates to:
   /// **'{count}件'**
@@ -7143,6 +7253,282 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'「{title}」の同期中にエラーが発生しました'**
   String taskSyncErrorMessage(String title);
+
+  /// Outlook connection test completed message
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook接続テストが完了しました！'**
+  String get outlookConnectionTestCompleted;
+
+  /// Save template button/tooltip
+  ///
+  /// In ja, this message translates to:
+  /// **'テンプレートを保存'**
+  String get saveTemplate;
+
+  /// Template description label
+  ///
+  /// In ja, this message translates to:
+  /// **'説明（任意）'**
+  String get templateDescription;
+
+  /// Template description hint
+  ///
+  /// In ja, this message translates to:
+  /// **'このテンプレートの説明'**
+  String get templateDescriptionHint;
+
+  /// Data selection step
+  ///
+  /// In ja, this message translates to:
+  /// **'データ選択'**
+  String get dataSelection;
+
+  /// Task filter step
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクフィルター'**
+  String get taskFilter;
+
+  /// Confirmation step
+  ///
+  /// In ja, this message translates to:
+  /// **'確認'**
+  String get confirmation;
+
+  /// Search hint
+  ///
+  /// In ja, this message translates to:
+  /// **'検索...'**
+  String get searchHint;
+
+  /// Groups label
+  ///
+  /// In ja, this message translates to:
+  /// **'グループ'**
+  String get groups;
+
+  /// Groups selection description
+  ///
+  /// In ja, this message translates to:
+  /// **'グループを選択すると、そのグループ内のすべてのリンクが含まれます'**
+  String get groupsSelectionDescription;
+
+  /// Tasks label
+  ///
+  /// In ja, this message translates to:
+  /// **'タスク'**
+  String get tasks;
+
+  /// Tasks selection description
+  ///
+  /// In ja, this message translates to:
+  /// **'個別にタスクを選択します'**
+  String get tasksSelectionDescription;
+
+  /// Include memos checkbox
+  ///
+  /// In ja, this message translates to:
+  /// **'メモを含める'**
+  String get includeMemos;
+
+  /// Selected count
+  ///
+  /// In ja, this message translates to:
+  /// **'選択: {selected} / {total}'**
+  String selectedCount(int selected, int total);
+
+  /// No items message
+  ///
+  /// In ja, this message translates to:
+  /// **'項目がありません'**
+  String get noItems;
+
+  /// No task data message
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクデータがありません'**
+  String get noTaskData;
+
+  /// Task filter settings title
+  ///
+  /// In ja, this message translates to:
+  /// **'タスクフィルター設定'**
+  String get taskFilterSettings;
+
+  /// Tag label
+  ///
+  /// In ja, this message translates to:
+  /// **'タグ'**
+  String get tag;
+
+  /// Select end date
+  ///
+  /// In ja, this message translates to:
+  /// **'終了日を選択'**
+  String get selectEndDate;
+
+  /// Start date display
+  ///
+  /// In ja, this message translates to:
+  /// **'開始: {date}'**
+  String start(String date);
+
+  /// End date display
+  ///
+  /// In ja, this message translates to:
+  /// **'終了: {date}'**
+  String end(String date);
+
+  /// Export settings title
+  ///
+  /// In ja, this message translates to:
+  /// **'設定エクスポート'**
+  String get exportSettings;
+
+  /// UI settings label
+  ///
+  /// In ja, this message translates to:
+  /// **'UI設定'**
+  String get uiSettings;
+
+  /// UI settings description
+  ///
+  /// In ja, this message translates to:
+  /// **'テーマ、色、フォントサイズなど'**
+  String get uiSettingsDescription;
+
+  /// Feature settings label
+  ///
+  /// In ja, this message translates to:
+  /// **'機能設定'**
+  String get featureSettings;
+
+  /// Feature settings description
+  ///
+  /// In ja, this message translates to:
+  /// **'自動バックアップ、通知など'**
+  String get featureSettingsDescription;
+
+  /// Integration settings label
+  ///
+  /// In ja, this message translates to:
+  /// **'連携設定'**
+  String get integrationSettings;
+
+  /// Integration settings description
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar、Outlookなど'**
+  String get integrationSettingsDescription;
+
+  /// Export preview title
+  ///
+  /// In ja, this message translates to:
+  /// **'エクスポート内容の確認'**
+  String get exportPreview;
+
+  /// Partial import settings title
+  ///
+  /// In ja, this message translates to:
+  /// **'部分インポート設定'**
+  String get partialImportSettings;
+
+  /// Select import method prompt
+  ///
+  /// In ja, this message translates to:
+  /// **'インポート方法を選択してください'**
+  String get selectImportMethod;
+
+  /// Import method section
+  ///
+  /// In ja, this message translates to:
+  /// **'インポート方法'**
+  String get importMethod;
+
+  /// Add to existing data description
+  ///
+  /// In ja, this message translates to:
+  /// **'既存データに追加します'**
+  String get addToExistingData;
+
+  /// Overwrite import mode
+  ///
+  /// In ja, this message translates to:
+  /// **'上書き'**
+  String get overwrite;
+
+  /// Replace existing data description
+  ///
+  /// In ja, this message translates to:
+  /// **'既存データを置き換えます'**
+  String get replaceExistingData;
+
+  /// Merge with duplicate check description
+  ///
+  /// In ja, this message translates to:
+  /// **'重複をチェックして統合します'**
+  String get mergeWithDuplicateCheck;
+
+  /// Duplicate handling section
+  ///
+  /// In ja, this message translates to:
+  /// **'重複処理方法'**
+  String get duplicateHandling;
+
+  /// Skip duplicate handling
+  ///
+  /// In ja, this message translates to:
+  /// **'スキップ'**
+  String get skip;
+
+  /// Skip duplicate data description
+  ///
+  /// In ja, this message translates to:
+  /// **'重複データをスキップします'**
+  String get skipDuplicateData;
+
+  /// Overwrite existing data description
+  ///
+  /// In ja, this message translates to:
+  /// **'既存データを上書きします'**
+  String get overwriteExistingData;
+
+  /// Rename duplicate handling
+  ///
+  /// In ja, this message translates to:
+  /// **'名前を変更'**
+  String get rename;
+
+  /// Rename and add description
+  ///
+  /// In ja, this message translates to:
+  /// **'名前を変更して追加します'**
+  String get renameAndAdd;
+
+  /// Import data section
+  ///
+  /// In ja, this message translates to:
+  /// **'インポートするデータ'**
+  String get importData;
+
+  /// Links label
+  ///
+  /// In ja, this message translates to:
+  /// **'リンク'**
+  String get links;
+
+  /// Next button
+  ///
+  /// In ja, this message translates to:
+  /// **'次へ'**
+  String get next;
+
+  /// Back button
+  ///
+  /// In ja, this message translates to:
+  /// **'戻る'**
+  String get back;
 }
 
 class _AppLocalizationsDelegate

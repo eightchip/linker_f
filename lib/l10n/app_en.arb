@@ -1198,6 +1198,14 @@
   "@completed": {
     "description": "Completed label"
   },
+  "quickFilterApplied": "Quick filter applied",
+  "@quickFilterApplied": {
+    "description": "Quick filter applied message"
+  },
+  "filterReset": "Filter reset",
+  "@filterReset": {
+    "description": "Filter reset message"
+  },
   "editGroupName": "Edit Group Name",
   "@editGroupName": {
   },
@@ -3062,7 +3070,7 @@
   "@placeFileInAppFolder": {
     "description": "Place file in app folder step"
   },
-  "placeFileInAppFolderDescription": "Place the downloaded JSON file in the app folder as \"oauth2_credentials.json\"",
+  "placeFileInAppFolderDescription": "Place the downloaded JSON file in the app folder as \"google_calendar_credentials.json\"",
   "@placeFileInAppFolderDescription": {
     "description": "Place file in app folder description"
   },
@@ -3209,6 +3217,44 @@
         "type": "String"
       }
     }
+  },
+  "nextSync": "Next Sync Scheduled: {time}",
+  "@nextSync": {
+    "description": "Next scheduled sync time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "autoSyncEnabled": "Auto sync is enabled",
+  "@autoSyncEnabled": {
+    "description": "Auto sync is enabled message"
+  },
+  "autoSyncDisabled": "Auto sync is disabled",
+  "@autoSyncDisabled": {
+    "description": "Auto sync is disabled message"
+  },
+  "tokenExpiry": "Access Token Expiry: {time}",
+  "@tokenExpiry": {
+    "description": "Access token expiry time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tokenValid": "Authentication token is valid",
+  "@tokenValid": {
+    "description": "Token is valid message"
+  },
+  "tokenExpired": "Authentication token has expired",
+  "@tokenExpired": {
+    "description": "Token is expired message"
+  },
+  "refreshTokenAvailable": "Refresh token is available",
+  "@refreshTokenAvailable": {
+    "description": "Refresh token is available message"
   },
   "processingItems": "Processing {processed}/{total} items...",
   "@processingItems": {
@@ -4205,7 +4251,7 @@
       }
     }
   },
-  "powershellScriptNotFound": "PowerShell script not found: {scriptName}\n\nPlease place it in one of the following locations:\n1. Portable version: {portablePath}\n2. Installed version: {installedPath}",
+  "powershellScriptNotFound": "PowerShell script not found: {scriptName}\n\nPlease place it in the following location:\n{portablePath}",
   "@powershellScriptNotFound": {
     "description": "PowerShell script not found error",
     "placeholders": {
@@ -4213,9 +4259,6 @@
         "type": "String"
       },
       "portablePath": {
-        "type": "String"
-      },
-      "installedPath": {
         "type": "String"
       }
     }
@@ -4327,6 +4370,54 @@
   "noValidAccessToken": "No valid access token. Please execute OAuth2 authentication.",
   "@noValidAccessToken": {
     "description": "No valid access token error"
+  },
+  "googleCalendarNotAuthenticated": "Google Calendar is not authenticated. Please execute OAuth2 authentication on the settings screen.",
+  "@googleCalendarNotAuthenticated": {
+    "description": "Google Calendar not authenticated error message"
+  },
+  "googleCalendarMemo": "Memo",
+  "@googleCalendarMemo": {
+    "description": "Memo label for Google Calendar"
+  },
+  "googleCalendarTags": "Tags",
+  "@googleCalendarTags": {
+    "description": "Tags label for Google Calendar"
+  },
+  "googleCalendarEstimatedTime": "Estimated Time",
+  "@googleCalendarEstimatedTime": {
+    "description": "Estimated time label for Google Calendar"
+  },
+  "googleCalendarSubtaskProgress": "Subtask Progress",
+  "@googleCalendarSubtaskProgress": {
+    "description": "Subtask progress label for Google Calendar"
+  },
+  "googleCalendarSubtaskDetails": "Subtask Details",
+  "@googleCalendarSubtaskDetails": {
+    "description": "Subtask details label for Google Calendar"
+  },
+  "googleCalendarPriority": "Priority",
+  "@googleCalendarPriority": {
+    "description": "Priority label for Google Calendar"
+  },
+  "googleCalendarStatus": "Status",
+  "@googleCalendarStatus": {
+    "description": "Status label for Google Calendar"
+  },
+  "googleCalendarCreatedDate": "Created Date",
+  "@googleCalendarCreatedDate": {
+    "description": "Created date label for Google Calendar"
+  },
+  "googleCalendarCompleted": "Completed",
+  "@googleCalendarCompleted": {
+    "description": "Completed label for Google Calendar"
+  },
+  "googleCalendarHours": "hours",
+  "@googleCalendarHours": {
+    "description": "Hours label for Google Calendar"
+  },
+  "googleCalendarMinutes": "minutes",
+  "@googleCalendarMinutes": {
+    "description": "Minutes label for Google Calendar"
   },
   "googleCalendarEventFetchFailed": "Failed to fetch Google Calendar events: {statusCode}",
   "@googleCalendarEventFetchFailed": {
@@ -6025,6 +6116,302 @@
   "dataRestoreDescription": "Data can be restored using the export/import function",
   "@dataRestoreDescription": {
     "description": "Data restore description"
+  },
+  "outlookConnectionTestCompleted": "Outlook connection test completed!",
+  "@outlookConnectionTestCompleted": {
+    "description": "Outlook connection test completed message"
+  },
+  "outlookConnectionTestError": "Outlook connection test error: {error}",
+  "@outlookConnectionTestError": {
+    "description": "Outlook connection test error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "selectTemplate": "Select Template",
+  "@selectTemplate": {
+    "description": "Select template hint"
+  },
+  "saveTemplate": "Save Template",
+  "@saveTemplate": {
+    "description": "Save template button/tooltip"
+  },
+  "templateName": "Template Name",
+  "@templateName": {
+    "description": "Template name label"
+  },
+  "templateNameExample": "Example: Department Standard Links",
+  "@templateNameExample": {
+    "description": "Template name example"
+  },
+  "templateDescription": "Description (Optional)",
+  "@templateDescription": {
+    "description": "Template description label"
+  },
+  "templateDescriptionHint": "Description of this template",
+  "@templateDescriptionHint": {
+    "description": "Template description hint"
+  },
+  "templateSaved": "Template saved",
+  "@templateSaved": {
+    "description": "Template saved message"
+  },
+  "dataSelection": "Data Selection",
+  "@dataSelection": {
+    "description": "Data selection step"
+  },
+  "taskFilter": "Task Filter",
+  "@taskFilter": {
+    "description": "Task filter step"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings step"
+  },
+  "confirmation": "Confirmation",
+  "@confirmation": {
+    "description": "Confirmation step"
+  },
+  "searchHint": "Search...",
+  "@searchHint": {
+    "description": "Search hint"
+  },
+  "groups": "Groups",
+  "@groups": {
+    "description": "Groups label"
+  },
+  "groupsSelectionDescription": "Selecting a group includes all links within that group",
+  "@groupsSelectionDescription": {
+    "description": "Groups selection description"
+  },
+  "selectAll": "Select All",
+  "@selectAll": {
+    "description": "Select all button"
+  },
+  "deselectAll": "Deselect All",
+  "@deselectAll": {
+    "description": "Deselect all button"
+  },
+  "tasks": "Tasks",
+  "@tasks": {
+    "description": "Tasks label"
+  },
+  "tasksSelectionDescription": "Select tasks individually",
+  "@tasksSelectionDescription": {
+    "description": "Tasks selection description"
+  },
+  "includeMemos": "Include Memos",
+  "@includeMemos": {
+    "description": "Include memos checkbox"
+  },
+  "selectedCount": "Selected: {selected} / {total}",
+  "@selectedCount": {
+    "description": "Selected count",
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noItems": "No items",
+  "@noItems": {
+    "description": "No items message"
+  },
+  "noTaskData": "No task data",
+  "@noTaskData": {
+    "description": "No task data message"
+  },
+  "taskFilterSettings": "Task Filter Settings",
+  "@taskFilterSettings": {
+    "description": "Task filter settings title"
+  },
+  "tag": "Tag",
+  "@tag": {
+    "description": "Tag label"
+  },
+  "status": "Status",
+  "@status": {
+    "description": "Status label"
+  },
+  "notStarted": "Not Started",
+  "@notStarted": {
+    "description": "Not started status"
+  },
+  "inProgress": "In Progress",
+  "@inProgress": {
+    "description": "In progress status"
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed status"
+  },
+  "cancelled": "Cancelled",
+  "@cancelled": {
+    "description": "Cancelled status"
+  },
+  "creationDate": "Creation Date",
+  "@creationDate": {
+    "description": "Creation date label"
+  },
+  "selectStartDate": "Select Start Date",
+  "@selectStartDate": {
+    "description": "Select start date"
+  },
+  "selectEndDate": "Select End Date",
+  "@selectEndDate": {
+    "description": "Select end date"
+  },
+  "dueDate": "Due Date",
+  "@dueDate": {
+    "description": "Due date label"
+  },
+  "start": "Start: {date}",
+  "@start": {
+    "description": "Start date display",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "end": "End: {date}",
+  "@end": {
+    "description": "End date display",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "exportSettings": "Export Settings",
+  "@exportSettings": {
+    "description": "Export settings title"
+  },
+  "uiSettings": "UI Settings",
+  "@uiSettings": {
+    "description": "UI settings label"
+  },
+  "uiSettingsDescription": "Theme, color, font size, etc.",
+  "@uiSettingsDescription": {
+    "description": "UI settings description"
+  },
+  "featureSettings": "Feature Settings",
+  "@featureSettings": {
+    "description": "Feature settings label"
+  },
+  "featureSettingsDescription": "Automatic backup, notifications, etc.",
+  "@featureSettingsDescription": {
+    "description": "Feature settings description"
+  },
+  "integrationSettings": "Integration Settings",
+  "@integrationSettings": {
+    "description": "Integration settings label"
+  },
+  "integrationSettingsDescription": "Google Calendar, Outlook, etc.",
+  "@integrationSettingsDescription": {
+    "description": "Integration settings description"
+  },
+  "exportPreview": "Export Preview",
+  "@exportPreview": {
+    "description": "Export preview title"
+  },
+  "itemsCount": "{count} items",
+  "@itemsCount": {
+    "description": "Items count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partialImportSettings": "Partial Import Settings",
+  "@partialImportSettings": {
+    "description": "Partial import settings title"
+  },
+  "selectImportMethod": "Please select import method",
+  "@selectImportMethod": {
+    "description": "Select import method prompt"
+  },
+  "importMethod": "Import Method",
+  "@importMethod": {
+    "description": "Import method section"
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Add import mode"
+  },
+  "addToExistingData": "Add to existing data",
+  "@addToExistingData": {
+    "description": "Add to existing data description"
+  },
+  "overwrite": "Overwrite",
+  "@overwrite": {
+    "description": "Overwrite import mode"
+  },
+  "replaceExistingData": "Replace existing data",
+  "@replaceExistingData": {
+    "description": "Replace existing data description"
+  },
+  "merge": "Merge",
+  "@merge": {
+    "description": "Merge import mode"
+  },
+  "mergeWithDuplicateCheck": "Check for duplicates and integrate",
+  "@mergeWithDuplicateCheck": {
+    "description": "Merge with duplicate check description"
+  },
+  "duplicateHandling": "Duplicate Handling",
+  "@duplicateHandling": {
+    "description": "Duplicate handling section"
+  },
+  "skip": "Skip",
+  "@skip": {
+    "description": "Skip duplicate handling"
+  },
+  "skipDuplicateData": "Skip duplicate data",
+  "@skipDuplicateData": {
+    "description": "Skip duplicate data description"
+  },
+  "overwriteExistingData": "Overwrite existing data",
+  "@overwriteExistingData": {
+    "description": "Overwrite existing data description"
+  },
+  "rename": "Rename",
+  "@rename": {
+    "description": "Rename duplicate handling"
+  },
+  "renameAndAdd": "Rename and add",
+  "@renameAndAdd": {
+    "description": "Rename and add description"
+  },
+  "importData": "Import Data",
+  "@importData": {
+    "description": "Import data section"
+  },
+  "links": "Links",
+  "@links": {
+    "description": "Links label"
+  },
+  "import": "Import",
+  "@import": {
+    "description": "Import button"
+  },
+  "export": "Export",
+  "@export": {
+    "description": "Export button"
+  },
+  "next": "Next",
+  "@next": {
+    "description": "Next button"
+  },
+  "back": "Back",
+  "@back": {
+    "description": "Back button"
   }
 }
 

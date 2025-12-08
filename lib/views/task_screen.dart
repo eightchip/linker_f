@@ -166,6 +166,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     with WidgetsBindingObserver {
   late SettingsService _settingsService;
   Set<String> _filterStatuses = {'all'}; // 複数選択可能
+  DateTime? _filterDueDateStart; // 期限日フィルター開始日
+  DateTime? _filterDueDateEnd; // 期限日フィルター終了日
   String _filterPriority = 'all'; // all, low, medium, high, urgent
   String _searchQuery = '';
   List<Map<String, String>> _sortOrders = [{'field': 'dueDate', 'order': 'asc'}]; // 第3順位まで設定可能
@@ -1391,6 +1393,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           _filterPriority = 'all';
           _sortOrders = [{'field': 'dueDate', 'order': 'asc'}];
           _searchQuery = '';
+          _filterDueDateStart = null;
+          _filterDueDateEnd = null;
         });
       }
     }
@@ -1410,6 +1414,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         _filterPriority = 'all';
         _sortOrders = [{'field': 'dueDate', 'order': 'asc'}];
         _searchQuery = '';
+        _filterDueDateStart = null;
+        _filterDueDateEnd = null;
       }
     } catch (e) {
       print('フィルター設定の読み込みエラー: $e');
@@ -2596,6 +2602,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
                   setState(() {
                     if (selected) {
                       _filterStatuses = {'all'};
+                      _filterDueDateStart = null;
+                      _filterDueDateEnd = null;
                     } else {
                       _filterStatuses.remove('all');
                     }
@@ -4669,6 +4677,8 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       _filterPriority = 'all';
       _searchQuery = '';
       _searchController.clear();
+      _filterDueDateStart = null;
+      _filterDueDateEnd = null;
     });
     
     print('リセット後: _filterStatuses=$_filterStatuses, _filterPriority=$_filterPriority, _searchQuery="$_searchQuery"');
@@ -4720,7 +4730,15 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
         SnackBarService.showSuccess(context, AppLocalizations.of(context)!.taskSyncedToCalendar(task.title));
       } else {
         final errors = result['errors'] as List<String>?;
-        final errorMessage = errors?.isNotEmpty == true ? errors!.first : AppLocalizations.of(context)!.unknownError;
+        String errorMessage = errors?.isNotEmpty == true ? errors!.first : AppLocalizations.of(context)!.unknownError;
+        
+        // エラーコードに基づいてローカライゼーションメッセージに変換
+        if (errorMessage.contains('AUTH_REQUIRED') || 
+            errorMessage.contains('Google Calendarが認証されていません') ||
+            errorMessage.contains('Google Calendar is not authenticated')) {
+          errorMessage = '${task.title}: ${AppLocalizations.of(context)!.googleCalendarNotAuthenticated}';
+        }
+        
         syncStatusNotifier.syncError(
           errorMessage: errorMessage,
           message: AppLocalizations.of(context)!.taskSyncFailedMessage(task.title),
@@ -5189,6 +5207,38 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       if (_searchQuery.isNotEmpty) {
         if (!_matchesSearchQuery(task, _searchQuery)) {
           return false;
+        }
+      }
+
+      // 期限日フィルター
+      if (_filterDueDateStart != null || _filterDueDateEnd != null) {
+        if (task.dueDate == null) {
+          return false; // 期限日が設定されていないタスクは除外
+        }
+        final taskDueDate = DateTime(
+          task.dueDate!.year,
+          task.dueDate!.month,
+          task.dueDate!.day,
+        );
+        if (_filterDueDateStart != null) {
+          final filterStart = DateTime(
+            _filterDueDateStart!.year,
+            _filterDueDateStart!.month,
+            _filterDueDateStart!.day,
+          );
+          if (taskDueDate.isBefore(filterStart)) {
+            return false;
+          }
+        }
+        if (_filterDueDateEnd != null) {
+          final filterEnd = DateTime(
+            _filterDueDateEnd!.year,
+            _filterDueDateEnd!.month,
+            _filterDueDateEnd!.day,
+          );
+          if (taskDueDate.isAfter(filterEnd)) {
+            return false;
+          }
         }
       }
 
@@ -6134,18 +6184,22 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
       switch (filterType) {
         case 'urgent':
           // 緊急タスク: 優先度が高または緊急、かつ未完了
-          _filterStatuses = {'pending', 'in_progress'};
+          _filterStatuses = {'pending', 'inProgress'};
           _filterPriority = 'high';
           _searchQuery = '';
           _searchController.text = '';
+          _filterDueDateStart = null;
+          _filterDueDateEnd = null;
           break;
         case 'today':
           // 今日のタスク: 期限日が今日、かつ未完了
-          _filterStatuses = {'pending', 'in_progress'};
+          _filterStatuses = {'pending', 'inProgress'};
           _filterPriority = 'all';
           _searchQuery = '';
           _searchController.text = '';
-          // 期限日フィルターは別途実装が必要（現在の実装では期限日フィルターがないため、検索で代替）
+          // 期限日が今日のタスクのみを表示
+          _filterDueDateStart = todayStart;
+          _filterDueDateEnd = todayStart; // 今日の終了日（同じ日）
           break;
         case 'pending':
           // 未着手タスク
@@ -6153,13 +6207,17 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           _filterPriority = 'all';
           _searchQuery = '';
           _searchController.text = '';
+          _filterDueDateStart = null;
+          _filterDueDateEnd = null;
           break;
         case 'in_progress':
           // 進行中タスク
-          _filterStatuses = {'in_progress'};
+          _filterStatuses = {'inProgress'};
           _filterPriority = 'all';
           _searchQuery = '';
           _searchController.text = '';
+          _filterDueDateStart = null;
+          _filterDueDateEnd = null;
           break;
       }
       

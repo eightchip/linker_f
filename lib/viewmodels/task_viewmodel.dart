@@ -1254,11 +1254,6 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
       // 個別タスク同期を実行
       final success = await syncTaskToGoogleCalendar(task);
       
-      // 完了タスクの表示/非表示を制御
-      if (success && task.status == TaskStatus.completed && task.googleCalendarEventId != null) {
-        await _controlCompletedTaskVisibility(task);
-      }
-      
       if (kDebugMode) {
         print('Google Calendar自動同期結果: $success');
         print('=== Google Calendar自動同期完了 ===');
@@ -1271,33 +1266,6 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
-  /// 完了タスクの表示/非表示を制御
-  Future<void> _controlCompletedTaskVisibility(TaskItem task) async {
-    try {
-      final settingsService = SettingsService.instance;
-      final showCompleted = settingsService.googleCalendarShowCompletedTasks;
-      
-      if (task.googleCalendarEventId != null) {
-        final googleCalendarService = GoogleCalendarService();
-        await googleCalendarService.initialize();
-        
-        // 完了タスクの表示/非表示を制御
-        final success = await googleCalendarService.updateCompletedTaskVisibility(
-          task.googleCalendarEventId!,
-          showCompleted,
-        );
-        
-        if (kDebugMode) {
-          print('完了タスク表示制御: ${showCompleted ? "表示" : "非表示"} - 結果: $success');
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('完了タスク表示制御エラー（無視）: $e');
-      }
-      // エラーは無視（ユーザーに通知しない）
-    }
-  }
 
   // タスクを直接更新（サブタスク統計更新用）
   Future<void> _updateTaskDirectly(TaskItem task) async {
@@ -2307,105 +2275,6 @@ class TaskViewModel extends StateNotifier<List<TaskItem>> {
     }
   }
 
-  /// アプリとGoogleカレンダー間の完全な相互同期
-  Future<Map<String, dynamic>> performFullBidirectionalSync() async {
-    try {
-      if (kDebugMode) {
-        print('=== 完全相互同期開始 ===');
-      }
-      
-      final googleCalendarService = GoogleCalendarService();
-      await googleCalendarService.initialize();
-      
-      // 1. Googleカレンダーからイベントを取得
-      final startTime = DateTime.now().subtract(const Duration(days: 30));
-      final endTime = DateTime.now().add(const Duration(days: 365));
-      
-      final calendarEvents = await googleCalendarService.getEvents(
-        startTime: startTime,
-        endTime: endTime,
-        maxResults: 1000,
-      );
-      
-      // 2. Googleカレンダーイベントをタスクに変換
-      final calendarTasks = googleCalendarService.convertEventsToTasks(calendarEvents);
-      
-      if (kDebugMode) {
-        print('Googleカレンダーから取得したタスク数: ${calendarTasks.length}');
-        print('アプリの既存タスク数: ${state.length}');
-      }
-      
-      // 3. アプリのタスクをGoogleカレンダーに送信
-      int appToCalendarCount = 0;
-      for (final appTask in state) {
-        // 手動作成のタスクのみを送信（Googleカレンダーから来たタスクは除外）
-        if (appTask.source != 'google_calendar' && 
-            (appTask.dueDate != null || appTask.reminderTime != null)) {
-          
-          // Googleカレンダーに既に存在するかチェック
-          final existsInCalendar = calendarTasks.any((calendarTask) => 
-            _isSameTask(appTask, calendarTask));
-          
-          if (!existsInCalendar) {
-            final result = await googleCalendarService.createCalendarEvent(appTask);
-            if (result.success) {
-              appToCalendarCount++;
-              if (kDebugMode) {
-                print('アプリタスクをGoogleカレンダーに送信: ${appTask.title}');
-              }
-            }
-          }
-        }
-      }
-      
-      // 4. Googleカレンダーのタスクをアプリに追加
-      int calendarToAppCount = 0;
-      for (final calendarTask in calendarTasks) {
-        // 祝日イベントを除外（二重チェック）
-        if (_isHolidayEvent(calendarTask)) {
-          if (kDebugMode) {
-            print('祝日イベントを二重チェックで除外: ${calendarTask.title}');
-          }
-          continue;
-        }
-        
-        // アプリに既に存在するかチェック
-        final existsInApp = state.any((appTask) => 
-          _isSameTask(appTask, calendarTask));
-        
-        if (!existsInApp) {
-          await addTask(calendarTask);
-          calendarToAppCount++;
-          if (kDebugMode) {
-            print('Googleカレンダータスクをアプリに追加: ${calendarTask.title}');
-          }
-        }
-      }
-      
-      if (kDebugMode) {
-        print('=== 完全相互同期完了 ===');
-        print('アプリ→Googleカレンダー: $appToCalendarCount件');
-        print('Googleカレンダー→アプリ: $calendarToAppCount件');
-      }
-      
-      return {
-        'success': true,
-        'appToCalendar': appToCalendarCount,
-        'calendarToApp': calendarToAppCount,
-        'total': appToCalendarCount + calendarToAppCount,
-      };
-      
-    } catch (e) {
-      print('完全相互同期エラー: $e');
-      return {
-        'success': false,
-        'error': e.toString(),
-        'appToCalendar': 0,
-        'calendarToApp': 0,
-        'total': 0,
-      };
-    }
-  }
   
   /// 2つのタスクが同じかどうかを判定（より厳密な判定）
   bool _isSameTask(TaskItem task1, TaskItem task2) {

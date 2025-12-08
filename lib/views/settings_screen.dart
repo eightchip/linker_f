@@ -154,8 +154,6 @@ class SettingsState {
   final bool googleCalendarEnabled;
   final int googleCalendarSyncInterval;
   final bool googleCalendarAutoSync;
-  final bool googleCalendarBidirectionalSync;
-  final bool googleCalendarShowCompletedTasks;
   final bool gmailApiEnabled;
   final bool startWithTaskScreen;
   final bool outlookAutoSyncEnabled;
@@ -173,8 +171,6 @@ class SettingsState {
     this.googleCalendarEnabled = false,
     this.googleCalendarSyncInterval = 60,
     this.googleCalendarAutoSync = false,
-    this.googleCalendarBidirectionalSync = false,
-    this.googleCalendarShowCompletedTasks = true,
     this.gmailApiEnabled = false,
     this.startWithTaskScreen = false,
     this.outlookAutoSyncEnabled = false,
@@ -193,8 +189,6 @@ class SettingsState {
     bool? googleCalendarEnabled,
     int? googleCalendarSyncInterval,
     bool? googleCalendarAutoSync,
-    bool? googleCalendarBidirectionalSync,
-    bool? googleCalendarShowCompletedTasks,
     bool? gmailApiEnabled,
     bool? startWithTaskScreen,
     bool? outlookAutoSyncEnabled,
@@ -212,8 +206,6 @@ class SettingsState {
       googleCalendarEnabled: googleCalendarEnabled ?? this.googleCalendarEnabled,
       googleCalendarSyncInterval: googleCalendarSyncInterval ?? this.googleCalendarSyncInterval,
       googleCalendarAutoSync: googleCalendarAutoSync ?? this.googleCalendarAutoSync,
-      googleCalendarBidirectionalSync: googleCalendarBidirectionalSync ?? this.googleCalendarBidirectionalSync,
-      googleCalendarShowCompletedTasks: googleCalendarShowCompletedTasks ?? this.googleCalendarShowCompletedTasks,
       gmailApiEnabled: gmailApiEnabled ?? this.gmailApiEnabled,
       startWithTaskScreen: startWithTaskScreen ?? this.startWithTaskScreen,
       outlookAutoSyncEnabled: outlookAutoSyncEnabled ?? this.outlookAutoSyncEnabled,
@@ -244,8 +236,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         googleCalendarEnabled: _service.googleCalendarEnabled,
         googleCalendarSyncInterval: _service.googleCalendarSyncInterval,
         googleCalendarAutoSync: _service.googleCalendarAutoSync,
-        googleCalendarBidirectionalSync: _service.googleCalendarBidirectionalSync,
-        googleCalendarShowCompletedTasks: _service.googleCalendarShowCompletedTasks,
         gmailApiEnabled: _service.gmailApiEnabled,
         startWithTaskScreen: _service.startWithTaskScreen,
         outlookAutoSyncEnabled: _service.outlookAutoSyncEnabled,
@@ -292,22 +282,37 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setGoogleCalendarSyncInterval(int value) async {
     await _service.setGoogleCalendarSyncInterval(value);
     state = state.copyWith(googleCalendarSyncInterval: value);
+    // 自動同期を再起動（同期間隔が変更された場合）
+    if (state.googleCalendarAutoSync && state.googleCalendarEnabled) {
+      try {
+        // main.dartの関数を呼び出すために、グローバル関数を使用
+        // 注意: 直接インポートできないため、Riverpodやイベントバスを使用するか、
+        // または設定変更を検知して再起動する仕組みが必要
+        // ここでは簡易的に、設定変更後に再起動が必要であることをログに記録
+        print('Google Calendar同期間隔が変更されました: $value分。アプリを再起動するか、手動で同期を実行してください。');
+      } catch (e) {
+        print('自動同期再起動エラー: $e');
+      }
+    }
   }
 
   Future<void> setGoogleCalendarAutoSync(bool value) async {
     await _service.setGoogleCalendarAutoSync(value);
     state = state.copyWith(googleCalendarAutoSync: value);
+    // 自動同期を再起動（自動同期の有効/無効が変更された場合）
+    if (state.googleCalendarEnabled) {
+      try {
+        // main.dartの関数を呼び出すために、グローバル関数を使用
+        // 注意: 直接インポートできないため、Riverpodやイベントバスを使用するか、
+        // または設定変更を検知して再起動する仕組みが必要
+        // ここでは簡易的に、設定変更後に再起動が必要であることをログに記録
+        print('Google Calendar自動同期が${value ? "有効" : "無効"}になりました。アプリを再起動するか、手動で同期を実行してください。');
+      } catch (e) {
+        print('自動同期再起動エラー: $e');
+      }
+    }
   }
 
-  Future<void> setGoogleCalendarBidirectionalSync(bool value) async {
-    await _service.setGoogleCalendarBidirectionalSync(value);
-    state = state.copyWith(googleCalendarBidirectionalSync: value);
-  }
-
-  Future<void> setGoogleCalendarShowCompletedTasks(bool value) async {
-    await _service.setGoogleCalendarShowCompletedTasks(value);
-    state = state.copyWith(googleCalendarShowCompletedTasks: value);
-  }
 
   Future<void> updateGmailApiEnabled(bool value) async {
     await _service.setGmailApiEnabled(value);
@@ -358,6 +363,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  int _authStatusKey = 0; // 認証状態の更新用キー
+  
   @override
   Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
@@ -4987,37 +4994,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   const Divider(),
                   
-                  // 部分同期機能
-                  _buildPartialSyncSection(ref),
-                  
-                  const Divider(),
-                  
-                  // 双方向同期の有効/無効
-                  SwitchListTile(
-                    title: Text(AppLocalizations.of(context)!.bidirectionalSync),
-                    subtitle: Text(AppLocalizations.of(context)!.bidirectionalSyncDescription),
-                    value: settingsState.googleCalendarBidirectionalSync,
-                    onChanged: (value) {
-                      settingsNotifier.setGoogleCalendarBidirectionalSync(value);
-                    },
-                    secondary: const Icon(Icons.sync_alt),
-                  ),
-                  
-                  const Divider(),
-                  
-                  // 完了タスク表示設定
-                  SwitchListTile(
-                    title: Text(AppLocalizations.of(context)!.showCompletedTasks),
-                    subtitle: Text(AppLocalizations.of(context)!.showCompletedTasksDescription),
-                    value: settingsState.googleCalendarShowCompletedTasks,
-                    onChanged: (value) {
-                      settingsNotifier.setGoogleCalendarShowCompletedTasks(value);
-                    },
-                    secondary: const Icon(Icons.visibility),
-                  ),
-                  
-                  const Divider(),
-                  
                   // 認証情報ファイルの状態表示
                   FutureBuilder<bool>(
                     future: GoogleCalendarSetup.hasCredentialsFile(),
@@ -5077,6 +5053,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           final googleCalendarService = GoogleCalendarService();
                           final success = await googleCalendarService.startOAuth2Auth();
                           if (success) {
+                            // 認証後にサービスを初期化
+                            await googleCalendarService.initialize();
+                            // UIを再構築（FutureBuilderが再実行される）
+                            if (context.mounted) {
+                              setState(() {
+                                _authStatusKey++; // キーを変更してFutureBuilderを再構築
+                              });
+                            }
                             SnackBarService.showSuccess(
                               context,
                               AppLocalizations.of(context)!.oauth2AuthCompleted,
@@ -5191,6 +5175,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   /// 同期状態表示セクション
   Widget _buildSyncStatusSection(WidgetRef ref) {
     final syncState = ref.watch(syncStatusProvider);
+    final settingsState = ref.watch(settingsProvider);
+    
+    // 次回の同期予定時刻を計算
+    DateTime? nextSyncTime;
+    if (settingsState.googleCalendarAutoSync) {
+      if (syncState.lastSyncTime != null) {
+        // 最後の同期時刻がある場合、その時刻から同期間隔を加算
+        nextSyncTime = syncState.lastSyncTime!.add(Duration(minutes: settingsState.googleCalendarSyncInterval));
+      } else {
+        // 最後の同期時刻がない場合、現在時刻から同期間隔を加算（初回同期予定時刻）
+        nextSyncTime = DateTime.now().add(Duration(minutes: settingsState.googleCalendarSyncInterval));
+      }
+    }
+    
+    // OAuth認証の状態を取得（FutureBuilderで定期的に更新）
+    // 認証後に再構築されるように、keyを使用
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _getGoogleCalendarAuthStatus(),
+      key: ValueKey(_authStatusKey),
+      builder: (context, snapshot) {
+        final tokenExpiry = snapshot.data?['tokenExpiry'] as DateTime?;
+        final isTokenValid = snapshot.data?['isTokenValid'] as bool? ?? false;
+        final hasRefreshToken = snapshot.data?['hasRefreshToken'] as bool? ?? false;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -5203,6 +5210,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
         const SizedBox(height: 8),
+        
+        // 自動同期の状態表示
+        Container(
+          padding: const EdgeInsets.all(8),
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: settingsState.googleCalendarAutoSync ? Colors.green.shade50 : Colors.grey.shade200,
+            border: Border.all(
+              color: settingsState.googleCalendarAutoSync ? Colors.green.shade200 : Colors.grey.shade400,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                settingsState.googleCalendarAutoSync ? Icons.check_circle : Icons.cancel,
+                color: settingsState.googleCalendarAutoSync ? Colors.green : Colors.grey,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                settingsState.googleCalendarAutoSync 
+                  ? AppLocalizations.of(context)!.autoSyncEnabled
+                  : AppLocalizations.of(context)!.autoSyncDisabled,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: settingsState.googleCalendarAutoSync ? Colors.green.shade700 : Colors.grey.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
         
         // 同期状態インジケーター
         Row(
@@ -5225,10 +5265,86 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         color: Colors.grey[600],
                       ),
                     ),
+                  if (nextSyncTime != null && nextSyncTime.isAfter(DateTime.now()))
+                    Text(
+                      AppLocalizations.of(context)!.nextSync(DateFormat('MM/dd HH:mm').format(nextSyncTime)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                 ],
               ),
             ),
           ],
+        ),
+        
+        const SizedBox(height: 8),
+        
+        // OAuth認証の状態表示
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isTokenValid ? Colors.blue.shade50 : Colors.orange.shade50,
+            border: Border.all(
+              color: isTokenValid ? Colors.blue.shade200 : Colors.orange.shade200,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isTokenValid ? Icons.check_circle : Icons.warning,
+                    color: isTokenValid ? Colors.blue : Colors.orange,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isTokenValid 
+                        ? AppLocalizations.of(context)!.tokenValid
+                        : AppLocalizations.of(context)!.tokenExpired,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isTokenValid ? Colors.blue.shade700 : Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (tokenExpiry != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  AppLocalizations.of(context)!.tokenExpiry(DateFormat('MM/dd HH:mm:ss').format(tokenExpiry)),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+              if (hasRefreshToken) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.refresh, size: 14, color: Colors.green),
+                    const SizedBox(width: 4),
+                    Text(
+                      AppLocalizations.of(context)!.refreshTokenAvailable,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
         
         // 進捗バー（同期中の場合）
@@ -5286,6 +5402,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ],
     );
+      },
+    );
+  }
+  
+  /// Google Calendar認証状態を取得
+  Future<Map<String, dynamic>> _getGoogleCalendarAuthStatus() async {
+    try {
+      final googleCalendarService = GoogleCalendarService();
+      await googleCalendarService.initialize();
+      return {
+        'tokenExpiry': googleCalendarService.tokenExpiry,
+        'isTokenValid': googleCalendarService.isTokenValid,
+        'hasRefreshToken': googleCalendarService.hasRefreshToken,
+      };
+    } catch (e) {
+      return {
+        'tokenExpiry': null,
+        'isTokenValid': false,
+        'hasRefreshToken': false,
+      };
+    }
   }
 
   /// 同期状態インジケーター
@@ -5327,338 +5464,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  /// 部分同期機能セクション
-  Widget _buildPartialSyncSection(WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(context)!.partialSync,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          AppLocalizations.of(context)!.partialSyncDescription,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 12),
-        
-        // 個別タスク同期の説明
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            border: Border.all(color: Colors.blue[200]!),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info, color: Colors.blue[700], size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  AppLocalizations.of(context)!.individualTaskSyncInfo,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blue[700],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        // 日付範囲同期ボタン
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _showDateRangeSyncDialog(ref),
-            icon: const Icon(Icons.date_range),
-            label: Text(AppLocalizations.of(context)!.syncByDateRange),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        // 重複クリーンアップボタン
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _showDuplicateCleanupDialog(ref),
-            icon: const Icon(Icons.cleaning_services),
-            label: Text(AppLocalizations.of(context)!.cleanupDuplicateEvents),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        
-        // 孤立イベント削除ボタン
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _showOrphanedEventsCleanupDialog(ref),
-            icon: const Icon(Icons.delete_forever),
-            label: Text(AppLocalizations.of(context)!.deleteOrphanedEvents),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-
-  /// 孤立イベント削除ダイアログ
-  void _showOrphanedEventsCleanupDialog(WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.orphanedEventsDeletion),
-        content: Text(AppLocalizations.of(context)!.orphanedEventsDeletionDescription),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _performOrphanedEventsCleanup(ref);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(AppLocalizations.of(context)!.executeDeletion),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 孤立イベント削除を実行
-  Future<void> _performOrphanedEventsCleanup(WidgetRef ref) async {
-    final syncStatusNotifier = ref.read(syncStatusProvider.notifier);
-    final taskViewModel = ref.read(taskViewModelProvider.notifier);
-    
-    try {
-      syncStatusNotifier.startSync(
-        message: AppLocalizations.of(context)!.detectingOrphanedEvents,
-      );
-      
-      final result = await taskViewModel.deleteOrphanedCalendarEvents();
-      
-      if (result['success'] == true) {
-        final deletedCount = result['deletedCount'] ?? 0;
-        
-        syncStatusNotifier.syncSuccess(
-          message: AppLocalizations.of(context)!.orphanedEventsDeletionCompleted(deletedCount),
-        );
-        
-        if (deletedCount > 0) {
-          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.orphanedEventsDeleted(deletedCount));
-        } else {
-          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.noOrphanedEventsFound);
-        }
-      } else {
-        syncStatusNotifier.syncError(
-          errorMessage: result['error'] ?? AppLocalizations.of(context)!.unknownError,
-          message: AppLocalizations.of(context)!.orphanedEventsDeletionFailed,
-        );
-        SnackBarService.showError(context, '${AppLocalizations.of(context)!.orphanedEventsDeletionFailed}: ${result['error']}');
-      }
-    } catch (e) {
-      syncStatusNotifier.syncError(
-        errorMessage: e.toString(),
-        message: AppLocalizations.of(context)!.orphanedEventsDeletionError,
-      );
-      SnackBarService.showError(context, '${AppLocalizations.of(context)!.orphanedEventsDeletionError}: $e');
-    }
-  }
-
-  /// 重複クリーンアップダイアログ
-  void _showDuplicateCleanupDialog(WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => UnifiedDialog(
-        title: AppLocalizations.of(context)!.duplicateEventsCleanup,
-        icon: Icons.cleaning_services,
-        iconColor: Colors.orange,
-        content: Text(AppLocalizations.of(context)!.duplicateEventsCleanupDescription),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: AppButtonStyles.text(context),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _performDuplicateCleanup(ref);
-            },
-            style: AppButtonStyles.warning(context),
-            child: Text(AppLocalizations.of(context)!.executeCleanup),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 重複クリーンアップを実行
-  Future<void> _performDuplicateCleanup(WidgetRef ref) async {
-    final syncStatusNotifier = ref.read(syncStatusProvider.notifier);
-    final taskViewModel = ref.read(taskViewModelProvider.notifier);
-    
-    try {
-      syncStatusNotifier.startSync(
-        message: AppLocalizations.of(context)!.detectingDuplicateEvents,
-      );
-      
-      final result = await taskViewModel.cleanupGoogleCalendarDuplicates();
-      
-      if (result['success'] == true) {
-        final duplicatesFound = result['duplicatesFound'] ?? 0;
-        final duplicatesRemoved = result['duplicatesRemoved'] ?? 0;
-        
-        syncStatusNotifier.syncSuccess(
-          message: AppLocalizations.of(context)!.duplicateCleanupCompleted(duplicatesFound, duplicatesRemoved),
-        );
-        
-        if (duplicatesRemoved > 0) {
-          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.duplicateEventsDeleted(duplicatesRemoved));
-        } else {
-          SnackBarService.showSuccess(context, AppLocalizations.of(context)!.noDuplicateEventsFound);
-        }
-      } else {
-        syncStatusNotifier.syncError(
-          errorMessage: result['error'] ?? AppLocalizations.of(context)!.unknownError,
-          message: AppLocalizations.of(context)!.duplicateCleanupFailed,
-        );
-        SnackBarService.showError(context, '${AppLocalizations.of(context)!.duplicateCleanupFailed}: ${result['error']}');
-      }
-    } catch (e) {
-      syncStatusNotifier.syncError(
-        errorMessage: e.toString(),
-        message: AppLocalizations.of(context)!.duplicateCleanupError,
-      );
-      SnackBarService.showError(context, '${AppLocalizations.of(context)!.duplicateCleanupError}: $e');
-    }
-  }
-
-  /// 日付範囲同期ダイアログ
-  void _showDateRangeSyncDialog(WidgetRef ref) {
-    DateTime startDate = DateTime.now();
-    DateTime endDate = DateTime.now().add(const Duration(days: 7));
-    
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(AppLocalizations.of(context)!.dateRangeSync),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(AppLocalizations.of(context)!.selectDateRangeToSync),
-              const SizedBox(height: 16),
-              ListTile(
-                title: Text(AppLocalizations.of(context)!.startDate),
-                subtitle: Text(DateFormat('yyyy/MM/dd').format(startDate)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: startDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2030),
-                  );
-                  if (date != null) {
-                    setState(() => startDate = date);
-                  }
-                },
-              ),
-              ListTile(
-                title: Text(AppLocalizations.of(context)!.endDate),
-                subtitle: Text(DateFormat('yyyy/MM/dd').format(endDate)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: endDate,
-                    firstDate: startDate,
-                    lastDate: DateTime(2030),
-                  );
-                  if (date != null) {
-                    setState(() => endDate = date);
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(AppLocalizations.of(context)!.cancel),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _performDateRangeSync(ref, startDate, endDate);
-              },
-              child: Text(AppLocalizations.of(context)!.executeSync),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 日付範囲同期を実行
-  Future<void> _performDateRangeSync(WidgetRef ref, DateTime startDate, DateTime endDate) async {
-    final syncStatusNotifier = ref.read(syncStatusProvider.notifier);
-    final taskViewModel = ref.read(taskViewModelProvider.notifier);
-    
-    try {
-      syncStatusNotifier.startSync(
-        message: AppLocalizations.of(context)!.dateRangeSyncInProgress,
-      );
-      
-      final result = await taskViewModel.syncTasksByDateRange(startDate, endDate);
-      
-      if (result['success'] == true) {
-        syncStatusNotifier.syncSuccess(
-          message: AppLocalizations.of(context)!.dateRangeSyncCompleted(result['successCount'] ?? 0),
-        );
-        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.dateRangeSyncCompletedSuccess);
-      } else {
-        syncStatusNotifier.syncError(
-          errorMessage: result['errors']?.join(', ') ?? AppLocalizations.of(context)!.unknownError,
-          message: AppLocalizations.of(context)!.dateRangeSyncFailed,
-        );
-        SnackBarService.showError(context, AppLocalizations.of(context)!.dateRangeSyncFailed);
-      }
-    } catch (e) {
-      syncStatusNotifier.syncError(
-        errorMessage: e.toString(),
-        message: AppLocalizations.of(context)!.dateRangeSyncError(e.toString()),
-      );
-      SnackBarService.showError(context, AppLocalizations.of(context)!.dateRangeSyncError(e.toString()));
-    }
-  }
 
   /// Gmail連携セクション
   Widget _buildGmailApiSection(SettingsState settingsState, SettingsNotifier settingsNotifier) {
@@ -6202,13 +6007,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // ローディングを閉じる
       Navigator.pop(context);
       
-      SnackBarService.showSuccess(context, 'Outlook接続テストが完了しました！');
+      SnackBarService.showSuccess(context, AppLocalizations.of(context)!.outlookConnectionTestCompleted);
     } catch (e) {
       // ローディングを閉じる（エラー時も）
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
-      SnackBarService.showError(context, 'Outlook接続テストエラー: $e');
+      SnackBarService.showError(context, AppLocalizations.of(context)!.outlookConnectionTestError(e.toString()));
     }
   }
 

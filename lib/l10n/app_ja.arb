@@ -3282,7 +3282,7 @@
   "@placeFileInAppFolder": {
     "description": "Place file in app folder step"
   },
-  "placeFileInAppFolderDescription": "ダウンロードしたJSONファイルを「oauth2_credentials.json」としてアプリフォルダに配置",
+  "placeFileInAppFolderDescription": "ダウンロードしたJSONファイルを「google_calendar_credentials.json」としてアプリフォルダに配置",
   "@placeFileInAppFolderDescription": {
     "description": "Place file in app folder description"
   },
@@ -3465,6 +3465,44 @@
         "type": "String"
       }
     }
+  },
+  "nextSync": "次回同期予定: {time}",
+  "@nextSync": {
+    "description": "Next scheduled sync time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "autoSyncEnabled": "自動同期が有効です",
+  "@autoSyncEnabled": {
+    "description": "Auto sync is enabled message"
+  },
+  "autoSyncDisabled": "自動同期が無効です",
+  "@autoSyncDisabled": {
+    "description": "Auto sync is disabled message"
+  },
+  "tokenExpiry": "アクセストークン有効期限: {time}",
+  "@tokenExpiry": {
+    "description": "Access token expiry time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tokenValid": "認証トークンは有効です",
+  "@tokenValid": {
+    "description": "Token is valid message"
+  },
+  "tokenExpired": "認証トークンが期限切れです",
+  "@tokenExpired": {
+    "description": "Token is expired message"
+  },
+  "refreshTokenAvailable": "リフレッシュトークンが利用可能です",
+  "@refreshTokenAvailable": {
+    "description": "Refresh token is available message"
   },
   "processingItems": "{processed}/{total}件処理中...",
   "@processingItems": {
@@ -4452,7 +4490,7 @@
       }
     }
   },
-  "powershellScriptNotFound": "PowerShellスクリプトが見つかりません: {scriptName}\n\n以下のいずれかの場所に配置してください:\n1. ポータブル版: {portablePath}\n2. インストール版: {installedPath}",
+  "powershellScriptNotFound": "PowerShellスクリプトが見つかりません: {scriptName}\n\n以下の場所に配置してください:\n{portablePath}",
   "@powershellScriptNotFound": {
     "description": "PowerShell script not found error",
     "placeholders": {
@@ -4460,9 +4498,6 @@
         "type": "String"
       },
       "portablePath": {
-        "type": "String"
-      },
-      "installedPath": {
         "type": "String"
       }
     }
@@ -4574,6 +4609,54 @@
   "noValidAccessToken": "有効なアクセストークンがありません。OAuth2認証を実行してください。",
   "@noValidAccessToken": {
     "description": "No valid access token error"
+  },
+  "googleCalendarNotAuthenticated": "Google Calendarが認証されていません。設定画面でOAuth2認証を実行してください。",
+  "@googleCalendarNotAuthenticated": {
+    "description": "Google Calendar not authenticated error message"
+  },
+  "googleCalendarMemo": "メモ",
+  "@googleCalendarMemo": {
+    "description": "Memo label for Google Calendar"
+  },
+  "googleCalendarTags": "タグ",
+  "@googleCalendarTags": {
+    "description": "Tags label for Google Calendar"
+  },
+  "googleCalendarEstimatedTime": "推定時間",
+  "@googleCalendarEstimatedTime": {
+    "description": "Estimated time label for Google Calendar"
+  },
+  "googleCalendarSubtaskProgress": "サブタスク進捗",
+  "@googleCalendarSubtaskProgress": {
+    "description": "Subtask progress label for Google Calendar"
+  },
+  "googleCalendarSubtaskDetails": "サブタスク詳細",
+  "@googleCalendarSubtaskDetails": {
+    "description": "Subtask details label for Google Calendar"
+  },
+  "googleCalendarPriority": "優先度",
+  "@googleCalendarPriority": {
+    "description": "Priority label for Google Calendar"
+  },
+  "googleCalendarStatus": "ステータス",
+  "@googleCalendarStatus": {
+    "description": "Status label for Google Calendar"
+  },
+  "googleCalendarCreatedDate": "作成日",
+  "@googleCalendarCreatedDate": {
+    "description": "Created date label for Google Calendar"
+  },
+  "googleCalendarCompleted": "完了",
+  "@googleCalendarCompleted": {
+    "description": "Completed label for Google Calendar"
+  },
+  "googleCalendarHours": "時間",
+  "@googleCalendarHours": {
+    "description": "Hours label for Google Calendar"
+  },
+  "googleCalendarMinutes": "分",
+  "@googleCalendarMinutes": {
+    "description": "Minutes label for Google Calendar"
   },
   "googleCalendarEventFetchFailed": "Google Calendar イベント取得に失敗しました: {statusCode}",
   "@googleCalendarEventFetchFailed": {
@@ -6096,6 +6179,302 @@
         "type": "String"
       }
     }
+  },
+  "outlookConnectionTestCompleted": "Outlook接続テストが完了しました！",
+  "@outlookConnectionTestCompleted": {
+    "description": "Outlook connection test completed message"
+  },
+  "outlookConnectionTestError": "Outlook接続テストエラー: {error}",
+  "@outlookConnectionTestError": {
+    "description": "Outlook connection test error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "selectTemplate": "テンプレートを選択",
+  "@selectTemplate": {
+    "description": "Select template hint"
+  },
+  "saveTemplate": "テンプレートを保存",
+  "@saveTemplate": {
+    "description": "Save template button/tooltip"
+  },
+  "templateName": "テンプレート名",
+  "@templateName": {
+    "description": "Template name label"
+  },
+  "templateNameExample": "例: 部署標準リンク集",
+  "@templateNameExample": {
+    "description": "Template name example"
+  },
+  "templateDescription": "説明（任意）",
+  "@templateDescription": {
+    "description": "Template description label"
+  },
+  "templateDescriptionHint": "このテンプレートの説明",
+  "@templateDescriptionHint": {
+    "description": "Template description hint"
+  },
+  "templateSaved": "テンプレートを保存しました",
+  "@templateSaved": {
+    "description": "Template saved message"
+  },
+  "dataSelection": "データ選択",
+  "@dataSelection": {
+    "description": "Data selection step"
+  },
+  "taskFilter": "タスクフィルター",
+  "@taskFilter": {
+    "description": "Task filter step"
+  },
+  "settings": "設定",
+  "@settings": {
+    "description": "Settings step"
+  },
+  "confirmation": "確認",
+  "@confirmation": {
+    "description": "Confirmation step"
+  },
+  "searchHint": "検索...",
+  "@searchHint": {
+    "description": "Search hint"
+  },
+  "groups": "グループ",
+  "@groups": {
+    "description": "Groups label"
+  },
+  "groupsSelectionDescription": "グループを選択すると、そのグループ内のすべてのリンクが含まれます",
+  "@groupsSelectionDescription": {
+    "description": "Groups selection description"
+  },
+  "selectAll": "全選択",
+  "@selectAll": {
+    "description": "Select all button"
+  },
+  "deselectAll": "全解除",
+  "@deselectAll": {
+    "description": "Deselect all button"
+  },
+  "tasks": "タスク",
+  "@tasks": {
+    "description": "Tasks label"
+  },
+  "tasksSelectionDescription": "個別にタスクを選択します",
+  "@tasksSelectionDescription": {
+    "description": "Tasks selection description"
+  },
+  "includeMemos": "メモを含める",
+  "@includeMemos": {
+    "description": "Include memos checkbox"
+  },
+  "selectedCount": "選択: {selected} / {total}",
+  "@selectedCount": {
+    "description": "Selected count",
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noItems": "項目がありません",
+  "@noItems": {
+    "description": "No items message"
+  },
+  "noTaskData": "タスクデータがありません",
+  "@noTaskData": {
+    "description": "No task data message"
+  },
+  "taskFilterSettings": "タスクフィルター設定",
+  "@taskFilterSettings": {
+    "description": "Task filter settings title"
+  },
+  "tag": "タグ",
+  "@tag": {
+    "description": "Tag label"
+  },
+  "status": "ステータス",
+  "@status": {
+    "description": "Status label"
+  },
+  "notStarted": "未着手",
+  "@notStarted": {
+    "description": "Not started status"
+  },
+  "inProgress": "進行中",
+  "@inProgress": {
+    "description": "In progress status"
+  },
+  "completed": "完了",
+  "@completed": {
+    "description": "Completed status"
+  },
+  "cancelled": "キャンセル",
+  "@cancelled": {
+    "description": "Cancelled status"
+  },
+  "creationDate": "作成日",
+  "@creationDate": {
+    "description": "Creation date label"
+  },
+  "selectStartDate": "開始日を選択",
+  "@selectStartDate": {
+    "description": "Select start date"
+  },
+  "selectEndDate": "終了日を選択",
+  "@selectEndDate": {
+    "description": "Select end date"
+  },
+  "dueDate": "期限日",
+  "@dueDate": {
+    "description": "Due date label"
+  },
+  "start": "開始: {date}",
+  "@start": {
+    "description": "Start date display",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "end": "終了: {date}",
+  "@end": {
+    "description": "End date display",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "exportSettings": "設定エクスポート",
+  "@exportSettings": {
+    "description": "Export settings title"
+  },
+  "uiSettings": "UI設定",
+  "@uiSettings": {
+    "description": "UI settings label"
+  },
+  "uiSettingsDescription": "テーマ、色、フォントサイズなど",
+  "@uiSettingsDescription": {
+    "description": "UI settings description"
+  },
+  "featureSettings": "機能設定",
+  "@featureSettings": {
+    "description": "Feature settings label"
+  },
+  "featureSettingsDescription": "自動バックアップ、通知など",
+  "@featureSettingsDescription": {
+    "description": "Feature settings description"
+  },
+  "integrationSettings": "連携設定",
+  "@integrationSettings": {
+    "description": "Integration settings label"
+  },
+  "integrationSettingsDescription": "Google Calendar、Outlookなど",
+  "@integrationSettingsDescription": {
+    "description": "Integration settings description"
+  },
+  "exportPreview": "エクスポート内容の確認",
+  "@exportPreview": {
+    "description": "Export preview title"
+  },
+  "itemsCount": "{count}件",
+  "@itemsCount": {
+    "description": "Items count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partialImportSettings": "部分インポート設定",
+  "@partialImportSettings": {
+    "description": "Partial import settings title"
+  },
+  "selectImportMethod": "インポート方法を選択してください",
+  "@selectImportMethod": {
+    "description": "Select import method prompt"
+  },
+  "importMethod": "インポート方法",
+  "@importMethod": {
+    "description": "Import method section"
+  },
+  "add": "追加",
+  "@add": {
+    "description": "Add import mode"
+  },
+  "addToExistingData": "既存データに追加します",
+  "@addToExistingData": {
+    "description": "Add to existing data description"
+  },
+  "overwrite": "上書き",
+  "@overwrite": {
+    "description": "Overwrite import mode"
+  },
+  "replaceExistingData": "既存データを置き換えます",
+  "@replaceExistingData": {
+    "description": "Replace existing data description"
+  },
+  "merge": "マージ",
+  "@merge": {
+    "description": "Merge import mode"
+  },
+  "mergeWithDuplicateCheck": "重複をチェックして統合します",
+  "@mergeWithDuplicateCheck": {
+    "description": "Merge with duplicate check description"
+  },
+  "duplicateHandling": "重複処理方法",
+  "@duplicateHandling": {
+    "description": "Duplicate handling section"
+  },
+  "skip": "スキップ",
+  "@skip": {
+    "description": "Skip duplicate handling"
+  },
+  "skipDuplicateData": "重複データをスキップします",
+  "@skipDuplicateData": {
+    "description": "Skip duplicate data description"
+  },
+  "overwriteExistingData": "既存データを上書きします",
+  "@overwriteExistingData": {
+    "description": "Overwrite existing data description"
+  },
+  "rename": "名前を変更",
+  "@rename": {
+    "description": "Rename duplicate handling"
+  },
+  "renameAndAdd": "名前を変更して追加します",
+  "@renameAndAdd": {
+    "description": "Rename and add description"
+  },
+  "importData": "インポートするデータ",
+  "@importData": {
+    "description": "Import data section"
+  },
+  "links": "リンク",
+  "@links": {
+    "description": "Links label"
+  },
+  "import": "インポート",
+  "@import": {
+    "description": "Import button"
+  },
+  "export": "エクスポート",
+  "@export": {
+    "description": "Export button"
+  },
+  "next": "次へ",
+  "@next": {
+    "description": "Next button"
+  },
+  "back": "戻る",
+  "@back": {
+    "description": "Back button"
   }
 }
 

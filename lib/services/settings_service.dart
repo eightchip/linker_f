@@ -45,8 +45,6 @@ class SettingsService {
   static const String _googleCalendarSyncIntervalKey = 'googleCalendarSyncInterval';
   static const String _googleCalendarLastSyncKey = 'googleCalendarLastSync';
   static const String _googleCalendarAutoSyncKey = 'googleCalendarAutoSync';
-  static const String _googleCalendarBidirectionalSyncKey = 'googleCalendarBidirectionalSync';
-  static const String _googleCalendarShowCompletedTasksKey = 'googleCalendarShowCompletedTasks';
   static const String _gmailApiEnabledKey = 'gmailApiEnabled';
   static const String _outlookAutoSyncEnabledKey = 'outlookAutoSyncEnabled';
   static const String _outlookAutoSyncPeriodDaysKey = 'outlookAutoSyncPeriodDays';
@@ -136,8 +134,6 @@ class SettingsService {
   static const bool _defaultGoogleCalendarEnabled = false;
   static const int _defaultGoogleCalendarSyncInterval = 60; // 分
   static const bool _defaultGoogleCalendarAutoSync = false;
-  static const bool _defaultGoogleCalendarBidirectionalSync = false;
-  static const bool _defaultGoogleCalendarShowCompletedTasks = true;
   static const bool _defaultGmailApiEnabled = false;
   static const bool _defaultOutlookAutoSyncEnabled = false;
   static const int _defaultOutlookAutoSyncPeriodDays = 30; // 1ヶ月
@@ -686,16 +682,6 @@ class SettingsService {
     await _settingsBox.put(_googleCalendarAutoSyncKey, value);
   }
 
-  /// Google Calendar双方向同期の有効/無効を取得
-  bool get googleCalendarBidirectionalSync {
-    return _settingsBox.get(_googleCalendarBidirectionalSyncKey, defaultValue: _defaultGoogleCalendarBidirectionalSync);
-  }
-  
-  /// Google Calendar双方向同期の有効/無効を設定
-  Future<void> setGoogleCalendarBidirectionalSync(bool value) async {
-    await _settingsBox.put(_googleCalendarBidirectionalSyncKey, value);
-  }
-  
   /// Google Calendar最終同期時刻
   DateTime? get googleCalendarLastSync {
     final timestamp = _settingsBox.get(_googleCalendarLastSyncKey);
@@ -705,16 +691,6 @@ class SettingsService {
   /// Google Calendar最終同期時刻を設定
   Future<void> setGoogleCalendarLastSync(DateTime value) async {
     await _settingsBox.put(_googleCalendarLastSyncKey, value.millisecondsSinceEpoch);
-  }
-
-  /// Google Calendar完了タスク表示設定を取得
-  bool get googleCalendarShowCompletedTasks {
-    return _settingsBox.get(_googleCalendarShowCompletedTasksKey, defaultValue: _defaultGoogleCalendarShowCompletedTasks);
-  }
-  
-  /// Google Calendar完了タスク表示設定を設定
-  Future<void> setGoogleCalendarShowCompletedTasks(bool value) async {
-    await _settingsBox.put(_googleCalendarShowCompletedTasksKey, value);
   }
 
   /// Gmail連携が有効かどうか

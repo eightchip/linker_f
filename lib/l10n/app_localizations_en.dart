@@ -874,10 +874,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get import => 'Import';
 
   @override
-  String get quickFilterApplied => 'クイックフィルターを適用しました';
+  String get quickFilterApplied => 'Quick filter applied';
 
   @override
-  String get filterReset => 'フィルターをリセットしました';
+  String get filterReset => 'Filter reset';
 
   @override
   String get editGroupName => 'Edit Group Name';
@@ -946,8 +946,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get templateName => 'Template Name';
 
   @override
-  String get templateNameExample =>
-      'Example: Meeting preparation, regular reports, etc.';
+  String get templateNameExample => 'Example: Department Standard Links';
 
   @override
   String get createTask => 'Create Task';
@@ -2262,7 +2261,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get placeFileInAppFolderDescription =>
-      'Place the downloaded JSON file in the app folder as \"oauth2_credentials.json\"';
+      'Place the downloaded JSON file in the app folder as \"google_calendar_credentials.json\"';
 
   @override
   String get executeOAuth2Authentication => 'Execute OAuth2 Authentication';
@@ -2382,6 +2381,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String lastSync(String time) {
     return 'Last Sync: $time';
   }
+
+  @override
+  String nextSync(String time) {
+    return 'Next Sync Scheduled: $time';
+  }
+
+  @override
+  String get autoSyncEnabled => 'Auto sync is enabled';
+
+  @override
+  String get autoSyncDisabled => 'Auto sync is disabled';
+
+  @override
+  String tokenExpiry(String time) {
+    return 'Access Token Expiry: $time';
+  }
+
+  @override
+  String get tokenValid => 'Authentication token is valid';
+
+  @override
+  String get tokenExpired => 'Authentication token has expired';
+
+  @override
+  String get refreshTokenAvailable => 'Refresh token is available';
 
   @override
   String processingItems(int processed, int total) {
@@ -2992,12 +3016,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String powershellScriptNotFound(
-    String scriptName,
-    String portablePath,
-    String installedPath,
-  ) {
-    return 'PowerShell script not found: $scriptName\n\nPlease place it in one of the following locations:\n1. Portable version: $portablePath\n2. Installed version: $installedPath';
+  String powershellScriptNotFound(String scriptName, String portablePath) {
+    return 'PowerShell script not found: $scriptName\n\nPlease place it in the following location:\n$portablePath';
   }
 
   @override
@@ -3069,6 +3089,43 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noValidAccessToken =>
       'No valid access token. Please execute OAuth2 authentication.';
+
+  @override
+  String get googleCalendarNotAuthenticated =>
+      'Google Calendar is not authenticated. Please execute OAuth2 authentication on the settings screen.';
+
+  @override
+  String get googleCalendarMemo => 'Memo';
+
+  @override
+  String get googleCalendarTags => 'Tags';
+
+  @override
+  String get googleCalendarEstimatedTime => 'Estimated Time';
+
+  @override
+  String get googleCalendarSubtaskProgress => 'Subtask Progress';
+
+  @override
+  String get googleCalendarSubtaskDetails => 'Subtask Details';
+
+  @override
+  String get googleCalendarPriority => 'Priority';
+
+  @override
+  String get googleCalendarStatus => 'Status';
+
+  @override
+  String get googleCalendarCreatedDate => 'Created Date';
+
+  @override
+  String get googleCalendarCompleted => 'Completed';
+
+  @override
+  String get googleCalendarHours => 'hours';
+
+  @override
+  String get googleCalendarMinutes => 'minutes';
 
   @override
   String googleCalendarEventFetchFailed(int statusCode) {
@@ -4008,4 +4065,151 @@ class AppLocalizationsEn extends AppLocalizations {
   String taskSyncErrorMessage(String title) {
     return 'An error occurred while synchronizing \"$title\"';
   }
+
+  @override
+  String get outlookConnectionTestCompleted =>
+      'Outlook connection test completed!';
+
+  @override
+  String get saveTemplate => 'Save Template';
+
+  @override
+  String get templateDescription => 'Description (Optional)';
+
+  @override
+  String get templateDescriptionHint => 'Description of this template';
+
+  @override
+  String get dataSelection => 'Data Selection';
+
+  @override
+  String get taskFilter => 'Task Filter';
+
+  @override
+  String get confirmation => 'Confirmation';
+
+  @override
+  String get searchHint => 'Search...';
+
+  @override
+  String get groups => 'Groups';
+
+  @override
+  String get groupsSelectionDescription =>
+      'Selecting a group includes all links within that group';
+
+  @override
+  String get tasks => 'Tasks';
+
+  @override
+  String get tasksSelectionDescription => 'Select tasks individually';
+
+  @override
+  String get includeMemos => 'Include Memos';
+
+  @override
+  String selectedCount(int selected, int total) {
+    return 'Selected: $selected / $total';
+  }
+
+  @override
+  String get noItems => 'No items';
+
+  @override
+  String get noTaskData => 'No task data';
+
+  @override
+  String get taskFilterSettings => 'Task Filter Settings';
+
+  @override
+  String get tag => 'Tag';
+
+  @override
+  String get selectEndDate => 'Select End Date';
+
+  @override
+  String start(String date) {
+    return 'Start: $date';
+  }
+
+  @override
+  String end(String date) {
+    return 'End: $date';
+  }
+
+  @override
+  String get exportSettings => 'Export Settings';
+
+  @override
+  String get uiSettings => 'UI Settings';
+
+  @override
+  String get uiSettingsDescription => 'Theme, color, font size, etc.';
+
+  @override
+  String get featureSettings => 'Feature Settings';
+
+  @override
+  String get featureSettingsDescription =>
+      'Automatic backup, notifications, etc.';
+
+  @override
+  String get integrationSettings => 'Integration Settings';
+
+  @override
+  String get integrationSettingsDescription => 'Google Calendar, Outlook, etc.';
+
+  @override
+  String get exportPreview => 'Export Preview';
+
+  @override
+  String get partialImportSettings => 'Partial Import Settings';
+
+  @override
+  String get selectImportMethod => 'Please select import method';
+
+  @override
+  String get importMethod => 'Import Method';
+
+  @override
+  String get addToExistingData => 'Add to existing data';
+
+  @override
+  String get overwrite => 'Overwrite';
+
+  @override
+  String get replaceExistingData => 'Replace existing data';
+
+  @override
+  String get mergeWithDuplicateCheck => 'Check for duplicates and integrate';
+
+  @override
+  String get duplicateHandling => 'Duplicate Handling';
+
+  @override
+  String get skip => 'Skip';
+
+  @override
+  String get skipDuplicateData => 'Skip duplicate data';
+
+  @override
+  String get overwriteExistingData => 'Overwrite existing data';
+
+  @override
+  String get rename => 'Rename';
+
+  @override
+  String get renameAndAdd => 'Rename and add';
+
+  @override
+  String get importData => 'Import Data';
+
+  @override
+  String get links => 'Links';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get back => 'Back';
 }

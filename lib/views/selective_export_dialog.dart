@@ -7,6 +7,7 @@ import '../viewmodels/task_viewmodel.dart';
 import '../services/export_template_service.dart';
 import '../services/snackbar_service.dart';
 import '../widgets/app_button_styles.dart';
+import '../l10n/app_localizations.dart';
 
 /// 選択式エクスポートダイアログ
 class SelectiveExportDialog extends ConsumerStatefulWidget {
@@ -112,16 +113,16 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
               children: [
                 const Icon(Icons.save, color: Colors.green, size: 28),
                 const SizedBox(width: 12),
-                const Text(
-                  '選択式エクスポート',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  AppLocalizations.of(context)!.selectiveExport,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 // テンプレート選択
                 if (_templates.isNotEmpty) ...[
                   DropdownButton<ExportTemplate>(
                     value: _selectedTemplate,
-                    hint: const Text('テンプレートを選択'),
+                    hint: Text(AppLocalizations.of(context)!.selectTemplate),
                     items: _templates.map((template) {
                       return DropdownMenuItem(
                         value: template,
@@ -173,13 +174,13 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
                       });
                     },
                     style: AppButtonStyles.text(context),
-                    child: const Text('戻る'),
+                    child: Text(AppLocalizations.of(context)!.back),
                   ),
                 const SizedBox(width: 8),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   style: AppButtonStyles.text(context),
-                  child: const Text('キャンセル'),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                 ),
                 const SizedBox(width: 8),
                 if (_currentStep < 3)
@@ -190,7 +191,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
                       });
                     },
                     style: AppButtonStyles.primary(context),
-                    child: const Text('次へ'),
+                    child: Text(AppLocalizations.of(context)!.next),
                   )
                 else
                   ElevatedButton(
@@ -199,7 +200,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
                       Navigator.pop(context, _config);
                     },
                     style: AppButtonStyles.primary(context),
-                    child: const Text('エクスポート'),
+                    child: Text(AppLocalizations.of(context)!.export),
                   ),
               ],
             ),
@@ -258,23 +259,23 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('テンプレートを保存'),
+        title: Text(AppLocalizations.of(context)!.saveTemplate),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'テンプレート名',
-                hintText: '例: 部署標準リンク集',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.templateName,
+                hintText: AppLocalizations.of(context)!.templateNameExample,
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: '説明（任意）',
-                hintText: 'このテンプレートの説明',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context)!.templateDescription,
+                hintText: AppLocalizations.of(context)!.templateDescriptionHint,
               ),
               maxLines: 2,
             ),
@@ -283,7 +284,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -291,7 +292,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
                 Navigator.pop(context, true);
               }
             },
-            child: const Text('保存'),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -316,7 +317,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
       if (mounted) {
         SnackBarService.showSuccess(
           context,
-          'テンプレートを保存しました',
+          AppLocalizations.of(context)!.templateSaved,
         );
       }
     }
@@ -325,10 +326,10 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
   Widget _buildStepIndicator() {
     return Row(
       children: [
-        _buildStepItem(0, 'データ選択'),
-        _buildStepItem(1, 'タスクフィルター'),
-        _buildStepItem(2, '設定'),
-        _buildStepItem(3, '確認'),
+        _buildStepItem(0, AppLocalizations.of(context)!.dataSelection),
+        _buildStepItem(1, AppLocalizations.of(context)!.taskFilter),
+        _buildStepItem(2, AppLocalizations.of(context)!.settings),
+        _buildStepItem(3, AppLocalizations.of(context)!.confirmation),
       ],
     );
   }
@@ -421,7 +422,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
         TextField(
           controller: _searchController,
           decoration: InputDecoration(
-            hintText: '検索...',
+            hintText: AppLocalizations.of(context)!.searchHint,
             prefixIcon: const Icon(Icons.search),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
@@ -445,13 +446,13 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
               Expanded(
                 flex: widget.taskViewModel != null ? 2 : 3,
                 child: _buildSelectableList(
-                  title: 'グループ',
-                  subtitle: 'グループを選択すると、そのグループ内のすべてのリンクが含まれます',
+                  title: AppLocalizations.of(context)!.groups,
+                  subtitle: AppLocalizations.of(context)!.groupsSelectionDescription,
                   items: filteredGroups,
                   selectedMap: _selectedGroups,
                   itemBuilder: (group) => ListTile(
                     title: Text(group.title),
-                    subtitle: Text('${group.items.length}件のリンク'),
+                    subtitle: Text(AppLocalizations.of(context)!.linksCount(group.items.length)),
                     trailing: Checkbox(
                       value: _selectedGroups[group.id] ?? false,
                       onChanged: (value) {
@@ -489,13 +490,13 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
                 Expanded(
                   flex: 2,
                   child: _buildSelectableList(
-                    title: 'タスク',
-                    subtitle: '個別にタスクを選択します',
+                    title: AppLocalizations.of(context)!.tasks,
+                    subtitle: AppLocalizations.of(context)!.tasksSelectionDescription,
                     items: filteredTasks,
                     selectedMap: _selectedTasks,
                     itemBuilder: (task) => ListTile(
                       title: Text(task.title),
-                      subtitle: Text('ステータス: ${_getStatusText(task.status)}'),
+                      subtitle: Text('${AppLocalizations.of(context)!.status}: ${_getStatusText(task.status)}'),
                       trailing: Checkbox(
                         value: _selectedTasks[task.id] ?? false,
                         onChanged: (value) {
@@ -535,7 +536,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
         
         // メモを含めるか
         CheckboxListTile(
-          title: const Text('メモを含める'),
+          title: Text(AppLocalizations.of(context)!.includeMemos),
           value: _config.includeMemos,
           onChanged: (value) {
             setState(() {
@@ -582,11 +583,11 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
             ),
             TextButton(
               onPressed: onSelectAll,
-              child: const Text('全選択'),
+              child: Text(AppLocalizations.of(context)!.selectAll),
             ),
             TextButton(
               onPressed: onDeselectAll,
-              child: const Text('全解除'),
+              child: Text(AppLocalizations.of(context)!.deselectAll),
             ),
           ],
         ),
@@ -598,7 +599,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: items.isEmpty
-                ? const Center(child: Text('項目がありません'))
+                ? Center(child: Text(AppLocalizations.of(context)!.noItems))
                 : ListView.builder(
                     itemCount: items.length,
                     itemBuilder: (context, index) {
@@ -610,7 +611,10 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
         ),
         const SizedBox(height: 8),
         Text(
-          '選択: ${items.where((item) => selectedMap[idGetter(item)] ?? false).length} / ${items.length}',
+          AppLocalizations.of(context)!.selectedCount(
+            items.where((item) => selectedMap[idGetter(item)] ?? false).length,
+            items.length,
+          ),
           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
       ],
@@ -619,7 +623,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
 
   Widget _buildTaskFilterStep() {
     if (widget.taskViewModel == null) {
-      return const Center(child: Text('タスクデータがありません'));
+      return Center(child: Text(AppLocalizations.of(context)!.noTaskData));
     }
     
     final allTasks = widget.taskViewModel!.tasks;
@@ -629,14 +633,14 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'タスクフィルター設定',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            AppLocalizations.of(context)!.taskFilterSettings,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           
           // タグフィルター
-          _buildSectionHeader('タグ'),
+          _buildSectionHeader(AppLocalizations.of(context)!.tag),
           Wrap(
             spacing: 8,
             children: allTags.map((tag) {
@@ -660,7 +664,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
           const SizedBox(height: 16),
           
           // ステータスフィルター
-          _buildSectionHeader('ステータス'),
+          _buildSectionHeader(AppLocalizations.of(context)!.status),
           ...['pending', 'inProgress', 'completed', 'cancelled'].map((status) {
             return CheckboxListTile(
               title: Text(_getStatusTextFromString(status)),
@@ -680,14 +684,14 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
           const SizedBox(height: 16),
           
           // 作成日フィルター
-          _buildSectionHeader('作成日'),
+          _buildSectionHeader(AppLocalizations.of(context)!.creationDate),
           Row(
             children: [
               Expanded(
                 child: ListTile(
                   title: Text(_createdAtStart != null
-                      ? '開始: ${_formatDate(_createdAtStart!)}'
-                      : '開始日を選択'),
+                      ? AppLocalizations.of(context)!.start(_formatDate(_createdAtStart!))
+                      : AppLocalizations.of(context)!.selectStartDate),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
                     final date = await showDatePicker(
@@ -707,8 +711,8 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
               Expanded(
                 child: ListTile(
                   title: Text(_createdAtEnd != null
-                      ? '終了: ${_formatDate(_createdAtEnd!)}'
-                      : '終了日を選択'),
+                      ? AppLocalizations.of(context)!.end(_formatDate(_createdAtEnd!))
+                      : AppLocalizations.of(context)!.selectEndDate),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
                     final date = await showDatePicker(
@@ -731,14 +735,14 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
           const SizedBox(height: 16),
           
           // 期限日フィルター
-          _buildSectionHeader('期限日'),
+          _buildSectionHeader(AppLocalizations.of(context)!.dueDate),
           Row(
             children: [
               Expanded(
                 child: ListTile(
                   title: Text(_dueDateStart != null
-                      ? '開始: ${_formatDate(_dueDateStart!)}'
-                      : '開始日を選択'),
+                      ? AppLocalizations.of(context)!.start(_formatDate(_dueDateStart!))
+                      : AppLocalizations.of(context)!.selectStartDate),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
                     final date = await showDatePicker(
@@ -758,8 +762,8 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
               Expanded(
                 child: ListTile(
                   title: Text(_dueDateEnd != null
-                      ? '終了: ${_formatDate(_dueDateEnd!)}'
-                      : '終了日を選択'),
+                      ? AppLocalizations.of(context)!.end(_formatDate(_dueDateEnd!))
+                      : AppLocalizations.of(context)!.selectEndDate),
                   trailing: const Icon(Icons.calendar_today),
                   onTap: () async {
                     final date = await showDatePicker(
@@ -788,15 +792,15 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '設定エクスポート',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            AppLocalizations.of(context)!.exportSettings,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           
           CheckboxListTile(
-            title: const Text('UI設定'),
-            subtitle: const Text('テーマ、色、フォントサイズなど'),
+            title: Text(AppLocalizations.of(context)!.uiSettings),
+            subtitle: Text(AppLocalizations.of(context)!.uiSettingsDescription),
             value: _includeUISettings,
             onChanged: (value) {
               setState(() {
@@ -806,8 +810,8 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
           ),
           
           CheckboxListTile(
-            title: const Text('機能設定'),
-            subtitle: const Text('自動バックアップ、通知など'),
+            title: Text(AppLocalizations.of(context)!.featureSettings),
+            subtitle: Text(AppLocalizations.of(context)!.featureSettingsDescription),
             value: _includeFeatureSettings,
             onChanged: (value) {
               setState(() {
@@ -817,8 +821,8 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
           ),
           
           CheckboxListTile(
-            title: const Text('連携設定'),
-            subtitle: const Text('Google Calendar、Outlookなど'),
+            title: Text(AppLocalizations.of(context)!.integrationSettings),
+            subtitle: Text(AppLocalizations.of(context)!.integrationSettingsDescription),
             value: _includeIntegrationSettings,
             onChanged: (value) {
               setState(() {
@@ -845,22 +849,22 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'エクスポート内容の確認',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            AppLocalizations.of(context)!.exportPreview,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           
-          _buildPreviewItem('グループ', selectedGroupIds.length),
-          _buildPreviewItem('タスク', selectedTaskIds.length),
-          _buildPreviewItem('メモを含める', _config.includeMemos ? 1 : 0),
+          _buildPreviewItem(AppLocalizations.of(context)!.groups, selectedGroupIds.length),
+          _buildPreviewItem(AppLocalizations.of(context)!.tasks, selectedTaskIds.length),
+          _buildPreviewItem(AppLocalizations.of(context)!.includeMemos, _config.includeMemos ? 1 : 0),
           
           if (_selectedTags.isNotEmpty || _selectedStatuses.isNotEmpty ||
               _createdAtStart != null || _dueDateStart != null)
-            _buildPreviewItem('タスクフィルター', 1),
+            _buildPreviewItem(AppLocalizations.of(context)!.taskFilter, 1),
           
           if (_includeUISettings || _includeFeatureSettings || _includeIntegrationSettings)
-            _buildPreviewItem('設定', 1),
+            _buildPreviewItem(AppLocalizations.of(context)!.settings, 1),
         ],
       ),
     );
@@ -873,7 +877,7 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label),
-          Text('$count件', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.of(context)!.itemsCount(count), style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -941,13 +945,13 @@ class _SelectiveExportDialogState extends ConsumerState<SelectiveExportDialog> {
   String _getStatusTextFromString(String status) {
     switch (status) {
       case 'pending':
-        return '未着手';
+        return AppLocalizations.of(context)!.notStarted;
       case 'inProgress':
-        return '進行中';
+        return AppLocalizations.of(context)!.inProgress;
       case 'completed':
-        return '完了';
+        return AppLocalizations.of(context)!.completed;
       case 'cancelled':
-        return 'キャンセル';
+        return AppLocalizations.of(context)!.cancelled;
       default:
         return status;
     }

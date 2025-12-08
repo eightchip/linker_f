@@ -402,10 +402,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get memoLabel => 'メモ:';
 
   @override
-  String get selectAll => 'すべて選択';
+  String get selectAll => '全選択';
 
   @override
-  String get deselectAll => 'すべて解除';
+  String get deselectAll => '全解除';
 
   @override
   String get cardView => 'カードビュー';
@@ -580,13 +580,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get urgentShort => '緊';
 
   @override
-  String get cancelled => '取消';
+  String get cancelled => 'キャンセル';
 
   @override
   String get cancelledShort => 'X';
 
   @override
-  String get dueDate => '期限';
+  String get dueDate => '期限日';
 
   @override
   String get started => '着手';
@@ -726,7 +726,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get update => '更新';
 
   @override
-  String get selectStartDate => '着手日を選択';
+  String get selectStartDate => '開始日を選択';
 
   @override
   String get subtaskTitle => 'サブタスクタイトル';
@@ -738,7 +738,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get description => '説明';
 
   @override
-  String get add => '追加する';
+  String get add => '追加';
 
   @override
   String get creationDate => '作成日';
@@ -856,7 +856,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get export => '出力';
+  String get export => 'エクスポート';
 
   @override
   String get import => 'インポート';
@@ -934,7 +934,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get templateName => 'テンプレート名';
 
   @override
-  String get templateNameExample => '例: 会議準備、定期報告など';
+  String get templateNameExample => '例: 部署標準リンク集';
 
   @override
   String get createTask => 'タスクを作成';
@@ -2225,7 +2225,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get placeFileInAppFolderDescription =>
-      'ダウンロードしたJSONファイルを「oauth2_credentials.json」としてアプリフォルダに配置';
+      'ダウンロードしたJSONファイルを「google_calendar_credentials.json」としてアプリフォルダに配置';
 
   @override
   String get executeOAuth2Authentication => 'OAuth2認証を実行';
@@ -2344,6 +2344,31 @@ class AppLocalizationsJa extends AppLocalizations {
   String lastSync(String time) {
     return '最終同期: $time';
   }
+
+  @override
+  String nextSync(String time) {
+    return '次回同期予定: $time';
+  }
+
+  @override
+  String get autoSyncEnabled => '自動同期が有効です';
+
+  @override
+  String get autoSyncDisabled => '自動同期が無効です';
+
+  @override
+  String tokenExpiry(String time) {
+    return 'アクセストークン有効期限: $time';
+  }
+
+  @override
+  String get tokenValid => '認証トークンは有効です';
+
+  @override
+  String get tokenExpired => '認証トークンが期限切れです';
+
+  @override
+  String get refreshTokenAvailable => 'リフレッシュトークンが利用可能です';
 
   @override
   String processingItems(int processed, int total) {
@@ -2547,7 +2572,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get noLinksYet => 'リンクがありません';
 
   @override
-  String get merge => '結合';
+  String get merge => 'マージ';
 
   @override
   String get apply => '適用';
@@ -2940,12 +2965,8 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String powershellScriptNotFound(
-    String scriptName,
-    String portablePath,
-    String installedPath,
-  ) {
-    return 'PowerShellスクリプトが見つかりません: $scriptName\n\n以下のいずれかの場所に配置してください:\n1. ポータブル版: $portablePath\n2. インストール版: $installedPath';
+  String powershellScriptNotFound(String scriptName, String portablePath) {
+    return 'PowerShellスクリプトが見つかりません: $scriptName\n\n以下の場所に配置してください:\n$portablePath';
   }
 
   @override
@@ -3016,6 +3037,43 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noValidAccessToken => '有効なアクセストークンがありません。OAuth2認証を実行してください。';
+
+  @override
+  String get googleCalendarNotAuthenticated =>
+      'Google Calendarが認証されていません。設定画面でOAuth2認証を実行してください。';
+
+  @override
+  String get googleCalendarMemo => 'メモ';
+
+  @override
+  String get googleCalendarTags => 'タグ';
+
+  @override
+  String get googleCalendarEstimatedTime => '推定時間';
+
+  @override
+  String get googleCalendarSubtaskProgress => 'サブタスク進捗';
+
+  @override
+  String get googleCalendarSubtaskDetails => 'サブタスク詳細';
+
+  @override
+  String get googleCalendarPriority => '優先度';
+
+  @override
+  String get googleCalendarStatus => 'ステータス';
+
+  @override
+  String get googleCalendarCreatedDate => '作成日';
+
+  @override
+  String get googleCalendarCompleted => '完了';
+
+  @override
+  String get googleCalendarHours => '時間';
+
+  @override
+  String get googleCalendarMinutes => '分';
 
   @override
   String googleCalendarEventFetchFailed(int statusCode) {
@@ -3929,4 +3987,148 @@ class AppLocalizationsJa extends AppLocalizations {
   String taskSyncErrorMessage(String title) {
     return '「$title」の同期中にエラーが発生しました';
   }
+
+  @override
+  String get outlookConnectionTestCompleted => 'Outlook接続テストが完了しました！';
+
+  @override
+  String get saveTemplate => 'テンプレートを保存';
+
+  @override
+  String get templateDescription => '説明（任意）';
+
+  @override
+  String get templateDescriptionHint => 'このテンプレートの説明';
+
+  @override
+  String get dataSelection => 'データ選択';
+
+  @override
+  String get taskFilter => 'タスクフィルター';
+
+  @override
+  String get confirmation => '確認';
+
+  @override
+  String get searchHint => '検索...';
+
+  @override
+  String get groups => 'グループ';
+
+  @override
+  String get groupsSelectionDescription => 'グループを選択すると、そのグループ内のすべてのリンクが含まれます';
+
+  @override
+  String get tasks => 'タスク';
+
+  @override
+  String get tasksSelectionDescription => '個別にタスクを選択します';
+
+  @override
+  String get includeMemos => 'メモを含める';
+
+  @override
+  String selectedCount(int selected, int total) {
+    return '選択: $selected / $total';
+  }
+
+  @override
+  String get noItems => '項目がありません';
+
+  @override
+  String get noTaskData => 'タスクデータがありません';
+
+  @override
+  String get taskFilterSettings => 'タスクフィルター設定';
+
+  @override
+  String get tag => 'タグ';
+
+  @override
+  String get selectEndDate => '終了日を選択';
+
+  @override
+  String start(String date) {
+    return '開始: $date';
+  }
+
+  @override
+  String end(String date) {
+    return '終了: $date';
+  }
+
+  @override
+  String get exportSettings => '設定エクスポート';
+
+  @override
+  String get uiSettings => 'UI設定';
+
+  @override
+  String get uiSettingsDescription => 'テーマ、色、フォントサイズなど';
+
+  @override
+  String get featureSettings => '機能設定';
+
+  @override
+  String get featureSettingsDescription => '自動バックアップ、通知など';
+
+  @override
+  String get integrationSettings => '連携設定';
+
+  @override
+  String get integrationSettingsDescription => 'Google Calendar、Outlookなど';
+
+  @override
+  String get exportPreview => 'エクスポート内容の確認';
+
+  @override
+  String get partialImportSettings => '部分インポート設定';
+
+  @override
+  String get selectImportMethod => 'インポート方法を選択してください';
+
+  @override
+  String get importMethod => 'インポート方法';
+
+  @override
+  String get addToExistingData => '既存データに追加します';
+
+  @override
+  String get overwrite => '上書き';
+
+  @override
+  String get replaceExistingData => '既存データを置き換えます';
+
+  @override
+  String get mergeWithDuplicateCheck => '重複をチェックして統合します';
+
+  @override
+  String get duplicateHandling => '重複処理方法';
+
+  @override
+  String get skip => 'スキップ';
+
+  @override
+  String get skipDuplicateData => '重複データをスキップします';
+
+  @override
+  String get overwriteExistingData => '既存データを上書きします';
+
+  @override
+  String get rename => '名前を変更';
+
+  @override
+  String get renameAndAdd => '名前を変更して追加します';
+
+  @override
+  String get importData => 'インポートするデータ';
+
+  @override
+  String get links => 'リンク';
+
+  @override
+  String get next => '次へ';
+
+  @override
+  String get back => '戻る';
 }

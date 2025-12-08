@@ -11,6 +11,10 @@ import '../models/task_item.dart';
 import '../models/sub_task.dart';
 import '../models/schedule_item.dart';
 import '../utils/error_handler.dart';
+import '../services/settings_service.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/app_localizations_ja.dart';
+import '../l10n/app_localizations_en.dart';
 
 /// 同期結果クラス
 class SyncResult {
@@ -29,7 +33,7 @@ class SyncResult {
 
 /// Google Calendar連携サービス
 class GoogleCalendarService {
-  static const String _credentialsFileName = 'oauth2_credentials.json';
+  static const String _credentialsFileName = 'google_calendar_credentials.json';
   static const String _tokensFileName = 'google_calendar_tokens.json';
   static const String _calendarApiUrl = 'https://www.googleapis.com/calendar/v3';
   static const String _redirectUri = 'http://127.0.0.1:8080/callback';
@@ -40,6 +44,14 @@ class GoogleCalendarService {
   String? _refreshToken;
   DateTime? _tokenExpiry;
   bool _isInitialized = false;
+  
+  /// 現在のロケールに基づいてAppLocalizationsインスタンスを取得
+  AppLocalizations _getLocalizations() {
+    final locale = SettingsService.instance.locale;
+    return locale == 'en' 
+        ? AppLocalizationsEn('en')
+        : AppLocalizationsJa('ja');
+  }
   
   /// 認証ファイルのパスを取得（ユーザーディレクトリ優先）
   Future<String> _getCredentialsPath() async {
@@ -126,6 +138,20 @@ class GoogleCalendarService {
   
   /// 初期化状態を確認
   bool get isInitialized => _isInitialized;
+  
+  /// アクセストークンの有効期限を取得
+  DateTime? get tokenExpiry => _tokenExpiry;
+  
+  /// リフレッシュトークンが存在するか
+  bool get hasRefreshToken => _refreshToken != null;
+  
+  /// トークンが有効かどうか
+  bool get isTokenValid {
+    if (_accessToken == null || _tokenExpiry == null) {
+      return false;
+    }
+    return _tokenExpiry!.isAfter(DateTime.now());
+  }
   
   /// 保存されたトークンを読み込み
   Future<bool> _loadStoredTokens() async {
@@ -1087,7 +1113,7 @@ class GoogleCalendarService {
       if (!_isInitialized || _accessToken == null) {
         return SyncResult(
           success: false,
-          errorMessage: 'Google Calendarが認証されていません。',
+          errorMessage: 'AUTH_REQUIRED',
           errorCode: 'AUTH_REQUIRED',
         );
       }
@@ -1221,7 +1247,7 @@ class GoogleCalendarService {
       ErrorHandler.logError('Google Calendar送信', '認証されていません');
       return SyncResult(
         success: false,
-        errorMessage: 'Google Calendarが認証されていません。設定画面でOAuth2認証を実行してください。',
+        errorMessage: 'AUTH_REQUIRED',
         errorCode: 'AUTH_REQUIRED',
       );
     }
@@ -1710,7 +1736,7 @@ class GoogleCalendarService {
       ErrorHandler.logError('Google Calendar送信', '認証されていません');
       return SyncResult(
         success: false,
-        errorMessage: 'Google Calendarが認証されていません。設定画面でOAuth2認証を実行してください。',
+        errorMessage: 'AUTH_REQUIRED',
         errorCode: 'AUTH_REQUIRED',
       );
     }
@@ -1791,9 +1817,10 @@ class GoogleCalendarService {
       };
 
       // 説明文を構築
+      final l10n = _getLocalizations();
       final descriptionParts = <String>[];
       if (schedule.notes != null && schedule.notes!.isNotEmpty) {
-        descriptionParts.add('メモ: ${schedule.notes}');
+        descriptionParts.add('${l10n.googleCalendarMemo}: ${schedule.notes}');
       }
       if (descriptionParts.isNotEmpty) {
         eventData['description'] = descriptionParts.join('\n');
@@ -1905,9 +1932,10 @@ class GoogleCalendarService {
       };
 
       // 説明文を構築
+      final l10n = _getLocalizations();
       final descriptionParts = <String>[];
       if (schedule.notes != null && schedule.notes!.isNotEmpty) {
-        descriptionParts.add('メモ: ${schedule.notes}');
+        descriptionParts.add('${l10n.googleCalendarMemo}: ${schedule.notes}');
       }
       if (descriptionParts.isNotEmpty) {
         eventData['description'] = descriptionParts.join('\n');
@@ -2141,18 +2169,20 @@ class GoogleCalendarService {
       }
     }
     
+    final l10n = _getLocalizations();
+    
     // 追加メモ（重複チェック）
     if (task.notes != null && task.notes!.isNotEmpty) {
-      final memoText = '📝 メモ: ${task.notes!}';
-      if (!parts.any((part) => part.contains('📝 メモ:'))) {
+      final memoText = '📝 ${l10n.googleCalendarMemo}: ${task.notes!}';
+      if (!parts.any((part) => part.contains('📝 ${l10n.googleCalendarMemo}:'))) {
         parts.add(memoText);
       }
     }
     
     // タグ情報（重複チェック）
     if (task.tags.isNotEmpty) {
-      final tagText = '🏷️ タグ: ${task.tags.join(', ')}';
-      if (!parts.any((part) => part.contains('🏷️ タグ:'))) {
+      final tagText = '🏷️ ${l10n.googleCalendarTags}: ${task.tags.join(', ')}';
+      if (!parts.any((part) => part.contains('🏷️ ${l10n.googleCalendarTags}:'))) {
         parts.add(tagText);
       }
     }
@@ -2162,10 +2192,10 @@ class GoogleCalendarService {
       final hours = task.estimatedMinutes! ~/ 60;
       final minutes = task.estimatedMinutes! % 60;
       final timeText = hours > 0 
-          ? '⏱️ 推定時間: $hours時間${minutes > 0 ? '$minutes分' : ''}'
-          : '⏱️ 推定時間: $minutes分';
+          ? '⏱️ ${l10n.googleCalendarEstimatedTime}: $hours${l10n.googleCalendarHours}${minutes > 0 ? '$minutes${l10n.googleCalendarMinutes}' : ''}'
+          : '⏱️ ${l10n.googleCalendarEstimatedTime}: $minutes${l10n.googleCalendarMinutes}';
       
-      if (!parts.any((part) => part.contains('⏱️ 推定時間:'))) {
+      if (!parts.any((part) => part.contains('⏱️ ${l10n.googleCalendarEstimatedTime}:'))) {
         parts.add(timeText);
       }
     }
@@ -2188,11 +2218,11 @@ class GoogleCalendarService {
       // サブタスク進捗を計算（実際のデータから）
       final completedCount = subtaskDetails.where((s) => s.isCompleted).length;
       final totalCount = subtaskDetails.length;
-      final subtaskProgressText = '📋 サブタスク進捗: $completedCount/$totalCount 完了';
+      final subtaskProgressText = '📋 ${l10n.googleCalendarSubtaskProgress}: $completedCount/$totalCount ${l10n.googleCalendarCompleted}';
       print('サブタスク進捗テキスト: $subtaskProgressText');
       
       // 古いサブタスク進捗を削除
-      parts.removeWhere((part) => part.contains('📋 サブタスク進捗:'));
+      parts.removeWhere((part) => part.contains('📋 ${l10n.googleCalendarSubtaskProgress}:'));
       print('古いサブタスク進捗を削除しました');
       
       // 新しいサブタスク進捗を追加
@@ -2200,13 +2230,13 @@ class GoogleCalendarService {
       print('新しいサブタスク進捗を追加しました');
       
       // 古いサブタスク詳細を削除
-      parts.removeWhere((part) => part.contains('📝 サブタスク詳細:'));
+      parts.removeWhere((part) => part.contains('📝 ${l10n.googleCalendarSubtaskDetails}:'));
       parts.removeWhere((part) => part.startsWith('  ✖') || part.startsWith('  ✅'));
       print('古いサブタスク詳細を削除しました');
       
       // 新しいサブタスク詳細を追加
       parts.add('');
-      parts.add('📝 サブタスク詳細:');
+      parts.add('📝 ${l10n.googleCalendarSubtaskDetails}:');
       for (final subtask in subtaskDetails) {
         final statusIcon = subtask.isCompleted ? '✅' : '✖';
         parts.add('  $statusIcon ${subtask.title}');
@@ -2214,7 +2244,7 @@ class GoogleCalendarService {
           parts.add('     ${subtask.description!}');
         }
         if (subtask.estimatedMinutes != null && subtask.estimatedMinutes! > 0) {
-          parts.add('     ⏱️ 推定時間: ${subtask.estimatedMinutes}分');
+          parts.add('     ⏱️ ${l10n.googleCalendarEstimatedTime}: ${subtask.estimatedMinutes}${l10n.googleCalendarMinutes}');
         }
       }
       print('新しいサブタスク詳細を追加しました');
@@ -2225,22 +2255,22 @@ class GoogleCalendarService {
     print('=== サブタスク詳細情報構築完了 ===');
     
     // 優先度情報（古いものを削除してから新しいものを追加）
-    final priorityText = _getPriorityText(task.priority);
-    final priorityLine = '⭐ 優先度: $priorityText';
-    parts.removeWhere((part) => part.contains('⭐ 優先度:'));
+    final priorityText = _getPriorityText(task.priority, l10n);
+    final priorityLine = '⭐ ${l10n.googleCalendarPriority}: $priorityText';
+    parts.removeWhere((part) => part.contains('⭐ ${l10n.googleCalendarPriority}:'));
     parts.add(priorityLine);
     print('優先度を更新しました: $priorityText');
     
     // ステータス情報（古いものを削除してから新しいものを追加）
-    final statusText = _getStatusText(task.status);
-    final statusLine = '📊 ステータス: $statusText';
-    parts.removeWhere((part) => part.contains('📊 ステータス:'));
+    final statusText = _getStatusText(task.status, l10n);
+    final statusLine = '📊 ${l10n.googleCalendarStatus}: $statusText';
+    parts.removeWhere((part) => part.contains('📊 ${l10n.googleCalendarStatus}:'));
     parts.add(statusLine);
     print('ステータスを更新しました: $statusText');
     
     // 作成日時（古いものを削除してから新しいものを追加）
-    final createdAtLine = '📅 作成日: ${task.createdAt.toIso8601String().split('T')[0]}';
-    parts.removeWhere((part) => part.contains('📅 作成日:'));
+    final createdAtLine = '📅 ${l10n.googleCalendarCreatedDate}: ${task.createdAt.toIso8601String().split('T')[0]}';
+    parts.removeWhere((part) => part.contains('📅 ${l10n.googleCalendarCreatedDate}:'));
     parts.add(createdAtLine);
     print('作成日を更新しました: ${task.createdAt.toIso8601String().split('T')[0]}');
     
@@ -2253,6 +2283,7 @@ class GoogleCalendarService {
     if (fullDescription.length > 8000) {
       // 重要な情報のみ残す
       final essentialParts = <String>[];
+      final l10n = _getLocalizations();
       
       // 基本説明
       if (task.description != null && task.description!.isNotEmpty) {
@@ -2267,8 +2298,8 @@ class GoogleCalendarService {
         final shortNotes = task.notes!.length > 100 
             ? '${task.notes!.substring(0, 100)}...' 
             : task.notes!;
-        final memoText = '📝 メモ: $shortNotes';
-        if (!essentialParts.any((part) => part.contains('📝 メモ:'))) {
+        final memoText = '📝 ${l10n.googleCalendarMemo}: $shortNotes';
+        if (!essentialParts.any((part) => part.contains('📝 ${l10n.googleCalendarMemo}:'))) {
           essentialParts.add(memoText);
         }
       }
@@ -2278,9 +2309,9 @@ class GoogleCalendarService {
         final hours = task.estimatedMinutes! ~/ 60;
         final minutes = task.estimatedMinutes! % 60;
         final timeText = hours > 0 
-            ? '⏱️ 推定時間: $hours時間${minutes > 0 ? '$minutes分' : ''}'
-            : '⏱️ 推定時間: $minutes分';
-        if (!essentialParts.any((part) => part.contains('⏱️ 推定時間:'))) {
+            ? '⏱️ ${l10n.googleCalendarEstimatedTime}: $hours${l10n.googleCalendarHours}${minutes > 0 ? '$minutes${l10n.googleCalendarMinutes}' : ''}'
+            : '⏱️ ${l10n.googleCalendarEstimatedTime}: $minutes${l10n.googleCalendarMinutes}';
+        if (!essentialParts.any((part) => part.contains('⏱️ ${l10n.googleCalendarEstimatedTime}:'))) {
           essentialParts.add(timeText);
         }
       }
@@ -2291,13 +2322,13 @@ class GoogleCalendarService {
       if (subtaskDetails.isNotEmpty) {
         final completedCount = subtaskDetails.where((s) => s.isCompleted).length;
         final totalCount = subtaskDetails.length;
-        final subtaskProgressText = '📋 サブタスク: $completedCount/$totalCount 完了';
-        if (!essentialParts.any((part) => part.contains('📋 サブタスク:'))) {
+        final subtaskProgressText = '📋 ${l10n.googleCalendarSubtaskProgress}: $completedCount/$totalCount ${l10n.googleCalendarCompleted}';
+        if (!essentialParts.any((part) => part.contains('📋 ${l10n.googleCalendarSubtaskProgress}:'))) {
           essentialParts.add(subtaskProgressText);
           
           // 最初の3つのサブタスクのみ表示
           essentialParts.add('');
-          essentialParts.add('📝 サブタスク詳細:');
+          essentialParts.add('📝 ${l10n.googleCalendarSubtaskDetails}:');
           final maxSubTasks = subtaskDetails.length > 3 ? 3 : subtaskDetails.length;
           for (int i = 0; i < maxSubTasks; i++) {
             final subtask = subtaskDetails[i];
@@ -2311,13 +2342,13 @@ class GoogleCalendarService {
       }
       
       // 優先度とステータス
-      final priorityText = '⭐ 優先度: ${_getPriorityText(task.priority)}';
-      final statusText = '📊 ステータス: ${_getStatusText(task.status)}';
+      final priorityText = '⭐ ${l10n.googleCalendarPriority}: ${_getPriorityText(task.priority, l10n)}';
+      final statusText = '📊 ${l10n.googleCalendarStatus}: ${_getStatusText(task.status, l10n)}';
       
-      if (!essentialParts.any((part) => part.contains('⭐ 優先度:'))) {
+      if (!essentialParts.any((part) => part.contains('⭐ ${l10n.googleCalendarPriority}:'))) {
         essentialParts.add(priorityText);
       }
-      if (!essentialParts.any((part) => part.contains('📊 ステータス:'))) {
+      if (!essentialParts.any((part) => part.contains('📊 ${l10n.googleCalendarStatus}:'))) {
         essentialParts.add(statusText);
       }
       
@@ -2472,30 +2503,30 @@ class GoogleCalendarService {
   }
 
   /// 優先度のテキストを取得
-  String _getPriorityText(TaskPriority priority) {
+  String _getPriorityText(TaskPriority priority, AppLocalizations l10n) {
     switch (priority) {
       case TaskPriority.low:
-        return '低';
+        return l10n.low;
       case TaskPriority.medium:
-        return '中';
+        return l10n.medium;
       case TaskPriority.high:
-        return '高';
+        return l10n.high;
       case TaskPriority.urgent:
-        return '緊急';
+        return l10n.urgent;
     }
   }
 
   /// ステータスのテキストを取得
-  String _getStatusText(TaskStatus status) {
+  String _getStatusText(TaskStatus status, AppLocalizations l10n) {
     switch (status) {
       case TaskStatus.pending:
-        return '未着手';
+        return l10n.notStarted; // pendingキーがない場合はpendingTasksを使用
       case TaskStatus.inProgress:
-        return '進行中';
+        return l10n.inProgress;
       case TaskStatus.completed:
-        return '完了';
+        return l10n.completed;
       case TaskStatus.cancelled:
-        return 'キャンセル';
+        return l10n.cancelled;
     }
   }
 

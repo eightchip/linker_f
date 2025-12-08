@@ -2,60 +2,40 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 /// PowerShellスクリプトのパスを解決するユーティリティ
-/// ポータブル版対応: 実行ファイルと同じディレクトリのAppsフォルダを優先
-/// 後方互換性: %APPDATA%\Appsフォルダにも対応
+/// Releaseフォルダ配下のAppsフォルダのみを対象とする
 class ScriptPathResolver {
   /// PowerShellスクリプトファイルのパスを取得
   /// 
-  /// 検索順序:
-  /// 1. 実行ファイルと同じディレクトリのAppsフォルダ
-  /// 2. %APPDATA%\Appsフォルダ（後方互換性）
+  /// 検索場所:
+  /// - 実行ファイルと同じディレクトリのAppsフォルダ（Release/Apps）
   /// 
   /// [scriptName] スクリプトファイル名（例: 'compose_mail.ps1'）
   /// 戻り値: スクリプトファイルのパス（見つからない場合はnull）
   static Future<String?> resolveScriptPath(String scriptName) async {
-    // 1. 実行ファイルと同じディレクトリのAppsフォルダを確認（ポータブル版対応）
+    // 実行ファイルと同じディレクトリのAppsフォルダを確認（Release/Appsのみ）
     try {
       final executablePath = Platform.resolvedExecutable;
       final executableDir = File(executablePath).parent.path;
-      final portableAppsPath = '$executableDir\\Apps\\$scriptName';
-      final portableAppsFile = File(portableAppsPath);
+      final appsPath = '$executableDir\\Apps\\$scriptName';
+      final appsFile = File(appsPath);
       
-      if (await portableAppsFile.exists()) {
+      if (await appsFile.exists()) {
         if (kDebugMode) {
-          print('📁 [ScriptPathResolver] ポータブル版のスクリプトを使用: $portableAppsPath');
+          print('📁 [ScriptPathResolver] スクリプトを使用: $appsPath');
         }
-        return portableAppsPath;
+        return appsPath;
       }
     } catch (e) {
-      // 実行ファイルのパス取得に失敗した場合は次へ進む
+      // 実行ファイルのパス取得に失敗した場合
       if (kDebugMode) {
         print('⚠️ [ScriptPathResolver] 実行ファイルパスの取得に失敗: $e');
-      }
-    }
-    
-    // 2. %APPDATA%\Appsフォルダを確認（後方互換性）
-    try {
-      final appdataPath = Platform.environment['APPDATA'] ?? 
-        'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
-      final appdataAppsPath = '$appdataPath\\Apps\\$scriptName';
-      final appdataAppsFile = File(appdataAppsPath);
-      
-      if (await appdataAppsFile.exists()) {
-        if (kDebugMode) {
-          print('📁 [ScriptPathResolver] APPDATA版のスクリプトを使用: $appdataAppsPath');
-        }
-        return appdataAppsPath;
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('⚠️ [ScriptPathResolver] APPDATAパスの取得に失敗: $e');
       }
     }
     
     // スクリプトが見つからない場合
     if (kDebugMode) {
       print('❌ [ScriptPathResolver] スクリプトが見つかりません: $scriptName');
+      print('   期待される場所: ${File(Platform.resolvedExecutable).parent.path}\\Apps\\$scriptName');
     }
     return null;
   }
@@ -70,16 +50,13 @@ class ScriptPathResolver {
   
   /// スクリプトが見つからない場合のパス情報を取得
   /// [scriptName] スクリプトファイル名
-  /// 戻り値: パス情報を含むマップ（portablePath, installedPath）
+  /// 戻り値: パス情報を含むマップ（portablePath）
   static Map<String, String> getScriptPaths(String scriptName) {
     final executablePath = Platform.resolvedExecutable;
     final executableDir = File(executablePath).parent.path;
-    final appdataPath = Platform.environment['APPDATA'] ?? 
-      'C:\\Users\\${Platform.environment['USERNAME']}\\AppData\\Roaming';
     
     return {
       'portablePath': '$executableDir\\Apps\\$scriptName',
-      'installedPath': '$appdataPath\\Apps\\$scriptName',
     };
   }
 
@@ -91,11 +68,10 @@ class ScriptPathResolver {
     final paths = getScriptPaths(scriptName);
     return '''PowerShellスクリプトが見つかりません: $scriptName
 
-以下のいずれかの場所に配置してください:
-1. ポータブル版: ${paths['portablePath']}
-2. インストール版: ${paths['installedPath']}
+以下の場所に配置してください:
+${paths['portablePath']}
 
-インストーラーを使用するか、手動で配置してください。''';
+手動で配置してください。''';
   }
 }
 
