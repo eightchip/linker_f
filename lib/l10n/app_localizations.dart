@@ -4073,14 +4073,14 @@ abstract class AppLocalizations {
   /// Important notes content
   ///
   /// In ja, this message translates to:
-  /// **'• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】\nポータブル版に同梱されています: {portablePath}'**
+  /// **'• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】\n実行ファイルと同じディレクトリのAppsフォルダに配置してください'**
   String importantNotesContent(String portablePath);
 
   /// Bundled with portable version message
   ///
   /// In ja, this message translates to:
-  /// **'ポータブル版に同梱されています: {portablePath}'**
-  String bundledWithPortable(String portablePath);
+  /// **'実行ファイルと同じディレクトリのAppsフォルダ'**
+  String get bundledWithPortable;
 
   /// Connection test button label
   ///
@@ -5913,7 +5913,7 @@ abstract class AppLocalizations {
   /// Outlook link note
   ///
   /// In ja, this message translates to:
-  /// **'📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\nリンクをクリックして直接アクセスできます。'**
+  /// **'📝 注意: ネットワーク共有やローカルファイルのリンクを使用する場合は、リンクを選択してリンクを設定するか、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてアクセスしてください。'**
   String get outlookLinkNote;
 
   /// Period label with colon
@@ -7260,6 +7260,12 @@ abstract class AppLocalizations {
   /// **'Outlook接続テストが完了しました！'**
   String get outlookConnectionTestCompleted;
 
+  /// Outlook connection test script not found message
+  ///
+  /// In ja, this message translates to:
+  /// **'Outlook接続テストスクリプトが見つかりません。\n実行ファイルと同じディレクトリのAppsフォルダにcompany_outlook_test.ps1を配置してください。'**
+  String get outlookConnectionTestScriptNotFound;
+
   /// Save template button/tooltip
   ///
   /// In ja, this message translates to:
@@ -7529,6 +7535,114 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'戻る'**
   String get back;
+
+  /// Google Calendar sync failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar同期に失敗しました: {message}'**
+  String googleCalendarSyncFailed(String message);
+
+  /// Google Calendar sync error message
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar同期中にエラーが発生しました: {error}'**
+  String googleCalendarSyncError(String error);
+
+  /// Google Calendar schedule update failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarの予定更新に失敗しました: {title}'**
+  String googleCalendarScheduleUpdateFailed(String title);
+
+  /// Google Calendar schedule create failed message
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarの予定作成に失敗しました: {message}'**
+  String googleCalendarScheduleCreateFailed(String message);
+
+  /// Google Calendar authentication error dialog title
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendar認証エラー'**
+  String get googleCalendarAuthErrorTitle;
+
+  /// Google Calendar authentication error dialog description
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarとの同期を行うには、設定画面でGoogle Calendarの認証を行う必要があります。'**
+  String get googleCalendarAuthErrorDescription;
+
+  /// Google Calendar invalid request error
+  ///
+  /// In ja, this message translates to:
+  /// **'リクエストが無効です: {details}'**
+  String googleCalendarInvalidRequest(String details);
+
+  /// Google Calendar invalid request check task error
+  ///
+  /// In ja, this message translates to:
+  /// **'リクエストが無効です。タスクの情報を確認してください。'**
+  String get googleCalendarInvalidRequestCheckTask;
+
+  /// Google Calendar required field missing error
+  ///
+  /// In ja, this message translates to:
+  /// **'必須フィールドが不足しています: {details}'**
+  String googleCalendarRequiredFieldMissing(String details);
+
+  /// Google Calendar authentication failed error
+  ///
+  /// In ja, this message translates to:
+  /// **'認証に失敗しました。Google Calendarの認証を再実行してください。'**
+  String get googleCalendarAuthFailed;
+
+  /// Google Calendar access denied error
+  ///
+  /// In ja, this message translates to:
+  /// **'アクセスが拒否されました。Google Calendarの権限を確認してください。'**
+  String get googleCalendarAccessDenied;
+
+  /// Google Calendar not found error
+  ///
+  /// In ja, this message translates to:
+  /// **'カレンダーが見つかりません。'**
+  String get googleCalendarNotFound;
+
+  /// Google Calendar rate limit exceeded error
+  ///
+  /// In ja, this message translates to:
+  /// **'リクエスト制限に達しました。しばらく待ってから再試行してください。'**
+  String get googleCalendarRateLimitExceeded;
+
+  /// Google Calendar server error
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarサーバーでエラーが発生しました。'**
+  String get googleCalendarServerError;
+
+  /// Google Calendar service unavailable error
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarサービスが一時的に利用できません。'**
+  String get googleCalendarServiceUnavailable;
+
+  /// Google Calendar error message
+  ///
+  /// In ja, this message translates to:
+  /// **'Google Calendarエラー: {message}'**
+  String googleCalendarError(String message);
+
+  /// Google Calendar unexpected error
+  ///
+  /// In ja, this message translates to:
+  /// **'予期しないエラーが発生しました (HTTP {statusCode})'**
+  String googleCalendarUnexpectedError(int statusCode);
+
+  /// Google Calendar not authenticated error
+  ///
+  /// In ja, this message translates to:
+  /// **'認証されていません'**
+  String get googleCalendarNotAuthenticatedError;
 }
 
 class _AppLocalizationsDelegate

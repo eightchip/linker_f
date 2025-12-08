@@ -2169,13 +2169,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String importantNotesContent(String portablePath) {
-    return '• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】\nポータブル版に同梱されています: $portablePath';
+    return '• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】\n実行ファイルと同じディレクトリのAppsフォルダに配置してください';
   }
 
   @override
-  String bundledWithPortable(String portablePath) {
-    return 'ポータブル版に同梱されています: $portablePath';
-  }
+  String get bundledWithPortable => '実行ファイルと同じディレクトリのAppsフォルダ';
 
   @override
   String get connectionTest => '接続テスト';
@@ -3224,7 +3222,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get outlookLinkNote =>
-      '📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\nリンクをクリックして直接アクセスできます。';
+      '📝 注意: ネットワーク共有やローカルファイルのリンクを使用する場合は、リンクを選択してリンクを設定するか、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてアクセスしてください。';
 
   @override
   String get periodLabel => '期間:';
@@ -3992,6 +3990,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get outlookConnectionTestCompleted => 'Outlook接続テストが完了しました！';
 
   @override
+  String get outlookConnectionTestScriptNotFound =>
+      'Outlook接続テストスクリプトが見つかりません。\n実行ファイルと同じディレクトリのAppsフォルダにcompany_outlook_test.ps1を配置してください。';
+
+  @override
   String get saveTemplate => 'テンプレートを保存';
 
   @override
@@ -4131,4 +4133,80 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get back => '戻る';
+
+  @override
+  String googleCalendarSyncFailed(String message) {
+    return 'Google Calendar同期に失敗しました: $message';
+  }
+
+  @override
+  String googleCalendarSyncError(String error) {
+    return 'Google Calendar同期中にエラーが発生しました: $error';
+  }
+
+  @override
+  String googleCalendarScheduleUpdateFailed(String title) {
+    return 'Google Calendarの予定更新に失敗しました: $title';
+  }
+
+  @override
+  String googleCalendarScheduleCreateFailed(String message) {
+    return 'Google Calendarの予定作成に失敗しました: $message';
+  }
+
+  @override
+  String get googleCalendarAuthErrorTitle => 'Google Calendar認証エラー';
+
+  @override
+  String get googleCalendarAuthErrorDescription =>
+      'Google Calendarとの同期を行うには、設定画面でGoogle Calendarの認証を行う必要があります。';
+
+  @override
+  String googleCalendarInvalidRequest(String details) {
+    return 'リクエストが無効です: $details';
+  }
+
+  @override
+  String get googleCalendarInvalidRequestCheckTask =>
+      'リクエストが無効です。タスクの情報を確認してください。';
+
+  @override
+  String googleCalendarRequiredFieldMissing(String details) {
+    return '必須フィールドが不足しています: $details';
+  }
+
+  @override
+  String get googleCalendarAuthFailed =>
+      '認証に失敗しました。Google Calendarの認証を再実行してください。';
+
+  @override
+  String get googleCalendarAccessDenied =>
+      'アクセスが拒否されました。Google Calendarの権限を確認してください。';
+
+  @override
+  String get googleCalendarNotFound => 'カレンダーが見つかりません。';
+
+  @override
+  String get googleCalendarRateLimitExceeded =>
+      'リクエスト制限に達しました。しばらく待ってから再試行してください。';
+
+  @override
+  String get googleCalendarServerError => 'Google Calendarサーバーでエラーが発生しました。';
+
+  @override
+  String get googleCalendarServiceUnavailable =>
+      'Google Calendarサービスが一時的に利用できません。';
+
+  @override
+  String googleCalendarError(String message) {
+    return 'Google Calendarエラー: $message';
+  }
+
+  @override
+  String googleCalendarUnexpectedError(int statusCode) {
+    return '予期しないエラーが発生しました (HTTP $statusCode)';
+  }
+
+  @override
+  String get googleCalendarNotAuthenticatedError => '認証されていません';
 }

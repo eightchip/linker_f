@@ -26,6 +26,7 @@ import '../viewmodels/ui_customization_provider.dart';
 import '../views/selective_export_dialog.dart';
 import '../views/selective_import_dialog.dart';
 import '../models/export_config.dart';
+import '../utils/script_path_resolver.dart';
 
 class _ColorPreset {
   const _ColorPreset({
@@ -5607,55 +5608,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(height: 12),
                       
-                      Builder(
-                        builder: (context) {
-                          // 実行ファイルのディレクトリパスを取得
-                          String portablePath = AppLocalizations.of(context)!.executableDirectory;
-                          try {
-                            final executablePath = Platform.resolvedExecutable;
-                            final executableDir = File(executablePath).parent.path;
-                            portablePath = '$executableDir\\Apps';
-                          } catch (e) {
-                            // エラー時はデフォルト表示を使用
-                          }
+                      Column(
+                        children: [
+                          _buildPowerShellFileInfo(
+                            'company_outlook_test.ps1',
+                            AppLocalizations.of(context)!.outlookConnectionTest,
+                            AppLocalizations.of(context)!.outlookConnectionTestDescription,
+                            AppLocalizations.of(context)!.bundledWithPortable,
+                            AppLocalizations.of(context)!.manualExecution,
+                          ),
                           
-                          return Column(
-                            children: [
-                              _buildPowerShellFileInfo(
-                                'company_outlook_test.ps1',
-                                AppLocalizations.of(context)!.outlookConnectionTest,
-                                AppLocalizations.of(context)!.outlookConnectionTestDescription,
-                AppLocalizations.of(context)!.bundledWithPortable(portablePath),
-                                AppLocalizations.of(context)!.manualExecution,
-                              ),
-                              
-                              
-                              _buildPowerShellFileInfo(
-                                'compose_mail.ps1',
-                                AppLocalizations.of(context)!.mailCompositionSupport,
-                                AppLocalizations.of(context)!.mailCompositionSupportDescription,
-                AppLocalizations.of(context)!.bundledWithPortable(portablePath),
-                                AppLocalizations.of(context)!.manualExecution,
-                              ),
-                              
-                              _buildPowerShellFileInfo(
-                                'find_sent.ps1',
-                                AppLocalizations.of(context)!.sentMailSearch,
-                                AppLocalizations.of(context)!.sentMailSearchDescription,
-                AppLocalizations.of(context)!.bundledWithPortable(portablePath),
-                                AppLocalizations.of(context)!.manualExecution,
-                              ),
-                              
-                              _buildPowerShellFileInfo(
-                                'get_calendar_events.ps1',
-                                AppLocalizations.of(context)!.outlookCalendarEvents,
-                                AppLocalizations.of(context)!.outlookCalendarEventsDescription,
-                AppLocalizations.of(context)!.bundledWithPortable(portablePath),
-                                AppLocalizations.of(context)!.automaticExecution,
-                              ),
-                            ],
-                          );
-                        },
+                          
+                          _buildPowerShellFileInfo(
+                            'compose_mail.ps1',
+                            AppLocalizations.of(context)!.mailCompositionSupport,
+                            AppLocalizations.of(context)!.mailCompositionSupportDescription,
+                            AppLocalizations.of(context)!.bundledWithPortable,
+                            AppLocalizations.of(context)!.manualExecution,
+                          ),
+                          
+                          _buildPowerShellFileInfo(
+                            'find_sent.ps1',
+                            AppLocalizations.of(context)!.sentMailSearch,
+                            AppLocalizations.of(context)!.sentMailSearchDescription,
+                            AppLocalizations.of(context)!.bundledWithPortable,
+                            AppLocalizations.of(context)!.manualExecution,
+                          ),
+                          
+                          _buildPowerShellFileInfo(
+                            'get_calendar_events.ps1',
+                            AppLocalizations.of(context)!.outlookCalendarEvents,
+                            AppLocalizations.of(context)!.outlookCalendarEventsDescription,
+                            AppLocalizations.of(context)!.bundledWithPortable,
+                            AppLocalizations.of(context)!.automaticExecution,
+                          ),
+                        ],
                       ),
                       
                       const SizedBox(height: 12),
@@ -6001,13 +5988,76 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
       
-      // Outlook接続テスト（簡易版）
-      await Future.delayed(const Duration(seconds: 1));
+      // スクリプトファイルのパスを解決
+      final scriptPath = await ScriptPathResolver.resolveScriptPath('company_outlook_test.ps1');
+      if (scriptPath == null) {
+        // ローディングを閉じる
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        SnackBarService.showError(
+          context, 
+          AppLocalizations.of(context)!.outlookConnectionTestScriptNotFound
+        );
+        return;
+      }
+      
+      // PowerShellスクリプトを実行
+      if (kDebugMode) {
+        print('🔍 [Outlook接続テスト] スクリプト実行開始: $scriptPath');
+      }
+      
+      final result = await Process.run('powershell.exe', [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        scriptPath,
+      ], runInShell: false).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          if (kDebugMode) {
+            print('⏱️ [Outlook接続テスト] タイムアウト（30秒）');
+          }
+          return ProcessResult(0, 1, 'timeout', 'PowerShell実行がタイムアウトしました（30秒）');
+        },
+      );
       
       // ローディングを閉じる
-      Navigator.pop(context);
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
       
-      SnackBarService.showSuccess(context, AppLocalizations.of(context)!.outlookConnectionTestCompleted);
+      if (kDebugMode) {
+        print('📊 [Outlook接続テスト] 実行結果:');
+        print('   Exit Code: ${result.exitCode}');
+        print('   Stdout: ${result.stdout.toString().trim()}');
+        print('   Stderr: ${result.stderr.toString().trim()}');
+      }
+      
+      if (result.exitCode != 0) {
+        final errorMessage = result.stderr.toString().trim();
+        final stdoutMessage = result.stdout.toString().trim();
+        
+        // エラーメッセージを構築
+        String fullErrorMessage = errorMessage;
+        if (stdoutMessage.isNotEmpty && errorMessage.isEmpty) {
+          fullErrorMessage = stdoutMessage;
+        } else if (stdoutMessage.isNotEmpty && errorMessage.isNotEmpty) {
+          fullErrorMessage = '$errorMessage\n\n$stdoutMessage';
+        }
+        
+        if (fullErrorMessage.isEmpty) {
+          fullErrorMessage = 'Exit code: ${result.exitCode}';
+        }
+        
+        SnackBarService.showError(
+          context, 
+          AppLocalizations.of(context)!.outlookConnectionTestError(fullErrorMessage)
+        );
+      } else {
+        SnackBarService.showSuccess(context, AppLocalizations.of(context)!.outlookConnectionTestCompleted);
+      }
     } catch (e) {
       // ローディングを閉じる（エラー時も）
       if (Navigator.canPop(context)) {

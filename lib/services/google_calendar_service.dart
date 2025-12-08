@@ -956,30 +956,30 @@ class GoogleCalendarService {
             final reason = firstError['reason'] as String?;
             final message = firstError['message'] as String?;
             if (reason == 'required') {
-              return '必須フィールドが不足しています: ${message ?? '詳細不明'}';
+              return 'Required field missing: ${message ?? 'Unknown error'}';
             }
-            return 'リクエストが無効です: ${message ?? reason ?? '詳細不明'}';
+            return 'Invalid request: ${message ?? reason ?? 'Unknown error'}';
           }
         }
-        return 'リクエストが無効です。タスクの情報を確認してください。';
+        return 'Invalid request. Please check the task information.';
       case 401:
-        return '認証に失敗しました。Google Calendarの認証を再実行してください。';
+        return 'Authentication failed. Please re-authenticate Google Calendar.';
       case 403:
-        return 'アクセスが拒否されました。Google Calendarの権限を確認してください。';
+        return 'Access denied. Please check Google Calendar permissions.';
       case 404:
-        return 'カレンダーが見つかりません。';
+        return 'Calendar not found.';
       case 429:
-        return 'リクエスト制限に達しました。しばらく待ってから再試行してください。';
+        return 'Rate limit exceeded. Please wait a moment and try again.';
       case 500:
-        return 'Google Calendarサーバーでエラーが発生しました。';
+        return 'An error occurred on the Google Calendar server.';
       case 503:
-        return 'Google Calendarサービスが一時的に利用できません。';
+        return 'Google Calendar service is temporarily unavailable.';
       default:
         final error = errorBody['error'];
         if (error != null && error['message'] != null) {
-          return 'Google Calendarエラー: ${error['message']}';
+          return 'Google Calendar error: ${error['message']}';
         }
-        return '予期しないエラーが発生しました (HTTP $statusCode)';
+        return 'An unexpected error occurred (HTTP $statusCode)';
     }
   }
 
@@ -989,7 +989,7 @@ class GoogleCalendarService {
       if (!_isInitialized || _accessToken == null) {
         return {
           'success': false,
-          'error': '認証されていません',
+          'error': 'Not authenticated',
           'duplicatesFound': 0,
           'duplicatesRemoved': 0,
         };
@@ -1176,7 +1176,7 @@ class GoogleCalendarService {
       if (!_isInitialized || _accessToken == null) {
         return {
           'success': false,
-          'error': '認証されていません',
+          'error': 'Not authenticated',
           'deletedCount': 0,
         };
       }
@@ -2584,7 +2584,7 @@ class GoogleCalendarService {
     if (!_isInitialized || _accessToken == null) {
       return {
         'success': false,
-        'error': '認証されていません',
+        'error': 'Not authenticated',
         'added': 0,
         'skipped': 0,
       };
@@ -3076,7 +3076,7 @@ class GoogleCalendarService {
     if (!_isInitialized || _accessToken == null) {
       return {
         'success': false,
-        'error': '認証されていません',
+        'error': 'Not authenticated',
         'created': 0,
         'updated': 0,
         'deleted': 0,

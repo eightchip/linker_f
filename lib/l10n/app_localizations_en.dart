@@ -2202,13 +2202,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String importantNotesContent(String portablePath) {
-    return '• Administrator privileges are not required (can be executed at user level)\n• File names must match exactly\n• Manual permission is required if execution policy is restricted\n• May not work due to company PC security policies\n\n【Installation Location】\nBundled with portable version: $portablePath';
+    return '• Administrator privileges are not required (can be executed at user level)\n• File names must match exactly\n• Manual permission is required if execution policy is restricted\n• May not work due to company PC security policies\n\n【Installation Location】\nPlace in the Apps folder in the same directory as the executable file';
   }
 
   @override
-  String bundledWithPortable(String portablePath) {
-    return 'Bundled with portable version: $portablePath';
-  }
+  String get bundledWithPortable =>
+      'Apps folder in the same directory as the executable file';
 
   @override
   String get connectionTest => 'Connection Test';
@@ -3279,7 +3278,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get outlookLinkNote =>
-      '📝 Note: In Outlook, network share and local file links are also clickable.\nYou can click the link to access it directly.';
+      '📝 Note: To use network share or local file links, select the link and set it up, or copy the path and paste it into Explorer\'s address bar to access it.';
 
   @override
   String get periodLabel => 'Period:';
@@ -4071,6 +4070,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Outlook connection test completed!';
 
   @override
+  String get outlookConnectionTestScriptNotFound =>
+      'Outlook connection test script not found.\nPlease place company_outlook_test.ps1 in the Apps folder in the same directory as the executable file.';
+
+  @override
   String get saveTemplate => 'Save Template';
 
   @override
@@ -4212,4 +4215,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get back => 'Back';
+
+  @override
+  String googleCalendarSyncFailed(String message) {
+    return 'Google Calendar sync failed: $message';
+  }
+
+  @override
+  String googleCalendarSyncError(String error) {
+    return 'An error occurred during Google Calendar sync: $error';
+  }
+
+  @override
+  String googleCalendarScheduleUpdateFailed(String title) {
+    return 'Failed to update Google Calendar schedule: $title';
+  }
+
+  @override
+  String googleCalendarScheduleCreateFailed(String message) {
+    return 'Failed to create Google Calendar schedule: $message';
+  }
+
+  @override
+  String get googleCalendarAuthErrorTitle =>
+      'Google Calendar Authentication Error';
+
+  @override
+  String get googleCalendarAuthErrorDescription =>
+      'To sync with Google Calendar, you need to authenticate Google Calendar on the settings screen.';
+
+  @override
+  String googleCalendarInvalidRequest(String details) {
+    return 'Invalid request: $details';
+  }
+
+  @override
+  String get googleCalendarInvalidRequestCheckTask =>
+      'Invalid request. Please check the task information.';
+
+  @override
+  String googleCalendarRequiredFieldMissing(String details) {
+    return 'Required field missing: $details';
+  }
+
+  @override
+  String get googleCalendarAuthFailed =>
+      'Authentication failed. Please re-authenticate Google Calendar.';
+
+  @override
+  String get googleCalendarAccessDenied =>
+      'Access denied. Please check Google Calendar permissions.';
+
+  @override
+  String get googleCalendarNotFound => 'Calendar not found.';
+
+  @override
+  String get googleCalendarRateLimitExceeded =>
+      'Rate limit exceeded. Please wait a moment and try again.';
+
+  @override
+  String get googleCalendarServerError =>
+      'An error occurred on the Google Calendar server.';
+
+  @override
+  String get googleCalendarServiceUnavailable =>
+      'Google Calendar service is temporarily unavailable.';
+
+  @override
+  String googleCalendarError(String message) {
+    return 'Google Calendar error: $message';
+  }
+
+  @override
+  String googleCalendarUnexpectedError(int statusCode) {
+    return 'An unexpected error occurred (HTTP $statusCode)';
+  }
+
+  @override
+  String get googleCalendarNotAuthenticatedError => 'Not authenticated';
 }

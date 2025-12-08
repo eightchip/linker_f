@@ -148,18 +148,18 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
               print('予定をGoogle Calendarに同期: ${schedule.title} -> $googleCalendarEventId');
             }
           } else {
-            final message = result.errorMessage ?? '詳細不明';
+            final message = result.errorMessage ?? 'Unknown error';
             if (kDebugMode) {
               print('予定のGoogle Calendar同期失敗: $message');
             }
-            SnackBarService.showGlobalWarning('Googleカレンダー同期に失敗しました: $message');
+            SnackBarService.showGlobalWarning('Google Calendar sync failed: $message');
           }
         }
       } catch (e) {
         if (kDebugMode) {
           print('予定のGoogle Calendar同期エラー（無視）: $e');
         }
-        SnackBarService.showGlobalWarning('Googleカレンダー同期中にエラーが発生しました: $e');
+        SnackBarService.showGlobalWarning('An error occurred during Google Calendar sync: $e');
       }
       
       // Google CalendarイベントIDを設定して保存
@@ -208,7 +208,7 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
               print('予定のGoogle Calendar更新失敗: ${schedule.title}');
             }
             if (!success) {
-              SnackBarService.showGlobalWarning('Googleカレンダーの予定更新に失敗しました: ${schedule.title}');
+              SnackBarService.showGlobalWarning('Failed to update Google Calendar schedule: ${schedule.title}');
             }
           } else {
             // 新規作成（既存イベントが見つからなかった場合）
@@ -219,8 +219,8 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
                 print('予定をGoogle Calendarに新規作成: ${schedule.title} -> $googleCalendarEventId');
               }
             } else if (!result.success) {
-              final message = result.errorMessage ?? '詳細不明';
-              SnackBarService.showGlobalWarning('Googleカレンダーの予定作成に失敗しました: $message');
+              final message = result.errorMessage ?? 'Unknown error';
+              SnackBarService.showGlobalWarning('Failed to create Google Calendar schedule: $message');
             }
           }
         }
@@ -228,7 +228,7 @@ class ScheduleViewModel extends StateNotifier<List<ScheduleItem>> {
         if (kDebugMode) {
           print('予定のGoogle Calendar同期エラー（無視）: $e');
         }
-        SnackBarService.showGlobalWarning('Googleカレンダー同期中にエラーが発生しました: $e');
+        SnackBarService.showGlobalWarning('An error occurred during Google Calendar sync: $e');
       }
       
       final updatedSchedule = schedule.copyWith(

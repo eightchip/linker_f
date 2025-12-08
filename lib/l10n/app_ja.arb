@@ -3208,7 +3208,7 @@
   "@importantNotes": {
     "description": "Important notes title"
   },
-  "importantNotesContent": "• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】\nポータブル版に同梱されています: {portablePath}",
+  "importantNotesContent": "• 管理者権限は不要（ユーザーレベルで実行可能）\n• ファイル名は正確に一致させる必要があります\n• 実行ポリシーが制限されている場合は手動で許可が必要です\n• 会社PCのセキュリティポリシーにより動作しない場合があります\n\n【配置場所】\n実行ファイルと同じディレクトリのAppsフォルダに配置してください",
   "@importantNotesContent": {
     "description": "Important notes content",
     "placeholders": {
@@ -3217,14 +3217,9 @@
       }
     }
   },
-  "bundledWithPortable": "ポータブル版に同梱されています: {portablePath}",
+  "bundledWithPortable": "実行ファイルと同じディレクトリのAppsフォルダ",
   "@bundledWithPortable": {
-    "description": "Bundled with portable version message",
-    "placeholders": {
-      "portablePath": {
-        "type": "String"
-      }
-    }
+    "description": "Bundled with portable version message"
   },
   "connectionTest": "接続テスト",
   "@connectionTest": {
@@ -4886,7 +4881,7 @@
   "@gmailLinkNote": {
     "description": "Gmail link note"
   },
-  "outlookLinkNote": "📝 注意: Outlookでは、ネットワーク共有やローカルファイルのリンクもクリック可能です。\nリンクをクリックして直接アクセスできます。",
+  "outlookLinkNote": "📝 注意: ネットワーク共有やローカルファイルのリンクを使用する場合は、リンクを選択してリンクを設定するか、パスをコピーしてエクスプローラーのアドレスバーに貼り付けてアクセスしてください。",
   "@outlookLinkNote": {
     "description": "Outlook link note"
   },
@@ -6184,6 +6179,10 @@
   "@outlookConnectionTestCompleted": {
     "description": "Outlook connection test completed message"
   },
+  "outlookConnectionTestScriptNotFound": "Outlook接続テストスクリプトが見つかりません。\n実行ファイルと同じディレクトリのAppsフォルダにcompany_outlook_test.ps1を配置してください。",
+  "@outlookConnectionTestScriptNotFound": {
+    "description": "Outlook connection test script not found message"
+  },
   "outlookConnectionTestError": "Outlook接続テストエラー: {error}",
   "@outlookConnectionTestError": {
     "description": "Outlook connection test error message",
@@ -6475,6 +6474,118 @@
   "back": "戻る",
   "@back": {
     "description": "Back button"
+  },
+  "googleCalendarSyncFailed": "Google Calendar同期に失敗しました: {message}",
+  "@googleCalendarSyncFailed": {
+    "description": "Google Calendar sync failed message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarSyncError": "Google Calendar同期中にエラーが発生しました: {error}",
+  "@googleCalendarSyncError": {
+    "description": "Google Calendar sync error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarScheduleUpdateFailed": "Google Calendarの予定更新に失敗しました: {title}",
+  "@googleCalendarScheduleUpdateFailed": {
+    "description": "Google Calendar schedule update failed message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarScheduleCreateFailed": "Google Calendarの予定作成に失敗しました: {message}",
+  "@googleCalendarScheduleCreateFailed": {
+    "description": "Google Calendar schedule create failed message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarAuthErrorTitle": "Google Calendar認証エラー",
+  "@googleCalendarAuthErrorTitle": {
+    "description": "Google Calendar authentication error dialog title"
+  },
+  "googleCalendarAuthErrorDescription": "Google Calendarとの同期を行うには、設定画面でGoogle Calendarの認証を行う必要があります。",
+  "@googleCalendarAuthErrorDescription": {
+    "description": "Google Calendar authentication error dialog description"
+  },
+  "googleCalendarInvalidRequest": "リクエストが無効です: {details}",
+  "@googleCalendarInvalidRequest": {
+    "description": "Google Calendar invalid request error",
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarInvalidRequestCheckTask": "リクエストが無効です。タスクの情報を確認してください。",
+  "@googleCalendarInvalidRequestCheckTask": {
+    "description": "Google Calendar invalid request check task error"
+  },
+  "googleCalendarRequiredFieldMissing": "必須フィールドが不足しています: {details}",
+  "@googleCalendarRequiredFieldMissing": {
+    "description": "Google Calendar required field missing error",
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarAuthFailed": "認証に失敗しました。Google Calendarの認証を再実行してください。",
+  "@googleCalendarAuthFailed": {
+    "description": "Google Calendar authentication failed error"
+  },
+  "googleCalendarAccessDenied": "アクセスが拒否されました。Google Calendarの権限を確認してください。",
+  "@googleCalendarAccessDenied": {
+    "description": "Google Calendar access denied error"
+  },
+  "googleCalendarNotFound": "カレンダーが見つかりません。",
+  "@googleCalendarNotFound": {
+    "description": "Google Calendar not found error"
+  },
+  "googleCalendarRateLimitExceeded": "リクエスト制限に達しました。しばらく待ってから再試行してください。",
+  "@googleCalendarRateLimitExceeded": {
+    "description": "Google Calendar rate limit exceeded error"
+  },
+  "googleCalendarServerError": "Google Calendarサーバーでエラーが発生しました。",
+  "@googleCalendarServerError": {
+    "description": "Google Calendar server error"
+  },
+  "googleCalendarServiceUnavailable": "Google Calendarサービスが一時的に利用できません。",
+  "@googleCalendarServiceUnavailable": {
+    "description": "Google Calendar service unavailable error"
+  },
+  "googleCalendarError": "Google Calendarエラー: {message}",
+  "@googleCalendarError": {
+    "description": "Google Calendar error message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarUnexpectedError": "予期しないエラーが発生しました (HTTP {statusCode})",
+  "@googleCalendarUnexpectedError": {
+    "description": "Google Calendar unexpected error",
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "googleCalendarNotAuthenticatedError": "認証されていません",
+  "@googleCalendarNotAuthenticatedError": {
+    "description": "Google Calendar not authenticated error"
   }
 }
 

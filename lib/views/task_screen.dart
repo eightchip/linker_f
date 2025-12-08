@@ -7948,7 +7948,7 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
     showDialog(
       context: context,
       builder: (context) => UnifiedDialog(
-        title: 'Google Calendar認証エラー',
+        title: AppLocalizations.of(context)!.googleCalendarAuthErrorTitle,
         icon: Icons.error_outline,
         iconColor: Colors.red,
         content: Column(
@@ -7957,9 +7957,9 @@ class _TaskScreenState extends ConsumerState<TaskScreen>
           children: [
             Text(errorMessage),
             const SizedBox(height: AppSpacing.lg),
-            const Text(
-              'Google Calendarとの同期を行うには、設定画面でGoogle Calendarの認証を行う必要があります。',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              AppLocalizations.of(context)!.googleCalendarAuthErrorDescription,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),

@@ -3725,7 +3725,7 @@ ${l10n.sentId} $token
           } else if (link.path.startsWith(r'\\')) {
             // UNCパスの処理
             if (_selectedMailApp == 'outlook') {
-              // Outlookではクリック可能なリンクとして表示
+              // Outlookではリンクとして表示（リンクを選択して設定するか、アドレスバーに貼り付けて使用）
               final encodedPath = Uri.encodeComponent(link.path);
               final fileUrl1 = 'file:///$encodedPath';
               final fileUrl2 = 'file://${link.path.replaceAll(r'\', '/')}';
@@ -3746,7 +3746,7 @@ ${l10n.sentId} $token
           } else if (link.path.contains(':\\')) {
             // ローカルファイルパスの処理
             if (_selectedMailApp == 'outlook') {
-              // Outlookではクリック可能なリンクとして表示
+              // Outlookではリンクとして表示（リンクを選択して設定するか、アドレスバーに貼り付けて使用）
               final encodedPath = Uri.encodeComponent(link.path);
               final fileUrl = 'file:///$encodedPath';
               linksInfo += '<li style="margin-bottom: 8px;"><a href="$fileUrl" style="color: #007bff; text-decoration: underline;">${link.label}</a><br><small style="color: #666;">${link.path}</small></li>';

@@ -2996,7 +2996,7 @@
   "@importantNotes": {
     "description": "Important notes title"
   },
-  "importantNotesContent": "• Administrator privileges are not required (can be executed at user level)\n• File names must match exactly\n• Manual permission is required if execution policy is restricted\n• May not work due to company PC security policies\n\n【Installation Location】\nBundled with portable version: {portablePath}",
+  "importantNotesContent": "• Administrator privileges are not required (can be executed at user level)\n• File names must match exactly\n• Manual permission is required if execution policy is restricted\n• May not work due to company PC security policies\n\n【Installation Location】\nPlace in the Apps folder in the same directory as the executable file",
   "@importantNotesContent": {
     "description": "Important notes content",
     "placeholders": {
@@ -3005,14 +3005,9 @@
       }
     }
   },
-  "bundledWithPortable": "Bundled with portable version: {portablePath}",
+  "bundledWithPortable": "Apps folder in the same directory as the executable file",
   "@bundledWithPortable": {
-    "description": "Bundled with portable version message",
-    "placeholders": {
-      "portablePath": {
-        "type": "String"
-      }
-    }
+    "description": "Bundled with portable version message"
   },
   "connectionTest": "Connection Test",
   "@connectionTest": {
@@ -4655,7 +4650,7 @@
   "@gmailLinkNote": {
     "description": "Gmail link note"
   },
-  "outlookLinkNote": "📝 Note: In Outlook, network share and local file links are also clickable.\nYou can click the link to access it directly.",
+  "outlookLinkNote": "📝 Note: To use network share or local file links, select the link and set it up, or copy the path and paste it into Explorer's address bar to access it.",
   "@outlookLinkNote": {
     "description": "Outlook link note"
   },
@@ -6121,6 +6116,10 @@
   "@outlookConnectionTestCompleted": {
     "description": "Outlook connection test completed message"
   },
+  "outlookConnectionTestScriptNotFound": "Outlook connection test script not found.\nPlease place company_outlook_test.ps1 in the Apps folder in the same directory as the executable file.",
+  "@outlookConnectionTestScriptNotFound": {
+    "description": "Outlook connection test script not found message"
+  },
   "outlookConnectionTestError": "Outlook connection test error: {error}",
   "@outlookConnectionTestError": {
     "description": "Outlook connection test error message",
@@ -6412,6 +6411,118 @@
   "back": "Back",
   "@back": {
     "description": "Back button"
+  },
+  "googleCalendarSyncFailed": "Google Calendar sync failed: {message}",
+  "@googleCalendarSyncFailed": {
+    "description": "Google Calendar sync failed message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarSyncError": "An error occurred during Google Calendar sync: {error}",
+  "@googleCalendarSyncError": {
+    "description": "Google Calendar sync error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarScheduleUpdateFailed": "Failed to update Google Calendar schedule: {title}",
+  "@googleCalendarScheduleUpdateFailed": {
+    "description": "Google Calendar schedule update failed message",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarScheduleCreateFailed": "Failed to create Google Calendar schedule: {message}",
+  "@googleCalendarScheduleCreateFailed": {
+    "description": "Google Calendar schedule create failed message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarAuthErrorTitle": "Google Calendar Authentication Error",
+  "@googleCalendarAuthErrorTitle": {
+    "description": "Google Calendar authentication error dialog title"
+  },
+  "googleCalendarAuthErrorDescription": "To sync with Google Calendar, you need to authenticate Google Calendar on the settings screen.",
+  "@googleCalendarAuthErrorDescription": {
+    "description": "Google Calendar authentication error dialog description"
+  },
+  "googleCalendarInvalidRequest": "Invalid request: {details}",
+  "@googleCalendarInvalidRequest": {
+    "description": "Google Calendar invalid request error",
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarInvalidRequestCheckTask": "Invalid request. Please check the task information.",
+  "@googleCalendarInvalidRequestCheckTask": {
+    "description": "Google Calendar invalid request check task error"
+  },
+  "googleCalendarRequiredFieldMissing": "Required field missing: {details}",
+  "@googleCalendarRequiredFieldMissing": {
+    "description": "Google Calendar required field missing error",
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarAuthFailed": "Authentication failed. Please re-authenticate Google Calendar.",
+  "@googleCalendarAuthFailed": {
+    "description": "Google Calendar authentication failed error"
+  },
+  "googleCalendarAccessDenied": "Access denied. Please check Google Calendar permissions.",
+  "@googleCalendarAccessDenied": {
+    "description": "Google Calendar access denied error"
+  },
+  "googleCalendarNotFound": "Calendar not found.",
+  "@googleCalendarNotFound": {
+    "description": "Google Calendar not found error"
+  },
+  "googleCalendarRateLimitExceeded": "Rate limit exceeded. Please wait a moment and try again.",
+  "@googleCalendarRateLimitExceeded": {
+    "description": "Google Calendar rate limit exceeded error"
+  },
+  "googleCalendarServerError": "An error occurred on the Google Calendar server.",
+  "@googleCalendarServerError": {
+    "description": "Google Calendar server error"
+  },
+  "googleCalendarServiceUnavailable": "Google Calendar service is temporarily unavailable.",
+  "@googleCalendarServiceUnavailable": {
+    "description": "Google Calendar service unavailable error"
+  },
+  "googleCalendarError": "Google Calendar error: {message}",
+  "@googleCalendarError": {
+    "description": "Google Calendar error message",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "googleCalendarUnexpectedError": "An unexpected error occurred (HTTP {statusCode})",
+  "@googleCalendarUnexpectedError": {
+    "description": "Google Calendar unexpected error",
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "googleCalendarNotAuthenticatedError": "Not authenticated",
+  "@googleCalendarNotAuthenticatedError": {
+    "description": "Google Calendar not authenticated error"
   }
 }
 
